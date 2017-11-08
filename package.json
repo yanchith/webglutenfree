@@ -8,13 +8,11 @@
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "concurrently --raw --kill-others \"yarn run build:watch\" \"yarn run serve\"",
-    "serve": "http-server -p 8000",
     "prebuild": "rimraf dist",
     "build": "rollup --config",
     "prebuild:watch": "rimraf dist",
     "build:watch": "rollup --config --watch",
-    "tslint": "tslint --config tslint.json --project tsconfig.json --type-check \"src/**/*.ts*\"",
+    "tslint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
     "predist": "rimraf dist",
     "dist": "rollup --config && rollup --config rollup.config.esm.js",
     "clean": "rimraf dist"
@@ -22,7 +20,6 @@
   "devDependencies": {
     "@types/webgl2": "^0.0.2",
     "concurrently": "^3.5.0",
-    "http-server": "^0.10.0",
     "rimraf": "^2.6.2",
     "rollup": "^0.50.1",
     "rollup-plugin-typescript2": "^0.8.0",
