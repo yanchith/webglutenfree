@@ -8,6 +8,8 @@
       "es2017"
     ],
 
+    // declaration setting is pushed from rollup
+    // "declaration": true,
     "sourceMap": true,
     "noEmitOnError": true,
 
