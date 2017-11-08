@@ -1,0 +1,19 @@
+# Mac
+.DS_Store
+
+# Node
+npm-debug.log
+node_modules/
+
+# Yarn
+yarn-error.log
+
+# Editors
+.vscode/
+.idea
+
+# Dist & Build dirs
+dist/
+
+# rollup-plugin-typescript
+.rpt2_cache/
