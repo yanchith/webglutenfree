@@ -286,12 +286,12 @@ class UniformInfo<P> {
     ) { }
 }
 
-type AccessorOrValue<P, R> = Accessor<P, R> | R;
-type Accessor<P, R> = (props: P) => R;
+export type AccessorOrValue<P, R> = Accessor<P, R> | R;
+export type Accessor<P, R> = (props: P) => R;
 
 // TODO: support WebGL2 uniforms: unsigneds and XxY matrices
 
-type Uniform<P> =
+export type Uniform<P> =
     | Uniform1f<P> | Uniform1fv<P>
     | Uniform1i<P> | Uniform1iv<P> | Uniform1ui<P> | Uniform1uiv<P>
     | Uniform2f<P> | Uniform2fv<P>
@@ -304,142 +304,142 @@ type Uniform<P> =
     | UniformTexture<P>
     ;
 
-interface Uniform1f<P> {
+export interface Uniform1f<P> {
     type: "1f";
     value: AccessorOrValue<P, number>;
 }
 
-interface Uniform1fv<P> {
+export interface Uniform1fv<P> {
     type: "1fv";
     value: AccessorOrValue<P, Float32Array | number[]>;
 }
 
-interface Uniform1i<P> {
+export interface Uniform1i<P> {
     type: "1i";
     value: AccessorOrValue<P, number>;
 }
 
-interface Uniform1iv<P> {
+export interface Uniform1iv<P> {
     type: "1iv";
     value: AccessorOrValue<P, Int32Array | number[]>;
 }
 
-interface Uniform1ui<P> {
+export interface Uniform1ui<P> {
     type: "1ui";
     value: AccessorOrValue<P, number>;
 }
 
-interface Uniform1uiv<P> {
+export interface Uniform1uiv<P> {
     type: "1uiv";
     value: AccessorOrValue<P, Uint32Array | number[]>;
 }
 
-interface Uniform2f<P> {
+export interface Uniform2f<P> {
     type: "2f";
     value: AccessorOrValue<P, Float32Array | number[]>;
 }
 
-interface Uniform2fv<P> {
+export interface Uniform2fv<P> {
     type: "2fv";
     value: AccessorOrValue<P, Float32Array | number[]>;
 }
 
-interface Uniform2i<P> {
+export interface Uniform2i<P> {
     type: "2i";
     value: AccessorOrValue<P, Int32Array | number[]>;
 }
 
-interface Uniform2iv<P> {
+export interface Uniform2iv<P> {
     type: "2iv";
     value: AccessorOrValue<P, Int32Array | number[]>;
 }
 
-interface Uniform2ui<P> {
+export interface Uniform2ui<P> {
     type: "2ui";
     value: AccessorOrValue<P, Uint32Array | number[]>;
 }
 
-interface Uniform2uiv<P> {
+export interface Uniform2uiv<P> {
     type: "2uiv";
     value: AccessorOrValue<P, Uint32Array | number[]>;
 }
 
-interface Uniform3f<P> {
+export interface Uniform3f<P> {
     type: "3f";
     value: AccessorOrValue<P, Float32Array | number[]>;
 }
 
-interface Uniform3fv<P> {
+export interface Uniform3fv<P> {
     type: "3fv";
     value: AccessorOrValue<P, Float32Array | number[]>;
 }
 
-interface Uniform3i<P> {
+export interface Uniform3i<P> {
     type: "3i";
     value: AccessorOrValue<P, Int32Array | number[]>;
 }
 
-interface Uniform3iv<P> {
+export interface Uniform3iv<P> {
     type: "3iv";
     value: AccessorOrValue<P, Int32Array | number[]>;
 }
 
-interface Uniform3ui<P> {
+export interface Uniform3ui<P> {
     type: "3ui";
     value: AccessorOrValue<P, Uint32Array | number[]>;
 }
 
-interface Uniform3uiv<P> {
+export interface Uniform3uiv<P> {
     type: "3uiv";
     value: AccessorOrValue<P, Uint32Array | number[]>;
 }
 
-interface Uniform4f<P> {
+export interface Uniform4f<P> {
     type: "4f";
     value: AccessorOrValue<P, Float32Array | number[]>;
 }
 
-interface Uniform4fv<P> {
+export interface Uniform4fv<P> {
     type: "4fv";
     value: AccessorOrValue<P, Float32Array | number[]>;
 }
 
-interface Uniform4i<P> {
+export interface Uniform4i<P> {
     type: "4i";
     value: AccessorOrValue<P, Int32Array | number[]>;
 }
 
-interface Uniform4iv<P> {
+export interface Uniform4iv<P> {
     type: "4iv";
     value: AccessorOrValue<P, Int32Array | number[]>;
 }
 
-interface Uniform4ui<P> {
+export interface Uniform4ui<P> {
     type: "4ui";
     value: AccessorOrValue<P, Uint32Array | number[]>;
 }
 
-interface Uniform4uiv<P> {
+export interface Uniform4uiv<P> {
     type: "4uiv";
     value: AccessorOrValue<P, Uint32Array | number[]>;
 }
 
-interface UniformMatrix2fv<P> {
+export interface UniformMatrix2fv<P> {
     type: "matrix2fv";
     value: AccessorOrValue<P, Float32Array | number[]>;
 }
 
-interface UniformMatrix3fv<P> {
+export interface UniformMatrix3fv<P> {
     type: "matrix3fv";
     value: AccessorOrValue<P, Float32Array | number[]>;
 }
 
-interface UniformMatrix4fv<P> {
+export interface UniformMatrix4fv<P> {
     type: "matrix4fv";
     value: AccessorOrValue<P, Float32Array | number[]>;
 }
 
-interface UniformTexture<P> {
+export interface UniformTexture<P> {
     type: "texture";
     value: AccessorOrValue<P, Texture>;
 }
