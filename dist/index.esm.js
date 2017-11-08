@@ -361,7 +361,7 @@ class RenderPass {
         this.glProgram = program;
         this.uniformInfo = uniformInfo;
     }
-    static fromProps(gl, { uniforms, vert, frag }) {
+    static fromProps(gl, { vert, frag, uniforms = {} }) {
         const vertShader = createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = createShader(gl, gl.FRAGMENT_SHADER, frag);
         const program = createProgram(gl, vertShader, fragShader);
@@ -377,7 +377,7 @@ class RenderPass {
         });
         return new RenderPass(gl, program, uniformInfo);
     }
-    render(props, vao, count, instanceCount) {
+    render(vao, props, count, instanceCount) {
         const gl = this.gl;
         const elemCount = typeof count === "undefined"
             ? vao.count
@@ -392,7 +392,7 @@ class RenderPass {
         this.draw(elemCount, instCount);
         gl.bindVertexArray(null);
     }
-    renderToFramebuffer(props, vao, framebuffer, count, instanceCount) {
+    renderToFramebuffer(vao, props, framebuffer, count, instanceCount) {
         const gl = this.gl;
         const elemCount = typeof count === "undefined"
             ? vao.count

@@ -8,16 +8,16 @@ const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 
 export interface RenderPassProps<P> {
-    uniforms: { [key: string]: Uniform<P> };
     vert: string;
     frag: string;
+    uniforms?: { [key: string]: Uniform<P> };
 }
 
 export default class RenderPass<P = void> {
 
     static fromProps<P = void>(
         gl: WebGL2RenderingContext,
-        { uniforms, vert, frag }: RenderPassProps<P>,
+        { vert, frag, uniforms = {} }: RenderPassProps<P>,
     ): RenderPass<P> {
         const vertShader = glutil.createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = glutil.createShader(gl, gl.FRAGMENT_SHADER, frag);
@@ -53,8 +53,8 @@ export default class RenderPass<P = void> {
     }
 
     render(
-        props: P,
         vao: VertexArray,
+        props: P,
         count?: number,
         instanceCount?: number,
     ): void {
@@ -77,8 +77,8 @@ export default class RenderPass<P = void> {
     }
 
     renderToFramebuffer(
-        props: P,
         vao: VertexArray,
+        props: P,
         framebuffer: Framebuffer,
         count?: number,
         instanceCount?: number,

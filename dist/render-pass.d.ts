@@ -3,20 +3,20 @@ import VertexArray, { VertexArrayProps } from "./vertex-array";
 import Texture from "./texture";
 import Framebuffer from "./framebuffer";
 export interface RenderPassProps<P> {
-    uniforms: {
-        [key: string]: Uniform<P>;
-    };
     vert: string;
     frag: string;
+    uniforms?: {
+        [key: string]: Uniform<P>;
+    };
 }
 export default class RenderPass<P = void> {
-    static fromProps<P = void>(gl: WebGL2RenderingContext, {uniforms, vert, frag}: RenderPassProps<P>): RenderPass<P>;
+    static fromProps<P = void>(gl: WebGL2RenderingContext, {vert, frag, uniforms}: RenderPassProps<P>): RenderPass<P>;
     private gl;
     private glProgram;
     private uniformInfo;
     private constructor();
-    render(props: P, vao: VertexArray, count?: number, instanceCount?: number): void;
-    renderToFramebuffer(props: P, vao: VertexArray, framebuffer: Framebuffer, count?: number, instanceCount?: number): void;
+    render(vao: VertexArray, props: P, count?: number, instanceCount?: number): void;
+    renderToFramebuffer(vao: VertexArray, props: P, framebuffer: Framebuffer, count?: number, instanceCount?: number): void;
     createVertexArray({attributes, elements}: VertexArrayProps): VertexArray;
     private draw(elemCount, instCount);
     private updateUniforms(props);
