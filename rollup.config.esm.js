@@ -7,7 +7,7 @@ export default {
     output: {
         file: 'dist/index.esm.js',
         format: 'es',
-        name: 'rend',
+        name: 'webglutil',
     },
     plugins: [pluginTypescript({
         typescript: require("typescript"),
