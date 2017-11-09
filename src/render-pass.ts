@@ -68,7 +68,7 @@ export class RenderPass<P = void> {
 
         gl.useProgram(this.glProgram);
         this.updateUniforms(props);
-        gl.bindVertexArray(vao.glVao);
+        gl.bindVertexArray(vao.glVertexArrayObject);
 
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         this.draw(elemCount, instCount);
@@ -93,7 +93,7 @@ export class RenderPass<P = void> {
 
         gl.useProgram(this.glProgram);
         this.updateUniforms(props);
-        gl.bindVertexArray(vao.glVao);
+        gl.bindVertexArray(vao.glVertexArrayObject);
 
         framebuffer.bind();
         gl.drawBuffers(framebuffer.colorAttachments);
