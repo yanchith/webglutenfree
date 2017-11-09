@@ -83,19 +83,19 @@ export class VertexArray {
         );
     }
 
-    readonly glVao: WebGLVertexArrayObject;
+    readonly glVertexArrayObject: WebGLVertexArrayObject;
 
     readonly count: number;
     readonly primitive: ElementPrimitive;
     readonly instanceCount: number;
 
     private constructor(
-        glVao: WebGLVertexArrayObject,
+        vao: WebGLVertexArrayObject,
         count: number,
         primitive: ElementPrimitive,
         instanceCount: number,
     ) {
-        this.glVao = glVao;
+        this.glVertexArrayObject = vao;
         this.count = count;
         this.primitive = primitive;
         this.instanceCount = instanceCount;
