@@ -48,7 +48,7 @@ export interface VertexBufferFloat32Props {
     data: number[] | Float32Array;
 }
 
-export default class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
+export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
 
     static fromProps(
         gl: WebGL2RenderingContext,

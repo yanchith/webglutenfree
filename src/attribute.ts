@@ -1,6 +1,7 @@
 import * as assert from "./assert";
 import * as array from "./array";
-import VertexBuffer, {
+import {
+    VertexBuffer,
     VertexBufferProps,
     VertexBufferInt8Props,
     VertexBufferInt16Props,
@@ -62,7 +63,7 @@ export type IPointerValueProps =
 
 export type IPointerValueType = IPointerValueProps["type"];
 
-export default class Attribute {
+export class Attribute {
 
     static fromProps(
         gl: WebGL2RenderingContext,

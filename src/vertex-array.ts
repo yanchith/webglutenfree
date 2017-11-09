@@ -1,6 +1,6 @@
 import * as glutil from "./glutil";
-import Attribute, { AttributeProps } from "./attribute";
-import Elements, { ElementsProps, ElementPrimitive } from "./elements";
+import { Attribute, AttributeProps } from "./attribute";
+import { Elements, ElementsProps, ElementPrimitive } from "./elements";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 
@@ -12,7 +12,7 @@ export interface VertexArrayProps {
     elements: Elements | ElementsProps;
 }
 
-export default class VertexArray {
+export class VertexArray {
 
     static fromProps(
         gl: WebGL2RenderingContext,

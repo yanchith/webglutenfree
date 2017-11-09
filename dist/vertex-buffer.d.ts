@@ -29,7 +29,7 @@ export interface VertexBufferFloat32Props {
     type: "f32";
     data: number[] | Float32Array;
 }
-export default class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
+export declare class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     static fromProps(gl: WebGL2RenderingContext, props: VertexBufferInt8Props): VertexBuffer<"i8">;
     static fromProps(gl: WebGL2RenderingContext, props: VertexBufferInt16Props): VertexBuffer<"i16">;
     static fromProps(gl: WebGL2RenderingContext, props: VertexBufferInt32Props): VertexBuffer<"i32">;

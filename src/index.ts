@@ -1,9 +1,9 @@
-export { default as RenderPass, RenderPassProps } from "./render-pass";
-export { default as VertexBuffer, VertexBufferProps, VertexBufferType } from "./vertex-buffer";
-export { default as Elements, ElementsProps, ElementPrimitive } from "./elements";
-export { default as VertexArray, VertexArrayProps } from "./vertex-array";
+export { RenderPass, RenderPassProps } from "./render-pass";
+export { VertexBuffer, VertexBufferProps, VertexBufferType } from "./vertex-buffer";
+export { Elements, ElementsProps, ElementPrimitive } from "./elements";
+export { VertexArray, VertexArrayProps } from "./vertex-array";
 export {
-    default as Texture,
+    Texture,
     TextureOptions,
     TextureType,
     TextureFilter,
@@ -11,4 +11,4 @@ export {
     TextureInternalFormat,
     TextureFormat,
 } from "./texture";
-export { default as Framebuffer } from "./framebuffer";
+export { Framebuffer } from "./framebuffer";

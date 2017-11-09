@@ -1,7 +1,7 @@
 /// <reference types="webgl2" />
-import VertexArray, { VertexArrayProps } from "./vertex-array";
-import Texture from "./texture";
-import Framebuffer from "./framebuffer";
+import { VertexArray, VertexArrayProps } from "./vertex-array";
+import { Texture } from "./texture";
+import { Framebuffer } from "./framebuffer";
 export interface RenderPassProps<P> {
     vert: string;
     frag: string;
@@ -9,7 +9,7 @@ export interface RenderPassProps<P> {
         [key: string]: Uniform<P>;
     };
 }
-export default class RenderPass<P = void> {
+export declare class RenderPass<P = void> {
     static fromProps<P = void>(gl: WebGL2RenderingContext, {vert, frag, uniforms}: RenderPassProps<P>): RenderPass<P>;
     private gl;
     private glProgram;

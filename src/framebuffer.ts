@@ -1,7 +1,7 @@
 import * as glutil from "./glutil";
-import Texture from "./texture";
+import { Texture } from "./texture";
 
-export default class Framebuffer {
+export class Framebuffer {
 
     static fromTextures(
         gl: WebGL2RenderingContext,

@@ -1,8 +1,8 @@
 import * as assert from "./assert";
 import * as glutil from "./glutil";
-import VertexArray, { VertexArrayProps } from "./vertex-array";
-import Texture from "./texture";
-import Framebuffer from "./framebuffer";
+import { VertexArray, VertexArrayProps } from "./vertex-array";
+import { Texture } from "./texture";
+import { Framebuffer } from "./framebuffer";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
@@ -13,7 +13,7 @@ export interface RenderPassProps<P> {
     uniforms?: { [key: string]: Uniform<P> };
 }
 
-export default class RenderPass<P = void> {
+export class RenderPass<P = void> {
 
     static fromProps<P = void>(
         gl: WebGL2RenderingContext,

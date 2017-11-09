@@ -1,6 +1,6 @@
 /// <reference types="webgl2" />
-import Texture from "./texture";
-export default class Framebuffer {
+import { Texture } from "./texture";
+export declare class Framebuffer {
     private gl;
     readonly fbo: WebGLFramebuffer;
     readonly colorAttachments: number[];

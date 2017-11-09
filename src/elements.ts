@@ -14,7 +14,7 @@ export interface ElementsObjectProps {
 export type ElementsArrayProps = [number, number, number][];
 export type ElementPrimitive = "triangles";
 
-export default class Elements {
+export class Elements {
 
     static fromProps(
         gl: WebGL2RenderingContext,

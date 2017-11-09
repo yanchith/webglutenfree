@@ -138,7 +138,7 @@ export const enum TextureType {
     // FLOAT_32_UNSIGNED_INT_24_8_REV,
 }
 
-export default class Texture {
+export class Texture {
 
     static fromImage(
         gl: WebGL2RenderingContext,

@@ -6,7 +6,7 @@ export interface ElementsObjectProps {
 }
 export declare type ElementsArrayProps = [number, number, number][];
 export declare type ElementPrimitive = "triangles";
-export default class Elements {
+export declare class Elements {
     static fromProps(gl: WebGL2RenderingContext, props: ElementsProps): Elements;
     static fromArray(gl: WebGL2RenderingContext, arr: ElementsArrayProps): Elements;
     static fromUint32Array(gl: WebGL2RenderingContext, buffer: number[] | Uint32Array, primitive: ElementPrimitive): Elements;

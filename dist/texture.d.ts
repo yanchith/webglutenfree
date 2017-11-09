@@ -82,7 +82,7 @@ export declare const enum TextureType {
     INT = 5,
     FLOAT = 6,
 }
-export default class Texture {
+export declare class Texture {
     static fromImage(gl: WebGL2RenderingContext, image: ImageData, options?: TextureOptions): Texture;
     static RGBA8FromRGBAUint8Array(gl: WebGL2RenderingContext, data: number[] | Uint8Array | Uint8ClampedArray | null, width: number, height: number, options?: TextureOptions): Texture;
     static RG16FFromRGFloat32Array(gl: WebGL2RenderingContext, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
