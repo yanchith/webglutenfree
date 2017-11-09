@@ -1,5 +1,5 @@
 {
-  "name": "rend",
+  "name": "webglutil",
   "version": "0.1.0",
   "description": "A simple WebGL 2 rendering library",
   "author": "yanchith",
