@@ -20,14 +20,14 @@ export class Framebuffer {
 
     private constructor(
         private gl: WebGL2RenderingContext,
-        readonly fbo: WebGLFramebuffer,
+        readonly glFramebuffer: WebGLFramebuffer,
         readonly colorAttachments: number[],
         readonly width: number,
         readonly height: number,
     ) { }
 
     bind(): void {
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fbo);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.glFramebuffer);
     }
 
     unbind(): void {
