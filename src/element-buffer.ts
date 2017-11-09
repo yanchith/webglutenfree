@@ -1,45 +1,45 @@
 import * as array from "./array";
 import * as glutil from "./glutil";
 
-export type ElementsProps =
-    | ElementsArrayProps
-    | ElementsObjectProps
+export type ElementBufferProps =
+    | ElementBufferArrayProps
+    | ElementBufferObjectProps
     ;
 
-export interface ElementsObjectProps {
+export interface ElementBufferObjectProps {
     primitive: ElementPrimitive;
     data: number[] | Uint32Array;
 }
 
-export type ElementsArrayProps = [number, number, number][];
+export type ElementBufferArrayProps = [number, number, number][];
 export type ElementPrimitive = "triangles";
 
-export class Elements {
+export class ElementBuffer {
 
     static fromProps(
         gl: WebGL2RenderingContext,
-        props: ElementsProps,
-    ): Elements {
+        props: ElementBufferProps,
+    ): ElementBuffer {
         if (Array.isArray(props)) {
-            return Elements.fromArray(gl, props);
+            return ElementBuffer.fromArray(gl, props);
         }
-        return Elements.fromUint32Array(gl, props.data, props.primitive);
+        return ElementBuffer.fromUint32Array(gl, props.data, props.primitive);
     }
 
     static fromArray(
         gl: WebGL2RenderingContext,
-        arr: ElementsArrayProps,
-    ): Elements {
+        arr: ElementBufferArrayProps,
+    ): ElementBuffer {
         const data = array.ravel(arr).data;
-        return new Elements(gl, new Uint32Array(data), "triangles");
+        return new ElementBuffer(gl, new Uint32Array(data), "triangles");
     }
 
     static fromUint32Array(
         gl: WebGL2RenderingContext,
         buffer: number[] | Uint32Array,
         primitive: ElementPrimitive,
-    ): Elements {
-        return new Elements(
+    ): ElementBuffer {
+        return new ElementBuffer(
             gl,
             Array.isArray(buffer) ? new Uint32Array(buffer) : buffer,
             primitive,

@@ -1,12 +1,12 @@
 /// <reference types="webgl2" />
 import { Attribute, AttributeProps } from "./attribute";
-import { Elements, ElementsProps, ElementPrimitive } from "./elements";
+import { ElementBuffer, ElementBufferProps, ElementPrimitive } from "./element-buffer";
 export interface VertexArrayProps {
     attributes: {
         [name: string]: Attribute | AttributeProps;
         [location: number]: Attribute | AttributeProps;
     };
-    elements: Elements | ElementsProps;
+    elements: ElementBuffer | ElementBufferProps;
 }
 export declare class VertexArray {
     static fromProps(gl: WebGL2RenderingContext, {attributes, elements}: VertexArrayProps): VertexArray;

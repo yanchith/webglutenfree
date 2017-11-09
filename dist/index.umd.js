@@ -287,19 +287,19 @@ class Attribute {
     }
 }
 
-class Elements {
+class ElementBuffer {
     static fromProps(gl, props) {
         if (Array.isArray(props)) {
-            return Elements.fromArray(gl, props);
+            return ElementBuffer.fromArray(gl, props);
         }
-        return Elements.fromUint32Array(gl, props.data, props.primitive);
+        return ElementBuffer.fromUint32Array(gl, props.data, props.primitive);
     }
     static fromArray(gl, arr) {
         const data = ravel(arr).data;
-        return new Elements(gl, new Uint32Array(data), "triangles");
+        return new ElementBuffer(gl, new Uint32Array(data), "triangles");
     }
     static fromUint32Array(gl, buffer, primitive) {
-        return new Elements(gl, Array.isArray(buffer) ? new Uint32Array(buffer) : buffer, primitive);
+        return new ElementBuffer(gl, Array.isArray(buffer) ? new Uint32Array(buffer) : buffer, primitive);
     }
     constructor(gl, buffer, primitive) {
         this.glBuffer = createElementArrayBuffer(gl, buffer);
@@ -325,9 +325,9 @@ class VertexArray {
                 : Attribute.fromProps(gl, definition));
         });
         // Setup elements
-        const elems = elements instanceof Elements
+        const elems = elements instanceof ElementBuffer
             ? elements
-            : Elements.fromProps(gl, elements);
+            : ElementBuffer.fromProps(gl, elements);
         // Create vertex array
         const vao = createVertexArray(gl, attribs.map((attrib, i) => ({
             type: attrib.type === "ipointer"
@@ -741,7 +741,7 @@ class Framebuffer {
 
 exports.RenderPass = RenderPass;
 exports.VertexBuffer = VertexBuffer;
-exports.Elements = Elements;
+exports.ElementBuffer = ElementBuffer;
 exports.VertexArray = VertexArray;
 exports.Texture = Texture;
 exports.Framebuffer = Framebuffer;

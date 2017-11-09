@@ -1,6 +1,6 @@
 import * as glutil from "./glutil";
 import { Attribute, AttributeProps } from "./attribute";
-import { Elements, ElementsProps, ElementPrimitive } from "./elements";
+import { ElementBuffer, ElementBufferProps, ElementPrimitive } from "./element-buffer";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 
@@ -9,7 +9,7 @@ export interface VertexArrayProps {
         [name: string]: Attribute | AttributeProps;
         [location: number]: Attribute | AttributeProps;
     };
-    elements: Elements | ElementsProps;
+    elements: ElementBuffer | ElementBufferProps;
 }
 
 export class VertexArray {
@@ -40,9 +40,9 @@ export class VertexArray {
 
         // Setup elements
 
-        const elems = elements instanceof Elements
+        const elems = elements instanceof ElementBuffer
             ? elements
-            : Elements.fromProps(gl, elements);
+            : ElementBuffer.fromProps(gl, elements);
 
         // Create vertex array
 
