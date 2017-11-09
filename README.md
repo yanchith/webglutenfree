@@ -1,6 +1,6 @@
-# webglutil
+# glutenfree
 
-A simple WebGL 2 rendering library.
+A simple WebGL 2 rendering library. Yes, we serve your draw calls gluten free.
 
 Work in progress.
 

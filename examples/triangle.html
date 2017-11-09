@@ -32,7 +32,7 @@
         canvas.height = canvas.clientHeight * dpr;
         const gl = canvas.getContext("webgl2");
 
-        const { RenderPass } = webglutil;
+        const { RenderPass } = glutenfree;
 
         const pass = RenderPass.fromProps(gl, {
             vert: `#version 300 es

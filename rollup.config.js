@@ -5,7 +5,7 @@ export default {
     output: {
         file: 'dist/index.umd.js',
         format: 'umd',
-        name: 'webglutil',
+        name: 'glutenfree',
     },
     plugins: [pluginTypescript({ typescript: require("typescript") })],
     sourcemap: true,

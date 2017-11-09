@@ -7,7 +7,7 @@ export default {
     output: {
         file: 'dist/index.esm.js',
         format: 'es',
-        name: 'webglutil',
+        name: 'glutenfree',
     },
     plugins: [pluginTypescript({
         typescript: require("typescript"),

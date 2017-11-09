@@ -1,6 +1,6 @@
 {
-  "name": "webglutil",
-  "version": "0.1.1",
+  "name": "glutenfree",
+  "version": "0.0.1",
   "description": "A simple WebGL 2 rendering library",
   "author": "yanchith",
   "license": "MIT",
