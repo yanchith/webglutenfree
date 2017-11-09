@@ -1,4 +1,4 @@
-# rend
+# webglutil
 
 A simple WebGL 2 rendering library.
 
