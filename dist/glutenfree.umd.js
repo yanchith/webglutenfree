@@ -354,12 +354,13 @@ class AttributeInfo {
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 class RenderPass {
-    constructor(gl, program, uniformInfo) {
+    constructor(gl, glProgram, uniformInfo, clearInfo) {
         this.gl = gl;
-        this.glProgram = program;
+        this.glProgram = glProgram;
         this.uniformInfo = uniformInfo;
+        this.clearInfo = clearInfo;
     }
-    static fromProps(gl, { vert, frag, uniforms = {} }) {
+    static fromProps(gl, { vert, frag, uniforms = {}, clear = {} }) {
         const vertShader = createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = createShader(gl, gl.FRAGMENT_SHADER, frag);
         const program = createProgram(gl, vertShader, fragShader);
@@ -373,7 +374,8 @@ class RenderPass {
             }
             return new UniformInfo(identifier, location, uniform);
         });
-        return new RenderPass(gl, program, uniformInfo);
+        const clearInfo = new ClearInfo(clear.color, clear.depth, clear.stencil);
+        return new RenderPass(gl, program, uniformInfo, clearInfo);
     }
     render(vao, props, count, instanceCount) {
         const gl = this.gl;
@@ -386,6 +388,7 @@ class RenderPass {
         gl.useProgram(this.glProgram);
         this.updateUniforms(props);
         gl.bindVertexArray(vao.glVertexArrayObject);
+        this.clear();
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         this.draw(elemCount, instCount);
         gl.bindVertexArray(null);
@@ -403,6 +406,7 @@ class RenderPass {
         gl.bindVertexArray(vao.glVertexArrayObject);
         framebuffer.bind();
         gl.drawBuffers(framebuffer.colorAttachments);
+        this.clear();
         gl.viewport(0, 0, framebuffer.width, framebuffer.height);
         this.draw(elemCount, instCount);
         framebuffer.unbind();
@@ -428,6 +432,26 @@ class RenderPass {
             attributes: locatedAttributes,
             elements,
         });
+    }
+    clear() {
+        const gl = this.gl;
+        if (this.clearInfo) {
+            let clearBits = 0 | 0;
+            if (typeof this.clearInfo.color !== "undefined") {
+                const [r, g, b, a] = this.clearInfo.color;
+                gl.clearColor(r, g, b, a);
+                clearBits |= gl.COLOR_BUFFER_BIT;
+            }
+            if (typeof this.clearInfo.depth !== "undefined") {
+                gl.clearDepth(this.clearInfo.depth);
+                clearBits |= gl.DEPTH_BUFFER_BIT;
+            }
+            if (typeof this.clearInfo.stencil !== "undefined") {
+                gl.clearStencil(this.clearInfo.stencil);
+                clearBits |= gl.STENCIL_BUFFER_BIT;
+            }
+            gl.clear(clearBits);
+        }
     }
     draw(elemCount, instCount) {
         const gl = this.gl;
@@ -561,6 +585,13 @@ function access(props, value) {
     return typeof value === "function"
         ? value(props)
         : value;
+}
+class ClearInfo {
+    constructor(color, depth, stencil) {
+        this.color = color;
+        this.depth = depth;
+        this.stencil = stencil;
+    }
 }
 class UniformInfo {
     constructor(identifier, location, definition) {

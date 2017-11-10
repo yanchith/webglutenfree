@@ -95,9 +95,12 @@
                 },
                 u_view: {
                     type: "matrix4fv",
-                    value: view,
+                    value: () => mat4.rotateZ(view, view, 0.01),
                 },
             },
+            clear: {
+                color: [0.5, 0.5, 0.5, 1],
+            }
         });
 
         const instanced = pass.createVertexArray({
@@ -152,7 +155,12 @@
             ],
         })
 
-        pass.render(instanced);
+        const loop = time => {
+            pass.render(instanced);
+            window.requestAnimationFrame(loop);
+        }
+
+        window.requestAnimationFrame(loop);
     </script>
 </body>
 

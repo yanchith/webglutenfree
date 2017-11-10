@@ -8,16 +8,23 @@ export interface RenderPassProps<P> {
     uniforms?: {
         [key: string]: Uniform<P>;
     };
+    clear?: {
+        color?: [number, number, number, number];
+        depth?: number;
+        stencil?: number;
+    };
 }
 export declare class RenderPass<P = void> {
-    static fromProps<P = void>(gl: WebGL2RenderingContext, {vert, frag, uniforms}: RenderPassProps<P>): RenderPass<P>;
     private gl;
     private glProgram;
     private uniformInfo;
+    private clearInfo;
+    static fromProps<P = void>(gl: WebGL2RenderingContext, {vert, frag, uniforms, clear}: RenderPassProps<P>): RenderPass<P>;
     private constructor();
     render(vao: VertexArray, props: P, count?: number, instanceCount?: number): void;
     renderToFramebuffer(vao: VertexArray, props: P, framebuffer: Framebuffer, count?: number, instanceCount?: number): void;
     createVertexArray({attributes, elements}: VertexArrayProps): VertexArray;
+    private clear();
     private draw(elemCount, instCount);
     private updateUniforms(props);
 }

@@ -11,13 +11,18 @@ export interface RenderPassProps<P> {
     vert: string;
     frag: string;
     uniforms?: { [key: string]: Uniform<P> };
+    clear?: {
+        color?: [number, number, number, number];
+        depth?: number;
+        stencil?: number;
+    };
 }
 
 export class RenderPass<P = void> {
 
     static fromProps<P = void>(
         gl: WebGL2RenderingContext,
-        { vert, frag, uniforms = {} }: RenderPassProps<P>,
+        { vert, frag, uniforms = {}, clear = {} }: RenderPassProps<P>,
     ): RenderPass<P> {
         const vertShader = glutil.createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = glutil.createShader(gl, gl.FRAGMENT_SHADER, frag);
@@ -34,23 +39,16 @@ export class RenderPass<P = void> {
                 }
                 return new UniformInfo(identifier, location, uniform);
             });
-        return new RenderPass(gl, program, uniformInfo);
+        const clearInfo = new ClearInfo(clear.color, clear.depth, clear.stencil);
+        return new RenderPass(gl, program, uniformInfo, clearInfo);
     }
-
-
-    private gl: WebGL2RenderingContext;
-    private glProgram: WebGLProgram;
-    private uniformInfo: UniformInfo<P>[];
 
     private constructor(
-        gl: WebGL2RenderingContext,
-        program: WebGLProgram,
-        uniformInfo: UniformInfo<P>[],
-    ) {
-        this.gl = gl;
-        this.glProgram = program;
-        this.uniformInfo = uniformInfo;
-    }
+        private gl: WebGL2RenderingContext,
+        private glProgram: WebGLProgram,
+        private uniformInfo: UniformInfo<P>[],
+        private clearInfo?: ClearInfo,
+    ) { }
 
     render(
         vao: VertexArray,
@@ -69,6 +67,8 @@ export class RenderPass<P = void> {
         gl.useProgram(this.glProgram);
         this.updateUniforms(props);
         gl.bindVertexArray(vao.glVertexArrayObject);
+
+        this.clear();
 
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         this.draw(elemCount, instCount);
@@ -98,6 +98,8 @@ export class RenderPass<P = void> {
         framebuffer.bind();
         gl.drawBuffers(framebuffer.colorAttachments);
 
+        this.clear();
+
         gl.viewport(0, 0, framebuffer.width, framebuffer.height);
         this.draw(elemCount, instCount);
 
@@ -126,6 +128,27 @@ export class RenderPass<P = void> {
             attributes: locatedAttributes,
             elements,
         });
+    }
+
+    private clear(): void {
+        const gl = this.gl;
+        if (this.clearInfo) {
+            let clearBits = 0 | 0;
+            if (typeof this.clearInfo.color !== "undefined") {
+                const [r, g, b, a] = this.clearInfo.color;
+                gl.clearColor(r, g, b, a);
+                clearBits |= gl.COLOR_BUFFER_BIT;
+            }
+            if (typeof this.clearInfo.depth !== "undefined") {
+                gl.clearDepth(this.clearInfo.depth);
+                clearBits |= gl.DEPTH_BUFFER_BIT;
+            }
+            if (typeof this.clearInfo.stencil !== "undefined") {
+                gl.clearStencil(this.clearInfo.stencil);
+                clearBits |= gl.STENCIL_BUFFER_BIT;
+            }
+            gl.clear(clearBits);
+        }
     }
 
     private draw(
@@ -276,6 +299,14 @@ function access<P, R>(props: P, value: ((props: P) => R) | R): R {
     return typeof value === "function"
         ? value(props)
         : value;
+}
+
+class ClearInfo {
+    constructor(
+        readonly color?: [number, number, number, number],
+        readonly depth?: number,
+        readonly stencil?: number,
+    ) { }
 }
 
 class UniformInfo<P> {
