@@ -328,11 +328,11 @@ class AttributeInfo {
             return new AttributeInfo("pointer", VertexBuffer.fromFloat32Array(gl, props), props.length, 1, false, 0);
         }
         switch (props.type) {
-            case "pointer": return new AttributeInfo("pointer", props.value instanceof VertexBuffer
+            case "pointer": return new AttributeInfo(props.type, props.value instanceof VertexBuffer
                 ? props.value
                 // Note: typescript is not smart enough to infer what we know
                 : VertexBuffer.fromProps(gl, props.value), props.count, props.size, props.normalized || false, props.divisor || 0);
-            case "ipointer": return new AttributeInfo("ipointer", props.value instanceof VertexBuffer
+            case "ipointer": return new AttributeInfo(props.type, props.value instanceof VertexBuffer
                 ? props.value
                 // Note: typescript is not smart enough to infer what we know
                 : VertexBuffer.fromProps(gl, props.value), props.count, props.size, false, props.divisor || 0);

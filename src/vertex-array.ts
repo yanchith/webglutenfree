@@ -195,7 +195,7 @@ class AttributeInfo {
 
         switch (props.type) {
             case "pointer": return new AttributeInfo(
-                "pointer",
+                props.type,
                 props.value instanceof VertexBuffer
                     ? props.value
                     // Note: typescript is not smart enough to infer what we know
@@ -206,7 +206,7 @@ class AttributeInfo {
                 props.divisor || 0,
             );
             case "ipointer": return new AttributeInfo(
-                "ipointer",
+                props.type,
                 props.value instanceof VertexBuffer
                     ? props.value
                     // Note: typescript is not smart enough to infer what we know
