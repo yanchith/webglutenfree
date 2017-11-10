@@ -107,10 +107,10 @@ export class RenderPass<P = void> {
     }
 
     createVertexArray({ attributes, elements }: VertexArrayProps): VertexArray {
-        type VaoAttributes = VertexArrayProps["attributes"];
+        type Attributes = VertexArrayProps["attributes"];
         const { gl, glProgram } = this;
         const locatedAttributes = Object.entries(attributes)
-            .reduce<VaoAttributes>((accum, [identifier, definition]) => {
+            .reduce<Attributes>((accum, [identifier, definition]) => {
                 if (INT_PATTERN.test(identifier)) {
                     accum[identifier] = definition;
                 } else {
@@ -289,7 +289,7 @@ class UniformInfo<P> {
 export type AccessorOrValue<P, R> = Accessor<P, R> | R;
 export type Accessor<P, R> = (props: P) => R;
 
-// TODO: support WebGL2 uniforms: unsigneds and XxY matrices
+// TODO: support more WebGL2 uniforms: XxY matrices
 
 export type Uniform<P> =
     | Uniform1f<P> | Uniform1fv<P>

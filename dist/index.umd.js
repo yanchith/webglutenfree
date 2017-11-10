@@ -247,46 +247,6 @@ class VertexBuffer {
     }
 }
 
-class Attribute {
-    static fromProps(gl, props) {
-        if (Array.isArray(props)) {
-            return Attribute.fromArray(gl, props);
-        }
-        switch (props.type) {
-            case "pointer": return Attribute.fromPointer(gl, props.value, props.count, props.size, props.normalized, props.divisor);
-            case "ipointer": return Attribute.fromIPointer(gl, props.value, props.count, props.size, props.divisor);
-            default: return never(props);
-        }
-    }
-    static fromArray(gl, arr) {
-        if (is2DArray(arr)) {
-            const r = ravel(arr);
-            return Attribute.fromPointer(gl, VertexBuffer.fromFloat32Array(gl, r.data), r.shape[0], r.shape[1]);
-        }
-        return Attribute.fromPointer(gl, VertexBuffer.fromFloat32Array(gl, arr), arr.length, 1);
-    }
-    static fromPointer(gl, buffer, count, size, normalized = false, divisor = 0) {
-        return new Attribute("pointer", buffer instanceof VertexBuffer
-            ? buffer
-            // Note: typescript is not smart enough to infer what we know
-            : VertexBuffer.fromProps(gl, buffer), count, size, normalized, divisor);
-    }
-    static fromIPointer(gl, buffer, count, size, divisor = 0) {
-        return new Attribute("ipointer", buffer instanceof VertexBuffer
-            ? buffer
-            // Note: typescript is not smart enough to infer what we know
-            : VertexBuffer.fromProps(gl, buffer), count, size, false, divisor);
-    }
-    constructor(type, buffer, count, size, normalized, divisor) {
-        this.type = type;
-        this.buffer = buffer;
-        this.count = count;
-        this.size = size;
-        this.normalized = normalized;
-        this.divisor = divisor;
-    }
-}
-
 class ElementBuffer {
     static fromProps(gl, props) {
         if (Array.isArray(props)) {
@@ -320,9 +280,7 @@ class VertexArray {
             }
             const location = parseInt(locationStr, 10);
             attribLocations.push(location);
-            attribs.push(definition instanceof Attribute
-                ? definition
-                : Attribute.fromProps(gl, definition));
+            attribs.push(AttributeInfo.create(gl, definition));
         });
         // Setup elements
         const elems = elements instanceof ElementBuffer
@@ -351,11 +309,43 @@ class VertexArray {
         // Create VAO
         return new VertexArray(vao, elems.count, elems.primitive, instanceCount);
     }
-    constructor(glVao, count, primitive, instanceCount) {
-        this.glVao = glVao;
+    constructor(vao, count, primitive, instanceCount) {
+        this.glVertexArrayObject = vao;
         this.count = count;
         this.primitive = primitive;
         this.instanceCount = instanceCount;
+    }
+}
+// TODO: this could use some further refactoring. Currently its just former
+// public API made private.
+class AttributeInfo {
+    static create(gl, props) {
+        if (Array.isArray(props)) {
+            if (is2DArray(props)) {
+                const r = ravel(props);
+                return new AttributeInfo("pointer", VertexBuffer.fromFloat32Array(gl, r.data), r.shape[0], r.shape[1], false, 0);
+            }
+            return new AttributeInfo("pointer", VertexBuffer.fromFloat32Array(gl, props), props.length, 1, false, 0);
+        }
+        switch (props.type) {
+            case "pointer": return new AttributeInfo("pointer", props.value instanceof VertexBuffer
+                ? props.value
+                // Note: typescript is not smart enough to infer what we know
+                : VertexBuffer.fromProps(gl, props.value), props.count, props.size, props.normalized || false, props.divisor || 0);
+            case "ipointer": return new AttributeInfo("ipointer", props.value instanceof VertexBuffer
+                ? props.value
+                // Note: typescript is not smart enough to infer what we know
+                : VertexBuffer.fromProps(gl, props.value), props.count, props.size, false, props.divisor || 0);
+            default: return never(props);
+        }
+    }
+    constructor(type, buffer, count, size, normalized, divisor) {
+        this.type = type;
+        this.buffer = buffer;
+        this.count = count;
+        this.size = size;
+        this.normalized = normalized;
+        this.divisor = divisor;
     }
 }
 
@@ -393,7 +383,7 @@ class RenderPass {
             : Math.min(vao.instanceCount, instanceCount);
         gl.useProgram(this.glProgram);
         this.updateUniforms(props);
-        gl.bindVertexArray(vao.glVao);
+        gl.bindVertexArray(vao.glVertexArrayObject);
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         this.draw(elemCount, instCount);
         gl.bindVertexArray(null);
@@ -408,7 +398,7 @@ class RenderPass {
             : Math.min(vao.instanceCount, instanceCount);
         gl.useProgram(this.glProgram);
         this.updateUniforms(props);
-        gl.bindVertexArray(vao.glVao);
+        gl.bindVertexArray(vao.glVertexArrayObject);
         framebuffer.bind();
         gl.drawBuffers(framebuffer.colorAttachments);
         gl.viewport(0, 0, framebuffer.width, framebuffer.height);
@@ -719,9 +709,9 @@ function mapGlType(gl, type) {
 }
 
 class Framebuffer {
-    constructor(gl, fbo, colorAttachments, width, height) {
+    constructor(gl, glFramebuffer, colorAttachments, width, height) {
         this.gl = gl;
-        this.fbo = fbo;
+        this.glFramebuffer = glFramebuffer;
         this.colorAttachments = colorAttachments;
         this.width = width;
         this.height = height;
@@ -732,7 +722,7 @@ class Framebuffer {
         return new Framebuffer(gl, fbo, textures.map((_, i) => attachment + i), textures[0].width, textures[0].height);
     }
     bind() {
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fbo);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.glFramebuffer);
     }
     unbind() {
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);

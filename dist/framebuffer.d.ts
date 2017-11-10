@@ -2,7 +2,7 @@
 import { Texture } from "./texture";
 export declare class Framebuffer {
     private gl;
-    readonly fbo: WebGLFramebuffer;
+    readonly glFramebuffer: WebGLFramebuffer;
     readonly colorAttachments: number[];
     readonly width: number;
     readonly height: number;
