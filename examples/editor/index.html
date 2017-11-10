@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Triangle</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            /* background-color: black; */
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <textarea id="code">valueasdfasfasdfasdf</textarea>
+    <link rel="stylesheet" href="../_assets/codemirror/codemirror.css">
+    <link rel="stylesheet" href="../_assets/codemirror/solarized.css">
+    <script src="../_assets/codemirror/codemirror.js"></script>
+    <script src="../_assets/codemirror/javascript.js"></script>
+    <script>
+        const textarea = document.getElementById("code");
+        var editor = CodeMirror.fromTextArea(textarea, {
+            mode: "javascript",
+            lineNumbers: true,
+            theme: "solarized",
+        });
+    </script>
+</body>
+
+</html>
