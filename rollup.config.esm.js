@@ -5,7 +5,7 @@ import pluginTypescript from "rollup-plugin-typescript2";
 export default {
     input: "src/index.ts",
     output: {
-        file: 'dist/index.esm.js',
+        file: 'dist/glutenfree.esm.js',
         format: 'es',
         name: 'glutenfree',
     },
