@@ -641,8 +641,8 @@ class Texture {
     static fromArrayBufferView(gl, data, width, height, internalFormat, format, type, options) {
         return new Texture(gl, data, width, height, internalFormat, format, type, options);
     }
-    constructor(gl, data, width, height, internalFormat, format, type, { minFilter = "nearest" /* Nearest */, magFilter = "nearest" /* Nearest */, wrapS = "clamp-to-edge" /* ClampToEdge */, wrapT = "clamp-to-edge" /* ClampToEdge */, mipmap = false, } = {}) {
-        this.glTexture = createTexture(gl, data, width, height, mapGlInternalFormat(gl, internalFormat), mapGlFormat(gl, format), mapGlType(gl, type), mapGlWrap(gl, wrapS), mapGlWrap(gl, wrapT), mapGlFilter(gl, minFilter), mapGlFilter(gl, magFilter), mipmap);
+    constructor(gl, data, width, height, internalFormat, format, type, { min = "nearest" /* Nearest */, mag = "nearest" /* Nearest */, wrapS = "clamp-to-edge" /* ClampToEdge */, wrapT = "clamp-to-edge" /* ClampToEdge */, mipmap = false, } = {}) {
+        this.glTexture = createTexture(gl, data, width, height, mapGlInternalFormat(gl, internalFormat), mapGlFormat(gl, format), mapGlType(gl, type), mapGlWrap(gl, wrapS), mapGlWrap(gl, wrapT), mapGlFilter(gl, min), mapGlFilter(gl, mag), mipmap);
         this.width = width;
         this.height = height;
         this.internalFormat = internalFormat;

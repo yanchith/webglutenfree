@@ -2,8 +2,8 @@ import * as assert from "./assert";
 import * as glutil from "./glutil";
 
 export interface TextureOptions {
-    minFilter?: MinFilter;
-    magFilter?: MagFilter;
+    min?: MinFilter;
+    mag?: MagFilter;
     wrapS?: TextureWrap;
     wrapT?: TextureWrap;
     mipmap?: boolean;
@@ -319,8 +319,8 @@ export class Texture {
         format: TextureFormat,
         type: TextureType,
         {
-            minFilter = TextureFilter.Nearest,
-            magFilter = TextureFilter.Nearest,
+            min = TextureFilter.Nearest,
+            mag = TextureFilter.Nearest,
             wrapS = TextureWrap.ClampToEdge,
             wrapT = TextureWrap.ClampToEdge,
             mipmap = false,
@@ -334,7 +334,7 @@ export class Texture {
             mapGlFormat(gl, format),
             mapGlType(gl, type),
             mapGlWrap(gl, wrapS), mapGlWrap(gl, wrapT),
-            mapGlFilter(gl, minFilter), mapGlFilter(gl, magFilter),
+            mapGlFilter(gl, min), mapGlFilter(gl, mag),
             mipmap,
         );
         this.width = width;

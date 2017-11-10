@@ -1,7 +1,7 @@
 /// <reference types="webgl2" />
 export interface TextureOptions {
-    minFilter?: MinFilter;
-    magFilter?: MagFilter;
+    min?: MinFilter;
+    mag?: MagFilter;
     wrapS?: TextureWrap;
     wrapT?: TextureWrap;
     mipmap?: boolean;
