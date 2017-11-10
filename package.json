@@ -9,7 +9,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "dev": "concurrently --raw --kill-others \"yarn build:watch\" \"yarn serve\"",
-    "serve": "http-server examples -p 8000",
+    "serve": "http-server -p 8000",
     "prebuild": "rimraf dist",
     "build": "rollup --config",
     "prebuild:watch": "rimraf dist",
