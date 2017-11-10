@@ -10,18 +10,18 @@ export interface TextureOptions {
 }
 
 export const enum TextureWrap {
-    ClampToEdge,
-    Repeat,
-    MirroredRepeat,
+    ClampToEdge = "clamp-to-edge",
+    Repeat = "repeat",
+    MirroredRepeat = "mirrored-repeat",
 }
 
 export const enum TextureFilter {
-    Nearest,
-    Linear,
-    NearestMipmapNearest,
-    LinearMipmapNearest,
-    NearestMipmapLinear,
-    LinearMipmapLinear,
+    Nearest = "nearest",
+    Linear = "linear",
+    NearestMipmapNearest = "nearest-mipmap-nearest",
+    LinearMipmapNearest = "linear-mipmap-nearest",
+    NearestMipmapLinear = "nearest-mipmap-linear",
+    LinearMipmapLinear = "linear-mipmap-linear",
 }
 
 export type MinFilter = TextureFilter;
@@ -29,113 +29,113 @@ export type MagFilter = TextureFilter.Nearest | TextureFilter.Linear;
 
 export const enum TextureInternalFormat {
     // R
-    R8,
-    R8_SNORM,
-    R8UI,
-    R8I,
-    R16UI,
-    R16I,
-    R32UI,
-    R32I,
-    R16F,
-    R32F,
+    R8 = "R8",
+    R8_SNORM = "R8_SNORM",
+    R8UI = "R8UI",
+    R8I = "R8I",
+    R16UI = "R16UI",
+    R16I = "R16I",
+    R32UI = "R32UI",
+    R32I = "R32I",
+    R16F = "R16F",
+    R32F = "R32F",
 
     // RG
-    RG8,
-    RG8_SNORM,
-    RG8UI,
-    RG8I,
-    RG16UI,
-    RG16I,
-    RG32UI,
-    RG32I,
-    RG16F,
-    RG32F,
+    RG8 = "RG8",
+    RG8_SNORM = "RG8_SNORM",
+    RG8UI = "RG8UI",
+    RG8I = "RG8I",
+    RG16UI = "RG16UI",
+    RG16I = "RG16I",
+    RG32UI = "RG32UI",
+    RG32I = "RG32I",
+    RG16F = "RG16F",
+    RG32F = "RG32F",
 
     // RGB
-    RGB8,
-    RGB8_SNORM,
-    RGB8UI,
-    RGB8I,
-    RGB16UI,
-    RGB16I,
-    RGB32UI,
-    RGB32I,
-    RGB16F,
-    RGB32F,
+    RGB8 = "RGB8",
+    RGB8_SNORM = "RGB8_SNORM",
+    RGB8UI = "RGB8UI",
+    RGB8I = "RGB8I",
+    RGB16UI = "RGB16UI",
+    RGB16I = "RGB16I",
+    RGB32UI = "RGB32UI",
+    RGB32I = "RGB32I",
+    RGB16F = "RGB16F",
+    RGB32F = "RGB32F",
 
     // RGBA
-    RGBA8,
-    RGBA8_SNORM,
-    RGBA8UI,
-    RGBA8I,
-    RGBA16UI,
-    RGBA16I,
-    RGBA32UI,
-    RGBA32I,
-    RGBA16F,
-    RGBA32F,
+    RGBA8 = "RGBA8",
+    RGBA8_SNORM = "RGBA8_SNORM",
+    RGBA8UI = "RGBA8UI",
+    RGBA8I = "RGBA8I",
+    RGBA16UI = "RGBA16UI",
+    RGBA16I = "RGBA16I",
+    RGBA32UI = "RGBA32UI",
+    RGBA32I = "RGBA32I",
+    RGBA16F = "RGBA16F",
+    RGBA32F = "RGBA32F",
 
     // TODO: support exotic formats
 
     // DEPTH
-    // DEPTH_COMPONENT16,
-    // DEPTH_COMPONENT24,
-    // DEPTH_COMPONENT32F,
+    // DEPTH_COMPONENT16 = "DEPTH_COMPONENT16",
+    // DEPTH_COMPONENT24 = "DEPTH_COMPONENT24",
+    // DEPTH_COMPONENT32F = "DEPTH_COMPONENT32F",
 
     // DEPTH STENCIL
-    // DEPTH24_STENCIL8,
-    // DEPTH32F_STENCIL8,
+    // DEPTH24_STENCIL8 = "DEPTH24_STENCIL8",
+    // DEPTH32F_STENCIL8 = "DEPTH32F_STENCIL8",
 
     // LUMINANCE ALPHA
-    // LUMINANCE_ALPHA,
-    // LUMINANCE,
-    // ALPHA,
+    // LUMINANCE_ALPHA = "LUMINANCE_ALPHA",
+    // LUMINANCE = "LUMINANCE",
+    // ALPHA = "ALPHA",
 }
 
 export const enum TextureFormat {
-    RED,
-    RG,
-    RGB,
-    RGBA,
-    RED_INTEGER,
-    RG_INTEGER,
-    RGB_INTEGER,
-    RGBA_INTEGER,
+    RED = "RED",
+    RG = "RG",
+    RGB = "RGB",
+    RGBA = "RGBA",
+    RED_INTEGER = "RED_INTEGER",
+    RG_INTEGER = "RG_INTEGER",
+    RGB_INTEGER = "RGB_INTEGER",
+    RGBA_INTEGER = "RGBA_INTEGER",
 
     // TODO: support exotic formats
 
-    // DEPTH_COMPONENT,
-    // DEPTH_STENCIL,
-    // LUMINANCE_ALPHA,
-    // LUMINANCE,
-    // ALPHA,
+    // DEPTH_COMPONENT = "DEPTH_COMPONENT",
+    // DEPTH_STENCIL = "DEPTH_STENCIL",
+    // LUMINANCE_ALPHA = "LUMINANCE_ALPHA",
+    // LUMINANCE = "LUMINANCE",
+    // ALPHA = "ALPHA",
 }
 
 export const enum TextureType {
-    UNSIGNED_BYTE,
-    UNSIGNED_SHORT,
-    UNSIGNED_INT,
+    UNSIGNED_BYTE = "UNSIGNED_BYTE",
+    UNSIGNED_SHORT = "UNSIGNED_SHORT",
+    UNSIGNED_INT = "UNSIGNED_INT",
 
-    BYTE,
-    SHORT,
-    INT,
+    BYTE = "BYTE",
+    SHORT = "SHORT",
+    INT = "INT",
 
-    FLOAT,
+    FLOAT = "FLOAT",
 
     // TODO: support exotic formats
-    // HALF_FLOAT,
+    // HALF_FLOAT = "HALF_FLOAT",
 
-    // UNSIGNED_SHORT_4_4_4_4,
-    // UNSIGNED_SHORT_5_5_5_1,
-    // UNSIGNED_SHORT_5_6_5,
+    // UNSIGNED_SHORT_4_4_4_4 = "UNSIGNED_SHORT_4_4_4_4",
+    // UNSIGNED_SHORT_5_5_5_1 = "UNSIGNED_SHORT_5_5_5_1",
+    // UNSIGNED_SHORT_5_6_5 = "UNSIGNED_SHORT_5_6_5",
 
-    // UNSIGNED_INT_24_8,
-    // UNSIGNED_INT_5_9_9_9_REV,
-    // UNSIGNED_INT_2_10_10_10_REV,
-    // UNSIGNED_INT_10F_11F_11F_REV,
+    // UNSIGNED_INT_24_8 = "UNSIGNED_INT_24_8",
+    // UNSIGNED_INT_5_9_9_9_REV = "UNSIGNED_INT_5_9_9_9_REV",
+    // UNSIGNED_INT_2_10_10_10_REV = "UNSIGNED_INT_2_10_10_10_REV",
+    // UNSIGNED_INT_10F_11F_11F_REV = "UNSIGNED_INT_10F_11F_11F_REV",
 
-    // FLOAT_32_UNSIGNED_INT_24_8_REV,
+    // FLOAT_32_UNSIGNED_INT_24_8_REV = "FLOAT_32_UNSIGNED_INT_24_8_REV",
 }
 
 export class Texture {

@@ -572,37 +572,37 @@ class Texture {
             // Note: we also have to convert Uint8ClampedArray to Uint8Array
             // because of webgl bug
             // https://github.com/KhronosGroup/WebGL/issues/1533
-            : new Uint8Array(data), width, height, 30 /* RGBA8 */, 3 /* RGBA */, 0 /* UNSIGNED_BYTE */, options);
+            : new Uint8Array(data), width, height, "RGBA8" /* RGBA8 */, "RGBA" /* RGBA */, "UNSIGNED_BYTE" /* UNSIGNED_BYTE */, options);
     }
     static RG16FFromRGFloat32Array(gl, data, width, height, options) {
         return new Texture(gl, !data || data instanceof Float32Array
             ? data
-            : new Float32Array(data), width, height, 18 /* RG16F */, 1 /* RG */, 6 /* FLOAT */, options);
+            : new Float32Array(data), width, height, "RG16F" /* RG16F */, "RG" /* RG */, "FLOAT" /* FLOAT */, options);
     }
     static RGB16FFromRGBFloat32Array(gl, data, width, height, options) {
         return new Texture(gl, !data || data instanceof Float32Array
             ? data
-            : new Float32Array(data), width, height, 28 /* RGB16F */, 2 /* RGB */, 6 /* FLOAT */, options);
+            : new Float32Array(data), width, height, "RGB16F" /* RGB16F */, "RGB" /* RGB */, "FLOAT" /* FLOAT */, options);
     }
     static RGBA16FFromRGBAFloat32Array(gl, data, width, height, options) {
         return new Texture(gl, !data || data instanceof Float32Array
             ? data
-            : new Float32Array(data), width, height, 38 /* RGBA16F */, 3 /* RGBA */, 6 /* FLOAT */, options);
+            : new Float32Array(data), width, height, "RGBA16F" /* RGBA16F */, "RGBA" /* RGBA */, "FLOAT" /* FLOAT */, options);
     }
     static RGB32FFromRGBFloat32Array(gl, data, width, height, options) {
         return new Texture(gl, !data || data instanceof Float32Array
             ? data
-            : new Float32Array(data), width, height, 29 /* RGB32F */, 2 /* RGB */, 6 /* FLOAT */, options);
+            : new Float32Array(data), width, height, "RGB32F" /* RGB32F */, "RGB" /* RGB */, "FLOAT" /* FLOAT */, options);
     }
     static RGBA32FFromRGBAFloat32Array(gl, data, width, height, options) {
         return new Texture(gl, !data || data instanceof Float32Array
             ? data
-            : new Float32Array(data), width, height, 39 /* RGBA32F */, 3 /* RGBA */, 6 /* FLOAT */, options);
+            : new Float32Array(data), width, height, "RGBA32F" /* RGBA32F */, "RGBA" /* RGBA */, "FLOAT" /* FLOAT */, options);
     }
     static fromArrayBufferView(gl, data, width, height, internalFormat, format, type, options) {
         return new Texture(gl, data, width, height, internalFormat, format, type, options);
     }
-    constructor(gl, data, width, height, internalFormat, format, type, { minFilter = 0 /* Nearest */, magFilter = 0 /* Nearest */, wrapS = 0 /* ClampToEdge */, wrapT = 0 /* ClampToEdge */, mipmap = false, } = {}) {
+    constructor(gl, data, width, height, internalFormat, format, type, { minFilter = "nearest" /* Nearest */, magFilter = "nearest" /* Nearest */, wrapS = "clamp-to-edge" /* ClampToEdge */, wrapT = "clamp-to-edge" /* ClampToEdge */, mipmap = false, } = {}) {
         this.glTexture = createTexture(gl, data, width, height, mapGlInternalFormat(gl, internalFormat), mapGlFormat(gl, format), mapGlType(gl, type), mapGlWrap(gl, wrapS), mapGlWrap(gl, wrapT), mapGlFilter(gl, minFilter), mapGlFilter(gl, magFilter), mipmap);
         this.width = width;
         this.height = height;
@@ -611,94 +611,94 @@ class Texture {
 }
 function mapGlWrap(gl, wrap) {
     switch (wrap) {
-        case 0 /* ClampToEdge */: return gl.CLAMP_TO_EDGE;
-        case 1 /* Repeat */: return gl.REPEAT;
-        case 2 /* MirroredRepeat */: return gl.MIRRORED_REPEAT;
+        case "clamp-to-edge" /* ClampToEdge */: return gl.CLAMP_TO_EDGE;
+        case "repeat" /* Repeat */: return gl.REPEAT;
+        case "mirrored-repeat" /* MirroredRepeat */: return gl.MIRRORED_REPEAT;
         default: return never(wrap);
     }
 }
 function mapGlFilter(gl, filter) {
     switch (filter) {
-        case 0 /* Nearest */: return gl.NEAREST;
-        case 1 /* Linear */: return gl.LINEAR;
-        case 2 /* NearestMipmapNearest */: return gl.NEAREST_MIPMAP_NEAREST;
-        case 3 /* LinearMipmapNearest */: return gl.LINEAR_MIPMAP_NEAREST;
-        case 4 /* NearestMipmapLinear */: return gl.NEAREST_MIPMAP_LINEAR;
-        case 5 /* LinearMipmapLinear */: return gl.LINEAR_MIPMAP_LINEAR;
+        case "nearest" /* Nearest */: return gl.NEAREST;
+        case "linear" /* Linear */: return gl.LINEAR;
+        case "nearest-mipmap-nearest" /* NearestMipmapNearest */: return gl.NEAREST_MIPMAP_NEAREST;
+        case "linear-mipmap-nearest" /* LinearMipmapNearest */: return gl.LINEAR_MIPMAP_NEAREST;
+        case "nearest-mipmap-linear" /* NearestMipmapLinear */: return gl.NEAREST_MIPMAP_LINEAR;
+        case "linear-mipmap-linear" /* LinearMipmapLinear */: return gl.LINEAR_MIPMAP_LINEAR;
         default: return never(filter);
     }
 }
 function mapGlInternalFormat(gl, internalFormat) {
     switch (internalFormat) {
         // R
-        case 0 /* R8 */: return gl.R8;
-        case 1 /* R8_SNORM */: return gl.R8_SNORM;
-        case 2 /* R8UI */: return gl.R8UI;
-        case 3 /* R8I */: return gl.R8I;
-        case 4 /* R16UI */: return gl.R16UI;
-        case 5 /* R16I */: return gl.R16I;
-        case 6 /* R32UI */: return gl.R32UI;
-        case 7 /* R32I */: return gl.R32I;
-        case 8 /* R16F */: return gl.R16I;
-        case 9 /* R32F */: return gl.R32F;
+        case "R8" /* R8 */: return gl.R8;
+        case "R8_SNORM" /* R8_SNORM */: return gl.R8_SNORM;
+        case "R8UI" /* R8UI */: return gl.R8UI;
+        case "R8I" /* R8I */: return gl.R8I;
+        case "R16UI" /* R16UI */: return gl.R16UI;
+        case "R16I" /* R16I */: return gl.R16I;
+        case "R32UI" /* R32UI */: return gl.R32UI;
+        case "R32I" /* R32I */: return gl.R32I;
+        case "R16F" /* R16F */: return gl.R16I;
+        case "R32F" /* R32F */: return gl.R32F;
         // RG
-        case 10 /* RG8 */: return gl.RG8;
-        case 11 /* RG8_SNORM */: return gl.RG8_SNORM;
-        case 12 /* RG8UI */: return gl.RG8UI;
-        case 13 /* RG8I */: return gl.RG8I;
-        case 14 /* RG16UI */: return gl.RG16UI;
-        case 15 /* RG16I */: return gl.RG16I;
-        case 16 /* RG32UI */: return gl.RG32UI;
-        case 17 /* RG32I */: return gl.RG32I;
-        case 18 /* RG16F */: return gl.RG16F;
-        case 19 /* RG32F */: return gl.RG32F;
+        case "RG8" /* RG8 */: return gl.RG8;
+        case "RG8_SNORM" /* RG8_SNORM */: return gl.RG8_SNORM;
+        case "RG8UI" /* RG8UI */: return gl.RG8UI;
+        case "RG8I" /* RG8I */: return gl.RG8I;
+        case "RG16UI" /* RG16UI */: return gl.RG16UI;
+        case "RG16I" /* RG16I */: return gl.RG16I;
+        case "RG32UI" /* RG32UI */: return gl.RG32UI;
+        case "RG32I" /* RG32I */: return gl.RG32I;
+        case "RG16F" /* RG16F */: return gl.RG16F;
+        case "RG32F" /* RG32F */: return gl.RG32F;
         // RGB
-        case 20 /* RGB8 */: return gl.RGB8;
-        case 21 /* RGB8_SNORM */: return gl.RGB8_SNORM;
-        case 22 /* RGB8UI */: return gl.RGB8UI;
-        case 23 /* RGB8I */: return gl.RGB8I;
-        case 24 /* RGB16UI */: return gl.RGB16UI;
-        case 25 /* RGB16I */: return gl.RGB16I;
-        case 26 /* RGB32UI */: return gl.RGB32UI;
-        case 27 /* RGB32I */: return gl.RGB32I;
-        case 28 /* RGB16F */: return gl.RGB16F;
-        case 29 /* RGB32F */: return gl.RGB32F;
+        case "RGB8" /* RGB8 */: return gl.RGB8;
+        case "RGB8_SNORM" /* RGB8_SNORM */: return gl.RGB8_SNORM;
+        case "RGB8UI" /* RGB8UI */: return gl.RGB8UI;
+        case "RGB8I" /* RGB8I */: return gl.RGB8I;
+        case "RGB16UI" /* RGB16UI */: return gl.RGB16UI;
+        case "RGB16I" /* RGB16I */: return gl.RGB16I;
+        case "RGB32UI" /* RGB32UI */: return gl.RGB32UI;
+        case "RGB32I" /* RGB32I */: return gl.RGB32I;
+        case "RGB16F" /* RGB16F */: return gl.RGB16F;
+        case "RGB32F" /* RGB32F */: return gl.RGB32F;
         // RGBA
-        case 30 /* RGBA8 */: return gl.RGBA8;
-        case 31 /* RGBA8_SNORM */: return gl.RGBA8_SNORM;
-        case 32 /* RGBA8UI */: return gl.RGBA8UI;
-        case 33 /* RGBA8I */: return gl.RGBA8I;
-        case 34 /* RGBA16UI */: return gl.RGBA16UI;
-        case 35 /* RGBA16I */: return gl.RGBA16I;
-        case 36 /* RGBA32UI */: return gl.RGBA32UI;
-        case 37 /* RGBA32I */: return gl.RGBA32I;
-        case 38 /* RGBA16F */: return gl.RGBA16F;
-        case 39 /* RGBA32F */: return gl.RGBA32F;
+        case "RGBA8" /* RGBA8 */: return gl.RGBA8;
+        case "RGBA8_SNORM" /* RGBA8_SNORM */: return gl.RGBA8_SNORM;
+        case "RGBA8UI" /* RGBA8UI */: return gl.RGBA8UI;
+        case "RGBA8I" /* RGBA8I */: return gl.RGBA8I;
+        case "RGBA16UI" /* RGBA16UI */: return gl.RGBA16UI;
+        case "RGBA16I" /* RGBA16I */: return gl.RGBA16I;
+        case "RGBA32UI" /* RGBA32UI */: return gl.RGBA32UI;
+        case "RGBA32I" /* RGBA32I */: return gl.RGBA32I;
+        case "RGBA16F" /* RGBA16F */: return gl.RGBA16F;
+        case "RGBA32F" /* RGBA32F */: return gl.RGBA32F;
         default: return never(internalFormat);
     }
 }
 function mapGlFormat(gl, format) {
     switch (format) {
-        case 0 /* RED */: return gl.RED;
-        case 1 /* RG */: return gl.RG;
-        case 2 /* RGB */: return gl.RGB;
-        case 3 /* RGBA */: return gl.RGBA;
-        case 4 /* RED_INTEGER */: return gl.RED_INTEGER;
-        case 5 /* RG_INTEGER */: return gl.RG_INTEGER;
-        case 6 /* RGB_INTEGER */: return gl.RGB_INTEGER;
-        case 7 /* RGBA_INTEGER */: return gl.RGBA_INTEGER;
+        case "RED" /* RED */: return gl.RED;
+        case "RG" /* RG */: return gl.RG;
+        case "RGB" /* RGB */: return gl.RGB;
+        case "RGBA" /* RGBA */: return gl.RGBA;
+        case "RED_INTEGER" /* RED_INTEGER */: return gl.RED_INTEGER;
+        case "RG_INTEGER" /* RG_INTEGER */: return gl.RG_INTEGER;
+        case "RGB_INTEGER" /* RGB_INTEGER */: return gl.RGB_INTEGER;
+        case "RGBA_INTEGER" /* RGBA_INTEGER */: return gl.RGBA_INTEGER;
         default: return never(format);
     }
 }
 function mapGlType(gl, type) {
     switch (type) {
-        case 0 /* UNSIGNED_BYTE */: return gl.UNSIGNED_BYTE;
-        case 1 /* UNSIGNED_SHORT */: return gl.UNSIGNED_SHORT;
-        case 2 /* UNSIGNED_INT */: return gl.UNSIGNED_INT;
-        case 3 /* BYTE */: return gl.BYTE;
-        case 4 /* SHORT */: return gl.SHORT;
-        case 5 /* INT */: return gl.INT;
-        case 6 /* FLOAT */: return gl.FLOAT;
+        case "UNSIGNED_BYTE" /* UNSIGNED_BYTE */: return gl.UNSIGNED_BYTE;
+        case "UNSIGNED_SHORT" /* UNSIGNED_SHORT */: return gl.UNSIGNED_SHORT;
+        case "UNSIGNED_INT" /* UNSIGNED_INT */: return gl.UNSIGNED_INT;
+        case "BYTE" /* BYTE */: return gl.BYTE;
+        case "SHORT" /* SHORT */: return gl.SHORT;
+        case "INT" /* INT */: return gl.INT;
+        case "FLOAT" /* FLOAT */: return gl.FLOAT;
     }
 }
 
