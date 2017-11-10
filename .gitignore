@@ -14,3 +14,6 @@ yarn-error.log
 
 # rollup-plugin-typescript
 .rpt2_cache/
+
+# Build dir
+dist/
