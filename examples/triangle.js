@@ -1,4 +1,4 @@
-import { RenderPass } from "../dist/glutenfree.esm.js";
+import { RenderPass } from "./lib/glutenfree.esm.js";
 
 const canvas = document.getElementById("canvas");
 const dpr = window.devicePixelRatio;
