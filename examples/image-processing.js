@@ -1,5 +1,5 @@
-import { RenderPass, Texture, Framebuffer } from "../../dist/glutenfree.esm.js";
-import { loadImage } from "../util.js";
+import { RenderPass, Texture, Framebuffer } from "./lib/glutenfree.esm.js";
+import { loadImage } from "./lib/load-image.js";
 
 const kernels = {
     normal: [
@@ -36,8 +36,10 @@ function computeKernelWeight(kernel) {
 
 const currentKernel = kernels.edgeDetect;
 
-export async function run(canvas) {
-    const imageData = await loadImage("lenna.png", true);
+const canvas = document.getElementById("canvas");
+
+async function run() {
+    const imageData = await loadImage("img/lenna.png", true);
     const dpr = window.devicePixelRatio;
     const w = canvas.clientWidth * dpr;
     const h = canvas.clientHeight * dpr;
@@ -197,3 +199,5 @@ export async function run(canvas) {
     texturePass.renderToFramebuffer(texturePassGeometry, undefined, fbo);
     kernelPass.render(kernelPassGeometry, undefined);
 }
+
+run();
