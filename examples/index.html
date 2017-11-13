@@ -46,7 +46,7 @@
         iframe.mount(iframeElem);
         document.body.appendChild(iframeElem);
 
-        window.fetch("./triangle.js")
+        window.fetch("./image-processing.js")
             .then(resp => resp.text())
             .then(text => {
                 const code = text;
