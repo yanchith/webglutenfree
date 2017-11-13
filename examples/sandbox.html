@@ -6,25 +6,21 @@
     <title>Triangle</title>
     <style>
         html,
-        body {
+        body,
+        canvas {
             margin: 0;
             padding: 0;
+            border: 0;
             width: 100%;
             height: 100%;
             background-color: black;
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
         }
     </style>
 </head>
 
 <body>
     <canvas id="canvas"></canvas>
-    <!-- Since gl-matrix does not have a module release at the time of writing this,
+    <!-- Since gl-matrix does not have a module release at the time of writing,
     let's include it globally -->
     <script src="./lib/gl-matrix-min.js"></script>
     <script type="module">
