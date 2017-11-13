@@ -188,8 +188,8 @@ async function run() {
         ],
     });
 
-    texturePass.renderToFramebuffer(texturePassGeometry, undefined, fbo);
-    kernelPass.render(kernelPassGeometry, undefined);
+    texturePass.renderToFramebuffer(fbo, texturePassGeometry);
+    kernelPass.render(kernelPassGeometry);
 }
 
 run();

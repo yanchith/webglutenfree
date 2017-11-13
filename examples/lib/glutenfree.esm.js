@@ -226,7 +226,7 @@ class VertexBuffer {
         return new VertexBuffer(gl, "i32", gl.INT, data instanceof Int32Array ? data : new Int32Array(data));
     }
     static fromUint8Array(gl, data) {
-        return new VertexBuffer(gl, "u8", gl.UNSIGNED_BYTE, 
+        return new VertexBuffer(gl, "u8", gl.UNSIGNED_BYTE,
         // Note: we also have to convert Uint8ClampedArray to Uint8Array
         // because of webgl bug
         // https://github.com/KhronosGroup/WebGL/issues/1533
@@ -387,7 +387,7 @@ class RenderPass {
         this.draw(elemCount, instCount);
         gl.bindVertexArray(null);
     }
-    renderToFramebuffer(vao, props, framebuffer, count, instanceCount) {
+    renderToFramebuffer(framebuffer, vao, props, count, instanceCount) {
         const gl = this.gl;
         const elemCount = typeof count === "undefined"
             ? vao.count
