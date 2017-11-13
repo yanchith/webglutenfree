@@ -26,16 +26,13 @@
             width: 100%;
             height: 100%;
         }
-
-        textarea {
-            opacity: 0.8;
-        }
     </style>
 </head>
 
 <body>
     <link rel="stylesheet" href="./_sandbox/codemirror/codemirror.css"></link>
     <link rel="stylesheet" href="./_sandbox/codemirror/liquibyte.css"></link>
+    <link rel="stylesheet" href="./_sandbox/codemirror/solarized.css"></link>
     <script src="./_sandbox/codemirror/codemirror.js"></script>
     <script src="./_sandbox/codemirror/javascript.js"></script>
     <script type="module">
@@ -57,13 +54,13 @@
                 iframe.postMessage({ code });
                 var editor = CodeMirror.fromTextArea(textareaElem, {
                     mode: "javascript",
-                    lineNumbers: true,
+                    // lineNumbers: true,
                     theme: "liquibyte",
                 });
+                editor.setSize("100%", "100%");
 
-                const sendCode = debounce(1500, () => {
-                    iframe.unmount();
-                    iframe.mount(iframeElem);
+                const sendCode = debounce(1000, () => {
+                    iframe.remount();
                     iframe.postMessage({ code: editor.getValue() });
                 });
                 editor.on("change", (instance, changeObj) => sendCode());
