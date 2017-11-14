@@ -120,21 +120,21 @@ export class IFrame {
     }
 
     mount(iframe) {
-        if (!this._element) {
-            this._element = iframe;
-
-            this._element.addEventListener("load", this._onLoad);
-
-            window.addEventListener("message", this._onMessage);
-
-            this._element.allowFullscreen = true;
-            this._element.style.width = "100%";
-            this._element.style.height = "100%";
-
-            // Starts loading
-            this._element.src = this._src;
+        if (this._element) {
+            unmount();
         }
-        return this._element;
+        this._element = iframe;
+
+        this._element.addEventListener("load", this._onLoad);
+
+        window.addEventListener("message", this._onMessage);
+
+        this._element.allowFullscreen = true;
+        this._element.style.width = "100%";
+        this._element.style.height = "100%";
+
+        // Starts loading (even if there is something loaded already)
+        this._element.src = this._src;
     }
 
     remount() {
@@ -142,7 +142,7 @@ export class IFrame {
             const elem = this._element;
             this.unmount();
             this.mount(elem);
-        } {
+        } else {
             console.warn("Element not mounted");
         }
     }

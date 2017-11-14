@@ -7,18 +7,18 @@
     <style>
         html,
         body {
-            margin: 0;
-            padding: 0;
-            border: 0;
+            margin: 0px;
+            padding: 0px;
+            border: 0px;
             width: 100%;
             height: 100%;
             background-color: black;
         }
 
         iframe {
-            margin: 0;
-            padding: 0;
-            border: 0;
+            margin: 0px;
+            padding: 0px;
+            border: 0px;
             position: absolute;
             top: 0px;
             left: 0px;
@@ -30,54 +30,82 @@
         #editor {
             position: absolute;
             top: 0px;
-            right: 0px;
-            margin: 0px;
-            padding: 5px;
+            right: 200px;
+            margin: 10px;
+            padding: 0px;
             border: 2px solid lawngreen;
-            width: 750px;
-            height: calc(100% - 14px);
+            width: 700px;
+            height: calc(100% - 24px);
             opacity: 0.85;
             z-index: 1;
         }
-    </style>
-</head>
 
-<body>
+        #menu {
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            margin: 10px;
+            padding: 0px;
+            border: 2px solid lawngreen;
+            width: calc(200px - 20px);
+            height: calc(100% - 24px);
+            opacity: 0.85;
+            z-index: 1;
+            font-family: monospace;
+            font-size: 1.2em;
+        }
+    </style>
     <link rel="stylesheet" href="./_sandbox/codemirror/codemirror.css"></link>
     <link rel="stylesheet" href="./_sandbox/codemirror/liquibyte.css"></link>
     <link rel="stylesheet" href="./_sandbox/codemirror/solarized.css"></link>
+</head>
+
+<body>
+    <iframe id="iframe" src="sandbox.html"></iframe>
+    <div id="editor"></div>
+    <div id="menu">
+        <a href="triangle.js">triangle</a>
+        <a href="instancing.js">instancing</a>
+        <a href="image-processing.js">image processing</a>
+    </div>
+
     <script src="./_sandbox/codemirror/codemirror.js"></script>
     <script src="./_sandbox/codemirror/javascript.js"></script>
     <script type="module">
         import { IFrame, debounce } from "./_sandbox/sandbox.js";
 
-        const editorElem = document.createElement("div");
-        editorElem.id = "editor";
-        document.body.appendChild(editorElem);
+        const iframeElem = document.getElementById("iframe");
+        const editorElem = document.getElementById("editor");
+        const menuElem = document.getElementById("menu");
 
-        const iframeElem = document.createElement("iframe");
         const iframe = new IFrame("sandbox.html");
         iframe.mount(iframeElem);
-        document.body.appendChild(iframeElem);
 
-        window.fetch("./image-processing.js")
-            .then(resp => resp.text())
-            .then(text => {
-                const code = text;
-                iframe.postMessage({ code });
-                const editor = CodeMirror(editorElem, {
-                    mode: "javascript",
-                    theme: "liquibyte",
-                });
-                editor.setValue(code);
-                editor.setSize("100%", "100%");
+        const editor = CodeMirror(editorElem, {
+            mode: "javascript",
+            theme: "liquibyte",
+        });
+        editor.setSize("100%", "100%");
+        editor.on("change", debounce(1000, () => {
+            iframe.remount();
+            iframe.postMessage({ code: editor.getValue() });
+        }));
 
-                const sendCode = debounce(1000, () => {
-                    iframe.remount();
-                    iframe.postMessage({ code: editor.getValue() });
-                });
-                editor.on("change", (instance, changeObj) => sendCode());
-            });
+        async function fetchExample(src) {
+            const resp = await window.fetch(src);
+            const code = await resp.text();
+            editor.setValue(code);
+        }
+
+        menuElem.addEventListener("click", ev => {
+            console.log(ev);
+            if (ev.target.tagName.toLowerCase() === "a") {
+                fetchExample(ev.target.href);
+            }
+            ev.preventDefault();
+        }, true);
+
+        fetchExample("triangle.js");
     </script>
 </body>
 
