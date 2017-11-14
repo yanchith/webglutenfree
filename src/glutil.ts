@@ -132,7 +132,7 @@ export function createVertexArray(
         normalized?: boolean,
         divisor?: number,
     }[],
-    elementBuffer: WebGLBuffer,
+    elementBuffer?: WebGLBuffer,
 ): WebGLVertexArrayObject {
     const vao = gl.createVertexArray();
     if (!vao) { throw new Error("Could not create Vertex Array Object"); }
@@ -163,7 +163,10 @@ export function createVertexArray(
         }
         if (divisor) { gl.vertexAttribDivisor(location, divisor); }
     });
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+
+    if (elementBuffer) {
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+    }
 
     gl.bindVertexArray(null);
 

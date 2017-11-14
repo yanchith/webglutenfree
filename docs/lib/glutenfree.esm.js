@@ -99,7 +99,9 @@ function createVertexArray(gl, buffers, elementBuffer) {
             gl.vertexAttribDivisor(location, divisor);
         }
     });
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+    if (elementBuffer) {
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+    }
     gl.bindVertexArray(null);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -265,6 +267,13 @@ class ElementBuffer {
 
 const INT_PATTERN$1 = /^0|[1-9]\d*$/;
 class VertexArray {
+    constructor(glVertexArrayObject, hasElements, count, // Either count of vertex data or of elements
+        instanceCount) {
+        this.glVertexArrayObject = glVertexArrayObject;
+        this.hasElements = hasElements;
+        this.count = count;
+        this.instanceCount = instanceCount;
+    }
     static fromProps(gl, { attributes, elements }) {
         // Setup attributes
         const attribs = [];
@@ -278,9 +287,12 @@ class VertexArray {
             attribs.push(AttributeInfo.create(gl, definition));
         });
         // Setup elements
-        const elems = elements instanceof ElementBuffer
-            ? elements
-            : ElementBuffer.fromProps(gl, elements);
+        let elems;
+        if (elements) {
+            elems = elements instanceof ElementBuffer
+                ? elements
+                : ElementBuffer.fromProps(gl, elements);
+        }
         // Create vertex array
         const vao = createVertexArray(gl, attribs.map((attrib, i) => ({
             type: attrib.type === "ipointer"
@@ -292,7 +304,7 @@ class VertexArray {
             location: attribLocations[i],
             normalized: attrib.normalized,
             divisor: attrib.divisor,
-        })), elems.glBuffer);
+        })), elems ? elems.glBuffer : undefined);
         // Compute max safe instance count
         const instancedBuffers = attribs
             .filter(buffer => !!buffer.divisor);
@@ -302,12 +314,7 @@ class VertexArray {
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
         // Create VAO
-        return new VertexArray(vao, elems.count, instanceCount);
-    }
-    constructor(vao, count, instanceCount) {
-        this.glVertexArrayObject = vao;
-        this.count = count;
-        this.instanceCount = instanceCount;
+        return new VertexArray(vao, !!elems, elems ? elems.count : attribs[0].count, instanceCount);
     }
 }
 // TODO: this could use some further refactoring. Currently its just former
@@ -370,38 +377,26 @@ class RenderPass {
         const clearInfo = new ClearInfo(clear.color, clear.depth, clear.stencil);
         return new RenderPass(gl, program, mapGlPrimitive(gl, primitive), uniformInfo, clearInfo);
     }
-    render(vao, props, count, instanceCount) {
-        const gl = this.gl;
-        const elemCount = typeof count === "undefined"
-            ? vao.count
-            : Math.min(vao.count, count);
-        const instCount = typeof instanceCount === "undefined"
-            ? vao.instanceCount
-            : Math.min(vao.instanceCount, instanceCount);
-        gl.useProgram(this.glProgram);
+    render(vao, props) {
+        const { gl, glProgram } = this;
+        gl.useProgram(glProgram);
         this.updateUniforms(props);
         gl.bindVertexArray(vao.glVertexArrayObject);
         this.clear();
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        this.draw(elemCount, instCount);
+        this.draw(vao.hasElements, vao.count, vao.instanceCount);
         gl.bindVertexArray(null);
     }
-    renderToFramebuffer(framebuffer, vao, props, count, instanceCount) {
-        const gl = this.gl;
-        const elemCount = typeof count === "undefined"
-            ? vao.count
-            : Math.min(vao.count, count);
-        const instCount = typeof instanceCount === "undefined"
-            ? vao.instanceCount
-            : Math.min(vao.instanceCount, instanceCount);
-        gl.useProgram(this.glProgram);
+    renderToFramebuffer(framebuffer, vao, props) {
+        const { gl, glProgram } = this;
+        gl.useProgram(glProgram);
         this.updateUniforms(props);
         gl.bindVertexArray(vao.glVertexArrayObject);
         framebuffer.bind();
         gl.drawBuffers(framebuffer.colorAttachments);
         this.clear();
         gl.viewport(0, 0, framebuffer.width, framebuffer.height);
-        this.draw(elemCount, instCount);
+        this.draw(vao.hasElements, vao.count, vao.instanceCount);
         framebuffer.unbind();
         gl.bindVertexArray(null);
     }
@@ -448,15 +443,25 @@ class RenderPass {
             }
         }
     }
-    draw(elemCount, instCount) {
+    draw(hasElements, count, instCount) {
         const { gl, glPrimitive } = this;
-        if (instCount) {
-            gl.drawElementsInstanced(glPrimitive, elemCount, gl.UNSIGNED_INT, // We only support u32 indices
-            0, instCount);
+        if (hasElements) {
+            if (instCount) {
+                gl.drawElementsInstanced(glPrimitive, count, gl.UNSIGNED_INT, // We only support u32 indices
+                0, instCount);
+            }
+            else {
+                gl.drawElements(glPrimitive, count, gl.UNSIGNED_INT, // We only support u32 indices
+                0);
+            }
         }
         else {
-            gl.drawElements(glPrimitive, elemCount, gl.UNSIGNED_INT, // We only support u32 indices
-            0);
+            if (instCount) {
+                gl.drawArraysInstanced(glPrimitive, 0, count, instCount);
+            }
+            else {
+                gl.drawArrays(glPrimitive, 0, count);
+            }
         }
     }
     updateUniforms(props) {

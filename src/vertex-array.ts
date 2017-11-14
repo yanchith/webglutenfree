@@ -73,7 +73,7 @@ export interface VertexArrayProps {
         [name: string]: Attribute;
         [location: number]: Attribute;
     };
-    elements: ElementBuffer | ElementBufferProps;
+    elements?: ElementBuffer | ElementBufferProps;
 }
 
 export class VertexArray {
@@ -100,9 +100,12 @@ export class VertexArray {
 
         // Setup elements
 
-        const elems = elements instanceof ElementBuffer
-            ? elements
-            : ElementBuffer.fromProps(gl, elements);
+        let elems: ElementBuffer | undefined;
+        if (elements) {
+            elems = elements instanceof ElementBuffer
+                ? elements
+                : ElementBuffer.fromProps(gl, elements);
+        }
 
         // Create vertex array
 
@@ -119,7 +122,7 @@ export class VertexArray {
                 normalized: attrib.normalized,
                 divisor: attrib.divisor,
             })),
-            elems.glBuffer,
+            elems ? elems.glBuffer : undefined,
         );
 
         // Compute max safe instance count
@@ -137,25 +140,18 @@ export class VertexArray {
 
         return new VertexArray(
             vao,
-            elems.count,
+            !!elems,
+            elems ? elems.count : attribs[0].count,
             instanceCount,
         );
     }
 
-    readonly glVertexArrayObject: WebGLVertexArrayObject;
-
-    readonly count: number;
-    readonly instanceCount: number;
-
     private constructor(
-        vao: WebGLVertexArrayObject,
-        count: number,
-        instanceCount: number,
-    ) {
-        this.glVertexArrayObject = vao;
-        this.count = count;
-        this.instanceCount = instanceCount;
-    }
+        readonly glVertexArrayObject: WebGLVertexArrayObject,
+        readonly hasElements: boolean,
+        readonly count: number, // Either count of vertex data or of elements
+        readonly instanceCount: number,
+    ) { }
 }
 
 // TODO: this could use some further refactoring. Currently its just former

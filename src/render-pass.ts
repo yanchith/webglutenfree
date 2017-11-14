@@ -77,25 +77,17 @@ export class RenderPass<P = void> {
     render(
         vao: VertexArray,
         props: P,
-        count?: number,
-        instanceCount?: number,
     ): void {
-        const gl = this.gl;
-        const elemCount = typeof count === "undefined"
-            ? vao.count
-            : Math.min(vao.count, count);
-        const instCount = typeof instanceCount === "undefined"
-            ? vao.instanceCount
-            : Math.min(vao.instanceCount, instanceCount);
+        const { gl, glProgram } = this;
 
-        gl.useProgram(this.glProgram);
+        gl.useProgram(glProgram);
         this.updateUniforms(props);
         gl.bindVertexArray(vao.glVertexArrayObject);
 
         this.clear();
 
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        this.draw(elemCount, instCount);
+        this.draw(vao.hasElements, vao.count, vao.instanceCount);
 
         gl.bindVertexArray(null);
     }
@@ -104,18 +96,10 @@ export class RenderPass<P = void> {
         framebuffer: Framebuffer,
         vao: VertexArray,
         props: P,
-        count?: number,
-        instanceCount?: number,
     ): void {
-        const gl = this.gl;
-        const elemCount = typeof count === "undefined"
-            ? vao.count
-            : Math.min(vao.count, count);
-        const instCount = typeof instanceCount === "undefined"
-            ? vao.instanceCount
-            : Math.min(vao.instanceCount, instanceCount);
+        const { gl, glProgram } = this;
 
-        gl.useProgram(this.glProgram);
+        gl.useProgram(glProgram);
         this.updateUniforms(props);
         gl.bindVertexArray(vao.glVertexArrayObject);
 
@@ -125,7 +109,7 @@ export class RenderPass<P = void> {
         this.clear();
 
         gl.viewport(0, 0, framebuffer.width, framebuffer.height);
-        this.draw(elemCount, instCount);
+        this.draw(vao.hasElements, vao.count, vao.instanceCount);
 
         framebuffer.unbind();
 
@@ -178,25 +162,34 @@ export class RenderPass<P = void> {
     }
 
     private draw(
-        elemCount: number,
+        hasElements: boolean,
+        count: number,
         instCount: number,
     ): void {
         const { gl, glPrimitive } = this;
-        if (instCount) {
-            gl.drawElementsInstanced(
-                glPrimitive,
-                elemCount,
-                gl.UNSIGNED_INT, // We only support u32 indices
-                0,
-                instCount,
-            );
+        if (hasElements) {
+            if (instCount) {
+                gl.drawElementsInstanced(
+                    glPrimitive,
+                    count,
+                    gl.UNSIGNED_INT, // We only support u32 indices
+                    0,
+                    instCount,
+                );
+            } else {
+                gl.drawElements(
+                    glPrimitive,
+                    count,
+                    gl.UNSIGNED_INT, // We only support u32 indices
+                    0,
+                );
+            }
         } else {
-            gl.drawElements(
-                glPrimitive,
-                elemCount,
-                gl.UNSIGNED_INT, // We only support u32 indices
-                0,
-            );
+            if (instCount) {
+                gl.drawArraysInstanced(glPrimitive, 0, count, instCount);
+            } else {
+                gl.drawArrays(glPrimitive, 0, count);
+            }
         }
     }
 

@@ -46,9 +46,6 @@ const triangle = pass.createVertexArray({
             [0, 0, 1, 1],
         ]
     },
-    elements: [
-        [0, 1, 2],
-    ],
 });
 
 pass.render(triangle);
