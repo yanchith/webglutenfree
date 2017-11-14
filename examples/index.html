@@ -26,6 +26,18 @@
             width: 100%;
             height: 100%;
         }
+
+        #editor {
+            overflow: hidden;
+            position: relative;
+            top: 0px;
+            right: 0px;
+            margin: 0px;
+            padding: 0px;
+            border: 0px;
+            width: 800px;
+            height: 100%;
+        }
     </style>
 </head>
 
@@ -41,6 +53,10 @@
         const textareaElem = document.createElement("textarea");
         document.body.appendChild(textareaElem);
 
+        const editorElem = document.createElement("div");
+        editorElem.id = "editor";
+        document.body.appendChild(editorElem);
+
         const iframeElem = document.createElement("iframe");
         const iframe = new IFrame("sandbox.html");
         iframe.mount(iframeElem);
@@ -52,11 +68,12 @@
                 const code = text;
                 textareaElem.innerText = code;
                 iframe.postMessage({ code });
-                var editor = CodeMirror.fromTextArea(textareaElem, {
+                const editor = CodeMirror(editorElem, {
                     mode: "javascript",
                     // lineNumbers: true,
                     theme: "liquibyte",
                 });
+                editor.setValue(code);
                 editor.setSize("100%", "100%");
 
                 const sendCode = debounce(1000, () => {
