@@ -1,5 +1,5 @@
-import { RenderPass, Texture, Framebuffer } from "../../dist/glutenfree.esm.js";
-import { loadImage } from "../util.js";
+import { RenderPass, Texture, Framebuffer } from "./lib/glutenfree.esm.js";
+import { loadImage } from "./lib/load-image.js";
 
 const kernels = {
     normal: [
@@ -36,15 +36,16 @@ function computeKernelWeight(kernel) {
 
 const currentKernel = kernels.edgeDetect;
 
-export async function run(canvas) {
-    const imageData = await loadImage("lenna.png", true);
-    const dpr = window.devicePixelRatio;
-    const w = canvas.clientWidth * dpr;
-    const h = canvas.clientHeight * dpr;
-    canvas.width = w;
-    canvas.height = h;
-    const gl = canvas.getContext("webgl2");
+const canvas = document.getElementById("canvas");
+const dpr = window.devicePixelRatio;
+const w = canvas.clientWidth * dpr;
+const h = canvas.clientHeight * dpr;
+canvas.width = w;
+canvas.height = h;
+const gl = canvas.getContext("webgl2");
 
+async function run() {
+    const imageData = await loadImage("img/lenna.png", true);
     const imageTexture = Texture.fromImage(gl, imageData);
     const fboTexture = Texture.RGBA8FromRGBAUint8Array(
         gl,
@@ -135,17 +136,17 @@ export async function run(canvas) {
             out vec4 o_color;
 
             void main() {
-                vec2 one_pixel = vec2(1) / vec2(textureSize(u_image, 0));
+                vec2 pixel = vec2(1) / vec2(textureSize(u_image, 0));
                 vec4 color_sum =
-                    texture(u_image, v_tex_coord + one_pixel * vec2(-1, -1)) * u_kernel[0] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 0, -1)) * u_kernel[1] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 1, -1)) * u_kernel[2] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2(-1,  0)) * u_kernel[3] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 0,  0)) * u_kernel[4] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 1,  0)) * u_kernel[5] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2(-1,  1)) * u_kernel[6] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 0,  1)) * u_kernel[7] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 1,  1)) * u_kernel[8] ;
+                    texture(u_image, v_tex_coord + pixel * vec2(-1, -1)) * u_kernel[0] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 0, -1)) * u_kernel[1] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 1, -1)) * u_kernel[2] +
+                    texture(u_image, v_tex_coord + pixel * vec2(-1,  0)) * u_kernel[3] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 0,  0)) * u_kernel[4] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 1,  0)) * u_kernel[5] +
+                    texture(u_image, v_tex_coord + pixel * vec2(-1,  1)) * u_kernel[6] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 0,  1)) * u_kernel[7] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 1,  1)) * u_kernel[8] ;
                 o_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
             }
         `,
@@ -186,14 +187,8 @@ export async function run(canvas) {
         ],
     });
 
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    fbo.bind();
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    fbo.unbind();
-
-    texturePass.renderToFramebuffer(texturePassGeometry, undefined, fbo);
-    kernelPass.render(kernelPassGeometry, undefined);
+    texturePass.renderToFramebuffer(fbo, texturePassGeometry);
+    kernelPass.render(kernelPassGeometry);
 }
+
+run();

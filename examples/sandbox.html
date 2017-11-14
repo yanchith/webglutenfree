@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Triangle</title>
+    <style>
+        html,
+        body,
+        canvas {
+            margin: 0px;
+            padding: 0px;
+            border: 0px;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <!-- Since gl-matrix does not have a module release at the time of writing,
+    let's include it globally -->
+    <script src="./lib/gl-matrix-min.js"></script>
+    <script type="module">
+        import { PostMessageChannel } from "./_sandbox/sandbox.js";
+        const chan = new PostMessageChannel(window);
+        chan.onMessage(msg => {
+            if (msg.code) {
+                const script = document.createElement("script");
+                script.type = "module";
+                script.innerHTML = msg.code;
+                document.body.appendChild(script);
+            }
+        });
+    </script>
+</body>
+</html>

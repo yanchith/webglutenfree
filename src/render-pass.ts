@@ -77,9 +77,9 @@ export class RenderPass<P = void> {
     }
 
     renderToFramebuffer(
+        framebuffer: Framebuffer,
         vao: VertexArray,
         props: P,
-        framebuffer: Framebuffer,
         count?: number,
         instanceCount?: number,
     ): void {
