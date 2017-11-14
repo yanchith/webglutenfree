@@ -79,22 +79,22 @@
             color: lawngreen;
         }
     </style>
-    <link rel="stylesheet" href="./_sandbox/codemirror/codemirror.css"></link>
-    <link rel="stylesheet" href="./_sandbox/codemirror/liquibyte.css"></link>
-    <link rel="stylesheet" href="./_sandbox/codemirror/solarized.css"></link>
+    <link rel="stylesheet" href="/_sandbox/codemirror/codemirror.css"></link>
+    <link rel="stylesheet" href="/_sandbox/codemirror/liquibyte.css"></link>
+    <link rel="stylesheet" href="/_sandbox/codemirror/solarized.css"></link>
 </head>
 
 <body>
     <iframe id="iframe" src="sandbox.html"></iframe>
     <div id="editor"></div>
     <div id="menu">
-        <div data-href="examples/triangle.js" class="selected">triangle</div>
-        <div data-href="examples/instancing.js">instancing</div>
-        <div data-href="examples/image-processing.js">image processing</div>
+        <div data-href="/examples/triangle.js" class="selected">triangle</div>
+        <div data-href="/examples/instancing.js">instancing</div>
+        <div data-href="/examples/image-processing.js">image processing</div>
     </div>
 
-    <script src="./_sandbox/codemirror/codemirror.js"></script>
-    <script src="./_sandbox/codemirror/javascript.js"></script>
+    <script src="/_sandbox/codemirror/codemirror.js"></script>
+    <script src="/_sandbox/codemirror/javascript.js"></script>
     <script type="module">
         import { IFrame, debounce } from "./_sandbox/sandbox.js";
 
@@ -131,7 +131,7 @@
             ev.preventDefault();
         }, true);
 
-        fetchExample("examples/triangle.js");
+        fetchExample("/examples/triangle.js");
     </script>
 </body>
 
