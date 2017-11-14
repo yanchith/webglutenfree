@@ -65,6 +65,7 @@
             margin: 5px;
             border: 1px solid grey;
             padding: 5px;
+            cursor: pointer;
         }
 
         #menu > div:hover {
@@ -79,9 +80,9 @@
             color: lawngreen;
         }
     </style>
-    <link rel="stylesheet" href="/_sandbox/codemirror/codemirror.css"></link>
-    <link rel="stylesheet" href="/_sandbox/codemirror/liquibyte.css"></link>
-    <link rel="stylesheet" href="/_sandbox/codemirror/solarized.css"></link>
+    <link rel="stylesheet" href="./sandbox/codemirror/codemirror.css"></link>
+    <link rel="stylesheet" href="./sandbox/codemirror/liquibyte.css"></link>
+    <link rel="stylesheet" href="./sandbox/codemirror/solarized.css"></link>
 </head>
 
 <body>
@@ -93,10 +94,10 @@
         <div data-href="/examples/image-processing.js">image processing</div>
     </div>
 
-    <script src="/_sandbox/codemirror/codemirror.js"></script>
-    <script src="/_sandbox/codemirror/javascript.js"></script>
+    <script src="./sandbox/codemirror/codemirror.js"></script>
+    <script src="./sandbox/codemirror/javascript.js"></script>
     <script type="module">
-        import { IFrame, debounce } from "./_sandbox/sandbox.js";
+        import { IFrame, debounce } from "./sandbox/sandbox.js";
 
         const iframeElem = document.getElementById("iframe");
         const editorElem = document.getElementById("editor");

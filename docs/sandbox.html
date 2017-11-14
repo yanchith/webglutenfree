@@ -24,7 +24,7 @@
     let's include it globally -->
     <script src="./lib/gl-matrix-min.js"></script>
     <script type="module">
-        import { PostMessageChannel } from "./_sandbox/sandbox.js";
+        import { PostMessageChannel } from "./sandbox/sandbox.js";
         const chan = new PostMessageChannel(window);
         chan.onMessage(msg => {
             if (msg.code) {
