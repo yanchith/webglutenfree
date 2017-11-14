@@ -8,8 +8,7 @@
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "concurrently --raw --kill-others \"yarn build:watch\" \"yarn serve\"",
-    "serve": "http-server docs -p 8000",
+    "serve:docs": "http-server docs -p 8000",
     "prebuild": "rimraf dist",
     "build": "rollup --config",
     "prebuild:watch": "rimraf dist",
@@ -21,7 +20,6 @@
   },
   "devDependencies": {
     "@types/webgl2": "^0.0.2",
-    "concurrently": "^3.5.0",
     "http-server": "^0.10.0",
     "rimraf": "^2.6.2",
     "rollup": "^0.50.1",
