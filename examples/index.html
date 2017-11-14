@@ -28,15 +28,16 @@
         }
 
         #editor {
-            overflow: hidden;
-            position: relative;
+            position: absolute;
             top: 0px;
             right: 0px;
             margin: 0px;
-            padding: 0px;
-            border: 0px;
-            width: 800px;
-            height: 100%;
+            padding: 5px;
+            border: 2px solid lawngreen;
+            width: 750px;
+            height: calc(100% - 14px);
+            opacity: 0.85;
+            z-index: 1;
         }
     </style>
 </head>
@@ -49,9 +50,6 @@
     <script src="./_sandbox/codemirror/javascript.js"></script>
     <script type="module">
         import { IFrame, debounce } from "./_sandbox/sandbox.js";
-
-        const textareaElem = document.createElement("textarea");
-        document.body.appendChild(textareaElem);
 
         const editorElem = document.createElement("div");
         editorElem.id = "editor";
@@ -66,11 +64,9 @@
             .then(resp => resp.text())
             .then(text => {
                 const code = text;
-                textareaElem.innerText = code;
                 iframe.postMessage({ code });
                 const editor = CodeMirror(editorElem, {
                     mode: "javascript",
-                    // lineNumbers: true,
                     theme: "liquibyte",
                 });
                 editor.setValue(code);

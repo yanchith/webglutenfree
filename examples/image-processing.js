@@ -137,17 +137,17 @@ async function run() {
             out vec4 o_color;
 
             void main() {
-                vec2 one_pixel = vec2(1) / vec2(textureSize(u_image, 0));
+                vec2 pixel = vec2(1) / vec2(textureSize(u_image, 0));
                 vec4 color_sum =
-                    texture(u_image, v_tex_coord + one_pixel * vec2(-1, -1)) * u_kernel[0] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 0, -1)) * u_kernel[1] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 1, -1)) * u_kernel[2] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2(-1,  0)) * u_kernel[3] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 0,  0)) * u_kernel[4] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 1,  0)) * u_kernel[5] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2(-1,  1)) * u_kernel[6] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 0,  1)) * u_kernel[7] +
-                    texture(u_image, v_tex_coord + one_pixel * vec2( 1,  1)) * u_kernel[8] ;
+                    texture(u_image, v_tex_coord + pixel * vec2(-1, -1)) * u_kernel[0] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 0, -1)) * u_kernel[1] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 1, -1)) * u_kernel[2] +
+                    texture(u_image, v_tex_coord + pixel * vec2(-1,  0)) * u_kernel[3] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 0,  0)) * u_kernel[4] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 1,  0)) * u_kernel[5] +
+                    texture(u_image, v_tex_coord + pixel * vec2(-1,  1)) * u_kernel[6] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 0,  1)) * u_kernel[7] +
+                    texture(u_image, v_tex_coord + pixel * vec2( 1,  1)) * u_kernel[8] ;
                 o_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
             }
         `,
