@@ -11,6 +11,7 @@ export interface RenderPassProps<P> {
     vert: string;
     frag: string;
     uniforms?: { [key: string]: Uniform<P> };
+    primitive?: Primitive;
     clear?: {
         color?: [number, number, number, number];
         depth?: number;
@@ -18,11 +19,27 @@ export interface RenderPassProps<P> {
     };
 }
 
+export const enum Primitive {
+    Triangles = "triangles",
+    TriangleStrip = "triangle-strip",
+    TriangleFan = "triangle-fan",
+    Points = "points",
+    Lines = "lines",
+    LineStrip = "line-strip",
+    LineLoop = "line-loop",
+}
+
 export class RenderPass<P = void> {
 
     static fromProps<P = void>(
         gl: WebGL2RenderingContext,
-        { vert, frag, uniforms = {}, clear = {} }: RenderPassProps<P>,
+        {
+            vert,
+            frag,
+            uniforms = {},
+            primitive = Primitive.Triangles,
+            clear = {},
+        }: RenderPassProps<P>,
     ): RenderPass<P> {
         const vertShader = glutil.createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = glutil.createShader(gl, gl.FRAGMENT_SHADER, frag);
@@ -40,12 +57,19 @@ export class RenderPass<P = void> {
                 return new UniformInfo(identifier, location, uniform);
             });
         const clearInfo = new ClearInfo(clear.color, clear.depth, clear.stencil);
-        return new RenderPass(gl, program, uniformInfo, clearInfo);
+        return new RenderPass(
+            gl,
+            program,
+            mapGlPrimitive(gl, primitive),
+            uniformInfo,
+            clearInfo,
+        );
     }
 
     private constructor(
         private gl: WebGL2RenderingContext,
         private glProgram: WebGLProgram,
+        private glPrimitive: number,
         private uniformInfo: UniformInfo<P>[],
         private clearInfo?: ClearInfo,
     ) { }
@@ -131,23 +155,25 @@ export class RenderPass<P = void> {
     }
 
     private clear(): void {
-        const gl = this.gl;
-        if (this.clearInfo) {
+        const { gl, clearInfo } = this;
+        if (clearInfo) {
             let clearBits = 0 | 0;
-            if (typeof this.clearInfo.color !== "undefined") {
-                const [r, g, b, a] = this.clearInfo.color;
+            if (typeof clearInfo.color !== "undefined") {
+                const [r, g, b, a] = clearInfo.color;
                 gl.clearColor(r, g, b, a);
                 clearBits |= gl.COLOR_BUFFER_BIT;
             }
-            if (typeof this.clearInfo.depth !== "undefined") {
-                gl.clearDepth(this.clearInfo.depth);
+            if (typeof clearInfo.depth !== "undefined") {
+                gl.clearDepth(clearInfo.depth);
                 clearBits |= gl.DEPTH_BUFFER_BIT;
             }
-            if (typeof this.clearInfo.stencil !== "undefined") {
-                gl.clearStencil(this.clearInfo.stencil);
+            if (typeof clearInfo.stencil !== "undefined") {
+                gl.clearStencil(clearInfo.stencil);
                 clearBits |= gl.STENCIL_BUFFER_BIT;
             }
-            gl.clear(clearBits);
+            if (clearBits) {
+                gl.clear(clearBits);
+            }
         }
     }
 
@@ -155,17 +181,22 @@ export class RenderPass<P = void> {
         elemCount: number,
         instCount: number,
     ): void {
-        const gl = this.gl;
+        const { gl, glPrimitive } = this;
         if (instCount) {
             gl.drawElementsInstanced(
-                gl.TRIANGLES,
+                glPrimitive,
                 elemCount,
-                gl.UNSIGNED_INT,
+                gl.UNSIGNED_INT, // We only support u32 indices
                 0,
                 instCount,
             );
         } else {
-            gl.drawElements(gl.TRIANGLES, elemCount, gl.UNSIGNED_INT, 0);
+            gl.drawElements(
+                glPrimitive,
+                elemCount,
+                gl.UNSIGNED_INT, // We only support u32 indices
+                0,
+            );
         }
     }
 
@@ -473,4 +504,20 @@ export interface UniformMatrix4fv<P> {
 export interface UniformTexture<P> {
     type: "texture";
     value: AccessorOrValue<P, Texture>;
+}
+
+function mapGlPrimitive(
+    gl: WebGL2RenderingContext,
+    primitive: Primitive,
+): number {
+    switch (primitive) {
+        case Primitive.Triangles: return gl.TRIANGLES;
+        case Primitive.TriangleStrip: return gl.TRIANGLE_STRIP;
+        case Primitive.TriangleFan: return gl.TRIANGLE_FAN;
+        case Primitive.Points: return gl.POINTS;
+        case Primitive.Lines: return gl.LINES;
+        case Primitive.LineStrip: return gl.LINE_STRIP;
+        case Primitive.LineLoop: return gl.LINE_LOOP;
+        default: return assert.never(primitive);
+    }
 }

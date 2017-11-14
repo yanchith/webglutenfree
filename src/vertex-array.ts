@@ -14,7 +14,6 @@ import {
 import {
     ElementBuffer,
     ElementBufferProps,
-    ElementPrimitive,
 } from "./element-buffer";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
@@ -139,7 +138,6 @@ export class VertexArray {
         return new VertexArray(
             vao,
             elems.count,
-            elems.primitive,
             instanceCount,
         );
     }
@@ -147,18 +145,15 @@ export class VertexArray {
     readonly glVertexArrayObject: WebGLVertexArrayObject;
 
     readonly count: number;
-    readonly primitive: ElementPrimitive;
     readonly instanceCount: number;
 
     private constructor(
         vao: WebGLVertexArrayObject,
         count: number,
-        primitive: ElementPrimitive,
         instanceCount: number,
     ) {
         this.glVertexArrayObject = vao;
         this.count = count;
-        this.primitive = primitive;
         this.instanceCount = instanceCount;
     }
 }

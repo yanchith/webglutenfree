@@ -7,12 +7,10 @@ export type ElementBufferProps =
     ;
 
 export interface ElementBufferObjectProps {
-    primitive: ElementPrimitive;
     data: number[] | Uint32Array;
 }
 
 export type ElementBufferArrayProps = [number, number, number][];
-export type ElementPrimitive = "triangles";
 
 export class ElementBuffer {
 
@@ -23,7 +21,7 @@ export class ElementBuffer {
         if (Array.isArray(props)) {
             return ElementBuffer.fromArray(gl, props);
         }
-        return ElementBuffer.fromUint32Array(gl, props.data, props.primitive);
+        return ElementBuffer.fromUint32Array(gl, props.data);
     }
 
     static fromArray(
@@ -31,32 +29,27 @@ export class ElementBuffer {
         arr: ElementBufferArrayProps,
     ): ElementBuffer {
         const data = array.ravel(arr).data;
-        return new ElementBuffer(gl, new Uint32Array(data), "triangles");
+        return new ElementBuffer(gl, new Uint32Array(data));
     }
 
     static fromUint32Array(
         gl: WebGL2RenderingContext,
         buffer: number[] | Uint32Array,
-        primitive: ElementPrimitive,
     ): ElementBuffer {
         return new ElementBuffer(
             gl,
             Array.isArray(buffer) ? new Uint32Array(buffer) : buffer,
-            primitive,
         );
     }
 
     readonly glBuffer: WebGLBuffer;
     readonly count: number;
-    readonly primitive: ElementPrimitive;
 
     private constructor(
         gl: WebGL2RenderingContext,
         buffer: Uint32Array,
-        primitive: ElementPrimitive,
     ) {
         this.glBuffer = glutil.createElementArrayBuffer(gl, buffer);
         this.count = buffer.length;
-        this.primitive = primitive;
     }
 }

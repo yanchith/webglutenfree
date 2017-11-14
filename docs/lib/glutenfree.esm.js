@@ -226,7 +226,7 @@ class VertexBuffer {
         return new VertexBuffer(gl, "i32", gl.INT, data instanceof Int32Array ? data : new Int32Array(data));
     }
     static fromUint8Array(gl, data) {
-        return new VertexBuffer(gl, "u8", gl.UNSIGNED_BYTE,
+        return new VertexBuffer(gl, "u8", gl.UNSIGNED_BYTE, 
         // Note: we also have to convert Uint8ClampedArray to Uint8Array
         // because of webgl bug
         // https://github.com/KhronosGroup/WebGL/issues/1533
@@ -248,19 +248,18 @@ class ElementBuffer {
         if (Array.isArray(props)) {
             return ElementBuffer.fromArray(gl, props);
         }
-        return ElementBuffer.fromUint32Array(gl, props.data, props.primitive);
+        return ElementBuffer.fromUint32Array(gl, props.data);
     }
     static fromArray(gl, arr) {
         const data = ravel(arr).data;
-        return new ElementBuffer(gl, new Uint32Array(data), "triangles");
+        return new ElementBuffer(gl, new Uint32Array(data));
     }
-    static fromUint32Array(gl, buffer, primitive) {
-        return new ElementBuffer(gl, Array.isArray(buffer) ? new Uint32Array(buffer) : buffer, primitive);
+    static fromUint32Array(gl, buffer) {
+        return new ElementBuffer(gl, Array.isArray(buffer) ? new Uint32Array(buffer) : buffer);
     }
-    constructor(gl, buffer, primitive) {
+    constructor(gl, buffer) {
         this.glBuffer = createElementArrayBuffer(gl, buffer);
         this.count = buffer.length;
-        this.primitive = primitive;
     }
 }
 
@@ -303,12 +302,11 @@ class VertexArray {
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
         // Create VAO
-        return new VertexArray(vao, elems.count, elems.primitive, instanceCount);
+        return new VertexArray(vao, elems.count, instanceCount);
     }
-    constructor(vao, count, primitive, instanceCount) {
+    constructor(vao, count, instanceCount) {
         this.glVertexArrayObject = vao;
         this.count = count;
-        this.primitive = primitive;
         this.instanceCount = instanceCount;
     }
 }
@@ -348,13 +346,14 @@ class AttributeInfo {
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 class RenderPass {
-    constructor(gl, glProgram, uniformInfo, clearInfo) {
+    constructor(gl, glProgram, glPrimitive, uniformInfo, clearInfo) {
         this.gl = gl;
         this.glProgram = glProgram;
+        this.glPrimitive = glPrimitive;
         this.uniformInfo = uniformInfo;
         this.clearInfo = clearInfo;
     }
-    static fromProps(gl, { vert, frag, uniforms = {}, clear = {} }) {
+    static fromProps(gl, { vert, frag, uniforms = {}, primitive = "triangles" /* Triangles */, clear = {}, }) {
         const vertShader = createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = createShader(gl, gl.FRAGMENT_SHADER, frag);
         const program = createProgram(gl, vertShader, fragShader);
@@ -369,7 +368,7 @@ class RenderPass {
             return new UniformInfo(identifier, location, uniform);
         });
         const clearInfo = new ClearInfo(clear.color, clear.depth, clear.stencil);
-        return new RenderPass(gl, program, uniformInfo, clearInfo);
+        return new RenderPass(gl, program, mapGlPrimitive(gl, primitive), uniformInfo, clearInfo);
     }
     render(vao, props, count, instanceCount) {
         const gl = this.gl;
@@ -428,32 +427,36 @@ class RenderPass {
         });
     }
     clear() {
-        const gl = this.gl;
-        if (this.clearInfo) {
+        const { gl, clearInfo } = this;
+        if (clearInfo) {
             let clearBits = 0 | 0;
-            if (typeof this.clearInfo.color !== "undefined") {
-                const [r, g, b, a] = this.clearInfo.color;
+            if (typeof clearInfo.color !== "undefined") {
+                const [r, g, b, a] = clearInfo.color;
                 gl.clearColor(r, g, b, a);
                 clearBits |= gl.COLOR_BUFFER_BIT;
             }
-            if (typeof this.clearInfo.depth !== "undefined") {
-                gl.clearDepth(this.clearInfo.depth);
+            if (typeof clearInfo.depth !== "undefined") {
+                gl.clearDepth(clearInfo.depth);
                 clearBits |= gl.DEPTH_BUFFER_BIT;
             }
-            if (typeof this.clearInfo.stencil !== "undefined") {
-                gl.clearStencil(this.clearInfo.stencil);
+            if (typeof clearInfo.stencil !== "undefined") {
+                gl.clearStencil(clearInfo.stencil);
                 clearBits |= gl.STENCIL_BUFFER_BIT;
             }
-            gl.clear(clearBits);
+            if (clearBits) {
+                gl.clear(clearBits);
+            }
         }
     }
     draw(elemCount, instCount) {
-        const gl = this.gl;
+        const { gl, glPrimitive } = this;
         if (instCount) {
-            gl.drawElementsInstanced(gl.TRIANGLES, elemCount, gl.UNSIGNED_INT, 0, instCount);
+            gl.drawElementsInstanced(glPrimitive, elemCount, gl.UNSIGNED_INT, // We only support u32 indices
+            0, instCount);
         }
         else {
-            gl.drawElements(gl.TRIANGLES, elemCount, gl.UNSIGNED_INT, 0);
+            gl.drawElements(glPrimitive, elemCount, gl.UNSIGNED_INT, // We only support u32 indices
+            0);
         }
     }
     updateUniforms(props) {
@@ -592,6 +595,18 @@ class UniformInfo {
         this.identifier = identifier;
         this.location = location;
         this.definition = definition;
+    }
+}
+function mapGlPrimitive(gl, primitive) {
+    switch (primitive) {
+        case "triangles" /* Triangles */: return gl.TRIANGLES;
+        case "triangle-strip" /* TriangleStrip */: return gl.TRIANGLE_STRIP;
+        case "triangle-fan" /* TriangleFan */: return gl.TRIANGLE_FAN;
+        case "points" /* Points */: return gl.POINTS;
+        case "lines" /* Lines */: return gl.LINES;
+        case "line-strip" /* LineStrip */: return gl.LINE_STRIP;
+        case "line-loop" /* LineLoop */: return gl.LINE_LOOP;
+        default: return never(primitive);
     }
 }
 
