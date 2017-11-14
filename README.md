@@ -11,8 +11,8 @@ While everything is work in progress at the moment, these are some of our goals:
 - Enable as many of the underlying features as possible while maintaining other
         goals
 
-Try looking at our [gallery](https://yanchith.github.io/glutenfree/) (more to
-come).
+Try looking at our [gallery](https://yanchith.github.io/glutenfree/) (need ES
+module capable browser, eg Chrome 62).
 
 _Glutenfree_ is heavily inspired by [regl](http://regl.party), but we try to
 improve on some things, mainly discouraging WebGL antipatterns, and safety.
