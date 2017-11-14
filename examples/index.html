@@ -31,9 +31,9 @@
             position: absolute;
             top: 0px;
             right: 200px;
-            margin: 10px;
+            margin: 10px 2px;
             padding: 0px;
-            border: 2px solid lawngreen;
+            border: 2px solid green;
             width: 700px;
             height: calc(100% - 24px);
             opacity: 0.85;
@@ -46,13 +46,33 @@
             right: 0px;
             margin: 10px;
             padding: 0px;
-            border: 2px solid lawngreen;
+            border: 2px solid green;
             width: calc(200px - 20px);
             height: calc(100% - 24px);
             opacity: 0.85;
             z-index: 1;
+            color: rgb(200, 200, 200);
+            background-color: rgb(10, 10, 10);
             font-family: monospace;
             font-size: 1.2em;
+        }
+
+        #menu > div {
+            margin: 5px;
+            border: 1px solid grey;
+            padding: 5px;
+        }
+
+        #menu > div:hover {
+            background-color: rgb(30, 30, 30);
+        }
+
+        #menu > div:active {
+            color: red;
+        }
+
+        #menu > div.selected {
+            color: lawngreen;
         }
     </style>
     <link rel="stylesheet" href="./_sandbox/codemirror/codemirror.css"></link>
@@ -64,9 +84,9 @@
     <iframe id="iframe" src="sandbox.html"></iframe>
     <div id="editor"></div>
     <div id="menu">
-        <a href="triangle.js">triangle</a>
-        <a href="instancing.js">instancing</a>
-        <a href="image-processing.js">image processing</a>
+        <div data-href="triangle.js">triangle</div>
+        <div data-href="instancing.js">instancing</div>
+        <div data-href="image-processing.js">image processing</div>
     </div>
 
     <script src="./_sandbox/codemirror/codemirror.js"></script>
@@ -99,8 +119,11 @@
 
         menuElem.addEventListener("click", ev => {
             console.log(ev);
-            if (ev.target.tagName.toLowerCase() === "a") {
-                fetchExample(ev.target.href);
+            if (ev.target.dataset.href) {
+                document.querySelectorAll(".selected")
+                    .forEach(elem => elem.classList.remove("selected"))
+                ev.target.classList.add("selected");
+                fetchExample(ev.target.dataset.href);
             }
             ev.preventDefault();
         }, true);

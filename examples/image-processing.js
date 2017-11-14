@@ -37,16 +37,15 @@ function computeKernelWeight(kernel) {
 const currentKernel = kernels.edgeDetect;
 
 const canvas = document.getElementById("canvas");
+const dpr = window.devicePixelRatio;
+const w = canvas.clientWidth * dpr;
+const h = canvas.clientHeight * dpr;
+canvas.width = w;
+canvas.height = h;
+const gl = canvas.getContext("webgl2");
 
 async function run() {
     const imageData = await loadImage("img/lenna.png", true);
-    const dpr = window.devicePixelRatio;
-    const w = canvas.clientWidth * dpr;
-    const h = canvas.clientHeight * dpr;
-    canvas.width = w;
-    canvas.height = h;
-    const gl = canvas.getContext("webgl2");
-
     const imageTexture = Texture.fromImage(gl, imageData);
     const fboTexture = Texture.RGBA8FromRGBAUint8Array(
         gl,
