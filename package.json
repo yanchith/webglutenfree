@@ -6,7 +6,6 @@
   "license": "MIT",
   "main": "dist/index.umd.js",
   "module": "dist/index.esm.js",
-  "types": "dist/index.d.ts",
   "scripts": {
     "serve": "http-server docs -p 8000",
     "prebuild": "rimraf build",
