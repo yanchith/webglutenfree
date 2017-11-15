@@ -1,4 +1,4 @@
-import { RenderPass } from "./lib/glutenfree.esm.js";
+import { Command, VertexArray } from "./lib/glutenfree.esm.js";
 
 const canvas = document.getElementById("canvas");
 const dpr = window.devicePixelRatio;
@@ -6,7 +6,7 @@ canvas.width = canvas.clientWidth * dpr;
 canvas.height = canvas.clientHeight * dpr;
 const gl = canvas.getContext("webgl2");
 
-const pass = RenderPass.fromProps(gl, {
+const cmd = Command.create(gl, {
     vert: `#version 300 es
         precision mediump float;
 
@@ -34,14 +34,14 @@ const pass = RenderPass.fromProps(gl, {
     primitive: "lines",
 });
 
-const triangle = pass.createVertexArray({
+const triangle = VertexArray.create(gl, {
     attributes: {
-        a_vertex_position: [
+        0: [
             [-1, 0],
             [0, -1],
             [1, 1],
         ],
-        a_vertex_color: [
+        1: [
             [1, 0, 0, 1],
             [0, 1, 0, 1],
             [0, 0, 1, 1],
@@ -52,4 +52,4 @@ const triangle = pass.createVertexArray({
     ],
 });
 
-pass.render(triangle);
+cmd.execute(triangle);

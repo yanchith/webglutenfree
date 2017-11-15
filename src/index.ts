@@ -1,6 +1,6 @@
-export { RenderPass, RenderPassProps } from "./render-pass";
+export { Command, CommandProps } from "./command";
 export { VertexBuffer, VertexBufferProps, VertexBufferType } from "./vertex-buffer";
-export { ElementBuffer, ElementBufferProps, ElementPrimitive } from "./element-buffer";
+export { ElementBuffer, ElementBufferProps } from "./element-buffer";
 export { VertexArray, VertexArrayProps } from "./vertex-array";
 export {
     Texture,

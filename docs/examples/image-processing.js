@@ -1,4 +1,4 @@
-import { RenderPass, Texture, Framebuffer } from "./lib/glutenfree.esm.js";
+import { Command, VertexArray, Texture, Framebuffer } from "./lib/glutenfree.esm.js";
 import { loadImage } from "./lib/load-image.js";
 
 const kernels = {
@@ -55,7 +55,7 @@ async function run() {
     );
     const fbo = Framebuffer.fromTextures(gl, [fboTexture]);
 
-    const texturePass = RenderPass.fromProps(gl, {
+    const texturePass = Command.create(gl, {
         vert: `#version 300 es
             precision mediump float;
 
@@ -89,7 +89,7 @@ async function run() {
         },
     });
 
-    const texturePassGeometry = texturePass.createVertexArray({
+    const texturePassGeometry = VertexArray.create(gl, texturePass.locate({
         attributes: {
             a_vertex_position: [
                 [0.9, 0.9],
@@ -108,9 +108,9 @@ async function run() {
             [0, 3, 2],
             [1, 3, 0],
         ],
-    });
+    }));
 
-    const kernelPass = RenderPass.fromProps(gl, {
+    const kernelPass = Command.create(gl, {
         vert: `#version 300 es
             precision mediump float;
 
@@ -166,7 +166,7 @@ async function run() {
         },
     });
 
-    const kernelPassGeometry = kernelPass.createVertexArray({
+    const kernelPassGeometry = VertexArray.create(gl, kernelPass.locate({
         attributes: {
             a_vertex_position: [
                 [0.9, 0.9],
@@ -185,10 +185,10 @@ async function run() {
             [0, 3, 2],
             [1, 3, 0],
         ],
-    });
+    }));
 
-    texturePass.renderToFramebuffer(fbo, texturePassGeometry);
-    kernelPass.render(kernelPassGeometry);
+    texturePass.execute(texturePassGeometry, undefined, fbo);
+    kernelPass.execute(kernelPassGeometry);
 }
 
 run();

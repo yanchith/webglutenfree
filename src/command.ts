@@ -7,7 +7,7 @@ import { Framebuffer } from "./framebuffer";
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 
-export interface RenderPassProps<P> {
+export interface CommandProps<P> {
     vert: string;
     frag: string;
     uniforms?: { [key: string]: Uniform<P> };
@@ -29,9 +29,9 @@ export const enum Primitive {
     LineLoop = "line-loop",
 }
 
-export class RenderPass<P = void> {
+export class Command<P = void> {
 
-    static fromProps<P = void>(
+    static create<P = void>(
         gl: WebGL2RenderingContext,
         {
             vert,
@@ -39,8 +39,8 @@ export class RenderPass<P = void> {
             uniforms = {},
             primitive = Primitive.Triangles,
             clear = {},
-        }: RenderPassProps<P>,
-    ): RenderPass<P> {
+        }: CommandProps<P>,
+    ): Command<P> {
         const vertShader = glutil.createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = glutil.createShader(gl, gl.FRAGMENT_SHADER, frag);
         const program = glutil.createProgram(gl, vertShader, fragShader);
@@ -57,7 +57,7 @@ export class RenderPass<P = void> {
                 return new UniformInfo(identifier, location, uniform);
             });
         const clearInfo = new ClearInfo(clear.color, clear.depth, clear.stencil);
-        return new RenderPass(
+        return new Command(
             gl,
             program,
             mapGlPrimitive(gl, primitive),
@@ -74,9 +74,10 @@ export class RenderPass<P = void> {
         private clearInfo?: ClearInfo,
     ) { }
 
-    render(
+    execute(
         vao: VertexArray,
         props: P,
+        framebuffer?: Framebuffer,
     ): void {
         const { gl, glProgram } = this;
 
@@ -84,39 +85,29 @@ export class RenderPass<P = void> {
         this.updateUniforms(props);
         gl.bindVertexArray(vao.glVertexArrayObject);
 
+        let bufferWidth = gl.drawingBufferWidth;
+        let bufferHeight = gl.drawingBufferHeight;
+
+        if (framebuffer) {
+            framebuffer.bind();
+            gl.drawBuffers(framebuffer.colorAttachments);
+            bufferWidth = framebuffer.width;
+            bufferHeight = framebuffer.height;
+        }
+
         this.clear();
 
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        gl.viewport(0, 0, bufferWidth, bufferHeight);
         this.draw(vao.hasElements, vao.count, vao.instanceCount);
+
+        if (framebuffer) {
+            framebuffer.unbind();
+        }
 
         gl.bindVertexArray(null);
     }
 
-    renderToFramebuffer(
-        framebuffer: Framebuffer,
-        vao: VertexArray,
-        props: P,
-    ): void {
-        const { gl, glProgram } = this;
-
-        gl.useProgram(glProgram);
-        this.updateUniforms(props);
-        gl.bindVertexArray(vao.glVertexArrayObject);
-
-        framebuffer.bind();
-        gl.drawBuffers(framebuffer.colorAttachments);
-
-        this.clear();
-
-        gl.viewport(0, 0, framebuffer.width, framebuffer.height);
-        this.draw(vao.hasElements, vao.count, vao.instanceCount);
-
-        framebuffer.unbind();
-
-        gl.bindVertexArray(null);
-    }
-
-    createVertexArray({ attributes, elements }: VertexArrayProps): VertexArray {
+    locate({ attributes, elements }: VertexArrayProps): VertexArrayProps {
         type Attributes = VertexArrayProps["attributes"];
         const { gl, glProgram } = this;
         const locatedAttributes = Object.entries(attributes)
@@ -132,10 +123,7 @@ export class RenderPass<P = void> {
                 }
                 return accum;
             }, {});
-        return VertexArray.fromProps(gl, {
-            attributes: locatedAttributes,
-            elements,
-        });
+        return{ attributes: locatedAttributes, elements };
     }
 
     private clear(): void {

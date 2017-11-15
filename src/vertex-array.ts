@@ -78,7 +78,7 @@ export interface VertexArrayProps {
 
 export class VertexArray {
 
-    static fromProps(
+    static create(
         gl: WebGL2RenderingContext,
         { attributes, elements }: VertexArrayProps,
     ): VertexArray {
@@ -104,7 +104,7 @@ export class VertexArray {
         if (elements) {
             elems = elements instanceof ElementBuffer
                 ? elements
-                : ElementBuffer.fromProps(gl, elements);
+                : ElementBuffer.create(gl, elements);
         }
 
         // Create vertex array
@@ -190,7 +190,7 @@ class AttributeInfo {
                 props.value instanceof VertexBuffer
                     ? props.value
                     // Note: typescript is not smart enough to infer what we know
-                    : VertexBuffer.fromProps(gl, props.value as any),
+                    : VertexBuffer.create(gl, props.value as any),
                 props.count,
                 props.size,
                 props.normalized || false,
@@ -201,7 +201,7 @@ class AttributeInfo {
                 props.value instanceof VertexBuffer
                     ? props.value
                     // Note: typescript is not smart enough to infer what we know
-                    : VertexBuffer.fromProps(gl, props.value as any),
+                    : VertexBuffer.create(gl, props.value as any),
                 props.count,
                 props.size,
                 false,

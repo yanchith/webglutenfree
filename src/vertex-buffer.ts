@@ -50,35 +50,35 @@ export interface VertexBufferFloat32Props {
 
 export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
 
-    static fromProps(
+    static create(
         gl: WebGL2RenderingContext,
         props: VertexBufferInt8Props,
     ): VertexBuffer<"i8">;
-    static fromProps(
+    static create(
         gl: WebGL2RenderingContext,
         props: VertexBufferInt16Props,
     ): VertexBuffer<"i16">;
-    static fromProps(
+    static create(
         gl: WebGL2RenderingContext,
         props: VertexBufferInt32Props,
     ): VertexBuffer<"i32">;
-    static fromProps(
+    static create(
         gl: WebGL2RenderingContext,
         props: VertexBufferUint8Props,
     ): VertexBuffer<"u8">;
-    static fromProps(
+    static create(
         gl: WebGL2RenderingContext,
         props: VertexBufferUint16Props,
     ): VertexBuffer<"u16">;
-    static fromProps(
+    static create(
         gl: WebGL2RenderingContext,
         props: VertexBufferUint32Props,
     ): VertexBuffer<"u32">;
-    static fromProps(
+    static create(
         gl: WebGL2RenderingContext,
         props: VertexBufferFloat32Props,
     ): VertexBuffer<"f32">;
-    static fromProps(
+    static create(
         gl: WebGL2RenderingContext,
         props: VertexBufferProps,
     ): VertexBuffer<VertexBufferProps["type"]> {

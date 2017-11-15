@@ -1,4 +1,4 @@
-import { RenderPass } from "./lib/glutenfree.esm.js";
+import { Command, VertexArray } from "./lib/glutenfree.esm.js";
 
 const canvas = document.getElementById("canvas");
 const gl = canvas.getContext("webgl2");
@@ -23,7 +23,7 @@ const view = mat4.identity(mat4.create());
 mat4.scale(model, model, [100, 100, 100]);
 mat4.translate(view, view, [0, 0, -1])
 
-const pass = RenderPass.fromProps(gl, {
+const cmd = Command.create(gl, {
     vert: `#version 300 es
         precision mediump float;
 
@@ -75,7 +75,7 @@ const pass = RenderPass.fromProps(gl, {
     }
 });
 
-const instanced = pass.createVertexArray({
+const instanced = VertexArray.create(gl, cmd.locate({
     attributes: {
         a_vertex_position: [
             [1, 1],
@@ -125,10 +125,10 @@ const instanced = pass.createVertexArray({
         [0, 3, 2],
         [1, 3, 0],
     ],
-})
+}));
 
 const loop = time => {
-    pass.render(instanced);
+    cmd.execute(instanced);
     window.requestAnimationFrame(loop);
 }
 

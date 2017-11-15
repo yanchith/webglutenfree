@@ -14,7 +14,7 @@ export type ElementBufferArrayProps = [number, number, number][];
 
 export class ElementBuffer {
 
-    static fromProps(
+    static create(
         gl: WebGL2RenderingContext,
         props: ElementBufferProps,
     ): ElementBuffer {

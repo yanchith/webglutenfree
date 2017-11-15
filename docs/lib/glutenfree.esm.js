@@ -168,191 +168,9 @@ function createFramebuffer(gl, textures) {
     throw new Error("Framebuffer not complete");
 }
 
-/**
- * Chacks whether  array is at least 2d, mostly useful because of return type
- * predicate.
- */
-function is2DArray(array) {
-    return !!array.length || Array.isArray(array[0]);
-}
-/**
- * Flatten 2d array and compute its former shape.
- * eg.
- * ravel([
- *      [1, 2, 3],
- *      [4, 5, 6],
- * ])
- * produces {
- *      data: [1, 2, 3, 4, 5, 6],
- *      shape: [2, 3],
- * }
- */
-function ravel(unraveled) {
-    const outerShape = unraveled.length;
-    const innerShape = outerShape ? unraveled[0].length : 0;
-    const raveled = new Array(innerShape * outerShape);
-    unraveled.forEach((inner, i) => {
-        inner.forEach((elem, j) => {
-            raveled[innerShape * i + j] = elem;
-        });
-    });
-    return { data: raveled, shape: [outerShape, innerShape] };
-}
-
-class VertexBuffer {
-    constructor(gl, type, glType, data) {
-        this.gl = gl;
-        this.type = type;
-        this.glType = glType;
-        this.glBuffer = createArrayBuffer(gl, data);
-    }
-    static fromProps(gl, props) {
-        switch (props.type) {
-            case "i8": return VertexBuffer.fromInt8Array(gl, props.data);
-            case "i16": return VertexBuffer.fromInt16Array(gl, props.data);
-            case "i32": return VertexBuffer.fromInt32Array(gl, props.data);
-            case "u8": return VertexBuffer.fromUint8Array(gl, props.data);
-            case "u16": return VertexBuffer.fromUint16Array(gl, props.data);
-            case "u32": return VertexBuffer.fromUint32Array(gl, props.data);
-            case "f32": return VertexBuffer.fromFloat32Array(gl, props.data);
-            default: return never(props);
-        }
-    }
-    static fromInt8Array(gl, data) {
-        return new VertexBuffer(gl, "i8", gl.BYTE, data instanceof Int8Array ? data : new Int8Array(data));
-    }
-    static fromInt16Array(gl, data) {
-        return new VertexBuffer(gl, "i16", gl.SHORT, data instanceof Int16Array ? data : new Int16Array(data));
-    }
-    static fromInt32Array(gl, data) {
-        return new VertexBuffer(gl, "i32", gl.INT, data instanceof Int32Array ? data : new Int32Array(data));
-    }
-    static fromUint8Array(gl, data) {
-        return new VertexBuffer(gl, "u8", gl.UNSIGNED_BYTE, 
-        // Note: we also have to convert Uint8ClampedArray to Uint8Array
-        // because of webgl bug
-        // https://github.com/KhronosGroup/WebGL/issues/1533
-        data instanceof Uint8Array ? data : new Uint8Array(data));
-    }
-    static fromUint16Array(gl, data) {
-        return new VertexBuffer(gl, "u16", gl.UNSIGNED_SHORT, data instanceof Uint16Array ? data : new Uint16Array(data));
-    }
-    static fromUint32Array(gl, data) {
-        return new VertexBuffer(gl, "u32", gl.UNSIGNED_INT, data instanceof Uint32Array ? data : new Uint32Array(data));
-    }
-    static fromFloat32Array(gl, data) {
-        return new VertexBuffer(gl, "f32", gl.FLOAT, data instanceof Float32Array ? data : new Float32Array(data));
-    }
-}
-
-class ElementBuffer {
-    static fromProps(gl, props) {
-        if (Array.isArray(props)) {
-            return ElementBuffer.fromArray(gl, props);
-        }
-        return ElementBuffer.fromUint32Array(gl, props.data);
-    }
-    static fromArray(gl, arr) {
-        const data = ravel(arr).data;
-        return new ElementBuffer(gl, new Uint32Array(data));
-    }
-    static fromUint32Array(gl, buffer) {
-        return new ElementBuffer(gl, Array.isArray(buffer) ? new Uint32Array(buffer) : buffer);
-    }
-    constructor(gl, buffer) {
-        this.glBuffer = createElementArrayBuffer(gl, buffer);
-        this.count = buffer.length;
-    }
-}
-
-const INT_PATTERN$1 = /^0|[1-9]\d*$/;
-class VertexArray {
-    constructor(glVertexArrayObject, hasElements, count, // Either count of vertex data or of elements
-        instanceCount) {
-        this.glVertexArrayObject = glVertexArrayObject;
-        this.hasElements = hasElements;
-        this.count = count;
-        this.instanceCount = instanceCount;
-    }
-    static fromProps(gl, { attributes, elements }) {
-        // Setup attributes
-        const attribs = [];
-        const attribLocations = [];
-        Object.entries(attributes).forEach(([locationStr, definition]) => {
-            if (!INT_PATTERN$1.test(locationStr)) {
-                throw new Error("Location is not a number. Use RenderPass#createVertexArray to resolve names.");
-            }
-            const location = parseInt(locationStr, 10);
-            attribLocations.push(location);
-            attribs.push(AttributeInfo.create(gl, definition));
-        });
-        // Setup elements
-        let elems;
-        if (elements) {
-            elems = elements instanceof ElementBuffer
-                ? elements
-                : ElementBuffer.fromProps(gl, elements);
-        }
-        // Create vertex array
-        const vao = createVertexArray(gl, attribs.map((attrib, i) => ({
-            type: attrib.type === "ipointer"
-                ? 1 /* IPointer */
-                : 0 /* Pointer */,
-            buffer: attrib.buffer.glBuffer,
-            bufferType: attrib.buffer.glType,
-            size: attrib.size,
-            location: attribLocations[i],
-            normalized: attrib.normalized,
-            divisor: attrib.divisor,
-        })), elems ? elems.glBuffer : undefined);
-        // Compute max safe instance count
-        const instancedBuffers = attribs
-            .filter(buffer => !!buffer.divisor);
-        const instanceCount = instancedBuffers.length
-            ? instancedBuffers
-                .map(b => b.count * b.divisor)
-                .reduce((min, curr) => Math.min(min, curr))
-            : 0;
-        // Create VAO
-        return new VertexArray(vao, !!elems, elems ? elems.count : attribs[0].count, instanceCount);
-    }
-}
-// TODO: this could use some further refactoring. Currently its just former
-// public API made private.
-class AttributeInfo {
-    static create(gl, props) {
-        if (Array.isArray(props)) {
-            if (is2DArray(props)) {
-                const r = ravel(props);
-                return new AttributeInfo("pointer", VertexBuffer.fromFloat32Array(gl, r.data), r.shape[0], r.shape[1], false, 0);
-            }
-            return new AttributeInfo("pointer", VertexBuffer.fromFloat32Array(gl, props), props.length, 1, false, 0);
-        }
-        switch (props.type) {
-            case "pointer": return new AttributeInfo(props.type, props.value instanceof VertexBuffer
-                ? props.value
-                // Note: typescript is not smart enough to infer what we know
-                : VertexBuffer.fromProps(gl, props.value), props.count, props.size, props.normalized || false, props.divisor || 0);
-            case "ipointer": return new AttributeInfo(props.type, props.value instanceof VertexBuffer
-                ? props.value
-                // Note: typescript is not smart enough to infer what we know
-                : VertexBuffer.fromProps(gl, props.value), props.count, props.size, false, props.divisor || 0);
-            default: return never(props);
-        }
-    }
-    constructor(type, buffer, count, size, normalized, divisor) {
-        this.type = type;
-        this.buffer = buffer;
-        this.count = count;
-        this.size = size;
-        this.normalized = normalized;
-        this.divisor = divisor;
-    }
-}
-
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
-class RenderPass {
+class Command {
     constructor(gl, glProgram, glPrimitive, uniformInfo, clearInfo) {
         this.gl = gl;
         this.glProgram = glProgram;
@@ -360,7 +178,7 @@ class RenderPass {
         this.uniformInfo = uniformInfo;
         this.clearInfo = clearInfo;
     }
-    static fromProps(gl, { vert, frag, uniforms = {}, primitive = "triangles" /* Triangles */, clear = {}, }) {
+    static create(gl, { vert, frag, uniforms = {}, primitive = "triangles" /* Triangles */, clear = {}, }) {
         const vertShader = createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = createShader(gl, gl.FRAGMENT_SHADER, frag);
         const program = createProgram(gl, vertShader, fragShader);
@@ -375,32 +193,30 @@ class RenderPass {
             return new UniformInfo(identifier, location, uniform);
         });
         const clearInfo = new ClearInfo(clear.color, clear.depth, clear.stencil);
-        return new RenderPass(gl, program, mapGlPrimitive(gl, primitive), uniformInfo, clearInfo);
+        return new Command(gl, program, mapGlPrimitive(gl, primitive), uniformInfo, clearInfo);
     }
-    render(vao, props) {
+    execute(vao, props, framebuffer) {
         const { gl, glProgram } = this;
         gl.useProgram(glProgram);
         this.updateUniforms(props);
         gl.bindVertexArray(vao.glVertexArrayObject);
+        let bufferWidth = gl.drawingBufferWidth;
+        let bufferHeight = gl.drawingBufferHeight;
+        if (framebuffer) {
+            framebuffer.bind();
+            gl.drawBuffers(framebuffer.colorAttachments);
+            bufferWidth = framebuffer.width;
+            bufferHeight = framebuffer.height;
+        }
         this.clear();
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        gl.viewport(0, 0, bufferWidth, bufferHeight);
         this.draw(vao.hasElements, vao.count, vao.instanceCount);
+        if (framebuffer) {
+            framebuffer.unbind();
+        }
         gl.bindVertexArray(null);
     }
-    renderToFramebuffer(framebuffer, vao, props) {
-        const { gl, glProgram } = this;
-        gl.useProgram(glProgram);
-        this.updateUniforms(props);
-        gl.bindVertexArray(vao.glVertexArrayObject);
-        framebuffer.bind();
-        gl.drawBuffers(framebuffer.colorAttachments);
-        this.clear();
-        gl.viewport(0, 0, framebuffer.width, framebuffer.height);
-        this.draw(vao.hasElements, vao.count, vao.instanceCount);
-        framebuffer.unbind();
-        gl.bindVertexArray(null);
-    }
-    createVertexArray({ attributes, elements }) {
+    locate({ attributes, elements }) {
         const { gl, glProgram } = this;
         const locatedAttributes = Object.entries(attributes)
             .reduce((accum, [identifier, definition]) => {
@@ -416,10 +232,7 @@ class RenderPass {
             }
             return accum;
         }, {});
-        return VertexArray.fromProps(gl, {
-            attributes: locatedAttributes,
-            elements,
-        });
+        return { attributes: locatedAttributes, elements };
     }
     clear() {
         const { gl, clearInfo } = this;
@@ -615,6 +428,188 @@ function mapGlPrimitive(gl, primitive) {
     }
 }
 
+class VertexBuffer {
+    constructor(gl, type, glType, data) {
+        this.gl = gl;
+        this.type = type;
+        this.glType = glType;
+        this.glBuffer = createArrayBuffer(gl, data);
+    }
+    static create(gl, props) {
+        switch (props.type) {
+            case "i8": return VertexBuffer.fromInt8Array(gl, props.data);
+            case "i16": return VertexBuffer.fromInt16Array(gl, props.data);
+            case "i32": return VertexBuffer.fromInt32Array(gl, props.data);
+            case "u8": return VertexBuffer.fromUint8Array(gl, props.data);
+            case "u16": return VertexBuffer.fromUint16Array(gl, props.data);
+            case "u32": return VertexBuffer.fromUint32Array(gl, props.data);
+            case "f32": return VertexBuffer.fromFloat32Array(gl, props.data);
+            default: return never(props);
+        }
+    }
+    static fromInt8Array(gl, data) {
+        return new VertexBuffer(gl, "i8", gl.BYTE, data instanceof Int8Array ? data : new Int8Array(data));
+    }
+    static fromInt16Array(gl, data) {
+        return new VertexBuffer(gl, "i16", gl.SHORT, data instanceof Int16Array ? data : new Int16Array(data));
+    }
+    static fromInt32Array(gl, data) {
+        return new VertexBuffer(gl, "i32", gl.INT, data instanceof Int32Array ? data : new Int32Array(data));
+    }
+    static fromUint8Array(gl, data) {
+        return new VertexBuffer(gl, "u8", gl.UNSIGNED_BYTE, 
+        // Note: we also have to convert Uint8ClampedArray to Uint8Array
+        // because of webgl bug
+        // https://github.com/KhronosGroup/WebGL/issues/1533
+        data instanceof Uint8Array ? data : new Uint8Array(data));
+    }
+    static fromUint16Array(gl, data) {
+        return new VertexBuffer(gl, "u16", gl.UNSIGNED_SHORT, data instanceof Uint16Array ? data : new Uint16Array(data));
+    }
+    static fromUint32Array(gl, data) {
+        return new VertexBuffer(gl, "u32", gl.UNSIGNED_INT, data instanceof Uint32Array ? data : new Uint32Array(data));
+    }
+    static fromFloat32Array(gl, data) {
+        return new VertexBuffer(gl, "f32", gl.FLOAT, data instanceof Float32Array ? data : new Float32Array(data));
+    }
+}
+
+/**
+ * Chacks whether  array is at least 2d, mostly useful because of return type
+ * predicate.
+ */
+function is2DArray(array) {
+    return !!array.length || Array.isArray(array[0]);
+}
+/**
+ * Flatten 2d array and compute its former shape.
+ * eg.
+ * ravel([
+ *      [1, 2, 3],
+ *      [4, 5, 6],
+ * ])
+ * produces {
+ *      data: [1, 2, 3, 4, 5, 6],
+ *      shape: [2, 3],
+ * }
+ */
+function ravel(unraveled) {
+    const outerShape = unraveled.length;
+    const innerShape = outerShape ? unraveled[0].length : 0;
+    const raveled = new Array(innerShape * outerShape);
+    unraveled.forEach((inner, i) => {
+        inner.forEach((elem, j) => {
+            raveled[innerShape * i + j] = elem;
+        });
+    });
+    return { data: raveled, shape: [outerShape, innerShape] };
+}
+
+class ElementBuffer {
+    static create(gl, props) {
+        if (Array.isArray(props)) {
+            return ElementBuffer.fromArray(gl, props);
+        }
+        return ElementBuffer.fromUint32Array(gl, props.data);
+    }
+    static fromArray(gl, arr) {
+        const data = ravel(arr).data;
+        return new ElementBuffer(gl, new Uint32Array(data));
+    }
+    static fromUint32Array(gl, buffer) {
+        return new ElementBuffer(gl, Array.isArray(buffer) ? new Uint32Array(buffer) : buffer);
+    }
+    constructor(gl, buffer) {
+        this.glBuffer = createElementArrayBuffer(gl, buffer);
+        this.count = buffer.length;
+    }
+}
+
+const INT_PATTERN$1 = /^0|[1-9]\d*$/;
+class VertexArray {
+    constructor(glVertexArrayObject, hasElements, count, // Either count of vertex data or of elements
+        instanceCount) {
+        this.glVertexArrayObject = glVertexArrayObject;
+        this.hasElements = hasElements;
+        this.count = count;
+        this.instanceCount = instanceCount;
+    }
+    static create(gl, { attributes, elements }) {
+        // Setup attributes
+        const attribs = [];
+        const attribLocations = [];
+        Object.entries(attributes).forEach(([locationStr, definition]) => {
+            if (!INT_PATTERN$1.test(locationStr)) {
+                throw new Error("Location is not a number. Use RenderPass#createVertexArray to resolve names.");
+            }
+            const location = parseInt(locationStr, 10);
+            attribLocations.push(location);
+            attribs.push(AttributeInfo.create(gl, definition));
+        });
+        // Setup elements
+        let elems;
+        if (elements) {
+            elems = elements instanceof ElementBuffer
+                ? elements
+                : ElementBuffer.create(gl, elements);
+        }
+        // Create vertex array
+        const vao = createVertexArray(gl, attribs.map((attrib, i) => ({
+            type: attrib.type === "ipointer"
+                ? 1 /* IPointer */
+                : 0 /* Pointer */,
+            buffer: attrib.buffer.glBuffer,
+            bufferType: attrib.buffer.glType,
+            size: attrib.size,
+            location: attribLocations[i],
+            normalized: attrib.normalized,
+            divisor: attrib.divisor,
+        })), elems ? elems.glBuffer : undefined);
+        // Compute max safe instance count
+        const instancedBuffers = attribs
+            .filter(buffer => !!buffer.divisor);
+        const instanceCount = instancedBuffers.length
+            ? instancedBuffers
+                .map(b => b.count * b.divisor)
+                .reduce((min, curr) => Math.min(min, curr))
+            : 0;
+        // Create VAO
+        return new VertexArray(vao, !!elems, elems ? elems.count : attribs[0].count, instanceCount);
+    }
+}
+// TODO: this could use some further refactoring. Currently its just former
+// public API made private.
+class AttributeInfo {
+    static create(gl, props) {
+        if (Array.isArray(props)) {
+            if (is2DArray(props)) {
+                const r = ravel(props);
+                return new AttributeInfo("pointer", VertexBuffer.fromFloat32Array(gl, r.data), r.shape[0], r.shape[1], false, 0);
+            }
+            return new AttributeInfo("pointer", VertexBuffer.fromFloat32Array(gl, props), props.length, 1, false, 0);
+        }
+        switch (props.type) {
+            case "pointer": return new AttributeInfo(props.type, props.value instanceof VertexBuffer
+                ? props.value
+                // Note: typescript is not smart enough to infer what we know
+                : VertexBuffer.create(gl, props.value), props.count, props.size, props.normalized || false, props.divisor || 0);
+            case "ipointer": return new AttributeInfo(props.type, props.value instanceof VertexBuffer
+                ? props.value
+                // Note: typescript is not smart enough to infer what we know
+                : VertexBuffer.create(gl, props.value), props.count, props.size, false, props.divisor || 0);
+            default: return never(props);
+        }
+    }
+    constructor(type, buffer, count, size, normalized, divisor) {
+        this.type = type;
+        this.buffer = buffer;
+        this.count = count;
+        this.size = size;
+        this.normalized = normalized;
+        this.divisor = divisor;
+    }
+}
+
 class Texture {
     static fromImage(gl, image, options) {
         return Texture.RGBA8FromRGBAUint8Array(gl, image.data, image.width, image.height, options);
@@ -776,5 +771,5 @@ class Framebuffer {
     }
 }
 
-export { RenderPass, VertexBuffer, ElementBuffer, VertexArray, Texture, Framebuffer };
+export { Command, VertexBuffer, ElementBuffer, VertexArray, Texture, Framebuffer };
 //# sourceMappingURL=glutenfree.esm.js.map
