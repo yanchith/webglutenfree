@@ -36,9 +36,9 @@ const cmd = Command.create(gl, {
 const triangle = VertexArray.create(gl, {
     attributes: {
         0: [
-            [-1, 0],
-            [0, -1],
-            [1, 1],
+            [-0.3, -0.5],
+            [0.3, -0.5],
+            [0, 0.5],
         ],
         1: [
             [1, 0, 0, 1],
