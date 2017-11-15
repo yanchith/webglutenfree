@@ -13,9 +13,9 @@ const cmd = Command.create(gl, {
     vert: `#version 300 es
         precision mediump float;
 
-        layout (location = 0) in vec3 a_vertex_position;
-
         uniform mat4 u_projection, u_model, u_view;
+
+        layout (location = 0) in vec3 a_vertex_position;
 
         void main() {
             gl_Position = u_projection
