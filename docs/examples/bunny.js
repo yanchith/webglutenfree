@@ -15,12 +15,12 @@ const pass = RenderPass.fromProps(gl, {
 
         layout (location = 0) in vec3 a_vertex_position;
 
-        uniform mat4 projection, model, view;
+        uniform mat4 u_projection, u_model, u_view;
 
         void main() {
-            gl_Position = projection
-                * model
-                * view
+            gl_Position = u_projection
+                * u_model
+                * u_view
                 * vec4(a_vertex_position, 1.0);
         }
     `,
@@ -34,7 +34,7 @@ const pass = RenderPass.fromProps(gl, {
         }
     `,
     uniforms: {
-        projection: {
+        u_projection: {
             type: "matrix4fv",
             value: mat4.perspective(
                 mat4.create(),
@@ -44,11 +44,11 @@ const pass = RenderPass.fromProps(gl, {
                 1000.0,
             ),
         },
-        model: {
+        u_model: {
             type: "matrix4fv",
             value: mat4.identity(mat4.create()),
         },
-        view: {
+        u_view: {
             type: "matrix4fv",
             value: time => mat4.lookAt(
                 view,
