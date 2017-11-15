@@ -1,4 +1,9 @@
-import { Command, VertexArray, Texture, Framebuffer } from "./lib/glutenfree.esm.js";
+import {
+    Command,
+    VertexArray,
+    Texture,
+    Framebuffer,
+} from "./lib/glutenfree.esm.js";
 import { loadImage } from "./lib/load-image.js";
 
 const kernels = {
@@ -92,10 +97,10 @@ async function run() {
     const texturePassGeometry = VertexArray.create(gl, texturePass.locate({
         attributes: {
             a_vertex_position: [
-                [0.9, 0.9],
-                [-0.9, 0.9],
-                [0.9, -0.9],
-                [-0.9, -0.9],
+                [1, 1],
+                [-1, 1],
+                [1, -1],
+                [-1, -1],
             ],
             a_tex_coord: [
                 [1, 1],
@@ -114,14 +119,19 @@ async function run() {
         vert: `#version 300 es
             precision mediump float;
 
-            in vec4 a_vertex_position;
+            uniform mat4 u_projection, u_model, u_view;
+
+            in vec2 a_vertex_position;
             in vec2 a_tex_coord;
 
             out vec2 v_tex_coord;
 
             void main() {
                 v_tex_coord = a_tex_coord;
-                gl_Position = a_vertex_position;
+                gl_Position = u_projection
+                    * u_view
+                    * u_model
+                    * vec4(a_vertex_position, 0.0, 1.0);
             }
         `,
         frag: `#version 300 es
@@ -151,6 +161,26 @@ async function run() {
             }
         `,
         uniforms: {
+            u_model: {
+                type: "matrix4fv",
+                value: mat4.fromScaling(mat4.create(), [1000, 1000, 1]),
+            },
+            u_view: {
+                type: "matrix4fv",
+                value: mat4.identity(mat4.create()),
+            },
+            u_projection: {
+                type: "matrix4fv",
+                value: mat4.ortho(
+                    mat4.create(),
+                    -w / 2,
+                    w / 2,
+                    -h / 2,
+                    h / 2,
+                    -0.1,
+                    1000.0,
+                ),
+            },
             u_kernel: {
                 type: "1fv",
                 value: currentKernel,
@@ -169,10 +199,10 @@ async function run() {
     const kernelPassGeometry = VertexArray.create(gl, kernelPass.locate({
         attributes: {
             a_vertex_position: [
-                [0.9, 0.9],
-                [-0.9, 0.9],
-                [0.9, -0.9],
-                [-0.9, -0.9],
+                [1, 1],
+                [-1, 1],
+                [1, -1],
+                [-1, -1],
             ],
             a_tex_coord: [
                 [1, 1],
