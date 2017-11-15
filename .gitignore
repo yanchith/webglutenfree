@@ -12,8 +12,6 @@ yarn-error.log
 .vscode/
 .idea
 
-# rollup-plugin-typescript
-.rpt2_cache/
-
-# Build dir
+# Build dirs
+build/
 dist/

@@ -8,11 +8,11 @@
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "serve:docs": "http-server docs -p 8000",
-    "prebuild": "rimraf dist",
-    "build": "rollup --config",
-    "prebuild:watch": "rimraf dist",
-    "build:watch": "rollup --config --watch",
+    "serve": "http-server docs -p 8000",
+    "prebuild": "rimraf build",
+    "build": "tsc --outDir build",
+    "prebuild:watch": "rimraf build",
+    "build:watch": "tsc --outDir build --watch",
     "tslint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
     "predist": "rimraf dist",
     "dist": "rollup --config && rollup --config rollup.config.esm.js",
@@ -23,7 +23,6 @@
     "http-server": "^0.10.0",
     "rimraf": "^2.6.2",
     "rollup": "^0.50.1",
-    "rollup-plugin-typescript2": "^0.8.0",
     "tslint": "^5.8.0",
     "typescript": "^2.6.1"
   }
