@@ -15,8 +15,10 @@
     "build:watch": "tsc --outDir build --watch",
     "tslint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
     "predist": "rimraf dist",
-    "dist": "rollup --config && rollup --config rollup.config.esm.js && yarn __dts",
-    "__dts": "dts-bundle-generator src/index.ts -o dist/glutenfree.d.ts --umd-module-name glutenfree",
+    "dist": "yarn dist:umd && yarn dist:esm && yarn dist:dts",
+    "dist:umd": "rollup --config",
+    "dist:esm": "rollup --config rollup.config.esm.js",
+    "dist:dts": "dts-bundle-generator src/index.ts -o dist/glutenfree.d.ts --umd-module-name glutenfree",
     "clean": "rimraf dist"
   },
   "devDependencies": {
