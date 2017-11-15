@@ -4,8 +4,9 @@
   "description": "A simple WebGL 2 rendering library",
   "author": "yanchith",
   "license": "MIT",
-  "main": "dist/index.umd.js",
-  "module": "dist/index.esm.js",
+  "main": "dist/glutenfree.umd.js",
+  "module": "dist/glutenfree.esm.js",
+  "types": "dist/glutenfree.d.ts",
   "scripts": {
     "serve": "http-server docs -p 8000",
     "prebuild": "rimraf build",
@@ -14,11 +15,13 @@
     "build:watch": "tsc --outDir build --watch",
     "tslint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
     "predist": "rimraf dist",
-    "dist": "rollup --config && rollup --config rollup.config.esm.js",
+    "dist": "rollup --config && rollup --config rollup.config.esm.js && yarn __dts",
+    "__dts": "dts-bundle-generator src/index.ts -o dist/glutenfree.d.ts --umd-module-name glutenfree",
     "clean": "rimraf dist"
   },
   "devDependencies": {
     "@types/webgl2": "^0.0.2",
+    "dts-bundle-generator": "^0.6.0",
     "http-server": "^0.10.0",
     "rimraf": "^2.6.2",
     "rollup": "^0.50.1",
