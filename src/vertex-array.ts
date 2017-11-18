@@ -85,7 +85,7 @@ export class VertexArray {
 
         // Setup attributes
 
-        const attribs: AttributeInfo[] = [];
+        const attribDescriptors: AttributeDescriptor[] = [];
         const attribLocations: number[] = [];
         Object.entries(attributes).forEach(([locationStr, definition]) => {
             if (!INT_PATTERN.test(locationStr)) {
@@ -95,7 +95,7 @@ export class VertexArray {
             }
             const location = parseInt(locationStr, 10);
             attribLocations.push(location);
-            attribs.push(AttributeInfo.create(gl, definition));
+            attribDescriptors.push(AttributeDescriptor.create(gl, definition));
         });
 
         // Setup elements
@@ -111,7 +111,7 @@ export class VertexArray {
 
         const vao = glutil.createVertexArray(
             gl,
-            attribs.map((attrib, i) => ({
+            attribDescriptors.map((attrib, i) => ({
                 type: attrib.type === "ipointer"
                     ? glutil.AttribType.IPointer
                     : glutil.AttribType.Pointer,
@@ -127,7 +127,7 @@ export class VertexArray {
 
         // Compute max safe instance count
 
-        const instancedBuffers = attribs
+        const instancedBuffers = attribDescriptors
             .filter(buffer => !!buffer.divisor);
 
         const instanceCount = instancedBuffers.length
@@ -141,7 +141,7 @@ export class VertexArray {
         return new VertexArray(
             vao,
             !!elems,
-            elems ? elems.count : attribs[0].count,
+            elems ? elems.count : attribDescriptors[0].count,
             instanceCount,
         );
     }
@@ -156,16 +156,16 @@ export class VertexArray {
 
 // TODO: this could use some further refactoring. Currently its just former
 // public API made private.
-class AttributeInfo {
+class AttributeDescriptor {
 
     static create(
         gl: WebGL2RenderingContext,
         props: Attribute,
-    ): AttributeInfo {
+    ): AttributeDescriptor {
         if (Array.isArray(props)) {
             if (array.is2DArray(props)) {
                 const r = array.ravel(props);
-                return new AttributeInfo(
+                return new AttributeDescriptor(
                     "pointer",
                     VertexBuffer.fromFloat32Array(gl, r.data),
                     r.shape[0],
@@ -174,7 +174,7 @@ class AttributeInfo {
                     0,
                 );
             }
-            return new AttributeInfo(
+            return new AttributeDescriptor(
                 "pointer",
                 VertexBuffer.fromFloat32Array(gl, props),
                 props.length,
@@ -185,7 +185,7 @@ class AttributeInfo {
         }
 
         switch (props.type) {
-            case "pointer": return new AttributeInfo(
+            case "pointer": return new AttributeDescriptor(
                 props.type,
                 props.value instanceof VertexBuffer
                     ? props.value
@@ -196,7 +196,7 @@ class AttributeInfo {
                 props.normalized || false,
                 props.divisor || 0,
             );
-            case "ipointer": return new AttributeInfo(
+            case "ipointer": return new AttributeDescriptor(
                 props.type,
                 props.value instanceof VertexBuffer
                     ? props.value

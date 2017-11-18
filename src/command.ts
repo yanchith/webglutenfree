@@ -48,21 +48,21 @@ export class Command<P = void> {
         gl.deleteShader(vertShader);
         gl.deleteShader(fragShader);
 
-        const uniformInfo = Object.entries(uniforms)
+        const uniformDescriptors = Object.entries(uniforms)
             .map(([identifier, uniform]) => {
                 const location = gl.getUniformLocation(program, identifier);
                 if (!location) {
                     throw new Error(`No location for uniform: ${identifier}`);
                 }
-                return new UniformInfo(identifier, location, uniform);
+                return new UniformDescriptor(identifier, location, uniform);
             });
-        const clearInfo = new ClearInfo(clear.color, clear.depth, clear.stencil);
+        const clearDescriptor = new ClearDescriptor(clear.color, clear.depth, clear.stencil);
         return new Command(
             gl,
             program,
             mapGlPrimitive(gl, primitive),
-            uniformInfo,
-            clearInfo,
+            uniformDescriptors,
+            clearDescriptor,
         );
     }
 
@@ -70,8 +70,8 @@ export class Command<P = void> {
         private gl: WebGL2RenderingContext,
         private glProgram: WebGLProgram,
         private glPrimitive: number,
-        private uniformInfo: UniformInfo<P>[],
-        private clearInfo?: ClearInfo,
+        private uniformDescriptors: UniformDescriptor<P>[],
+        private clearDescriptor?: ClearDescriptor,
     ) { }
 
     execute(
@@ -127,20 +127,20 @@ export class Command<P = void> {
     }
 
     private clear(): void {
-        const { gl, clearInfo } = this;
-        if (clearInfo) {
+        const { gl, clearDescriptor } = this;
+        if (clearDescriptor) {
             let clearBits = 0 | 0;
-            if (typeof clearInfo.color !== "undefined") {
-                const [r, g, b, a] = clearInfo.color;
+            if (typeof clearDescriptor.color !== "undefined") {
+                const [r, g, b, a] = clearDescriptor.color;
                 gl.clearColor(r, g, b, a);
                 clearBits |= gl.COLOR_BUFFER_BIT;
             }
-            if (typeof clearInfo.depth !== "undefined") {
-                gl.clearDepth(clearInfo.depth);
+            if (typeof clearDescriptor.depth !== "undefined") {
+                gl.clearDepth(clearDescriptor.depth);
                 clearBits |= gl.DEPTH_BUFFER_BIT;
             }
-            if (typeof clearInfo.stencil !== "undefined") {
-                gl.clearStencil(clearInfo.stencil);
+            if (typeof clearDescriptor.stencil !== "undefined") {
+                gl.clearStencil(clearDescriptor.stencil);
                 clearBits |= gl.STENCIL_BUFFER_BIT;
             }
             if (clearBits) {
@@ -186,7 +186,7 @@ export class Command<P = void> {
 
         let textureUnitOffset = 0;
 
-        this.uniformInfo.forEach(({
+        this.uniformDescriptors.forEach(({
             identifier: ident,
             location: loc,
             definition: def,
@@ -313,7 +313,7 @@ function access<P, R>(props: P, value: ((props: P) => R) | R): R {
         : value;
 }
 
-class ClearInfo {
+class ClearDescriptor {
     constructor(
         readonly color?: [number, number, number, number],
         readonly depth?: number,
@@ -321,7 +321,7 @@ class ClearInfo {
     ) { }
 }
 
-class UniformInfo<P> {
+class UniformDescriptor<P> {
     constructor(
         readonly identifier: string,
         readonly location: WebGLUniformLocation,
