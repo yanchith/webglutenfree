@@ -10,22 +10,22 @@ export interface TextureOptions {
 }
 
 export const enum TextureWrap {
-    ClampToEdge = "clamp-to-edge",
-    Repeat = "repeat",
-    MirroredRepeat = "mirrored-repeat",
+    CLAMP_TO_EDGE = "clamp-to-edge",
+    REPEAT = "repeat",
+    MIRRORED_REPEAT = "mirrored-repeat",
 }
 
 export const enum TextureFilter {
-    Nearest = "nearest",
-    Linear = "linear",
-    NearestMipmapNearest = "nearest-mipmap-nearest",
-    LinearMipmapNearest = "linear-mipmap-nearest",
-    NearestMipmapLinear = "nearest-mipmap-linear",
-    LinearMipmapLinear = "linear-mipmap-linear",
+    NEAREST = "nearest",
+    LINEAR = "linear",
+    NEAREST_MIPMAP_NEAREST = "nearest-mipmap-nearest",
+    LINEAR_MIPMAP_NEAREST = "linear-mipmap-nearest",
+    NEAREST_MIPMAP_LINEAR = "nearest-mipmap-linear",
+    LINEAR_MIPMAP_LINEAR = "linear-mipmap-linear",
 }
 
 export type MinFilter = TextureFilter;
-export type MagFilter = TextureFilter.Nearest | TextureFilter.Linear;
+export type MagFilter = TextureFilter.NEAREST | TextureFilter.LINEAR;
 
 export const enum TextureInternalFormat {
     // R
@@ -319,10 +319,10 @@ export class Texture {
         format: TextureFormat,
         type: TextureType,
         {
-            min = TextureFilter.Nearest,
-            mag = TextureFilter.Nearest,
-            wrapS = TextureWrap.ClampToEdge,
-            wrapT = TextureWrap.ClampToEdge,
+            min = TextureFilter.NEAREST,
+            mag = TextureFilter.NEAREST,
+            wrapS = TextureWrap.CLAMP_TO_EDGE,
+            wrapT = TextureWrap.CLAMP_TO_EDGE,
             mipmap = false,
         }: TextureOptions = {},
     ) {
@@ -345,21 +345,21 @@ export class Texture {
 
 function mapGlWrap(gl: WebGL2RenderingContext, wrap: TextureWrap): number {
     switch (wrap) {
-        case TextureWrap.ClampToEdge: return gl.CLAMP_TO_EDGE;
-        case TextureWrap.Repeat: return gl.REPEAT;
-        case TextureWrap.MirroredRepeat: return gl.MIRRORED_REPEAT;
+        case TextureWrap.CLAMP_TO_EDGE: return gl.CLAMP_TO_EDGE;
+        case TextureWrap.REPEAT: return gl.REPEAT;
+        case TextureWrap.MIRRORED_REPEAT: return gl.MIRRORED_REPEAT;
         default: return assert.never(wrap);
     }
 }
 
 function mapGlFilter(gl: WebGL2RenderingContext, filter: TextureFilter): number {
     switch (filter) {
-        case TextureFilter.Nearest: return gl.NEAREST;
-        case TextureFilter.Linear: return gl.LINEAR;
-        case TextureFilter.NearestMipmapNearest: return gl.NEAREST_MIPMAP_NEAREST;
-        case TextureFilter.LinearMipmapNearest: return gl.LINEAR_MIPMAP_NEAREST;
-        case TextureFilter.NearestMipmapLinear: return gl.NEAREST_MIPMAP_LINEAR;
-        case TextureFilter.LinearMipmapLinear: return gl.LINEAR_MIPMAP_LINEAR;
+        case TextureFilter.NEAREST: return gl.NEAREST;
+        case TextureFilter.LINEAR: return gl.LINEAR;
+        case TextureFilter.NEAREST_MIPMAP_NEAREST: return gl.NEAREST_MIPMAP_NEAREST;
+        case TextureFilter.LINEAR_MIPMAP_NEAREST: return gl.LINEAR_MIPMAP_NEAREST;
+        case TextureFilter.NEAREST_MIPMAP_LINEAR: return gl.NEAREST_MIPMAP_LINEAR;
+        case TextureFilter.LINEAR_MIPMAP_LINEAR: return gl.LINEAR_MIPMAP_LINEAR;
         default: return assert.never(filter);
     }
 }

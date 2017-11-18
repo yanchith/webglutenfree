@@ -12,6 +12,11 @@ export interface CommandProps<P> {
     frag: string;
     uniforms?: { [key: string]: Uniform<P> };
     primitive?: Primitive;
+    blend?: {
+        srcFunc: BlendFunction;
+        destFunc: BlendFunction;
+        equation?: BlendEquation;
+    } | boolean; // true is shorthand for (SRC_ALPHA, 1 - SRC_SLPHA, FUNC_ADD)
     clear?: {
         color?: [number, number, number, number];
         depth?: number;
@@ -19,14 +24,190 @@ export interface CommandProps<P> {
     };
 }
 
+export type AccessorOrValue<P, R> = Accessor<P, R> | R;
+export type Accessor<P, R> = (props: P) => R;
+
+export type Uniform<P> =
+    | Uniform1f<P> | Uniform1fv<P>
+    | Uniform1i<P> | Uniform1iv<P> | Uniform1ui<P> | Uniform1uiv<P>
+    | Uniform2f<P> | Uniform2fv<P>
+    | Uniform2i<P> | Uniform2iv<P> | Uniform2ui<P> | Uniform2uiv<P>
+    | Uniform3f<P> | Uniform3fv<P>
+    | Uniform3i<P> | Uniform3iv<P> | Uniform3ui<P> | Uniform3uiv<P>
+    | Uniform4f<P> | Uniform4fv<P>
+    | Uniform4i<P> | Uniform4iv<P> | Uniform4ui<P> | Uniform4uiv<P>
+    | UniformMatrix2fv<P> | UniformMatrix3fv<P> | UniformMatrix4fv<P>
+    | UniformTexture<P>
+    ;
+
+export interface Uniform1f<P> {
+    type: "1f";
+    value: AccessorOrValue<P, number>;
+}
+
+export interface Uniform1fv<P> {
+    type: "1fv";
+    value: AccessorOrValue<P, Float32Array | number[]>;
+}
+
+export interface Uniform1i<P> {
+    type: "1i";
+    value: AccessorOrValue<P, number>;
+}
+
+export interface Uniform1iv<P> {
+    type: "1iv";
+    value: AccessorOrValue<P, Int32Array | number[]>;
+}
+
+export interface Uniform1ui<P> {
+    type: "1ui";
+    value: AccessorOrValue<P, number>;
+}
+
+export interface Uniform1uiv<P> {
+    type: "1uiv";
+    value: AccessorOrValue<P, Uint32Array | number[]>;
+}
+
+export interface Uniform2f<P> {
+    type: "2f";
+    value: AccessorOrValue<P, Float32Array | number[]>;
+}
+
+export interface Uniform2fv<P> {
+    type: "2fv";
+    value: AccessorOrValue<P, Float32Array | number[]>;
+}
+
+export interface Uniform2i<P> {
+    type: "2i";
+    value: AccessorOrValue<P, Int32Array | number[]>;
+}
+
+export interface Uniform2iv<P> {
+    type: "2iv";
+    value: AccessorOrValue<P, Int32Array | number[]>;
+}
+
+export interface Uniform2ui<P> {
+    type: "2ui";
+    value: AccessorOrValue<P, Uint32Array | number[]>;
+}
+
+export interface Uniform2uiv<P> {
+    type: "2uiv";
+    value: AccessorOrValue<P, Uint32Array | number[]>;
+}
+
+export interface Uniform3f<P> {
+    type: "3f";
+    value: AccessorOrValue<P, Float32Array | number[]>;
+}
+
+export interface Uniform3fv<P> {
+    type: "3fv";
+    value: AccessorOrValue<P, Float32Array | number[]>;
+}
+
+export interface Uniform3i<P> {
+    type: "3i";
+    value: AccessorOrValue<P, Int32Array | number[]>;
+}
+
+export interface Uniform3iv<P> {
+    type: "3iv";
+    value: AccessorOrValue<P, Int32Array | number[]>;
+}
+
+export interface Uniform3ui<P> {
+    type: "3ui";
+    value: AccessorOrValue<P, Uint32Array | number[]>;
+}
+
+export interface Uniform3uiv<P> {
+    type: "3uiv";
+    value: AccessorOrValue<P, Uint32Array | number[]>;
+}
+
+export interface Uniform4f<P> {
+    type: "4f";
+    value: AccessorOrValue<P, Float32Array | number[]>;
+}
+
+export interface Uniform4fv<P> {
+    type: "4fv";
+    value: AccessorOrValue<P, Float32Array | number[]>;
+}
+
+export interface Uniform4i<P> {
+    type: "4i";
+    value: AccessorOrValue<P, Int32Array | number[]>;
+}
+
+export interface Uniform4iv<P> {
+    type: "4iv";
+    value: AccessorOrValue<P, Int32Array | number[]>;
+}
+
+export interface Uniform4ui<P> {
+    type: "4ui";
+    value: AccessorOrValue<P, Uint32Array | number[]>;
+}
+
+export interface Uniform4uiv<P> {
+    type: "4uiv";
+    value: AccessorOrValue<P, Uint32Array | number[]>;
+}
+
+export interface UniformMatrix2fv<P> {
+    type: "matrix2fv";
+    value: AccessorOrValue<P, Float32Array | number[]>;
+}
+
+export interface UniformMatrix3fv<P> {
+    type: "matrix3fv";
+    value: AccessorOrValue<P, Float32Array | number[]>;
+}
+
+export interface UniformMatrix4fv<P> {
+    type: "matrix4fv";
+    value: AccessorOrValue<P, Float32Array | number[]>;
+}
+
+export interface UniformTexture<P> {
+    type: "texture";
+    value: AccessorOrValue<P, Texture>;
+}
+
 export const enum Primitive {
-    Triangles = "triangles",
-    TriangleStrip = "triangle-strip",
-    TriangleFan = "triangle-fan",
-    Points = "points",
-    Lines = "lines",
-    LineStrip = "line-strip",
-    LineLoop = "line-loop",
+    TRIANGLES = "triangles",
+    TRIANGLE_STRIP = "triangle-strip",
+    TRIANGLE_FAN = "triangle-fan",
+    POINTS = "points",
+    LINES = "lines",
+    LINE_STRIP = "line-strip",
+    LINE_LOOP = "line-loop",
+}
+
+export const enum BlendFunction {
+    SRC_ALPHA = "src-alpha",
+    SRC_COLOR = "src-color",
+    ONE_MINUS_SRC_ALPHA = "one-minus-src-alpha",
+    ONE_MINUS_SRC_COLOR = "one-minus-src-color",
+    DST_ALPHA = "dst-alpha",
+    DST_COLOR = "dst-color",
+    ONE_MINUS_DST_ALPHA = "one-minus-dst-alpha",
+    ONE_MINUS_DST_COLOR = "one-minus-dst-color",
+}
+
+
+export const enum BlendEquation {
+    ADD = "add",
+    SUBTRACT = "subtract",
+    REVERSE_SUBTRACT = "reverse-subtract",
+    MIN = "min",
+    MAX = "max",
 }
 
 export class Command<P = void> {
@@ -37,8 +218,9 @@ export class Command<P = void> {
             vert,
             frag,
             uniforms = {},
-            primitive = Primitive.Triangles,
-            clear = {},
+            primitive = Primitive.TRIANGLES,
+            blend = false,
+            clear,
         }: CommandProps<P>,
     ): Command<P> {
         const vertShader = glutil.createShader(gl, gl.VERTEX_SHADER, vert);
@@ -56,12 +238,27 @@ export class Command<P = void> {
                 }
                 return new UniformDescriptor(identifier, location, uniform);
             });
-        const clearDescriptor = new ClearDescriptor(clear.color, clear.depth, clear.stencil);
+
+        const blendDescriptor = blend && typeof blend === "object" && blend
+            ? new BlendDescriptor(
+                mapGlBlendFunc(gl, blend.srcFunc),
+                mapGlBlendFunc(gl, blend.destFunc),
+                mapGlBlendEquation(gl, blend.equation || BlendEquation.ADD),
+            )
+            : blend
+                ? new BlendDescriptor(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.FUNC_ADD)
+                : undefined;
+
+        const clearDescriptor = clear
+            ? new ClearDescriptor(clear.color, clear.depth, clear.stencil)
+            : undefined;
+
         return new Command(
             gl,
             program,
             mapGlPrimitive(gl, primitive),
             uniformDescriptors,
+            blendDescriptor,
             clearDescriptor,
         );
     }
@@ -71,6 +268,7 @@ export class Command<P = void> {
         private glProgram: WebGLProgram,
         private glPrimitive: number,
         private uniformDescriptors: UniformDescriptor<P>[],
+        private blendDescriptor?: BlendDescriptor,
         private clearDescriptor?: ClearDescriptor,
     ) { }
 
@@ -97,8 +295,12 @@ export class Command<P = void> {
 
         this.clear();
 
+        this.beginBlend();
+
         gl.viewport(0, 0, bufferWidth, bufferHeight);
         this.draw(vao.hasElements, vao.count, vao.instanceCount);
+
+        this.endBlend();
 
         if (framebuffer) {
             framebuffer.unbind();
@@ -123,7 +325,21 @@ export class Command<P = void> {
                 }
                 return accum;
             }, {});
-        return{ attributes: locatedAttributes, elements };
+        return { attributes: locatedAttributes, elements };
+    }
+
+    private beginBlend(): void {
+        const { gl, blendDescriptor } = this;
+        if (blendDescriptor) {
+            gl.enable(gl.BLEND);
+            gl.blendFunc(blendDescriptor.srcFactor, blendDescriptor.destFactor);
+            gl.blendEquation(blendDescriptor.equation);
+        }
+    }
+
+    private endBlend(): void {
+        const { gl, blendDescriptor } = this;
+        if (blendDescriptor) { gl.disable(gl.BLEND); }
     }
 
     private clear(): void {
@@ -313,6 +529,14 @@ function access<P, R>(props: P, value: ((props: P) => R) | R): R {
         : value;
 }
 
+class BlendDescriptor {
+    constructor(
+        readonly srcFactor: number,
+        readonly destFactor: number,
+        readonly equation: number,
+    ) { }
+}
+
 class ClearDescriptor {
     constructor(
         readonly color?: [number, number, number, number],
@@ -329,176 +553,49 @@ class UniformDescriptor<P> {
     ) { }
 }
 
-export type AccessorOrValue<P, R> = Accessor<P, R> | R;
-export type Accessor<P, R> = (props: P) => R;
-
-// TODO: support more WebGL2 uniforms: XxY matrices
-
-export type Uniform<P> =
-    | Uniform1f<P> | Uniform1fv<P>
-    | Uniform1i<P> | Uniform1iv<P> | Uniform1ui<P> | Uniform1uiv<P>
-    | Uniform2f<P> | Uniform2fv<P>
-    | Uniform2i<P> | Uniform2iv<P> | Uniform2ui<P> | Uniform2uiv<P>
-    | Uniform3f<P> | Uniform3fv<P>
-    | Uniform3i<P> | Uniform3iv<P> | Uniform3ui<P> | Uniform3uiv<P>
-    | Uniform4f<P> | Uniform4fv<P>
-    | Uniform4i<P> | Uniform4iv<P> | Uniform4ui<P> | Uniform4uiv<P>
-    | UniformMatrix2fv<P> | UniformMatrix3fv<P> | UniformMatrix4fv<P>
-    | UniformTexture<P>
-    ;
-
-export interface Uniform1f<P> {
-    type: "1f";
-    value: AccessorOrValue<P, number>;
-}
-
-export interface Uniform1fv<P> {
-    type: "1fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
-}
-
-export interface Uniform1i<P> {
-    type: "1i";
-    value: AccessorOrValue<P, number>;
-}
-
-export interface Uniform1iv<P> {
-    type: "1iv";
-    value: AccessorOrValue<P, Int32Array | number[]>;
-}
-
-export interface Uniform1ui<P> {
-    type: "1ui";
-    value: AccessorOrValue<P, number>;
-}
-
-export interface Uniform1uiv<P> {
-    type: "1uiv";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
-}
-
-export interface Uniform2f<P> {
-    type: "2f";
-    value: AccessorOrValue<P, Float32Array | number[]>;
-}
-
-export interface Uniform2fv<P> {
-    type: "2fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
-}
-
-export interface Uniform2i<P> {
-    type: "2i";
-    value: AccessorOrValue<P, Int32Array | number[]>;
-}
-
-export interface Uniform2iv<P> {
-    type: "2iv";
-    value: AccessorOrValue<P, Int32Array | number[]>;
-}
-
-export interface Uniform2ui<P> {
-    type: "2ui";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
-}
-
-export interface Uniform2uiv<P> {
-    type: "2uiv";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
-}
-
-export interface Uniform3f<P> {
-    type: "3f";
-    value: AccessorOrValue<P, Float32Array | number[]>;
-}
-
-export interface Uniform3fv<P> {
-    type: "3fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
-}
-
-export interface Uniform3i<P> {
-    type: "3i";
-    value: AccessorOrValue<P, Int32Array | number[]>;
-}
-
-export interface Uniform3iv<P> {
-    type: "3iv";
-    value: AccessorOrValue<P, Int32Array | number[]>;
-}
-
-export interface Uniform3ui<P> {
-    type: "3ui";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
-}
-
-export interface Uniform3uiv<P> {
-    type: "3uiv";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
-}
-
-export interface Uniform4f<P> {
-    type: "4f";
-    value: AccessorOrValue<P, Float32Array | number[]>;
-}
-
-export interface Uniform4fv<P> {
-    type: "4fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
-}
-
-export interface Uniform4i<P> {
-    type: "4i";
-    value: AccessorOrValue<P, Int32Array | number[]>;
-}
-
-export interface Uniform4iv<P> {
-    type: "4iv";
-    value: AccessorOrValue<P, Int32Array | number[]>;
-}
-
-export interface Uniform4ui<P> {
-    type: "4ui";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
-}
-
-export interface Uniform4uiv<P> {
-    type: "4uiv";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
-}
-
-export interface UniformMatrix2fv<P> {
-    type: "matrix2fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
-}
-
-export interface UniformMatrix3fv<P> {
-    type: "matrix3fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
-}
-
-export interface UniformMatrix4fv<P> {
-    type: "matrix4fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
-}
-
-export interface UniformTexture<P> {
-    type: "texture";
-    value: AccessorOrValue<P, Texture>;
-}
-
 function mapGlPrimitive(
     gl: WebGL2RenderingContext,
     primitive: Primitive,
 ): number {
     switch (primitive) {
-        case Primitive.Triangles: return gl.TRIANGLES;
-        case Primitive.TriangleStrip: return gl.TRIANGLE_STRIP;
-        case Primitive.TriangleFan: return gl.TRIANGLE_FAN;
-        case Primitive.Points: return gl.POINTS;
-        case Primitive.Lines: return gl.LINES;
-        case Primitive.LineStrip: return gl.LINE_STRIP;
-        case Primitive.LineLoop: return gl.LINE_LOOP;
+        case Primitive.TRIANGLES: return gl.TRIANGLES;
+        case Primitive.TRIANGLE_STRIP: return gl.TRIANGLE_STRIP;
+        case Primitive.TRIANGLE_FAN: return gl.TRIANGLE_FAN;
+        case Primitive.POINTS: return gl.POINTS;
+        case Primitive.LINES: return gl.LINES;
+        case Primitive.LINE_STRIP: return gl.LINE_STRIP;
+        case Primitive.LINE_LOOP: return gl.LINE_LOOP;
         default: return assert.never(primitive);
+    }
+}
+
+function mapGlBlendFunc(
+    gl: WebGL2RenderingContext,
+    func: BlendFunction,
+): number {
+    switch (func) {
+        case BlendFunction.SRC_ALPHA: return gl.SRC_ALPHA;
+        case BlendFunction.SRC_COLOR: return gl.SRC_COLOR;
+        case BlendFunction.ONE_MINUS_SRC_ALPHA: return gl.ONE_MINUS_SRC_ALPHA;
+        case BlendFunction.ONE_MINUS_SRC_COLOR: return gl.ONE_MINUS_SRC_COLOR;
+        case BlendFunction.DST_ALPHA: return gl.DST_ALPHA;
+        case BlendFunction.DST_COLOR: return gl.DST_COLOR;
+        case BlendFunction.ONE_MINUS_DST_ALPHA: return gl.ONE_MINUS_DST_ALPHA;
+        case BlendFunction.ONE_MINUS_DST_COLOR: return gl.ONE_MINUS_DST_COLOR;
+        default: return assert.never(func);
+    }
+}
+
+function mapGlBlendEquation(
+    gl: WebGL2RenderingContext,
+    equation: BlendEquation,
+): number {
+    switch (equation) {
+        case BlendEquation.ADD: return gl.FUNC_ADD;
+        case BlendEquation.SUBTRACT: return gl.FUNC_SUBTRACT;
+        case BlendEquation.REVERSE_SUBTRACT: return gl.FUNC_REVERSE_SUBTRACT;
+        case BlendEquation.MIN: return gl.MIN;
+        case BlendEquation.MAX: return gl.MAX;
+        default: return assert.never(equation);
     }
 }

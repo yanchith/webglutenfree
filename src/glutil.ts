@@ -117,8 +117,8 @@ export function createElementArrayBuffer(
 */
 
 export const enum AttribType {
-    Pointer = 0,
-    IPointer = 1,
+    POINTER = 0,
+    IPOINTER = 1,
 }
 
 export function createVertexArray(
@@ -153,10 +153,10 @@ export function createVertexArray(
         // Send buffer
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         switch (type) {
-            case AttribType.Pointer:
+            case AttribType.POINTER:
                 gl.vertexAttribPointer(location, size, bufferType, normalized, 0, 0);
                 break;
-            case AttribType.IPointer:
+            case AttribType.IPOINTER:
                 gl.vertexAttribIPointer(location, size, bufferType, 0, 0);
                 break;
             default: assert.never(type);

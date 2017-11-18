@@ -113,8 +113,8 @@ export class VertexArray {
             gl,
             attribDescriptors.map((attrib, i) => ({
                 type: attrib.type === "ipointer"
-                    ? glutil.AttribType.IPointer
-                    : glutil.AttribType.Pointer,
+                    ? glutil.AttribType.IPOINTER
+                    : glutil.AttribType.POINTER,
                 buffer: attrib.buffer.glBuffer,
                 bufferType: attrib.buffer.glType,
                 size: attrib.size,
