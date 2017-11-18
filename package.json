@@ -1,11 +1,11 @@
 {
   "name": "glutenfree",
   "version": "0.0.2",
-  "description": "A simple WebGL 2 rendering library",
+  "description": "We serve your draw calls type-safe and gluten-free",
   "author": "yanchith",
   "license": "MIT",
   "main": "dist/glutenfree.umd.js",
-  "module": "dist/glutenfree.esm.js",
+  "module": "dist/glutenfree.js",
   "types": "dist/glutenfree.d.ts",
   "scripts": {
     "serve": "http-server docs -p 8000",
@@ -15,9 +15,9 @@
     "build:watch": "tsc --outDir build --watch",
     "tslint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
     "predist": "rimraf dist",
-    "dist": "yarn dist:umd && yarn dist:esm && yarn dist:dts",
-    "dist:umd": "rollup --config",
-    "dist:esm": "rollup --config rollup.config.esm.js",
+    "dist": "yarn dist:esm && yarn dist:umd && yarn dist:dts",
+    "dist:esm": "rollup --config",
+    "dist:umd": "rollup --config rollup.config.umd.js",
     "dist:dts": "dts-bundle-generator src/index.ts -o dist/glutenfree.d.ts --umd-module-name glutenfree",
     "clean": "rimraf dist"
   },

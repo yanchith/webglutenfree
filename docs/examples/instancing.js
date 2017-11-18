@@ -1,4 +1,4 @@
-import { Command, VertexArray } from "./lib/glutenfree.esm.js";
+import { Command, VertexArray } from "./lib/glutenfree.js";
 
 const canvas = document.getElementById("canvas");
 const gl = canvas.getContext("webgl2");

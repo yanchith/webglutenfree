@@ -3,7 +3,7 @@ import {
     VertexArray,
     Texture,
     Framebuffer,
-} from "./lib/glutenfree.esm.js";
+} from "./lib/glutenfree.js";
 import { loadImage } from "./lib/load-image.js";
 
 const kernels = {

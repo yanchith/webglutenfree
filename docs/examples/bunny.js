@@ -1,4 +1,4 @@
-import { Command, VertexArray } from "./lib/glutenfree.esm.js";
+import { Command, VertexArray } from "./lib/glutenfree.js";
 import { positions as bunnyPositions, cells as bunnyCells } from "./lib/bunny.js"
 
 const canvas = document.getElementById("canvas");

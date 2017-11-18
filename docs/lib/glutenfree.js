@@ -87,10 +87,10 @@ function createVertexArray(gl, buffers, elementBuffer) {
         // Send buffer
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         switch (type) {
-            case 0 /* Pointer */:
+            case 0 /* POINTER */:
                 gl.vertexAttribPointer(location, size, bufferType, normalized, 0, 0);
                 break;
-            case 1 /* IPointer */:
+            case 1 /* IPOINTER */:
                 gl.vertexAttribIPointer(location, size, bufferType, 0, 0);
                 break;
             default: never(type);
@@ -171,29 +171,37 @@ function createFramebuffer(gl, textures) {
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 class Command {
-    constructor(gl, glProgram, glPrimitive, uniformInfo, clearInfo) {
+    constructor(gl, glProgram, glPrimitive, uniformDescriptors, blendDescriptor, clearDescriptor) {
         this.gl = gl;
         this.glProgram = glProgram;
         this.glPrimitive = glPrimitive;
-        this.uniformInfo = uniformInfo;
-        this.clearInfo = clearInfo;
+        this.uniformDescriptors = uniformDescriptors;
+        this.blendDescriptor = blendDescriptor;
+        this.clearDescriptor = clearDescriptor;
     }
-    static create(gl, { vert, frag, uniforms = {}, primitive = "triangles" /* Triangles */, clear = {}, }) {
+    static create(gl, { vert, frag, uniforms = {}, primitive = "triangles" /* TRIANGLES */, blend = false, clear, }) {
         const vertShader = createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = createShader(gl, gl.FRAGMENT_SHADER, frag);
         const program = createProgram(gl, vertShader, fragShader);
         gl.deleteShader(vertShader);
         gl.deleteShader(fragShader);
-        const uniformInfo = Object.entries(uniforms)
+        const uniformDescriptors = Object.entries(uniforms)
             .map(([identifier, uniform]) => {
             const location = gl.getUniformLocation(program, identifier);
             if (!location) {
                 throw new Error(`No location for uniform: ${identifier}`);
             }
-            return new UniformInfo(identifier, location, uniform);
+            return new UniformDescriptor(identifier, location, uniform);
         });
-        const clearInfo = new ClearInfo(clear.color, clear.depth, clear.stencil);
-        return new Command(gl, program, mapGlPrimitive(gl, primitive), uniformInfo, clearInfo);
+        const blendDescriptor = blend && typeof blend === "object" && blend
+            ? new BlendDescriptor(mapGlBlendFunc(gl, blend.srcFunc), mapGlBlendFunc(gl, blend.destFunc), mapGlBlendEquation(gl, blend.equation || "add" /* ADD */))
+            : blend
+                ? new BlendDescriptor(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.FUNC_ADD)
+                : undefined;
+        const clearDescriptor = clear
+            ? new ClearDescriptor(clear.color, clear.depth, clear.stencil)
+            : undefined;
+        return new Command(gl, program, mapGlPrimitive(gl, primitive), uniformDescriptors, blendDescriptor, clearDescriptor);
     }
     execute(vao, props, framebuffer) {
         const { gl, glProgram } = this;
@@ -209,8 +217,10 @@ class Command {
             bufferHeight = framebuffer.height;
         }
         this.clear();
+        this.beginBlend();
         gl.viewport(0, 0, bufferWidth, bufferHeight);
         this.draw(vao.hasElements, vao.count, vao.instanceCount);
+        this.endBlend();
         if (framebuffer) {
             framebuffer.unbind();
         }
@@ -234,21 +244,35 @@ class Command {
         }, {});
         return { attributes: locatedAttributes, elements };
     }
+    beginBlend() {
+        const { gl, blendDescriptor } = this;
+        if (blendDescriptor) {
+            gl.enable(gl.BLEND);
+            gl.blendFunc(blendDescriptor.srcFactor, blendDescriptor.destFactor);
+            gl.blendEquation(blendDescriptor.equation);
+        }
+    }
+    endBlend() {
+        const { gl, blendDescriptor } = this;
+        if (blendDescriptor) {
+            gl.disable(gl.BLEND);
+        }
+    }
     clear() {
-        const { gl, clearInfo } = this;
-        if (clearInfo) {
+        const { gl, clearDescriptor } = this;
+        if (clearDescriptor) {
             let clearBits = 0 | 0;
-            if (typeof clearInfo.color !== "undefined") {
-                const [r, g, b, a] = clearInfo.color;
+            if (typeof clearDescriptor.color !== "undefined") {
+                const [r, g, b, a] = clearDescriptor.color;
                 gl.clearColor(r, g, b, a);
                 clearBits |= gl.COLOR_BUFFER_BIT;
             }
-            if (typeof clearInfo.depth !== "undefined") {
-                gl.clearDepth(clearInfo.depth);
+            if (typeof clearDescriptor.depth !== "undefined") {
+                gl.clearDepth(clearDescriptor.depth);
                 clearBits |= gl.DEPTH_BUFFER_BIT;
             }
-            if (typeof clearInfo.stencil !== "undefined") {
-                gl.clearStencil(clearInfo.stencil);
+            if (typeof clearDescriptor.stencil !== "undefined") {
+                gl.clearStencil(clearDescriptor.stencil);
                 clearBits |= gl.STENCIL_BUFFER_BIT;
             }
             if (clearBits) {
@@ -280,7 +304,7 @@ class Command {
     updateUniforms(props) {
         const gl = this.gl;
         let textureUnitOffset = 0;
-        this.uniformInfo.forEach(({ identifier: ident, location: loc, definition: def, }) => {
+        this.uniformDescriptors.forEach(({ identifier: ident, location: loc, definition: def, }) => {
             switch (def.type) {
                 case "1f":
                     gl.uniform1f(loc, access(props, def.value));
@@ -401,14 +425,21 @@ function access(props, value) {
         ? value(props)
         : value;
 }
-class ClearInfo {
+class BlendDescriptor {
+    constructor(srcFactor, destFactor, equation) {
+        this.srcFactor = srcFactor;
+        this.destFactor = destFactor;
+        this.equation = equation;
+    }
+}
+class ClearDescriptor {
     constructor(color, depth, stencil) {
         this.color = color;
         this.depth = depth;
         this.stencil = stencil;
     }
 }
-class UniformInfo {
+class UniformDescriptor {
     constructor(identifier, location, definition) {
         this.identifier = identifier;
         this.location = location;
@@ -417,14 +448,37 @@ class UniformInfo {
 }
 function mapGlPrimitive(gl, primitive) {
     switch (primitive) {
-        case "triangles" /* Triangles */: return gl.TRIANGLES;
-        case "triangle-strip" /* TriangleStrip */: return gl.TRIANGLE_STRIP;
-        case "triangle-fan" /* TriangleFan */: return gl.TRIANGLE_FAN;
-        case "points" /* Points */: return gl.POINTS;
-        case "lines" /* Lines */: return gl.LINES;
-        case "line-strip" /* LineStrip */: return gl.LINE_STRIP;
-        case "line-loop" /* LineLoop */: return gl.LINE_LOOP;
+        case "triangles" /* TRIANGLES */: return gl.TRIANGLES;
+        case "triangle-strip" /* TRIANGLE_STRIP */: return gl.TRIANGLE_STRIP;
+        case "triangle-fan" /* TRIANGLE_FAN */: return gl.TRIANGLE_FAN;
+        case "points" /* POINTS */: return gl.POINTS;
+        case "lines" /* LINES */: return gl.LINES;
+        case "line-strip" /* LINE_STRIP */: return gl.LINE_STRIP;
+        case "line-loop" /* LINE_LOOP */: return gl.LINE_LOOP;
         default: return never(primitive);
+    }
+}
+function mapGlBlendFunc(gl, func) {
+    switch (func) {
+        case "src-alpha" /* SRC_ALPHA */: return gl.SRC_ALPHA;
+        case "src-color" /* SRC_COLOR */: return gl.SRC_COLOR;
+        case "one-minus-src-alpha" /* ONE_MINUS_SRC_ALPHA */: return gl.ONE_MINUS_SRC_ALPHA;
+        case "one-minus-src-color" /* ONE_MINUS_SRC_COLOR */: return gl.ONE_MINUS_SRC_COLOR;
+        case "dst-alpha" /* DST_ALPHA */: return gl.DST_ALPHA;
+        case "dst-color" /* DST_COLOR */: return gl.DST_COLOR;
+        case "one-minus-dst-alpha" /* ONE_MINUS_DST_ALPHA */: return gl.ONE_MINUS_DST_ALPHA;
+        case "one-minus-dst-color" /* ONE_MINUS_DST_COLOR */: return gl.ONE_MINUS_DST_COLOR;
+        default: return never(func);
+    }
+}
+function mapGlBlendEquation(gl, equation) {
+    switch (equation) {
+        case "add" /* ADD */: return gl.FUNC_ADD;
+        case "subtract" /* SUBTRACT */: return gl.FUNC_SUBTRACT;
+        case "reverse-subtract" /* REVERSE_SUBTRACT */: return gl.FUNC_REVERSE_SUBTRACT;
+        case "min" /* MIN */: return gl.MIN;
+        case "max" /* MAX */: return gl.MAX;
+        default: return never(equation);
     }
 }
 
@@ -536,7 +590,7 @@ class VertexArray {
     }
     static create(gl, { attributes, elements }) {
         // Setup attributes
-        const attribs = [];
+        const attribDescriptors = [];
         const attribLocations = [];
         Object.entries(attributes).forEach(([locationStr, definition]) => {
             if (!INT_PATTERN$1.test(locationStr)) {
@@ -544,7 +598,7 @@ class VertexArray {
             }
             const location = parseInt(locationStr, 10);
             attribLocations.push(location);
-            attribs.push(AttributeInfo.create(gl, definition));
+            attribDescriptors.push(AttributeDescriptor.create(gl, definition));
         });
         // Setup elements
         let elems;
@@ -554,10 +608,10 @@ class VertexArray {
                 : ElementBuffer.create(gl, elements);
         }
         // Create vertex array
-        const vao = createVertexArray(gl, attribs.map((attrib, i) => ({
+        const vao = createVertexArray(gl, attribDescriptors.map((attrib, i) => ({
             type: attrib.type === "ipointer"
-                ? 1 /* IPointer */
-                : 0 /* Pointer */,
+                ? 1 /* IPOINTER */
+                : 0 /* POINTER */,
             buffer: attrib.buffer.glBuffer,
             bufferType: attrib.buffer.glType,
             size: attrib.size,
@@ -566,7 +620,7 @@ class VertexArray {
             divisor: attrib.divisor,
         })), elems ? elems.glBuffer : undefined);
         // Compute max safe instance count
-        const instancedBuffers = attribs
+        const instancedBuffers = attribDescriptors
             .filter(buffer => !!buffer.divisor);
         const instanceCount = instancedBuffers.length
             ? instancedBuffers
@@ -574,26 +628,26 @@ class VertexArray {
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
         // Create VAO
-        return new VertexArray(vao, !!elems, elems ? elems.count : attribs[0].count, instanceCount);
+        return new VertexArray(vao, !!elems, elems ? elems.count : attribDescriptors[0].count, instanceCount);
     }
 }
 // TODO: this could use some further refactoring. Currently its just former
 // public API made private.
-class AttributeInfo {
+class AttributeDescriptor {
     static create(gl, props) {
         if (Array.isArray(props)) {
             if (is2DArray(props)) {
                 const r = ravel(props);
-                return new AttributeInfo("pointer", VertexBuffer.fromFloat32Array(gl, r.data), r.shape[0], r.shape[1], false, 0);
+                return new AttributeDescriptor("pointer", VertexBuffer.fromFloat32Array(gl, r.data), r.shape[0], r.shape[1], false, 0);
             }
-            return new AttributeInfo("pointer", VertexBuffer.fromFloat32Array(gl, props), props.length, 1, false, 0);
+            return new AttributeDescriptor("pointer", VertexBuffer.fromFloat32Array(gl, props), props.length, 1, false, 0);
         }
         switch (props.type) {
-            case "pointer": return new AttributeInfo(props.type, props.value instanceof VertexBuffer
+            case "pointer": return new AttributeDescriptor(props.type, props.value instanceof VertexBuffer
                 ? props.value
                 // Note: typescript is not smart enough to infer what we know
                 : VertexBuffer.create(gl, props.value), props.count, props.size, props.normalized || false, props.divisor || 0);
-            case "ipointer": return new AttributeInfo(props.type, props.value instanceof VertexBuffer
+            case "ipointer": return new AttributeDescriptor(props.type, props.value instanceof VertexBuffer
                 ? props.value
                 // Note: typescript is not smart enough to infer what we know
                 : VertexBuffer.create(gl, props.value), props.count, props.size, false, props.divisor || 0);
@@ -650,7 +704,7 @@ class Texture {
     static fromArrayBufferView(gl, data, width, height, internalFormat, format, type, options) {
         return new Texture(gl, data, width, height, internalFormat, format, type, options);
     }
-    constructor(gl, data, width, height, internalFormat, format, type, { min = "nearest" /* Nearest */, mag = "nearest" /* Nearest */, wrapS = "clamp-to-edge" /* ClampToEdge */, wrapT = "clamp-to-edge" /* ClampToEdge */, mipmap = false, } = {}) {
+    constructor(gl, data, width, height, internalFormat, format, type, { min = "nearest" /* NEAREST */, mag = "nearest" /* NEAREST */, wrapS = "clamp-to-edge" /* CLAMP_TO_EDGE */, wrapT = "clamp-to-edge" /* CLAMP_TO_EDGE */, mipmap = false, } = {}) {
         this.glTexture = createTexture(gl, data, width, height, mapGlInternalFormat(gl, internalFormat), mapGlFormat(gl, format), mapGlType(gl, type), mapGlWrap(gl, wrapS), mapGlWrap(gl, wrapT), mapGlFilter(gl, min), mapGlFilter(gl, mag), mipmap);
         this.width = width;
         this.height = height;
@@ -659,20 +713,20 @@ class Texture {
 }
 function mapGlWrap(gl, wrap) {
     switch (wrap) {
-        case "clamp-to-edge" /* ClampToEdge */: return gl.CLAMP_TO_EDGE;
-        case "repeat" /* Repeat */: return gl.REPEAT;
-        case "mirrored-repeat" /* MirroredRepeat */: return gl.MIRRORED_REPEAT;
+        case "clamp-to-edge" /* CLAMP_TO_EDGE */: return gl.CLAMP_TO_EDGE;
+        case "repeat" /* REPEAT */: return gl.REPEAT;
+        case "mirrored-repeat" /* MIRRORED_REPEAT */: return gl.MIRRORED_REPEAT;
         default: return never(wrap);
     }
 }
 function mapGlFilter(gl, filter) {
     switch (filter) {
-        case "nearest" /* Nearest */: return gl.NEAREST;
-        case "linear" /* Linear */: return gl.LINEAR;
-        case "nearest-mipmap-nearest" /* NearestMipmapNearest */: return gl.NEAREST_MIPMAP_NEAREST;
-        case "linear-mipmap-nearest" /* LinearMipmapNearest */: return gl.LINEAR_MIPMAP_NEAREST;
-        case "nearest-mipmap-linear" /* NearestMipmapLinear */: return gl.NEAREST_MIPMAP_LINEAR;
-        case "linear-mipmap-linear" /* LinearMipmapLinear */: return gl.LINEAR_MIPMAP_LINEAR;
+        case "nearest" /* NEAREST */: return gl.NEAREST;
+        case "linear" /* LINEAR */: return gl.LINEAR;
+        case "nearest-mipmap-nearest" /* NEAREST_MIPMAP_NEAREST */: return gl.NEAREST_MIPMAP_NEAREST;
+        case "linear-mipmap-nearest" /* LINEAR_MIPMAP_NEAREST */: return gl.LINEAR_MIPMAP_NEAREST;
+        case "nearest-mipmap-linear" /* NEAREST_MIPMAP_LINEAR */: return gl.NEAREST_MIPMAP_LINEAR;
+        case "linear-mipmap-linear" /* LINEAR_MIPMAP_LINEAR */: return gl.LINEAR_MIPMAP_LINEAR;
         default: return never(filter);
     }
 }
@@ -772,4 +826,4 @@ class Framebuffer {
 }
 
 export { Command, VertexBuffer, ElementBuffer, VertexArray, Texture, Framebuffer };
-//# sourceMappingURL=glutenfree.esm.js.map
+//# sourceMappingURL=glutenfree.js.map
