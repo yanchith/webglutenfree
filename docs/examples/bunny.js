@@ -30,7 +30,7 @@ const cmd = Command.create(gl, {
         out vec4 o_color;
 
         void main() {
-            o_color = vec4(1.0, 0.0, 0.0, 1.0);
+            o_color = vec4(0.0, 1.0, 0.0, 0.3);
         }
     `,
     uniforms: {
@@ -58,6 +58,10 @@ const cmd = Command.create(gl, {
             ),
         },
     },
+    blend: true,
+    clear: {
+        color: [0, 0, 0, 1],
+    }
 });
 
 const bunny = VertexArray.create(gl, cmd.locate({
