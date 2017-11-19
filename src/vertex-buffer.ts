@@ -1,5 +1,6 @@
 import * as assert from "./assert";
 import * as glutil from "./glutil";
+import { Device } from "./device";
 
 export type VertexBufferType = VertexBufferProps["type"];
 
@@ -51,37 +52,38 @@ export interface VertexBufferFloat32Props {
 export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
 
     static create(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         props: VertexBufferInt8Props,
     ): VertexBuffer<"i8">;
     static create(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         props: VertexBufferInt16Props,
     ): VertexBuffer<"i16">;
     static create(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         props: VertexBufferInt32Props,
     ): VertexBuffer<"i32">;
     static create(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         props: VertexBufferUint8Props,
     ): VertexBuffer<"u8">;
     static create(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         props: VertexBufferUint16Props,
     ): VertexBuffer<"u16">;
     static create(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         props: VertexBufferUint32Props,
     ): VertexBuffer<"u32">;
     static create(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         props: VertexBufferFloat32Props,
     ): VertexBuffer<"f32">;
     static create(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         props: VertexBufferProps,
     ): VertexBuffer<VertexBufferProps["type"]> {
+        const gl = dev instanceof Device ? dev.gl : dev;
         switch (props.type) {
             case "i8": return VertexBuffer.fromInt8Array(gl, props.data);
             case "i16": return VertexBuffer.fromInt16Array(gl, props.data);
@@ -95,9 +97,10 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     }
 
     static fromInt8Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Int8Array,
     ): VertexBuffer<"i8"> {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
             gl,
             "i8",
@@ -107,9 +110,10 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     }
 
     static fromInt16Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Int16Array,
     ): VertexBuffer<"i16"> {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
             gl,
             "i16",
@@ -119,9 +123,10 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     }
 
     static fromInt32Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Int32Array,
     ): VertexBuffer<"i32"> {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
             gl,
             "i32",
@@ -131,9 +136,10 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     }
 
     static fromUint8Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Uint8Array | Uint8ClampedArray,
     ): VertexBuffer<"u8"> {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
             gl,
             "u8",
@@ -146,9 +152,10 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     }
 
     static fromUint16Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Uint16Array,
     ): VertexBuffer<"u16"> {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
             gl,
             "u16",
@@ -158,9 +165,10 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     }
 
     static fromUint32Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Uint32Array,
     ): VertexBuffer<"u32"> {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
             gl,
             "u32",
@@ -170,9 +178,10 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     }
 
     static fromFloat32Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array,
     ): VertexBuffer<"f32"> {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
             gl,
             "f32",

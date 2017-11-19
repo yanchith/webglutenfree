@@ -1,5 +1,6 @@
 import * as assert from "./assert";
 import * as glutil from "./glutil";
+import { Device } from "./device";
 
 export interface TextureOptions {
     min?: MinFilter;
@@ -141,10 +142,11 @@ export const enum TextureType {
 export class Texture {
 
     static fromImage(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         image: ImageData,
         options?: TextureOptions,
     ): Texture {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return Texture.RGBA8FromRGBAUint8Array(
             gl,
             image.data,
@@ -155,12 +157,13 @@ export class Texture {
     }
 
     static RGBA8FromRGBAUint8Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Uint8Array | Uint8ClampedArray | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(
             gl,
             !data || data instanceof Uint8Array
@@ -179,12 +182,13 @@ export class Texture {
     }
 
     static RG16FFromRGFloat32Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(
             gl,
             !data || data instanceof Float32Array
@@ -200,12 +204,13 @@ export class Texture {
     }
 
     static RGB16FFromRGBFloat32Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(
             gl,
             !data || data instanceof Float32Array
@@ -221,12 +226,13 @@ export class Texture {
     }
 
     static RGBA16FFromRGBAFloat32Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(
             gl,
             !data || data instanceof Float32Array
@@ -242,12 +248,13 @@ export class Texture {
     }
 
     static RGB32FFromRGBFloat32Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(
             gl,
             !data || data instanceof Float32Array
@@ -263,12 +270,13 @@ export class Texture {
     }
 
     static RGBA32FFromRGBAFloat32Array(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(
             gl,
             !data || data instanceof Float32Array
@@ -284,7 +292,7 @@ export class Texture {
     }
 
     static fromArrayBufferView(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         data: ArrayBufferView | null,
         width: number,
         height: number,
@@ -293,6 +301,7 @@ export class Texture {
         type: TextureType,
         options?: TextureOptions,
     ): Texture {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(
             gl,
             data,

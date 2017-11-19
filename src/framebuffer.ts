@@ -1,12 +1,14 @@
 import * as glutil from "./glutil";
+import { Device } from "./device";
 import { Texture } from "./texture";
 
 export class Framebuffer {
 
     static fromTextures(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         textures: Texture[],
     ): Framebuffer {
+        const gl = dev instanceof Device ? dev.gl : dev;
         const fbo = glutil.createFramebuffer(gl, textures.map(t => t.glTexture));
 
         const attachment = gl.COLOR_ATTACHMENT0;

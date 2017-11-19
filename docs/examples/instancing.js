@@ -1,12 +1,7 @@
-import { Command, VertexArray } from "./lib/glutenfree.js";
+import { Device, Command, VertexArray } from "./lib/glutenfree.js";
 
-const canvas = document.getElementById("canvas");
-const gl = canvas.getContext("webgl2");
-const dpr = window.devicePixelRatio;
-const w = canvas.clientWidth * dpr;
-const h = canvas.clientHeight * dpr;
-canvas.width = w;
-canvas.height = h;
+const dev = Device.createAndMount();
+const [w, h] = [dev.width, dev.height];
 
 const projection = mat4.ortho(
     mat4.create(),
@@ -23,7 +18,7 @@ const view = mat4.identity(mat4.create());
 mat4.scale(model, model, [100, 100, 100]);
 mat4.translate(view, view, [0, 0, -1])
 
-const cmd = Command.create(gl, {
+const cmd = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
 
@@ -75,7 +70,7 @@ const cmd = Command.create(gl, {
     }
 });
 
-const instanced = VertexArray.create(gl, cmd.locate({
+const instanced = VertexArray.create(dev, cmd.locate({
     attributes: {
         a_vertex_position: [
             [1, 1],

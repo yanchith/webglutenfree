@@ -1,5 +1,14 @@
 /// <reference types="webgl2" />
 
+export declare class Device {
+	readonly gl: WebGL2RenderingContext;
+	static createAndMount(element?: HTMLElement): Device;
+	static fromCanvas(canvas: HTMLCanvasElement): Device;
+	static fromContext(gl: WebGL2RenderingContext): Device;
+	private constructor();
+	readonly width: number;
+	readonly height: number;
+}
 export declare type VertexBufferType = VertexBufferProps["type"];
 export declare type VertexBufferProps = VertexBufferInt8Props | VertexBufferInt16Props | VertexBufferInt32Props | VertexBufferUint8Props | VertexBufferUint16Props | VertexBufferUint32Props | VertexBufferFloat32Props;
 export interface VertexBufferInt8Props {
@@ -31,20 +40,20 @@ export interface VertexBufferFloat32Props {
 	data: number[] | Float32Array;
 }
 export declare class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
-	static create(gl: WebGL2RenderingContext, props: VertexBufferInt8Props): VertexBuffer<"i8">;
-	static create(gl: WebGL2RenderingContext, props: VertexBufferInt16Props): VertexBuffer<"i16">;
-	static create(gl: WebGL2RenderingContext, props: VertexBufferInt32Props): VertexBuffer<"i32">;
-	static create(gl: WebGL2RenderingContext, props: VertexBufferUint8Props): VertexBuffer<"u8">;
-	static create(gl: WebGL2RenderingContext, props: VertexBufferUint16Props): VertexBuffer<"u16">;
-	static create(gl: WebGL2RenderingContext, props: VertexBufferUint32Props): VertexBuffer<"u32">;
-	static create(gl: WebGL2RenderingContext, props: VertexBufferFloat32Props): VertexBuffer<"f32">;
-	static fromInt8Array(gl: WebGL2RenderingContext, data: number[] | Int8Array): VertexBuffer<"i8">;
-	static fromInt16Array(gl: WebGL2RenderingContext, data: number[] | Int16Array): VertexBuffer<"i16">;
-	static fromInt32Array(gl: WebGL2RenderingContext, data: number[] | Int32Array): VertexBuffer<"i32">;
-	static fromUint8Array(gl: WebGL2RenderingContext, data: number[] | Uint8Array | Uint8ClampedArray): VertexBuffer<"u8">;
-	static fromUint16Array(gl: WebGL2RenderingContext, data: number[] | Uint16Array): VertexBuffer<"u16">;
-	static fromUint32Array(gl: WebGL2RenderingContext, data: number[] | Uint32Array): VertexBuffer<"u32">;
-	static fromFloat32Array(gl: WebGL2RenderingContext, data: number[] | Float32Array): VertexBuffer<"f32">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferInt8Props): VertexBuffer<"i8">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferInt16Props): VertexBuffer<"i16">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferInt32Props): VertexBuffer<"i32">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferUint8Props): VertexBuffer<"u8">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferUint16Props): VertexBuffer<"u16">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferUint32Props): VertexBuffer<"u32">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferFloat32Props): VertexBuffer<"f32">;
+	static fromInt8Array(dev: WebGL2RenderingContext | Device, data: number[] | Int8Array): VertexBuffer<"i8">;
+	static fromInt16Array(dev: WebGL2RenderingContext | Device, data: number[] | Int16Array): VertexBuffer<"i16">;
+	static fromInt32Array(dev: WebGL2RenderingContext | Device, data: number[] | Int32Array): VertexBuffer<"i32">;
+	static fromUint8Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint8Array | Uint8ClampedArray): VertexBuffer<"u8">;
+	static fromUint16Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint16Array): VertexBuffer<"u16">;
+	static fromUint32Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint32Array): VertexBuffer<"u32">;
+	static fromFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array): VertexBuffer<"f32">;
 	readonly gl: WebGL2RenderingContext;
 	readonly type: T;
 	readonly glType: number;
@@ -57,9 +66,9 @@ export interface ElementBufferObjectProps {
 }
 export declare type ElementBufferArrayProps = [number, number, number][];
 export declare class ElementBuffer {
-	static create(gl: WebGL2RenderingContext, props: ElementBufferProps): ElementBuffer;
-	static fromArray(gl: WebGL2RenderingContext, arr: ElementBufferArrayProps): ElementBuffer;
-	static fromUint32Array(gl: WebGL2RenderingContext, buffer: number[] | Uint32Array): ElementBuffer;
+	static create(dev: WebGL2RenderingContext | Device, props: ElementBufferProps): ElementBuffer;
+	static fromArray(dev: WebGL2RenderingContext | Device, arr: ElementBufferArrayProps): ElementBuffer;
+	static fromUint32Array(dev: WebGL2RenderingContext | Device, buffer: number[] | Uint32Array): ElementBuffer;
 	readonly glBuffer: WebGLBuffer;
 	readonly count: number;
 	private constructor();
@@ -96,7 +105,7 @@ export declare class VertexArray {
 	readonly hasElements: boolean;
 	readonly count: number;
 	readonly instanceCount: number;
-	static create(gl: WebGL2RenderingContext, {attributes, elements}: VertexArrayProps): VertexArray;
+	static create(dev: WebGL2RenderingContext | Device, {attributes, elements}: VertexArrayProps): VertexArray;
 	private constructor();
 }
 export interface TextureOptions {
@@ -183,14 +192,14 @@ export declare const enum TextureType {
 	FLOAT = "FLOAT",
 }
 export declare class Texture {
-	static fromImage(gl: WebGL2RenderingContext, image: ImageData, options?: TextureOptions): Texture;
-	static RGBA8FromRGBAUint8Array(gl: WebGL2RenderingContext, data: number[] | Uint8Array | Uint8ClampedArray | null, width: number, height: number, options?: TextureOptions): Texture;
-	static RG16FFromRGFloat32Array(gl: WebGL2RenderingContext, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
-	static RGB16FFromRGBFloat32Array(gl: WebGL2RenderingContext, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
-	static RGBA16FFromRGBAFloat32Array(gl: WebGL2RenderingContext, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
-	static RGB32FFromRGBFloat32Array(gl: WebGL2RenderingContext, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
-	static RGBA32FFromRGBAFloat32Array(gl: WebGL2RenderingContext, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
-	static fromArrayBufferView(gl: WebGL2RenderingContext, data: ArrayBufferView | null, width: number, height: number, internalFormat: TextureInternalFormat, format: TextureFormat, type: TextureType, options?: TextureOptions): Texture;
+	static fromImage(dev: WebGL2RenderingContext | Device, image: ImageData, options?: TextureOptions): Texture;
+	static RGBA8FromRGBAUint8Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint8Array | Uint8ClampedArray | null, width: number, height: number, options?: TextureOptions): Texture;
+	static RG16FFromRGFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
+	static RGB16FFromRGBFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
+	static RGBA16FFromRGBAFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
+	static RGB32FFromRGBFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
+	static RGBA32FFromRGBAFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
+	static fromArrayBufferView(dev: WebGL2RenderingContext | Device, data: ArrayBufferView | null, width: number, height: number, internalFormat: TextureInternalFormat, format: TextureFormat, type: TextureType, options?: TextureOptions): Texture;
 	readonly glTexture: WebGLTexture;
 	readonly width: number;
 	readonly height: number;
@@ -203,7 +212,7 @@ export declare class Framebuffer {
 	readonly colorAttachments: number[];
 	readonly width: number;
 	readonly height: number;
-	static fromTextures(gl: WebGL2RenderingContext, textures: Texture[]): Framebuffer;
+	static fromTextures(dev: WebGL2RenderingContext | Device, textures: Texture[]): Framebuffer;
 	private constructor();
 	bind(): void;
 	unbind(): void;
@@ -374,7 +383,7 @@ export declare class Command<P = void> {
 	private uniformDescriptors;
 	private blendDescriptor;
 	private clearDescriptor;
-	static create<P = void>(gl: WebGL2RenderingContext, {vert, frag, uniforms, primitive, blend, clear}: CommandProps<P>): Command<P>;
+	static create<P = void>(dev: WebGL2RenderingContext | Device, {vert, frag, uniforms, primitive, blend, clear}: CommandProps<P>): Command<P>;
 	private constructor();
 	execute(vao: VertexArray, props: P, framebuffer?: Framebuffer): void;
 	locate({attributes, elements}: VertexArrayProps): VertexArrayProps;

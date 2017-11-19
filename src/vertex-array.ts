@@ -1,6 +1,7 @@
 import * as assert from "./assert";
 import * as array from "./array";
 import * as glutil from "./glutil";
+import { Device } from "./device";
 import {
     VertexBuffer,
     VertexBufferProps,
@@ -79,10 +80,10 @@ export interface VertexArrayProps {
 export class VertexArray {
 
     static create(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         { attributes, elements }: VertexArrayProps,
     ): VertexArray {
-
+        const gl = dev instanceof Device ? dev.gl : dev;
         // Setup attributes
 
         const attribDescriptors: AttributeDescriptor[] = [];

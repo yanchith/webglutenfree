@@ -1,5 +1,6 @@
 import * as assert from "./assert";
 import * as glutil from "./glutil";
+import { Device } from "./device";
 import { VertexArray, VertexArrayProps } from "./vertex-array";
 import { Texture } from "./texture";
 import { Framebuffer } from "./framebuffer";
@@ -213,7 +214,7 @@ export const enum BlendEquation {
 export class Command<P = void> {
 
     static create<P = void>(
-        gl: WebGL2RenderingContext,
+        dev: WebGL2RenderingContext | Device,
         {
             vert,
             frag,
@@ -223,6 +224,7 @@ export class Command<P = void> {
             clear,
         }: CommandProps<P>,
     ): Command<P> {
+        const gl = dev instanceof Device ? dev.gl : dev;
         const vertShader = glutil.createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = glutil.createShader(gl, gl.FRAGMENT_SHADER, frag);
         const program = glutil.createProgram(gl, vertShader, fragShader);

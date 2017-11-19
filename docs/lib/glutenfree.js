@@ -1,3 +1,33 @@
+class Device {
+    constructor(gl) {
+        this.gl = gl;
+    }
+    static createAndMount(element = document.body) {
+        const canvas = document.createElement("canvas");
+        element.appendChild(canvas);
+        return Device.fromCanvas(canvas);
+    }
+    static fromCanvas(canvas) {
+        const gl = canvas.getContext("webgl2");
+        if (!gl) {
+            throw new Error("Could not acquire webgl2 context");
+        }
+        const dpr = window.devicePixelRatio;
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
+        return Device.fromContext(gl);
+    }
+    static fromContext(gl) {
+        return new Device(gl);
+    }
+    get width() {
+        return this.gl.drawingBufferWidth;
+    }
+    get height() {
+        return this.gl.drawingBufferHeight;
+    }
+}
+
 function never(x, message) {
     throw new Error(message || "Unexpected object: " + x);
 }
@@ -179,7 +209,8 @@ class Command {
         this.blendDescriptor = blendDescriptor;
         this.clearDescriptor = clearDescriptor;
     }
-    static create(gl, { vert, frag, uniforms = {}, primitive = "triangles" /* TRIANGLES */, blend = false, clear, }) {
+    static create(dev, { vert, frag, uniforms = {}, primitive = "triangles" /* TRIANGLES */, blend = false, clear, }) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         const vertShader = createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = createShader(gl, gl.FRAGMENT_SHADER, frag);
         const program = createProgram(gl, vertShader, fragShader);
@@ -489,7 +520,8 @@ class VertexBuffer {
         this.glType = glType;
         this.glBuffer = createArrayBuffer(gl, data);
     }
-    static create(gl, props) {
+    static create(dev, props) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         switch (props.type) {
             case "i8": return VertexBuffer.fromInt8Array(gl, props.data);
             case "i16": return VertexBuffer.fromInt16Array(gl, props.data);
@@ -501,29 +533,36 @@ class VertexBuffer {
             default: return never(props);
         }
     }
-    static fromInt8Array(gl, data) {
+    static fromInt8Array(dev, data) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(gl, "i8", gl.BYTE, data instanceof Int8Array ? data : new Int8Array(data));
     }
-    static fromInt16Array(gl, data) {
+    static fromInt16Array(dev, data) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(gl, "i16", gl.SHORT, data instanceof Int16Array ? data : new Int16Array(data));
     }
-    static fromInt32Array(gl, data) {
+    static fromInt32Array(dev, data) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(gl, "i32", gl.INT, data instanceof Int32Array ? data : new Int32Array(data));
     }
-    static fromUint8Array(gl, data) {
+    static fromUint8Array(dev, data) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(gl, "u8", gl.UNSIGNED_BYTE, 
         // Note: we also have to convert Uint8ClampedArray to Uint8Array
         // because of webgl bug
         // https://github.com/KhronosGroup/WebGL/issues/1533
         data instanceof Uint8Array ? data : new Uint8Array(data));
     }
-    static fromUint16Array(gl, data) {
+    static fromUint16Array(dev, data) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(gl, "u16", gl.UNSIGNED_SHORT, data instanceof Uint16Array ? data : new Uint16Array(data));
     }
-    static fromUint32Array(gl, data) {
+    static fromUint32Array(dev, data) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(gl, "u32", gl.UNSIGNED_INT, data instanceof Uint32Array ? data : new Uint32Array(data));
     }
-    static fromFloat32Array(gl, data) {
+    static fromFloat32Array(dev, data) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(gl, "f32", gl.FLOAT, data instanceof Float32Array ? data : new Float32Array(data));
     }
 }
@@ -560,17 +599,20 @@ function ravel(unraveled) {
 }
 
 class ElementBuffer {
-    static create(gl, props) {
+    static create(dev, props) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         if (Array.isArray(props)) {
             return ElementBuffer.fromArray(gl, props);
         }
         return ElementBuffer.fromUint32Array(gl, props.data);
     }
-    static fromArray(gl, arr) {
+    static fromArray(dev, arr) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         const data = ravel(arr).data;
         return new ElementBuffer(gl, new Uint32Array(data));
     }
-    static fromUint32Array(gl, buffer) {
+    static fromUint32Array(dev, buffer) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new ElementBuffer(gl, Array.isArray(buffer) ? new Uint32Array(buffer) : buffer);
     }
     constructor(gl, buffer) {
@@ -588,7 +630,8 @@ class VertexArray {
         this.count = count;
         this.instanceCount = instanceCount;
     }
-    static create(gl, { attributes, elements }) {
+    static create(dev, { attributes, elements }) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         // Setup attributes
         const attribDescriptors = [];
         const attribLocations = [];
@@ -665,10 +708,12 @@ class AttributeDescriptor {
 }
 
 class Texture {
-    static fromImage(gl, image, options) {
+    static fromImage(dev, image, options) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return Texture.RGBA8FromRGBAUint8Array(gl, image.data, image.width, image.height, options);
     }
-    static RGBA8FromRGBAUint8Array(gl, data, width, height, options) {
+    static RGBA8FromRGBAUint8Array(dev, data, width, height, options) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(gl, !data || data instanceof Uint8Array
             ? data
             // Note: we also have to convert Uint8ClampedArray to Uint8Array
@@ -676,32 +721,38 @@ class Texture {
             // https://github.com/KhronosGroup/WebGL/issues/1533
             : new Uint8Array(data), width, height, "RGBA8" /* RGBA8 */, "RGBA" /* RGBA */, "UNSIGNED_BYTE" /* UNSIGNED_BYTE */, options);
     }
-    static RG16FFromRGFloat32Array(gl, data, width, height, options) {
+    static RG16FFromRGFloat32Array(dev, data, width, height, options) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(gl, !data || data instanceof Float32Array
             ? data
             : new Float32Array(data), width, height, "RG16F" /* RG16F */, "RG" /* RG */, "FLOAT" /* FLOAT */, options);
     }
-    static RGB16FFromRGBFloat32Array(gl, data, width, height, options) {
+    static RGB16FFromRGBFloat32Array(dev, data, width, height, options) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(gl, !data || data instanceof Float32Array
             ? data
             : new Float32Array(data), width, height, "RGB16F" /* RGB16F */, "RGB" /* RGB */, "FLOAT" /* FLOAT */, options);
     }
-    static RGBA16FFromRGBAFloat32Array(gl, data, width, height, options) {
+    static RGBA16FFromRGBAFloat32Array(dev, data, width, height, options) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(gl, !data || data instanceof Float32Array
             ? data
             : new Float32Array(data), width, height, "RGBA16F" /* RGBA16F */, "RGBA" /* RGBA */, "FLOAT" /* FLOAT */, options);
     }
-    static RGB32FFromRGBFloat32Array(gl, data, width, height, options) {
+    static RGB32FFromRGBFloat32Array(dev, data, width, height, options) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(gl, !data || data instanceof Float32Array
             ? data
             : new Float32Array(data), width, height, "RGB32F" /* RGB32F */, "RGB" /* RGB */, "FLOAT" /* FLOAT */, options);
     }
-    static RGBA32FFromRGBAFloat32Array(gl, data, width, height, options) {
+    static RGBA32FFromRGBAFloat32Array(dev, data, width, height, options) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(gl, !data || data instanceof Float32Array
             ? data
             : new Float32Array(data), width, height, "RGBA32F" /* RGBA32F */, "RGBA" /* RGBA */, "FLOAT" /* FLOAT */, options);
     }
-    static fromArrayBufferView(gl, data, width, height, internalFormat, format, type, options) {
+    static fromArrayBufferView(dev, data, width, height, internalFormat, format, type, options) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(gl, data, width, height, internalFormat, format, type, options);
     }
     constructor(gl, data, width, height, internalFormat, format, type, { min = "nearest" /* NEAREST */, mag = "nearest" /* NEAREST */, wrapS = "clamp-to-edge" /* CLAMP_TO_EDGE */, wrapT = "clamp-to-edge" /* CLAMP_TO_EDGE */, mipmap = false, } = {}) {
@@ -812,7 +863,8 @@ class Framebuffer {
         this.width = width;
         this.height = height;
     }
-    static fromTextures(gl, textures) {
+    static fromTextures(dev, textures) {
+        const gl = dev instanceof Device ? dev.gl : dev;
         const fbo = createFramebuffer(gl, textures.map(t => t.glTexture));
         const attachment = gl.COLOR_ATTACHMENT0;
         return new Framebuffer(gl, fbo, textures.map((_, i) => attachment + i), textures[0].width, textures[0].height);
@@ -825,5 +877,5 @@ class Framebuffer {
     }
 }
 
-export { Command, VertexBuffer, ElementBuffer, VertexArray, Texture, Framebuffer };
+export { Device, Command, VertexBuffer, ElementBuffer, VertexArray, Texture, Framebuffer };
 //# sourceMappingURL=glutenfree.js.map

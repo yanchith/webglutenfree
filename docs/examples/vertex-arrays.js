@@ -1,14 +1,9 @@
-import { Command, VertexArray } from "./lib/glutenfree.js";
+import { Device, Command, VertexArray } from "./lib/glutenfree.js";
 
-const canvas = document.getElementById("canvas");
-const dpr = window.devicePixelRatio;
-const w = canvas.clientWidth * dpr;
-const h = canvas.clientHeight * dpr;
-canvas.width = w;
-canvas.height = h;
-const gl = canvas.getContext("webgl2");
+const dev = Device.createAndMount();
+const [w, h] = [dev.width, dev.height];
 
-const cmd = Command.create(gl, {
+const cmd = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
 
@@ -62,7 +57,7 @@ const cmd = Command.create(gl, {
     },
 });
 
-const triangle = VertexArray.create(gl, {
+const triangle = VertexArray.create(dev, {
     attributes: {
         0: [
             [-0.3, -0.5],
@@ -77,7 +72,7 @@ const triangle = VertexArray.create(gl, {
     },
 });
 
-const square = VertexArray.create(gl, {
+const square = VertexArray.create(dev, {
     attributes: {
         0: [
             [-0.2, -0.2],

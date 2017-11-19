@@ -1,15 +1,12 @@
-import { Command, VertexArray } from "./lib/glutenfree.js";
+import { Device, Command, VertexArray } from "./lib/glutenfree.js";
 import { positions as bunnyPositions, cells as bunnyCells } from "./lib/bunny.js"
 
-const canvas = document.getElementById("canvas");
-const dpr = window.devicePixelRatio;
-canvas.width = canvas.clientWidth * dpr;
-canvas.height = canvas.clientHeight * dpr;
-const gl = canvas.getContext("webgl2");
+const dev = Device.createAndMount();
+const [w, h] = [dev.width, dev.height];
 
 const view = mat4.create();
 
-const cmd = Command.create(gl, {
+const cmd = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
 
@@ -39,7 +36,7 @@ const cmd = Command.create(gl, {
             value: mat4.perspective(
                 mat4.create(),
                 Math.PI / 4,
-                canvas.width / canvas.height,
+                w / h,
                 0.1,
                 1000.0,
             ),
@@ -64,7 +61,7 @@ const cmd = Command.create(gl, {
     }
 });
 
-const bunny = VertexArray.create(gl, cmd.locate({
+const bunny = VertexArray.create(dev, cmd.locate({
     attributes: {
         a_vertex_position: bunnyPositions,
     },

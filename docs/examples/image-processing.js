@@ -1,4 +1,5 @@
 import {
+    Device,
     Command,
     VertexArray,
     Texture,
@@ -41,26 +42,21 @@ function computeKernelWeight(kernel) {
 
 const currentKernel = kernels.edgeDetect;
 
-const canvas = document.getElementById("canvas");
-const dpr = window.devicePixelRatio;
-const w = canvas.clientWidth * dpr;
-const h = canvas.clientHeight * dpr;
-canvas.width = w;
-canvas.height = h;
-const gl = canvas.getContext("webgl2");
+const dev = Device.createAndMount();
+const [w, h] = [dev.width, dev.height];
 
 async function run() {
     const imageData = await loadImage("img/lenna.png", true);
-    const imageTexture = Texture.fromImage(gl, imageData);
+    const imageTexture = Texture.fromImage(dev, imageData);
     const fboTexture = Texture.RGBA8FromRGBAUint8Array(
-        gl,
+        dev,
         null,
         imageData.width,
         imageData.height,
     );
-    const fbo = Framebuffer.fromTextures(gl, [fboTexture]);
+    const fbo = Framebuffer.fromTextures(dev, [fboTexture]);
 
-    const texturePass = Command.create(gl, {
+    const texturePass = Command.create(dev, {
         vert: `#version 300 es
             precision mediump float;
 
@@ -94,7 +90,7 @@ async function run() {
         },
     });
 
-    const texturePassGeometry = VertexArray.create(gl, texturePass.locate({
+    const texturePassGeometry = VertexArray.create(dev, texturePass.locate({
         attributes: {
             a_vertex_position: [
                 [1, 1],
@@ -115,7 +111,7 @@ async function run() {
         ],
     }));
 
-    const kernelPass = Command.create(gl, {
+    const kernelPass = Command.create(dev, {
         vert: `#version 300 es
             precision mediump float;
 
@@ -196,7 +192,7 @@ async function run() {
         },
     });
 
-    const kernelPassGeometry = VertexArray.create(gl, kernelPass.locate({
+    const kernelPassGeometry = VertexArray.create(dev, kernelPass.locate({
         attributes: {
             a_vertex_position: [
                 [1, 1],

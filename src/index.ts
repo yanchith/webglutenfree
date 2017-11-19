@@ -1,3 +1,4 @@
+export { Device } from "./device";
 export { Command, CommandProps } from "./command";
 export { VertexBuffer, VertexBufferProps, VertexBufferType } from "./vertex-buffer";
 export { ElementBuffer, ElementBufferProps } from "./element-buffer";
