@@ -20,11 +20,27 @@ class Device {
     static fromContext(gl) {
         return new Device(gl);
     }
-    get width() {
+    get bufferWidth() {
         return this.gl.drawingBufferWidth;
     }
-    get height() {
+    get bufferHeight() {
         return this.gl.drawingBufferHeight;
+    }
+    get canvasWidth() {
+        return this.gl.canvas.width;
+    }
+    get canvasHeight() {
+        return this.gl.canvas.height;
+    }
+    updateCanvas() {
+        const gl = this.gl;
+        const dpr = window.devicePixelRatio;
+        const width = gl.canvas.clientWidth * dpr;
+        const height = gl.canvas.clientHeight * dpr;
+        if (width !== gl.canvas.clientWidth || height !== gl.canvas.clientHeight) {
+            gl.canvas.width = width;
+            gl.canvas.height = height;
+        }
     }
 }
 

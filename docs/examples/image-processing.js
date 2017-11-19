@@ -43,7 +43,7 @@ function computeKernelWeight(kernel) {
 const currentKernel = kernels.edgeDetect;
 
 const dev = Device.createAndMount();
-const [w, h] = [dev.width, dev.height];
+const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 
 async function run() {
     const imageData = await loadImage("img/lenna.png", true);

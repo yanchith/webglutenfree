@@ -23,12 +23,30 @@ export class Device {
         readonly gl: WebGL2RenderingContext,
     ) {}
 
-    get width(): number {
+    get bufferWidth(): number {
         return this.gl.drawingBufferWidth;
     }
 
-    get height(): number {
+    get bufferHeight(): number {
         return this.gl.drawingBufferHeight;
     }
 
+    get canvasWidth(): number {
+        return this.gl.canvas.width;
+    }
+
+    get canvasHeight(): number {
+        return this.gl.canvas.height;
+    }
+
+    updateCanvas(): void {
+        const gl = this.gl;
+        const dpr = window.devicePixelRatio;
+        const width = gl.canvas.clientWidth * dpr;
+        const height = gl.canvas.clientHeight * dpr;
+        if (width !== gl.canvas.clientWidth || height !== gl.canvas.clientHeight) {
+            gl.canvas.width = width;
+            gl.canvas.height = height;
+        }
+    }
 }

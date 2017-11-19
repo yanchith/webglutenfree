@@ -6,8 +6,11 @@ export declare class Device {
 	static fromCanvas(canvas: HTMLCanvasElement): Device;
 	static fromContext(gl: WebGL2RenderingContext): Device;
 	private constructor();
-	readonly width: number;
-	readonly height: number;
+	readonly bufferWidth: number;
+	readonly bufferHeight: number;
+	readonly canvasWidth: number;
+	readonly canvasHeight: number;
+	updateCanvas(): void;
 }
 export declare type VertexBufferType = VertexBufferProps["type"];
 export declare type VertexBufferProps = VertexBufferInt8Props | VertexBufferInt16Props | VertexBufferInt32Props | VertexBufferUint8Props | VertexBufferUint16Props | VertexBufferUint32Props | VertexBufferFloat32Props;

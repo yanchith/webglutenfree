@@ -1,7 +1,7 @@
 import { Device, Command, VertexArray } from "./lib/glutenfree.js";
 
 const dev = Device.createAndMount();
-const [w, h] = [dev.width, dev.height];
+const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 
 const projection = mat4.ortho(
     mat4.create(),
