@@ -220,6 +220,7 @@ export declare class Framebuffer {
 	bind(): void;
 	unbind(): void;
 }
+export declare type Color = [number, number, number, number];
 export interface CommandProps<P> {
 	vert: string;
 	frag: string;
@@ -231,9 +232,10 @@ export interface CommandProps<P> {
 		srcFunc: BlendFunction;
 		destFunc: BlendFunction;
 		equation?: BlendEquation;
+		color?: Color;
 	} | boolean;
 	clear?: {
-		color?: [number, number, number, number];
+		color?: Color;
 		depth?: number;
 		stencil?: number;
 	};
@@ -363,14 +365,20 @@ export declare const enum Primitive {
 	LINE_LOOP = "line-loop",
 }
 export declare const enum BlendFunction {
-	SRC_ALPHA = "src-alpha",
+	ZERO = "zero",
+	ONE = "one",
 	SRC_COLOR = "src-color",
-	ONE_MINUS_SRC_ALPHA = "one-minus-src-alpha",
+	SRC_ALPHA = "src-alpha",
 	ONE_MINUS_SRC_COLOR = "one-minus-src-color",
-	DST_ALPHA = "dst-alpha",
+	ONE_MINUS_SRC_ALPHA = "one-minus-src-alpha",
 	DST_COLOR = "dst-color",
-	ONE_MINUS_DST_ALPHA = "one-minus-dst-alpha",
+	DST_ALPHA = "dst-alpha",
 	ONE_MINUS_DST_COLOR = "one-minus-dst-color",
+	ONE_MINUS_DST_ALPHA = "one-minus-dst-alpha",
+	CONSTANT_COLOR = "constant-color",
+	CONSTANT_ALPHA = "constant-alpha",
+	ONE_MINUS_CONSTANT_COLOR = "one-minus-constant-color",
+	ONE_MINUS_CONSTANT_ALPHA = "one-minus-constant-alpha",
 }
 export declare const enum BlendEquation {
 	ADD = "add",

@@ -8,6 +8,8 @@ import { Framebuffer } from "./framebuffer";
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 
+export type Color = [number, number, number, number];
+
 export interface CommandProps<P> {
     vert: string;
     frag: string;
@@ -17,9 +19,10 @@ export interface CommandProps<P> {
         srcFunc: BlendFunction;
         destFunc: BlendFunction;
         equation?: BlendEquation;
+        color?: Color;
     } | boolean; // true is shorthand for (SRC_ALPHA, 1 - SRC_SLPHA, FUNC_ADD)
     clear?: {
-        color?: [number, number, number, number];
+        color?: Color;
         depth?: number;
         stencil?: number;
     };
@@ -192,16 +195,21 @@ export const enum Primitive {
 }
 
 export const enum BlendFunction {
-    SRC_ALPHA = "src-alpha",
+    ZERO = "zero",
+    ONE = "one",
     SRC_COLOR = "src-color",
-    ONE_MINUS_SRC_ALPHA = "one-minus-src-alpha",
+    SRC_ALPHA = "src-alpha",
     ONE_MINUS_SRC_COLOR = "one-minus-src-color",
-    DST_ALPHA = "dst-alpha",
+    ONE_MINUS_SRC_ALPHA = "one-minus-src-alpha",
     DST_COLOR = "dst-color",
-    ONE_MINUS_DST_ALPHA = "one-minus-dst-alpha",
+    DST_ALPHA = "dst-alpha",
     ONE_MINUS_DST_COLOR = "one-minus-dst-color",
+    ONE_MINUS_DST_ALPHA = "one-minus-dst-alpha",
+    CONSTANT_COLOR = "constant-color",
+    CONSTANT_ALPHA = "constant-alpha",
+    ONE_MINUS_CONSTANT_COLOR = "one-minus-constant-color",
+    ONE_MINUS_CONSTANT_ALPHA = "one-minus-constant-alpha",
 }
-
 
 export const enum BlendEquation {
     ADD = "add",
@@ -246,9 +254,14 @@ export class Command<P = void> {
                 mapGlBlendFunc(gl, blend.srcFunc),
                 mapGlBlendFunc(gl, blend.destFunc),
                 mapGlBlendEquation(gl, blend.equation || BlendEquation.ADD),
+                blend.color,
             )
             : blend
-                ? new BlendDescriptor(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.FUNC_ADD)
+                ? new BlendDescriptor(
+                    gl.SRC_ALPHA,
+                    gl.ONE_MINUS_SRC_ALPHA,
+                    gl.FUNC_ADD,
+                )
                 : undefined;
 
         const clearDescriptor = clear
@@ -336,6 +349,10 @@ export class Command<P = void> {
             gl.enable(gl.BLEND);
             gl.blendFunc(blendDescriptor.srcFactor, blendDescriptor.destFactor);
             gl.blendEquation(blendDescriptor.equation);
+            if (blendDescriptor.color) {
+                const [r, g, b, a] = blendDescriptor.color;
+                gl.blendColor(r, g, b, a);
+            }
         }
     }
 
@@ -536,6 +553,7 @@ class BlendDescriptor {
         readonly srcFactor: number,
         readonly destFactor: number,
         readonly equation: number,
+        readonly color?: Color,
     ) { }
 }
 
@@ -576,14 +594,22 @@ function mapGlBlendFunc(
     func: BlendFunction,
 ): number {
     switch (func) {
-        case BlendFunction.SRC_ALPHA: return gl.SRC_ALPHA;
+        case BlendFunction.ZERO: return gl.ZERO;
+        case BlendFunction.ONE: return gl.ONE;
         case BlendFunction.SRC_COLOR: return gl.SRC_COLOR;
-        case BlendFunction.ONE_MINUS_SRC_ALPHA: return gl.ONE_MINUS_SRC_ALPHA;
+        case BlendFunction.SRC_ALPHA: return gl.SRC_ALPHA;
         case BlendFunction.ONE_MINUS_SRC_COLOR: return gl.ONE_MINUS_SRC_COLOR;
-        case BlendFunction.DST_ALPHA: return gl.DST_ALPHA;
+        case BlendFunction.ONE_MINUS_SRC_ALPHA: return gl.ONE_MINUS_SRC_ALPHA;
         case BlendFunction.DST_COLOR: return gl.DST_COLOR;
-        case BlendFunction.ONE_MINUS_DST_ALPHA: return gl.ONE_MINUS_DST_ALPHA;
+        case BlendFunction.DST_ALPHA: return gl.DST_ALPHA;
         case BlendFunction.ONE_MINUS_DST_COLOR: return gl.ONE_MINUS_DST_COLOR;
+        case BlendFunction.ONE_MINUS_DST_ALPHA: return gl.ONE_MINUS_DST_ALPHA;
+        case BlendFunction.CONSTANT_COLOR: return gl.CONSTANT_COLOR;
+        case BlendFunction.CONSTANT_ALPHA: return gl.CONSTANT_ALPHA;
+        case BlendFunction.ONE_MINUS_CONSTANT_COLOR:
+            return gl.ONE_MINUS_CONSTANT_COLOR;
+        case BlendFunction.ONE_MINUS_CONSTANT_ALPHA:
+            return gl.ONE_MINUS_CONSTANT_ALPHA;
         default: return assert.never(func);
     }
 }

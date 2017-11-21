@@ -241,7 +241,7 @@ class Command {
             return new UniformDescriptor(identifier, location, uniform);
         });
         const blendDescriptor = blend && typeof blend === "object" && blend
-            ? new BlendDescriptor(mapGlBlendFunc(gl, blend.srcFunc), mapGlBlendFunc(gl, blend.destFunc), mapGlBlendEquation(gl, blend.equation || "add" /* ADD */))
+            ? new BlendDescriptor(mapGlBlendFunc(gl, blend.srcFunc), mapGlBlendFunc(gl, blend.destFunc), mapGlBlendEquation(gl, blend.equation || "add" /* ADD */), blend.color)
             : blend
                 ? new BlendDescriptor(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.FUNC_ADD)
                 : undefined;
@@ -297,6 +297,10 @@ class Command {
             gl.enable(gl.BLEND);
             gl.blendFunc(blendDescriptor.srcFactor, blendDescriptor.destFactor);
             gl.blendEquation(blendDescriptor.equation);
+            if (blendDescriptor.color) {
+                const [r, g, b, a] = blendDescriptor.color;
+                gl.blendColor(r, g, b, a);
+            }
         }
     }
     endBlend() {
@@ -473,10 +477,11 @@ function access(props, value) {
         : value;
 }
 class BlendDescriptor {
-    constructor(srcFactor, destFactor, equation) {
+    constructor(srcFactor, destFactor, equation, color) {
         this.srcFactor = srcFactor;
         this.destFactor = destFactor;
         this.equation = equation;
+        this.color = color;
     }
 }
 class ClearDescriptor {
@@ -507,14 +512,22 @@ function mapGlPrimitive(gl, primitive) {
 }
 function mapGlBlendFunc(gl, func) {
     switch (func) {
-        case "src-alpha" /* SRC_ALPHA */: return gl.SRC_ALPHA;
+        case "zero" /* ZERO */: return gl.ZERO;
+        case "one" /* ONE */: return gl.ONE;
         case "src-color" /* SRC_COLOR */: return gl.SRC_COLOR;
-        case "one-minus-src-alpha" /* ONE_MINUS_SRC_ALPHA */: return gl.ONE_MINUS_SRC_ALPHA;
+        case "src-alpha" /* SRC_ALPHA */: return gl.SRC_ALPHA;
         case "one-minus-src-color" /* ONE_MINUS_SRC_COLOR */: return gl.ONE_MINUS_SRC_COLOR;
-        case "dst-alpha" /* DST_ALPHA */: return gl.DST_ALPHA;
+        case "one-minus-src-alpha" /* ONE_MINUS_SRC_ALPHA */: return gl.ONE_MINUS_SRC_ALPHA;
         case "dst-color" /* DST_COLOR */: return gl.DST_COLOR;
-        case "one-minus-dst-alpha" /* ONE_MINUS_DST_ALPHA */: return gl.ONE_MINUS_DST_ALPHA;
+        case "dst-alpha" /* DST_ALPHA */: return gl.DST_ALPHA;
         case "one-minus-dst-color" /* ONE_MINUS_DST_COLOR */: return gl.ONE_MINUS_DST_COLOR;
+        case "one-minus-dst-alpha" /* ONE_MINUS_DST_ALPHA */: return gl.ONE_MINUS_DST_ALPHA;
+        case "constant-color" /* CONSTANT_COLOR */: return gl.CONSTANT_COLOR;
+        case "constant-alpha" /* CONSTANT_ALPHA */: return gl.CONSTANT_ALPHA;
+        case "one-minus-constant-color" /* ONE_MINUS_CONSTANT_COLOR */:
+            return gl.ONE_MINUS_CONSTANT_COLOR;
+        case "one-minus-constant-alpha" /* ONE_MINUS_CONSTANT_ALPHA */:
+            return gl.ONE_MINUS_CONSTANT_ALPHA;
         default: return never(func);
     }
 }
