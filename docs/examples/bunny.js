@@ -56,8 +56,8 @@ const cmd = Command.create(dev, {
         },
     },
     blend: {
-        srcFunc: "constant-alpha",
-        destFunc: "one-minus-constant-alpha",
+        src: "constant-alpha",
+        dest: "one-minus-constant-alpha",
         color: [0, 0, 0, 0.2],
     },
     clear: {

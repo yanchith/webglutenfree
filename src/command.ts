@@ -16,8 +16,8 @@ export interface CommandProps<P> {
     uniforms?: { [key: string]: Uniform<P> };
     primitive?: Primitive;
     blend?: {
-        srcFunc: BlendFunction;
-        destFunc: BlendFunction;
+        src: BlendFunction;
+        dest: BlendFunction;
         equation?: BlendEquation;
         color?: Color;
     } | boolean; // true is shorthand for (SRC_ALPHA, 1 - SRC_SLPHA, FUNC_ADD)
@@ -251,8 +251,8 @@ export class Command<P = void> {
 
         const blendDescriptor = blend && typeof blend === "object" && blend
             ? new BlendDescriptor(
-                mapGlBlendFunc(gl, blend.srcFunc),
-                mapGlBlendFunc(gl, blend.destFunc),
+                mapGlBlendFunc(gl, blend.src),
+                mapGlBlendFunc(gl, blend.dest),
                 mapGlBlendEquation(gl, blend.equation || BlendEquation.ADD),
                 blend.color,
             )
