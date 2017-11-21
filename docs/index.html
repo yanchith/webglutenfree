@@ -80,9 +80,9 @@
             color: lawngreen;
         }
     </style>
-    <link rel="stylesheet" href="./sandbox/codemirror/codemirror.css"></link>
-    <link rel="stylesheet" href="./sandbox/codemirror/liquibyte.css"></link>
-    <link rel="stylesheet" href="./sandbox/codemirror/solarized.css"></link>
+    <link rel="stylesheet" href="./demo/codemirror/codemirror.css"></link>
+    <link rel="stylesheet" href="./demo/codemirror/liquibyte.css"></link>
+    <link rel="stylesheet" href="./demo/codemirror/solarized.css"></link>
 </head>
 
 <body>
@@ -97,10 +97,11 @@
         <div data-href="./examples/image-processing.js">image processing</div>
     </div>
 
-    <script src="./sandbox/codemirror/codemirror.js"></script>
-    <script src="./sandbox/codemirror/javascript.js"></script>
+    <script src="./demo/codemirror/codemirror.js"></script>
+    <script src="./demo/codemirror/javascript.js"></script>
     <script type="module">
-        import { IFrame, debounce } from "./sandbox/sandbox.js";
+        import { IFrame } from "./demo/sandbox/iframe.js";
+        import { debounce } from "./demo/sandbox/util.js";
 
         const iframeElem = document.getElementById("iframe");
         const editorElem = document.getElementById("editor");

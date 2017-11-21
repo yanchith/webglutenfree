@@ -23,8 +23,8 @@
     let's include it globally -->
     <script src="./lib/gl-matrix-min.js"></script>
     <script type="module">
-        import { PostMessageChannel } from "./sandbox/sandbox.js";
-        const chan = new PostMessageChannel(window);
+        import { Channel } from "./demo/sandbox/channel.js";
+        const chan = new Channel(window);
         chan.onMessage(msg => {
             if (msg.code) {
                 const script = document.createElement("script");
