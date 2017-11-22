@@ -34,21 +34,23 @@ const gaussianKernel = [
 const dev = Device.createAndMount();
 const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 
-const splitColorTexture = Texture.RGBA8FromRGBAUint8Array(gl, null, w, h);
-const splitBrightTexture = Texture.RGBA8FromRGBAUint8Array(gl, null, w, h);
-const splitFbo = Framebuffer.fromTextures(gl, [
+const splitColorTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
+const splitBrightTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
+const splitFbo = Framebuffer.fromTextures(dev, [
     splitColorTexture,
     splitBrightTexture,
 ]);
 
-const bloomReadTexture = Texture.RGBA8FromRGBAUint8Array(gl, null, w, h);
-const bloomReadFbo = Framebuffer.fromTextures(gl, [bloomReadTexture]);
+const bloomReadTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
+const bloomReadFbo = Framebuffer.fromTextures(dev, [bloomReadTexture]);
 
-const bloomWriteTexture = Texture.RGBA8FromRGBAUint8Array(gl, null, w, h);
-const bloomWriteFbo = Framebuffer.fromTextures(gl, [bloomWriteTexture]);
+const bloomWriteTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
+const bloomWriteFbo = Framebuffer.fromTextures(dev, [bloomWriteTexture]);
 
 const split = Command.create(dev, {
-    vert: `
+    vert: `#version 300 es
+        precision mediump float;
+
         layout (location = 0) in vec2 a_vertex_position;
         layout (location = 1) in vec2 a_tex_coord;
 
@@ -56,10 +58,12 @@ const split = Command.create(dev, {
 
         void main() {
             v_tex_coord = a_tex_coord;
-            gl_Position = vec2(a_vertex_position, 0.0, 1.0);
+            gl_Position = vec4(a_vertex_position, 0.0, 1.0);
         }
     `,
-    frag: `
+    frag: `#version 300 es
+        precision mediump float;
+
         uniform sampler2D u_image;
 
         in vec2 v_tex_coord;
@@ -80,25 +84,29 @@ const split = Command.create(dev, {
     uniforms: {
         u_image: {
             type: "texture",
-            value: ({ image }) => image,
+            value: image => image,
         },
     },
     clear: { color: [0, 0, 0, 1] },
 });
 
 const bloom = Command.create(dev, {
-    vert: `
-        layout (location = 0) in vec4 a_vertex_position;
+    vert: `#version 300 es
+        precision mediump float;
+
+        layout (location = 0) in vec2 a_vertex_position;
         layout (location = 1) in vec2 a_tex_coord;
 
         out vec2 v_tex_coord;
 
         void main() {
             v_tex_coord = a_tex_coord;
-            gl_Position = a_vertex_position;
+            gl_Position = vec4(a_vertex_position, 0.0, 1.0);
         }
     `,
-    frag: `
+    frag: `#version 300 es
+        precision mediump float;
+
         #define KERNEL_LENGTH ${gaussianKernel.length}
 
         uniform sampler2D u_image;
@@ -129,11 +137,11 @@ const bloom = Command.create(dev, {
     uniforms: {
         u_kernel: {
             type: "1fv",
-            value: gaussianBlur.kernel,
+            value: gaussianKernel,
         },
         u_kernel_weight: {
             type: "1f",
-            value: gaussianBlur.weight,
+            value: kernelWeight(gaussianKernel),
         },
         u_blur_direction: {
             type: "2f",
@@ -147,19 +155,28 @@ const bloom = Command.create(dev, {
     clear: { color: [0, 0, 0, 1] },
 });
 
-const blend = Command.create(dev, {
-    vert: `
-        layout (location = 0) in vec4 a_vertex_position;
+const tonemap = Command.create(dev, {
+    vert: `#version 300 es
+        precision mediump float;
+
+        uniform mat4 u_projection, u_view, u_model;
+
+        layout (location = 0) in vec2 a_vertex_position;
         layout (location = 1) in vec2 a_tex_coord;
 
         out vec2 v_tex_coord;
 
         void main() {
             v_tex_coord = a_tex_coord;
-            gl_Position = a_vertex_position;
+            gl_Position = u_projection
+                * u_view
+                * u_model
+                * vec4(a_vertex_position, 0.0, 1.0);
         }
     `,
-    frag: `
+    frag: `#version 300 es
+        precision mediump float;
+
         uniform sampler2D u_image_color;
         uniform sampler2D u_image_bloom;
 
@@ -185,9 +202,29 @@ const blend = Command.create(dev, {
         }
     `,
     uniforms: {
+        u_model: {
+            type: "matrix4fv",
+            value: mat4.fromScaling(mat4.create(), [1000, 1000, 1]),
+        },
+        u_view: {
+            type: "matrix4fv",
+            value: mat4.identity(mat4.create()),
+        },
+        u_projection: {
+            type: "matrix4fv",
+            value: mat4.ortho(
+                mat4.create(),
+                -w / 2,
+                w / 2,
+                -h / 2,
+                h / 2,
+                -0.1,
+                1000.0,
+            ),
+        },
         u_image_color: {
             type: "texture",
-            value: sceneColorTexture,
+            value: splitColorTexture,
         },
         u_image_bloom: {
             type: "texture",
@@ -197,15 +234,15 @@ const blend = Command.create(dev, {
     clear: { color: [0, 0, 0, 1] },
 });
 
-const screenspace = VertexArray.create(dev, bloom.locate({
+const screenspace = VertexArray.create(dev, {
     attributes: {
-        a_vertex_position: [
+        0: [
             [1, 1],
             [-1, 1],
             [1, -1],
             [-1, -1],
         ],
-        a_tex_coord: [
+        1: [
             [1, 1],
             [0, 1],
             [1, 0],
@@ -216,44 +253,61 @@ const screenspace = VertexArray.create(dev, bloom.locate({
         [0, 3, 2],
         [1, 3, 0],
     ],
-}));
+});
 
 const nAdditionalBloomPasses = 2;
 
 const blurDirection = vec2.create();
 const bloomProps = {
-    texture: sceneBrightnessTexture,
+    texture: splitBrightTexture,
     direction: blurDirection,
 };
+
+const HORIZONTAL = vec2.fromValues(1, 0);
+const VERTICAL = vec2.fromValues(1, 0);
+
+const bloomInitialFirstProps = {
+    texture: splitBrightTexture,
+    direction: HORIZONTAL,
+}
+
+const bloomInitialSecondProps = {
+    texture: bloomWriteTexture,
+    direction: HORIZONTAL,
+}
+
+const bloomLoopFirstProps = {
+    texture: bloomReadTexture,
+    direction: HORIZONTAL,
+}
+
+const bloomLoopSecondProps = {
+    texture: bloomWriteTexture,
+    direction: VERTICAL,
+}
 
 async function run() {
     const originalImage = Texture.fromImage(
         dev,
-        await Texture.fromImage("img/lenna.png", true),
+        await loadImage("img/lenna.png", true),
     );
 
     const loop = () => {
+        // Split color and brightness to 2 render targets (splitColor, splitBright)
         split.execute(screenspace, originalImage, splitFbo);
 
-        bloomProps.texture = splitColorTexture;
-        bloomProps.direction = vec2.set(blurDirection, 0, 1);
-        bloom.execute(screenspace, bloomProps, bloomWriteFbo);
+        // Do first 2 blur passes: splitBright -> bloomWrite -> bloomRead
+        bloom.execute(screenspace, bloomInitialFirstProps, bloomWriteFbo);
+        bloom.execute(screenspace, bloomInitialSecondProps, bloomReadFbo);
 
-        bloomProps.texture = bloomWriteTexture;
-        bloomProps.direction = vec2.set(blurDirection, 1, 0);
-        bloom.execute(screenspace, bloomProps, bloomReadFbo);
-
+        // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
         for (let i = 0; i < nAdditionalBloomPasses; i++) {
-            bloomProps.texture = bloomReadTexture;
-            bloomProps.direction = vec2.set(blurDirection, 0, 1);
-            bloom.execute(screenspace, bloomProps, bloomWriteFbo);
-
-            bloomProps.texture = bloomWriteTexture;
-            bloomProps.direction = vec2.set(blurDirection, 1, 0);
-            bloom.execute(screenspace, bloomProps, bloomReadFbo);
+            bloom.execute(screenspace, bloomLoopFirstProps, bloomWriteFbo);
+            bloom.execute(screenspace, bloomLoopSecondProps, bloomReadFbo);
         }
 
-        blend.execute(screenspace, bloomReadTexture);
+        // Blend together blurred highlights with original color and perform tonemapping
+        tonemap.execute(screenspace, bloomReadTexture);
 
         window.requestAnimationFrame(loop);
     }
@@ -262,4 +316,3 @@ async function run() {
 }
 
 run();
-
