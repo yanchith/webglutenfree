@@ -241,7 +241,7 @@ class Command {
             return new UniformDescriptor(identifier, location, uniform);
         });
         const blendDescriptor = blend && typeof blend === "object" && blend
-            ? new BlendDescriptor(mapGlBlendFunc(gl, blend.src), mapGlBlendFunc(gl, blend.dest), mapGlBlendEquation(gl, blend.equation || "add" /* ADD */), blend.color)
+            ? new BlendDescriptor(mapGlBlendFunc(gl, blend.src), mapGlBlendFunc(gl, blend.dst), mapGlBlendEquation(gl, blend.equation || "add" /* ADD */), blend.color)
             : blend
                 ? new BlendDescriptor(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.FUNC_ADD)
                 : undefined;
