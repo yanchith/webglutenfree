@@ -227,7 +227,7 @@ export interface CommandProps<P> {
 	primitive?: Primitive;
 	blend?: {
 		src: BlendFunction;
-		dest: BlendFunction;
+		dst: BlendFunction;
 		equation?: BlendEquation;
 		color?: Color;
 	} | boolean;
