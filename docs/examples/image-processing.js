@@ -54,7 +54,7 @@ async function run() {
         imageData.width,
         imageData.height,
     );
-    const fbo = Framebuffer.fromTextures(dev, [fboTexture]);
+    const fbo = Framebuffer.create(dev, [fboTexture]);
 
     const texturePass = Command.create(dev, {
         vert: `#version 300 es

@@ -302,8 +302,8 @@ export class Command<P = void> {
         let bufferHeight = gl.drawingBufferHeight;
 
         if (framebuffer) {
-            framebuffer.bind();
-            gl.drawBuffers(framebuffer.colorAttachments);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glFramebuffer);
+            gl.drawBuffers(framebuffer.glColorAttachments);
             bufferWidth = framebuffer.width;
             bufferHeight = framebuffer.height;
         }
@@ -318,7 +318,7 @@ export class Command<P = void> {
         this.endBlend();
 
         if (framebuffer) {
-            framebuffer.unbind();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         }
 
         gl.bindVertexArray(null);

@@ -210,15 +210,12 @@ export declare class Texture {
 	private constructor();
 }
 export declare class Framebuffer {
-	private gl;
 	readonly glFramebuffer: WebGLFramebuffer;
-	readonly colorAttachments: number[];
+	readonly glColorAttachments: number[];
 	readonly width: number;
 	readonly height: number;
-	static fromTextures(dev: WebGL2RenderingContext | Device, textures: Texture[]): Framebuffer;
+	static create(dev: WebGL2RenderingContext | Device, textures: Texture[]): Framebuffer;
 	private constructor();
-	bind(): void;
-	unbind(): void;
 }
 export declare type Color = [number, number, number, number];
 export interface CommandProps<P> {
