@@ -5,7 +5,6 @@ import {
     Texture,
     Framebuffer,
 } from "./lib/glutenfree.js";
-import { loadImage } from "./lib/load-image.js";
 
 function kernelWeight(kernel) {
     return kernel.reduce((prev, curr) => prev + curr);
@@ -34,6 +33,9 @@ const gaussianKernel = [
 const dev = Device.createAndMount();
 const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 
+const initialTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
+const initialFbo = Framebuffer.fromTextures(dev, [initialTexture]);
+
 const splitColorTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
 const splitBrightTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
 const splitFbo = Framebuffer.fromTextures(dev, [
@@ -46,6 +48,107 @@ const bloomReadFbo = Framebuffer.fromTextures(dev, [bloomReadTexture]);
 
 const bloomWriteTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
 const bloomWriteFbo = Framebuffer.fromTextures(dev, [bloomWriteTexture]);
+
+const view = mat4.create();
+
+const render = Command.create(dev, {
+    vert: `#version 300 es
+        precision mediump float;
+
+        uniform mat4 u_projection, u_view, u_model;
+
+        layout (location = 0) in vec4 a_vertex_position;
+
+        out vec2 v_tex_coord;
+
+        void main() {
+            gl_Position = u_projection * u_view * u_model * a_vertex_position;
+        }
+    `,
+    frag: `#version 300 es
+        precision mediump float;
+
+        layout (location = 0) out vec4 o_color;
+
+        void main() {
+            o_color = vec4(0.9, 0.8, 0.9, 0.5);
+        }
+    `,
+    uniforms: {
+        u_model: {
+            type: "matrix4fv",
+            value: mat4.fromScaling(mat4.create(), [7, 7, 7]),
+        },
+        u_view: {
+            type: "matrix4fv",
+            value: time => mat4.lookAt(
+                view,
+                [30 * Math.cos(time / 1000), 5, 30 * Math.sin(time / 1000)],
+                [0, 0, 0],
+                [0, 1, 0]
+            ),
+        },
+        u_projection: {
+            type: "matrix4fv",
+            value: mat4.perspective(
+                mat4.create(),
+                Math.PI / 4,
+                w / h,
+                0.1,
+                1000.0,
+            ),
+        },
+    },
+    clear: { color: [0, 0, 0, 1] },
+});
+
+const cube = VertexArray.create(dev, {
+    attributes: {
+        0: [
+            [-0.5, -0.5, -0.5],
+            [0.5, -0.5, -0.5],
+            [0.5, 0.5, -0.5],
+            [0.5, 0.5, -0.5],
+            [-0.5, 0.5, -0.5],
+            [-0.5, -0.5, -0.5],
+
+            [-0.5, -0.5, 0.5],
+            [0.5, -0.5, 0.5],
+            [0.5, 0.5, 0.5],
+            [0.5, 0.5, 0.5],
+            [-0.5, 0.5, 0.5],
+            [-0.5, -0.5, 0.5],
+
+            [-0.5, 0.5, 0.5],
+            [-0.5, 0.5, -0.5],
+            [-0.5, -0.5, -0.5],
+            [-0.5, -0.5, -0.5],
+            [-0.5, -0.5, 0.5],
+            [-0.5, 0.5, 0.5],
+
+            [0.5, 0.5, 0.5],
+            [0.5, 0.5, -0.5],
+            [0.5, -0.5, -0.5],
+            [0.5, -0.5, -0.5],
+            [0.5, -0.5, 0.5],
+            [0.5, 0.5, 0.5],
+
+            [-0.5, -0.5, -0.5],
+            [0.5, -0.5, -0.5],
+            [0.5, -0.5, 0.5],
+            [0.5, -0.5, 0.5],
+            [-0.5, -0.5, 0.5],
+            [-0.5, -0.5, -0.5],
+
+            [-0.5, 0.5, -0.5],
+            [0.5, 0.5, -0.5],
+            [0.5, 0.5, 0.5],
+            [0.5, 0.5, 0.5],
+            [-0.5, 0.5, 0.5],
+            [-0.5, 0.5, -0.5],
+        ]
+    },
+})
 
 const split = Command.create(dev, {
     vert: `#version 300 es
@@ -286,33 +389,29 @@ const bloomLoopSecondProps = {
     direction: VERTICAL,
 }
 
-async function run() {
-    const originalImage = Texture.fromImage(
-        dev,
-        await loadImage("img/lenna.png", true),
-    );
 
-    const loop = () => {
-        // Split color and brightness to 2 render targets (splitColor, splitBright)
-        split.execute(screenspace, originalImage, splitFbo);
+const loop = time => {
+    // Render geometry into texture
+    // render.execute(cube, time);
+    render.execute(cube, time, initialFbo);
 
-        // Do first 2 blur passes: splitBright -> bloomWrite -> bloomRead
-        bloom.execute(screenspace, bloomInitialFirstProps, bloomWriteFbo);
-        bloom.execute(screenspace, bloomInitialSecondProps, bloomReadFbo);
+    // Split color and brightness to 2 render targets (splitColor, splitBright)
+    split.execute(screenspace, initialTexture, splitFbo);
 
-        // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
-        for (let i = 0; i < nAdditionalBloomPasses; i++) {
-            bloom.execute(screenspace, bloomLoopFirstProps, bloomWriteFbo);
-            bloom.execute(screenspace, bloomLoopSecondProps, bloomReadFbo);
-        }
+    // Do first 2 blur passes: splitBright -> bloomWrite -> bloomRead
+    bloom.execute(screenspace, bloomInitialFirstProps, bloomWriteFbo);
+    bloom.execute(screenspace, bloomInitialSecondProps, bloomReadFbo);
 
-        // Blend together blurred highlights with original color and perform tonemapping
-        tonemap.execute(screenspace, bloomReadTexture);
-
-        window.requestAnimationFrame(loop);
+    // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
+    for (let i = 0; i < nAdditionalBloomPasses; i++) {
+        bloom.execute(screenspace, bloomLoopFirstProps, bloomWriteFbo);
+        bloom.execute(screenspace, bloomLoopSecondProps, bloomReadFbo);
     }
+
+    // Blend together blurred highlights with original color and perform tonemapping
+    tonemap.execute(screenspace, bloomReadTexture);
 
     window.requestAnimationFrame(loop);
 }
 
-run();
+window.requestAnimationFrame(loop);
