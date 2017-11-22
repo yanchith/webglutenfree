@@ -34,20 +34,20 @@ const dev = Device.createAndMount();
 const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 
 const initialTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
-const initialFbo = Framebuffer.fromTextures(dev, [initialTexture]);
+const initialFbo = Framebuffer.create(dev, [initialTexture]);
 
 const splitColorTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
 const splitBrightTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
-const splitFbo = Framebuffer.fromTextures(dev, [
+const splitFbo = Framebuffer.create(dev, [
     splitColorTexture,
     splitBrightTexture,
 ]);
 
 const bloomReadTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
-const bloomReadFbo = Framebuffer.fromTextures(dev, [bloomReadTexture]);
+const bloomReadFbo = Framebuffer.create(dev, [bloomReadTexture]);
 
 const bloomWriteTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
-const bloomWriteFbo = Framebuffer.fromTextures(dev, [bloomWriteTexture]);
+const bloomWriteFbo = Framebuffer.create(dev, [bloomWriteTexture]);
 
 const view = mat4.create();
 
