@@ -367,7 +367,7 @@ const bloomProps = {
 };
 
 const HORIZONTAL = vec2.fromValues(1, 0);
-const VERTICAL = vec2.fromValues(1, 0);
+const VERTICAL = vec2.fromValues(0, 1);
 
 const bloomInitialFirstProps = {
     texture: splitBrightTexture,
@@ -376,7 +376,7 @@ const bloomInitialFirstProps = {
 
 const bloomInitialSecondProps = {
     texture: bloomWriteTexture,
-    direction: HORIZONTAL,
+    direction: VERTICAL,
 }
 
 const bloomLoopFirstProps = {
