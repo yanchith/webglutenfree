@@ -240,13 +240,13 @@ export function createTexture(
 
 export function createFramebuffer(
     gl: WebGL2RenderingContext,
-    textures: WebGLTexture[],
+    colorAttachments: WebGLTexture[],
 ): WebGLFramebuffer {
     const fbo = gl.createFramebuffer();
     if (!fbo) { throw new Error("Could not create framebuffer"); }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    textures.forEach((texture, i) => {
+    colorAttachments.forEach((texture, i) => {
         gl.framebufferTexture2D(
             gl.FRAMEBUFFER,
             gl.COLOR_ATTACHMENT0 + i,

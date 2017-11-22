@@ -196,13 +196,13 @@ function createTexture(gl, data, width, height, internalFormat, format, type, wr
 ██████╔╝╚██████╔╝██║     ██║     ███████╗██║  ██║
 ╚═════╝  ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═╝
 */
-function createFramebuffer(gl, textures) {
+function createFramebuffer(gl, colorAttachments) {
     const fbo = gl.createFramebuffer();
     if (!fbo) {
         throw new Error("Could not create framebuffer");
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    textures.forEach((texture, i) => {
+    colorAttachments.forEach((texture, i) => {
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, texture, 0);
     });
     if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE) {
@@ -258,8 +258,8 @@ class Command {
         let bufferWidth = gl.drawingBufferWidth;
         let bufferHeight = gl.drawingBufferHeight;
         if (framebuffer) {
-            framebuffer.bind();
-            gl.drawBuffers(framebuffer.colorAttachments);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glFramebuffer);
+            gl.drawBuffers(framebuffer.glColorAttachments);
             bufferWidth = framebuffer.width;
             bufferHeight = framebuffer.height;
         }
@@ -269,7 +269,7 @@ class Command {
         this.draw(vao.hasElements, vao.count, vao.instanceCount);
         this.endBlend();
         if (framebuffer) {
-            framebuffer.unbind();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         }
         gl.bindVertexArray(null);
     }
@@ -885,24 +885,20 @@ function mapGlType(gl, type) {
 }
 
 class Framebuffer {
-    constructor(gl, glFramebuffer, colorAttachments, width, height) {
-        this.gl = gl;
+    constructor(glFramebuffer, glColorAttachments, width, height) {
         this.glFramebuffer = glFramebuffer;
-        this.colorAttachments = colorAttachments;
+        this.glColorAttachments = glColorAttachments;
         this.width = width;
         this.height = height;
     }
-    static fromTextures(dev, textures) {
+    static create(dev, textures) {
         const gl = dev instanceof Device ? dev.gl : dev;
         const fbo = createFramebuffer(gl, textures.map(t => t.glTexture));
-        const attachment = gl.COLOR_ATTACHMENT0;
-        return new Framebuffer(gl, fbo, textures.map((_, i) => attachment + i), textures[0].width, textures[0].height);
-    }
-    bind() {
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.glFramebuffer);
-    }
-    unbind() {
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        const [width, height] = textures.reduce((accum, curr) => {
+            const [w, h] = accum;
+            return [Math.min(w, curr.width), Math.min(h, curr.height)];
+        }, [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER]);
+        return new Framebuffer(fbo, textures.map((_, i) => gl.COLOR_ATTACHMENT0 + i), width, height);
     }
 }
 
