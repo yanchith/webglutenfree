@@ -6,28 +6,14 @@ import {
     Framebuffer,
 } from "./lib/glutenfree.js";
 
-function kernelWeight(kernel) {
-    return kernel.reduce((prev, curr) => prev + curr);
-}
-
 const gaussianKernel = [
-    0.003028,
-    0.0117,
-    0.037751,
-    0.101722,
-    0.22889,
-    0.4301,
-    0.674906,
-    0.884398,
-    0.967794,
-    0.884398,
-    0.674906,
-    0.4301,
-    0.22889,
-    0.101722,
-    0.037751,
-    0.0117,
-    0.003028,
+    0.00598,
+    0.060626,
+    0.241843,
+    0.383103,
+    0.241843,
+    0.060626,
+    0.00598,
 ];
 
 const dev = Device.createAndMount(document.body, {
@@ -218,7 +204,6 @@ const bloom = Command.create(dev, {
 
         uniform sampler2D u_image;
         uniform float[KERNEL_LENGTH] u_kernel;
-        uniform float u_kernel_weight;
         uniform vec2 u_blur_direction;
 
         in vec2 v_tex_coord;
@@ -238,17 +223,13 @@ const bloom = Command.create(dev, {
                     * u_kernel[i];
             }
 
-            color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
+            color = vec4(color_sum.rgb, 1.0);
         }
     `,
     uniforms: {
         u_kernel: {
             type: "1fv",
             value: gaussianKernel,
-        },
-        u_kernel_weight: {
-            type: "1f",
-            value: kernelWeight(gaussianKernel),
         },
         u_blur_direction: {
             type: "2f",
