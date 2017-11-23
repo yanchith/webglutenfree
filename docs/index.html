@@ -34,7 +34,7 @@
             margin: 10px 2px;
             padding: 0px;
             border: 2px solid green;
-            width: 700px;
+            width: 650px;
             height: calc(100% - 24px);
             opacity: 0.8;
             z-index: 1;
@@ -116,7 +116,7 @@
             theme: "liquibyte",
         });
         editor.setSize("100%", "100%");
-        editor.on("change", debounce(1000, () => {
+        editor.on("change", debounce(500, () => {
             iframe.remount();
             iframe.postMessage({ code: editor.getValue() });
         }));
