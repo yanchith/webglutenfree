@@ -65,15 +65,16 @@ export declare class VertexBuffer<T extends VertexBufferType = VertexBufferType>
 }
 export declare type ElementBufferProps = ElementBufferArrayProps | ElementBufferObjectProps;
 export interface ElementBufferObjectProps {
+	type: "u32";
 	data: number[] | Uint32Array;
 }
-export declare type ElementBufferArrayProps = [number, number, number][];
+export declare type ElementBufferArrayProps = number[] | [number, number][] | [number, number, number][];
 export declare class ElementBuffer {
-	static create(dev: WebGL2RenderingContext | Device, props: ElementBufferProps): ElementBuffer;
-	static fromArray(dev: WebGL2RenderingContext | Device, arr: ElementBufferArrayProps): ElementBuffer;
-	static fromUint32Array(dev: WebGL2RenderingContext | Device, buffer: number[] | Uint32Array): ElementBuffer;
 	readonly glBuffer: WebGLBuffer;
 	readonly count: number;
+	static create(dev: WebGL2RenderingContext | Device, props: ElementBufferProps): ElementBuffer;
+	static fromArray(dev: WebGL2RenderingContext | Device, data: ElementBufferArrayProps): ElementBuffer;
+	static fromUint32Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint32Array): ElementBuffer;
 	private constructor();
 }
 export declare type Attribute = AttributeArray | AttributeObject;

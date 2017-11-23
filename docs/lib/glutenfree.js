@@ -632,25 +632,25 @@ function ravel(unraveled) {
 }
 
 class ElementBuffer {
+    constructor(glBuffer, count) {
+        this.glBuffer = glBuffer;
+        this.count = count;
+    }
     static create(dev, props) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        if (Array.isArray(props)) {
-            return ElementBuffer.fromArray(gl, props);
-        }
-        return ElementBuffer.fromUint32Array(gl, props.data);
+        return Array.isArray(props)
+            ? ElementBuffer.fromArray(dev, props)
+            : ElementBuffer.fromUint32Array(dev, props.data);
     }
-    static fromArray(dev, arr) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        const data = ravel(arr).data;
-        return new ElementBuffer(gl, new Uint32Array(data));
+    static fromArray(dev, data) {
+        return ElementBuffer.fromUint32Array(dev, is2DArray(data)
+            ? ravel(data).data
+            : data);
     }
-    static fromUint32Array(dev, buffer) {
+    static fromUint32Array(dev, data) {
         const gl = dev instanceof Device ? dev.gl : dev;
-        return new ElementBuffer(gl, Array.isArray(buffer) ? new Uint32Array(buffer) : buffer);
-    }
-    constructor(gl, buffer) {
-        this.glBuffer = createElementArrayBuffer(gl, buffer);
-        this.count = buffer.length;
+        const arr = Array.isArray(data) ? new Uint32Array(data) : data;
+        const buffer = createElementArrayBuffer(gl, arr);
+        return new ElementBuffer(buffer, arr.length);
     }
 }
 
