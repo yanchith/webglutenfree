@@ -236,15 +236,16 @@ function createFramebuffer(gl, colorAttachments) {
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 class Command {
-    constructor(gl, glProgram, glPrimitive, uniformDescriptors, blendDescriptor, clearDescriptor) {
+    constructor(gl, glProgram, glPrimitive, uniformDescriptors, blendDescriptor, framebufferDescriptor, clearDescriptor) {
         this.gl = gl;
         this.glProgram = glProgram;
         this.glPrimitive = glPrimitive;
         this.uniformDescriptors = uniformDescriptors;
         this.blendDescriptor = blendDescriptor;
+        this.framebufferDescriptor = framebufferDescriptor;
         this.clearDescriptor = clearDescriptor;
     }
-    static create(dev, { vert, frag, uniforms = {}, primitive = "triangles" /* TRIANGLES */, blend = false, clear, }) {
+    static create(dev, { vert, frag, uniforms = {}, primitive = "triangles" /* TRIANGLES */, blend = false, framebuffer, clear, }) {
         const gl = dev instanceof Device ? dev.gl : dev;
         const vertShader = createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = createShader(gl, gl.FRAGMENT_SHADER, frag);
@@ -264,18 +265,24 @@ class Command {
             : blend
                 ? new BlendDescriptor(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.FUNC_ADD)
                 : undefined;
+        const framebufferDescriptor = framebuffer
+            ? new FramebufferDescriptor(framebuffer)
+            : undefined;
         const clearDescriptor = clear
             ? new ClearDescriptor(clear.color, clear.depth, clear.stencil)
             : undefined;
-        return new Command(gl, program, mapGlPrimitive(gl, primitive), uniformDescriptors, blendDescriptor, clearDescriptor);
+        return new Command(gl, program, mapGlPrimitive(gl, primitive), uniformDescriptors, blendDescriptor, framebufferDescriptor, clearDescriptor);
     }
-    execute(vao, props, framebuffer) {
+    execute(vao, props) {
         const { gl, glProgram } = this;
         gl.useProgram(glProgram);
         this.updateUniforms(props);
         gl.bindVertexArray(vao.glVertexArrayObject);
         let bufferWidth = gl.drawingBufferWidth;
         let bufferHeight = gl.drawingBufferHeight;
+        const framebuffer = this.framebufferDescriptor
+            ? access(props, this.framebufferDescriptor.definition)
+            : undefined;
         if (framebuffer) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glFramebuffer);
             gl.drawBuffers(framebuffer.glColorAttachments);
@@ -495,9 +502,7 @@ class Command {
     }
 }
 function access(props, value) {
-    return typeof value === "function"
-        ? value(props)
-        : value;
+    return typeof value === "function" ? value(props) : value;
 }
 class BlendDescriptor {
     constructor(srcFactor, destFactor, equation, color) {
@@ -505,6 +510,11 @@ class BlendDescriptor {
         this.destFactor = destFactor;
         this.equation = equation;
         this.color = color;
+    }
+}
+class FramebufferDescriptor {
+    constructor(definition) {
+        this.definition = definition;
     }
 }
 class ClearDescriptor {

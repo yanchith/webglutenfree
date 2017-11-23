@@ -3,7 +3,6 @@ import {
     Command,
     VertexArray,
     Texture,
-    Framebuffer,
 } from "./lib/glutenfree.js";
 import { loadImage } from "./lib/load-image.js";
 
@@ -48,70 +47,8 @@ const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 async function run() {
     const imageData = await loadImage("img/lenna.png", true);
     const imageTexture = Texture.fromImage(dev, imageData);
-    const fboTexture = Texture.fromRGBA8(
-        dev,
-        null,
-        imageData.width,
-        imageData.height,
-    );
-    const fbo = Framebuffer.create(dev, [fboTexture]);
 
-    const texturePass = Command.create(dev, {
-        vert: `#version 300 es
-            precision mediump float;
-
-            in vec4 a_vertex_position;
-            in vec2 a_tex_coord;
-
-            out vec2 v_tex_coord;
-
-            void main() {
-                v_tex_coord = a_tex_coord;
-                gl_Position = a_vertex_position;
-            }
-        `,
-        frag: `#version 300 es
-            uniform sampler2D u_image;
-            precision mediump float;
-
-            in vec2 v_tex_coord;
-
-            out vec4 o_color;
-
-            void main() {
-                o_color = texture(u_image, v_tex_coord);
-            }
-        `,
-        uniforms: {
-            u_image: {
-                type: "texture",
-                value: imageTexture,
-            },
-        },
-    });
-
-    const texturePassGeometry = VertexArray.create(dev, texturePass.locate({
-        attributes: {
-            a_vertex_position: [
-                [1, 1],
-                [-1, 1],
-                [1, -1],
-                [-1, -1],
-            ],
-            a_tex_coord: [
-                [1, 1],
-                [0, 1],
-                [1, 0],
-                [0, 0],
-            ],
-        },
-        elements: [
-            [0, 3, 2],
-            [1, 3, 0],
-        ],
-    }));
-
-    const kernelPass = Command.create(dev, {
+    const kern = Command.create(dev, {
         vert: `#version 300 es
             precision mediump float;
 
@@ -188,12 +125,12 @@ async function run() {
             },
             u_image: {
                 type: "texture",
-                value: fboTexture,
+                value: imageTexture,
             },
         },
     });
 
-    const kernelPassGeometry = VertexArray.create(dev, kernelPass.locate({
+    const square = VertexArray.create(dev, kern.locate({
         attributes: {
             a_vertex_position: [
                 [1, 1],
@@ -214,8 +151,7 @@ async function run() {
         ],
     }));
 
-    texturePass.execute(texturePassGeometry, undefined, fbo);
-    kernelPass.execute(kernelPassGeometry);
+    kern.execute(square);
 }
 
 run();

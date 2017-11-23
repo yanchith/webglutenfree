@@ -101,6 +101,7 @@ const render = Command.create(dev, {
             ),
         },
     },
+    framebuffer: initialFbo,
     clear: { color: [0, 0, 0, 1] },
 });
 
@@ -189,9 +190,10 @@ const split = Command.create(dev, {
     uniforms: {
         u_image: {
             type: "texture",
-            value: image => image,
+            value: initialTexture,
         },
     },
+    framebuffer: splitFbo,
     clear: { color: [0, 0, 0, 1] },
 });
 
@@ -257,6 +259,7 @@ const bloom = Command.create(dev, {
             value: ({ texture }) => texture,
         },
     },
+    framebuffer: ({ fbo }) => fbo,
     clear: { color: [0, 0, 0, 1] },
 });
 
@@ -333,7 +336,7 @@ const tonemap = Command.create(dev, {
         },
         u_image_bloom: {
             type: "texture",
-            value: bloomTexture => bloomTexture,
+            value: bloomReadTexture,
         },
     },
     clear: { color: [0, 0, 0, 1] },
@@ -362,56 +365,44 @@ const screenspace = VertexArray.create(dev, {
 
 const nAdditionalBloomPasses = 0;
 
-const blurDirection = vec2.create();
-const bloomProps = {
-    texture: splitBrightTexture,
-    direction: blurDirection,
-};
-
 const HORIZONTAL = vec2.fromValues(1, 0);
 const VERTICAL = vec2.fromValues(0, 1);
 
-const bloomInitialFirstProps = {
-    texture: splitBrightTexture,
-    direction: HORIZONTAL,
-}
-
-const bloomInitialSecondProps = {
-    texture: bloomWriteTexture,
-    direction: VERTICAL,
-}
-
-const bloomLoopFirstProps = {
-    texture: bloomReadTexture,
-    direction: HORIZONTAL,
-}
-
-const bloomLoopSecondProps = {
-    texture: bloomWriteTexture,
-    direction: VERTICAL,
-}
-
-
 const loop = time => {
     // Render geometry into texture
-    // render.execute(cube, time);
-    render.execute(cube, time, initialFbo);
+    render.execute(cube, time);
 
     // Split color and brightness to 2 render targets (splitColor, splitBright)
-    split.execute(screenspace, initialTexture, splitFbo);
+    split.execute(screenspace);
 
     // Do first 2 blur passes: splitBright -> bloomWrite -> bloomRead
-    bloom.execute(screenspace, bloomInitialFirstProps, bloomWriteFbo);
-    bloom.execute(screenspace, bloomInitialSecondProps, bloomReadFbo);
+    bloom.execute(screenspace, {
+        texture: splitBrightTexture,
+        direction: HORIZONTAL,
+        fbo: bloomWriteFbo,
+    });
+    bloom.execute(screenspace, {
+        texture: bloomWriteTexture,
+        direction: VERTICAL,
+        fbo: bloomReadFbo,
+    });
 
     // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
     for (let i = 0; i < nAdditionalBloomPasses; i++) {
-        bloom.execute(screenspace, bloomLoopFirstProps, bloomWriteFbo);
-        bloom.execute(screenspace, bloomLoopSecondProps, bloomReadFbo);
+        bloom.execute(screenspace, {
+            texture: bloomReadTexture,
+            direction: HORIZONTAL,
+            fbo: bloomWriteFbo,
+        });
+        bloom.execute(screenspace, {
+            texture: bloomWriteTexture,
+            direction: VERTICAL,
+            fbo: bloomReadFbo,
+        });
     }
 
     // Blend together blurred highlights with original color and perform tonemapping
-    tonemap.execute(screenspace, bloomReadTexture);
+    tonemap.execute(screenspace);
 
     window.requestAnimationFrame(loop);
 }

@@ -238,6 +238,7 @@ export interface CommandProps<P> {
 		equation?: BlendEquation;
 		color?: Color;
 	} | boolean;
+	framebuffer?: AccessorOrValue<P, Framebuffer>;
 	clear?: {
 		color?: Color;
 		depth?: number;
@@ -397,10 +398,11 @@ export declare class Command<P = void> {
 	private glPrimitive;
 	private uniformDescriptors;
 	private blendDescriptor;
+	private framebufferDescriptor;
 	private clearDescriptor;
-	static create<P = void>(dev: WebGL2RenderingContext | Device, {vert, frag, uniforms, primitive, blend, clear}: CommandProps<P>): Command<P>;
+	static create<P = void>(dev: WebGL2RenderingContext | Device, {vert, frag, uniforms, primitive, blend, framebuffer, clear}: CommandProps<P>): Command<P>;
 	private constructor();
-	execute(vao: VertexArray, props: P, framebuffer?: Framebuffer): void;
+	execute(vao: VertexArray, props: P): void;
 	locate({attributes, elements}: VertexArrayProps): VertexArrayProps;
 	private beginBlend();
 	private endBlend();
