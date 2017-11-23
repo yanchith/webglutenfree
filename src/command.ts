@@ -21,6 +21,7 @@ export interface CommandProps<P> {
         equation?: BlendEquation;
         color?: Color;
     } | boolean; // true is shorthand for (SRC_ALPHA, 1 - SRC_SLPHA, FUNC_ADD)
+    framebuffer?: AccessorOrValue<P, Framebuffer>;
     clear?: {
         color?: Color;
         depth?: number;
@@ -229,6 +230,7 @@ export class Command<P = void> {
             uniforms = {},
             primitive = Primitive.TRIANGLES,
             blend = false,
+            framebuffer,
             clear,
         }: CommandProps<P>,
     ): Command<P> {
@@ -264,6 +266,10 @@ export class Command<P = void> {
                 )
                 : undefined;
 
+        const framebufferDescriptor = framebuffer
+            ? new FramebufferDescriptor(framebuffer)
+            : undefined;
+
         const clearDescriptor = clear
             ? new ClearDescriptor(clear.color, clear.depth, clear.stencil)
             : undefined;
@@ -274,6 +280,7 @@ export class Command<P = void> {
             mapGlPrimitive(gl, primitive),
             uniformDescriptors,
             blendDescriptor,
+            framebufferDescriptor,
             clearDescriptor,
         );
     }
@@ -284,13 +291,13 @@ export class Command<P = void> {
         private glPrimitive: number,
         private uniformDescriptors: UniformDescriptor<P>[],
         private blendDescriptor?: BlendDescriptor,
+        private framebufferDescriptor?: FramebufferDescriptor<P>,
         private clearDescriptor?: ClearDescriptor,
     ) { }
 
     execute(
         vao: VertexArray,
         props: P,
-        framebuffer?: Framebuffer,
     ): void {
         const { gl, glProgram } = this;
 
@@ -300,6 +307,10 @@ export class Command<P = void> {
 
         let bufferWidth = gl.drawingBufferWidth;
         let bufferHeight = gl.drawingBufferHeight;
+
+        const framebuffer = this.framebufferDescriptor
+            ? access(props, this.framebufferDescriptor.definition)
+            : undefined;
 
         if (framebuffer) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glFramebuffer);
@@ -544,9 +555,7 @@ export class Command<P = void> {
 }
 
 function access<P, R>(props: P, value: ((props: P) => R) | R): R {
-    return typeof value === "function"
-        ? value(props)
-        : value;
+    return typeof value === "function" ? value(props) : value;
 }
 
 class BlendDescriptor {
@@ -556,6 +565,10 @@ class BlendDescriptor {
         readonly equation: number,
         readonly color?: Color,
     ) { }
+}
+
+class FramebufferDescriptor<P> {
+    constructor(readonly definition: AccessorOrValue<P, Framebuffer>) { }
 }
 
 class ClearDescriptor {
