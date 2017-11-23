@@ -1,27 +1,74 @@
+// Temporary, until available in typings
+export type EXTColorBufferFloat = object;
+
+export interface DeviceOptions {
+    antialias?: boolean;
+    enableEXTColorBufferFloat?: boolean;
+    enableOESTextureFloatLinear?: boolean;
+}
+
 export class Device {
 
-    static createAndMount(element: HTMLElement = document.body): Device {
+    static createAndMount(
+        element: HTMLElement = document.body,
+        options?: DeviceOptions,
+    ): Device {
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        return Device.fromCanvas(canvas);
+        return Device.fromCanvas(canvas, options);
     }
 
-    static fromCanvas(canvas: HTMLCanvasElement): Device {
-        const gl = canvas.getContext("webgl2");
+    static fromCanvas(
+        canvas: HTMLCanvasElement,
+        options?: DeviceOptions,
+    ): Device {
+        // This is here to prevent rollup warning caused by ts __rest helper.
+        // https://github.com/rollup/rollup/wiki/Troubleshooting#this-is-undefined
+        const antialias = options && typeof options.antialias !== "undefined"
+            ? options.antialias
+            : true;
+
+        const gl = canvas.getContext("webgl2", { antialias });
         if (!gl) { throw new Error("Could not acquire webgl2 context"); }
         const dpr = window.devicePixelRatio;
         canvas.width = canvas.clientWidth * dpr;
         canvas.height = canvas.clientHeight * dpr;
-        return Device.fromContext(gl);
+        return Device.fromContext(gl, options);
     }
 
-    static fromContext(gl: WebGL2RenderingContext): Device {
-        return new Device(gl);
+    static fromContext(
+        gl: WebGL2RenderingContext,
+        {
+            enableEXTColorBufferFloat = false,
+            enableOESTextureFloatLinear = false,
+        }: DeviceOptions = {},
+    ): Device {
+        const extColorBufferFloat = enableEXTColorBufferFloat
+            ? gl.getExtension("EXT_color_buffer_float")
+            : undefined;
+        if (enableEXTColorBufferFloat && !extColorBufferFloat) {
+            throw new Error("Could not acquire extension: EXT_color_buffer_float");
+        }
+
+        const oesTextureFloatLinear = enableOESTextureFloatLinear
+            ? gl.getExtension("OES_texture_float_linear")
+            : undefined;
+        if (enableOESTextureFloatLinear && !oesTextureFloatLinear) {
+            throw new Error("Could not acquire extension: OES_texture_float_linear");
+        }
+
+        return new Device(
+            gl,
+            extColorBufferFloat,
+            oesTextureFloatLinear,
+        );
     }
 
     private constructor(
         readonly gl: WebGL2RenderingContext,
-    ) {}
+        readonly extColorBufferFloat?: EXTColorBufferFloat,
+        readonly oesTextureFloatLinear?: OES_texture_float_linear,
+    ) { }
 
     get bufferWidth(): number {
         return this.gl.drawingBufferWidth;
