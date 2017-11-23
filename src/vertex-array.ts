@@ -90,9 +90,7 @@ export class VertexArray {
         const attribLocations: number[] = [];
         Object.entries(attributes).forEach(([locationStr, definition]) => {
             if (!INT_PATTERN.test(locationStr)) {
-                throw new Error(
-                    "Location is not a number. Use RenderPass#createVertexArray to resolve names.",
-                );
+                throw new Error("Location not a number. Use Command#locate");
             }
             const location = parseInt(locationStr, 10);
             attribLocations.push(location);
