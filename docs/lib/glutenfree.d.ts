@@ -398,7 +398,8 @@ export declare class Command<P = void> {
 	private beginBlend();
 	private endBlend();
 	private clear();
-	private draw(hasElements, count, instCount);
+	private drawArrays(count, instCount);
+	private drawElements(count, instCount);
 	private updateUniforms(props);
 }
 

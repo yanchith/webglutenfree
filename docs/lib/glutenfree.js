@@ -266,7 +266,12 @@ class Command {
         this.clear();
         this.beginBlend();
         gl.viewport(0, 0, bufferWidth, bufferHeight);
-        this.draw(vao.hasElements, vao.count, vao.instanceCount);
+        if (vao.hasElements) {
+            this.drawElements(vao.count, vao.instanceCount);
+        }
+        else {
+            this.drawArrays(vao.count, vao.instanceCount);
+        }
         this.endBlend();
         if (framebuffer) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -331,25 +336,24 @@ class Command {
             }
         }
     }
-    draw(hasElements, count, instCount) {
+    drawArrays(count, instCount) {
         const { gl, glPrimitive } = this;
-        if (hasElements) {
-            if (instCount) {
-                gl.drawElementsInstanced(glPrimitive, count, gl.UNSIGNED_INT, // We only support u32 indices
-                0, instCount);
-            }
-            else {
-                gl.drawElements(glPrimitive, count, gl.UNSIGNED_INT, // We only support u32 indices
-                0);
-            }
+        if (instCount) {
+            gl.drawArraysInstanced(glPrimitive, 0, count, instCount);
         }
         else {
-            if (instCount) {
-                gl.drawArraysInstanced(glPrimitive, 0, count, instCount);
-            }
-            else {
-                gl.drawArrays(glPrimitive, 0, count);
-            }
+            gl.drawArrays(glPrimitive, 0, count);
+        }
+    }
+    drawElements(count, instCount) {
+        const { gl, glPrimitive } = this;
+        if (instCount) {
+            gl.drawElementsInstanced(glPrimitive, count, gl.UNSIGNED_INT, // We only support u32 indices
+            0, instCount);
+        }
+        else {
+            gl.drawElements(glPrimitive, count, gl.UNSIGNED_INT, // We only support u32 indices
+            0);
         }
     }
     updateUniforms(props) {
@@ -597,7 +601,7 @@ class VertexBuffer {
 }
 
 /**
- * Chacks whether  array is at least 2d, mostly useful because of return type
+ * Chacks whether array is at least 2d, mostly useful because of return type
  * predicate.
  */
 function is2DArray(array) {
@@ -785,13 +789,13 @@ class Texture {
         return new Texture(gl, data, width, height, internalFormat, format, type, options);
     }
     constructor(gl, data, width, height, internalFormat, format, type, { min = "nearest" /* NEAREST */, mag = "nearest" /* NEAREST */, wrapS = "clamp-to-edge" /* CLAMP_TO_EDGE */, wrapT = "clamp-to-edge" /* CLAMP_TO_EDGE */, mipmap = false, } = {}) {
-        this.glTexture = createTexture(gl, data, width, height, mapGlInternalFormat(gl, internalFormat), mapGlFormat(gl, format), mapGlType(gl, type), mapGlWrap(gl, wrapS), mapGlWrap(gl, wrapT), mapGlFilter(gl, min), mapGlFilter(gl, mag), mipmap);
+        this.glTexture = createTexture(gl, data, width, height, mapGlTextureInternalFormat(gl, internalFormat), mapGlTextureFormat(gl, format), mapGlTextureType(gl, type), mapGlTextureWrap(gl, wrapS), mapGlTextureWrap(gl, wrapT), mapGlTextureFilter(gl, min), mapGlTextureFilter(gl, mag), mipmap);
         this.width = width;
         this.height = height;
         this.internalFormat = internalFormat;
     }
 }
-function mapGlWrap(gl, wrap) {
+function mapGlTextureWrap(gl, wrap) {
     switch (wrap) {
         case "clamp-to-edge" /* CLAMP_TO_EDGE */: return gl.CLAMP_TO_EDGE;
         case "repeat" /* REPEAT */: return gl.REPEAT;
@@ -799,18 +803,22 @@ function mapGlWrap(gl, wrap) {
         default: return never(wrap);
     }
 }
-function mapGlFilter(gl, filter) {
+function mapGlTextureFilter(gl, filter) {
     switch (filter) {
         case "nearest" /* NEAREST */: return gl.NEAREST;
         case "linear" /* LINEAR */: return gl.LINEAR;
-        case "nearest-mipmap-nearest" /* NEAREST_MIPMAP_NEAREST */: return gl.NEAREST_MIPMAP_NEAREST;
-        case "linear-mipmap-nearest" /* LINEAR_MIPMAP_NEAREST */: return gl.LINEAR_MIPMAP_NEAREST;
-        case "nearest-mipmap-linear" /* NEAREST_MIPMAP_LINEAR */: return gl.NEAREST_MIPMAP_LINEAR;
-        case "linear-mipmap-linear" /* LINEAR_MIPMAP_LINEAR */: return gl.LINEAR_MIPMAP_LINEAR;
+        case "nearest-mipmap-nearest" /* NEAREST_MIPMAP_NEAREST */:
+            return gl.NEAREST_MIPMAP_NEAREST;
+        case "linear-mipmap-nearest" /* LINEAR_MIPMAP_NEAREST */:
+            return gl.LINEAR_MIPMAP_NEAREST;
+        case "nearest-mipmap-linear" /* NEAREST_MIPMAP_LINEAR */:
+            return gl.NEAREST_MIPMAP_LINEAR;
+        case "linear-mipmap-linear" /* LINEAR_MIPMAP_LINEAR */:
+            return gl.LINEAR_MIPMAP_LINEAR;
         default: return never(filter);
     }
 }
-function mapGlInternalFormat(gl, internalFormat) {
+function mapGlTextureInternalFormat(gl, internalFormat) {
     switch (internalFormat) {
         // R
         case "R8" /* R8 */: return gl.R8;
@@ -859,7 +867,7 @@ function mapGlInternalFormat(gl, internalFormat) {
         default: return never(internalFormat);
     }
 }
-function mapGlFormat(gl, format) {
+function mapGlTextureFormat(gl, format) {
     switch (format) {
         case "RED" /* RED */: return gl.RED;
         case "RG" /* RG */: return gl.RG;
@@ -872,7 +880,7 @@ function mapGlFormat(gl, format) {
         default: return never(format);
     }
 }
-function mapGlType(gl, type) {
+function mapGlTextureType(gl, type) {
     switch (type) {
         case "UNSIGNED_BYTE" /* UNSIGNED_BYTE */: return gl.UNSIGNED_BYTE;
         case "UNSIGNED_SHORT" /* UNSIGNED_SHORT */: return gl.UNSIGNED_SHORT;

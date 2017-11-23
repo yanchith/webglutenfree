@@ -313,7 +313,11 @@ export class Command<P = void> {
         this.beginBlend();
 
         gl.viewport(0, 0, bufferWidth, bufferHeight);
-        this.draw(vao.hasElements, vao.count, vao.instanceCount);
+        if (vao.hasElements) {
+            this.drawElements(vao.count, vao.instanceCount);
+        } else {
+            this.drawArrays(vao.count, vao.instanceCount);
+        }
 
         this.endBlend();
 
@@ -384,35 +388,32 @@ export class Command<P = void> {
         }
     }
 
-    private draw(
-        hasElements: boolean,
-        count: number,
-        instCount: number,
-    ): void {
+    private drawArrays(count: number, instCount: number): void {
         const { gl, glPrimitive } = this;
-        if (hasElements) {
-            if (instCount) {
-                gl.drawElementsInstanced(
-                    glPrimitive,
-                    count,
-                    gl.UNSIGNED_INT, // We only support u32 indices
-                    0,
-                    instCount,
-                );
-            } else {
-                gl.drawElements(
-                    glPrimitive,
-                    count,
-                    gl.UNSIGNED_INT, // We only support u32 indices
-                    0,
-                );
-            }
+        if (instCount) {
+            gl.drawArraysInstanced(glPrimitive, 0, count, instCount);
         } else {
-            if (instCount) {
-                gl.drawArraysInstanced(glPrimitive, 0, count, instCount);
-            } else {
-                gl.drawArrays(glPrimitive, 0, count);
-            }
+            gl.drawArrays(glPrimitive, 0, count);
+        }
+    }
+
+    private drawElements(count: number, instCount: number): void {
+        const { gl, glPrimitive } = this;
+        if (instCount) {
+            gl.drawElementsInstanced(
+                glPrimitive,
+                count,
+                gl.UNSIGNED_INT, // We only support u32 indices
+                0,
+                instCount,
+            );
+        } else {
+            gl.drawElements(
+                glPrimitive,
+                count,
+                gl.UNSIGNED_INT, // We only support u32 indices
+                0,
+            );
         }
     }
 
