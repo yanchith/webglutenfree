@@ -19,6 +19,16 @@
 </head>
 
 <body>
+    <script src="./demo/stats.js"></script>
+    <script type="module">
+        const stats = new Stats();
+        document.body.appendChild(stats.dom);
+        const fpsloop = () => {
+            stats.update();
+            window.requestAnimationFrame(fpsloop);
+        }
+        window.requestAnimationFrame(fpsloop);
+    </script>
     <!-- Since gl-matrix does not have a module release at the time of writing,
     let's include it globally -->
     <script src="./lib/gl-matrix-min.js"></script>
@@ -35,4 +45,5 @@
         });
     </script>
 </body>
+
 </html>
