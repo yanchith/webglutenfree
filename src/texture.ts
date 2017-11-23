@@ -339,11 +339,13 @@ export class Texture {
             gl,
             data,
             width, height,
-            mapGlInternalFormat(gl, internalFormat),
-            mapGlFormat(gl, format),
-            mapGlType(gl, type),
-            mapGlWrap(gl, wrapS), mapGlWrap(gl, wrapT),
-            mapGlFilter(gl, min), mapGlFilter(gl, mag),
+            mapGlTextureInternalFormat(gl, internalFormat),
+            mapGlTextureFormat(gl, format),
+            mapGlTextureType(gl, type),
+            mapGlTextureWrap(gl, wrapS),
+            mapGlTextureWrap(gl, wrapT),
+            mapGlTextureFilter(gl, min),
+            mapGlTextureFilter(gl, mag),
             mipmap,
         );
         this.width = width;
@@ -352,7 +354,10 @@ export class Texture {
     }
 }
 
-function mapGlWrap(gl: WebGL2RenderingContext, wrap: TextureWrap): number {
+function mapGlTextureWrap(
+    gl: WebGL2RenderingContext,
+    wrap: TextureWrap,
+): number {
     switch (wrap) {
         case TextureWrap.CLAMP_TO_EDGE: return gl.CLAMP_TO_EDGE;
         case TextureWrap.REPEAT: return gl.REPEAT;
@@ -361,19 +366,26 @@ function mapGlWrap(gl: WebGL2RenderingContext, wrap: TextureWrap): number {
     }
 }
 
-function mapGlFilter(gl: WebGL2RenderingContext, filter: TextureFilter): number {
+function mapGlTextureFilter(
+    gl: WebGL2RenderingContext,
+    filter: TextureFilter,
+): number {
     switch (filter) {
         case TextureFilter.NEAREST: return gl.NEAREST;
         case TextureFilter.LINEAR: return gl.LINEAR;
-        case TextureFilter.NEAREST_MIPMAP_NEAREST: return gl.NEAREST_MIPMAP_NEAREST;
-        case TextureFilter.LINEAR_MIPMAP_NEAREST: return gl.LINEAR_MIPMAP_NEAREST;
-        case TextureFilter.NEAREST_MIPMAP_LINEAR: return gl.NEAREST_MIPMAP_LINEAR;
-        case TextureFilter.LINEAR_MIPMAP_LINEAR: return gl.LINEAR_MIPMAP_LINEAR;
+        case TextureFilter.NEAREST_MIPMAP_NEAREST:
+            return gl.NEAREST_MIPMAP_NEAREST;
+        case TextureFilter.LINEAR_MIPMAP_NEAREST:
+            return gl.LINEAR_MIPMAP_NEAREST;
+        case TextureFilter.NEAREST_MIPMAP_LINEAR:
+            return gl.NEAREST_MIPMAP_LINEAR;
+        case TextureFilter.LINEAR_MIPMAP_LINEAR:
+            return gl.LINEAR_MIPMAP_LINEAR;
         default: return assert.never(filter);
     }
 }
 
-function mapGlInternalFormat(
+function mapGlTextureInternalFormat(
     gl: WebGL2RenderingContext,
     internalFormat: TextureInternalFormat,
 ): number {
@@ -429,7 +441,10 @@ function mapGlInternalFormat(
     }
 }
 
-function mapGlFormat(gl: WebGL2RenderingContext, format: TextureFormat): number {
+function mapGlTextureFormat(
+    gl: WebGL2RenderingContext,
+    format: TextureFormat,
+): number {
     switch (format) {
         case TextureFormat.RED: return gl.RED;
         case TextureFormat.RG: return gl.RG;
@@ -443,7 +458,10 @@ function mapGlFormat(gl: WebGL2RenderingContext, format: TextureFormat): number 
     }
 }
 
-function mapGlType(gl: WebGL2RenderingContext, type: TextureType): number {
+function mapGlTextureType(
+    gl: WebGL2RenderingContext,
+    type: TextureType,
+): number {
     switch (type) {
         case TextureType.UNSIGNED_BYTE: return gl.UNSIGNED_BYTE;
         case TextureType.UNSIGNED_SHORT: return gl.UNSIGNED_SHORT;

@@ -1,5 +1,5 @@
 /**
- * Chacks whether  array is at least 2d, mostly useful because of return type
+ * Chacks whether array is at least 2d, mostly useful because of return type
  * predicate.
  */
 export function is2DArray(array: any[] | any[][]): array is any[][] {
