@@ -48,7 +48,7 @@ const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 async function run() {
     const imageData = await loadImage("img/lenna.png", true);
     const imageTexture = Texture.fromImage(dev, imageData);
-    const fboTexture = Texture.RGBA8FromRGBAUint8Array(
+    const fboTexture = Texture.fromRGBA8(
         dev,
         null,
         imageData.width,
@@ -142,17 +142,18 @@ async function run() {
             out vec4 o_color;
 
             void main() {
-                vec2 pixel = vec2(1) / vec2(textureSize(u_image, 0));
+                vec2 pix = vec2(1) / vec2(textureSize(u_image, 0));
+                float[9] k = u_kernel;
                 vec4 color_sum =
-                    texture(u_image, v_tex_coord + pixel * vec2(-1, -1)) * u_kernel[0] +
-                    texture(u_image, v_tex_coord + pixel * vec2( 0, -1)) * u_kernel[1] +
-                    texture(u_image, v_tex_coord + pixel * vec2( 1, -1)) * u_kernel[2] +
-                    texture(u_image, v_tex_coord + pixel * vec2(-1,  0)) * u_kernel[3] +
-                    texture(u_image, v_tex_coord + pixel * vec2( 0,  0)) * u_kernel[4] +
-                    texture(u_image, v_tex_coord + pixel * vec2( 1,  0)) * u_kernel[5] +
-                    texture(u_image, v_tex_coord + pixel * vec2(-1,  1)) * u_kernel[6] +
-                    texture(u_image, v_tex_coord + pixel * vec2( 0,  1)) * u_kernel[7] +
-                    texture(u_image, v_tex_coord + pixel * vec2( 1,  1)) * u_kernel[8] ;
+                    texture(u_image, v_tex_coord + pix * vec2(-1, -1)) * k[0] +
+                    texture(u_image, v_tex_coord + pix * vec2( 0, -1)) * k[1] +
+                    texture(u_image, v_tex_coord + pix * vec2( 1, -1)) * k[2] +
+                    texture(u_image, v_tex_coord + pix * vec2(-1,  0)) * k[3] +
+                    texture(u_image, v_tex_coord + pix * vec2( 0,  0)) * k[4] +
+                    texture(u_image, v_tex_coord + pix * vec2( 1,  0)) * k[5] +
+                    texture(u_image, v_tex_coord + pix * vec2(-1,  1)) * k[6] +
+                    texture(u_image, v_tex_coord + pix * vec2( 0,  1)) * k[7] +
+                    texture(u_image, v_tex_coord + pix * vec2( 1,  1)) * k[8] ;
                 o_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
             }
         `,

@@ -1,24 +1,43 @@
 class Device {
-    constructor(gl) {
+    constructor(gl, extColorBufferFloat, oesTextureFloatLinear) {
         this.gl = gl;
+        this.extColorBufferFloat = extColorBufferFloat;
+        this.oesTextureFloatLinear = oesTextureFloatLinear;
     }
-    static createAndMount(element = document.body) {
+    static createAndMount(element = document.body, options) {
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        return Device.fromCanvas(canvas);
+        return Device.fromCanvas(canvas, options);
     }
-    static fromCanvas(canvas) {
-        const gl = canvas.getContext("webgl2");
+    static fromCanvas(canvas, options) {
+        // This is here to prevent rollup warning caused by ts __rest helper.
+        // https://github.com/rollup/rollup/wiki/Troubleshooting#this-is-undefined
+        const antialias = options && typeof options.antialias !== "undefined"
+            ? options.antialias
+            : true;
+        const gl = canvas.getContext("webgl2", { antialias });
         if (!gl) {
             throw new Error("Could not acquire webgl2 context");
         }
         const dpr = window.devicePixelRatio;
         canvas.width = canvas.clientWidth * dpr;
         canvas.height = canvas.clientHeight * dpr;
-        return Device.fromContext(gl);
+        return Device.fromContext(gl, options);
     }
-    static fromContext(gl) {
-        return new Device(gl);
+    static fromContext(gl, { enableEXTColorBufferFloat = false, enableOESTextureFloatLinear = false, } = {}) {
+        const extColorBufferFloat = enableEXTColorBufferFloat
+            ? gl.getExtension("EXT_color_buffer_float")
+            : undefined;
+        if (enableEXTColorBufferFloat && !extColorBufferFloat) {
+            throw new Error("Could not acquire extension: EXT_color_buffer_float");
+        }
+        const oesTextureFloatLinear = enableOESTextureFloatLinear
+            ? gl.getExtension("OES_texture_float_linear")
+            : undefined;
+        if (enableOESTextureFloatLinear && !oesTextureFloatLinear) {
+            throw new Error("Could not acquire extension: OES_texture_float_linear");
+        }
+        return new Device(gl, extColorBufferFloat, oesTextureFloatLinear);
     }
     get bufferWidth() {
         return this.gl.drawingBufferWidth;
@@ -670,7 +689,7 @@ class VertexArray {
         const attribLocations = [];
         Object.entries(attributes).forEach(([locationStr, definition]) => {
             if (!INT_PATTERN$1.test(locationStr)) {
-                throw new Error("Location is not a number. Use RenderPass#createVertexArray to resolve names.");
+                throw new Error("Location not a number. Use Command#locate");
             }
             const location = parseInt(locationStr, 10);
             attribLocations.push(location);
@@ -741,58 +760,50 @@ class AttributeDescriptor {
 }
 
 class Texture {
-    static fromImage(dev, image, options) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return Texture.RGBA8FromRGBAUint8Array(gl, image.data, image.width, image.height, options);
+    constructor(glTexture, width, height) {
+        this.glTexture = glTexture;
+        this.width = width;
+        this.height = height;
     }
-    static RGBA8FromRGBAUint8Array(dev, data, width, height, options) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(gl, !data || data instanceof Uint8Array
+    static fromImage(dev, image, options) {
+        return Texture.fromRGBA8(dev, image.data, image.width, image.height, options);
+    }
+    static fromRGBA8(dev, data, width, height, options) {
+        return Texture.fromArrayBufferView(dev, !data || data instanceof Uint8Array
             ? data
             // Note: we also have to convert Uint8ClampedArray to Uint8Array
             // because of webgl bug
             // https://github.com/KhronosGroup/WebGL/issues/1533
             : new Uint8Array(data), width, height, "RGBA8" /* RGBA8 */, "RGBA" /* RGBA */, "UNSIGNED_BYTE" /* UNSIGNED_BYTE */, options);
     }
-    static RG16FFromRGFloat32Array(dev, data, width, height, options) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(gl, !data || data instanceof Float32Array
+    static fromRG16F(dev, data, width, height, options) {
+        return Texture.fromArrayBufferView(dev, !data || data instanceof Float32Array
             ? data
             : new Float32Array(data), width, height, "RG16F" /* RG16F */, "RG" /* RG */, "FLOAT" /* FLOAT */, options);
     }
-    static RGB16FFromRGBFloat32Array(dev, data, width, height, options) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(gl, !data || data instanceof Float32Array
+    static fromRGB16F(dev, data, width, height, options) {
+        return Texture.fromArrayBufferView(dev, !data || data instanceof Float32Array
             ? data
             : new Float32Array(data), width, height, "RGB16F" /* RGB16F */, "RGB" /* RGB */, "FLOAT" /* FLOAT */, options);
     }
-    static RGBA16FFromRGBAFloat32Array(dev, data, width, height, options) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(gl, !data || data instanceof Float32Array
+    static fromRGBA16F(dev, data, width, height, options) {
+        return Texture.fromArrayBufferView(dev, !data || data instanceof Float32Array
             ? data
             : new Float32Array(data), width, height, "RGBA16F" /* RGBA16F */, "RGBA" /* RGBA */, "FLOAT" /* FLOAT */, options);
     }
-    static RGB32FFromRGBFloat32Array(dev, data, width, height, options) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(gl, !data || data instanceof Float32Array
+    static fromRGB32F(dev, data, width, height, options) {
+        return Texture.fromArrayBufferView(dev, !data || data instanceof Float32Array
             ? data
             : new Float32Array(data), width, height, "RGB32F" /* RGB32F */, "RGB" /* RGB */, "FLOAT" /* FLOAT */, options);
     }
-    static RGBA32FFromRGBAFloat32Array(dev, data, width, height, options) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(gl, !data || data instanceof Float32Array
+    static fromRGBA32F(dev, data, width, height, options) {
+        return Texture.fromArrayBufferView(dev, !data || data instanceof Float32Array
             ? data
             : new Float32Array(data), width, height, "RGBA32F" /* RGBA32F */, "RGBA" /* RGBA */, "FLOAT" /* FLOAT */, options);
     }
-    static fromArrayBufferView(dev, data, width, height, internalFormat, format, type, options) {
+    static fromArrayBufferView(dev, data, width, height, internalFormat, format, type, { min = "nearest" /* NEAREST */, mag = "nearest" /* NEAREST */, wrapS = "clamp-to-edge" /* CLAMP_TO_EDGE */, wrapT = "clamp-to-edge" /* CLAMP_TO_EDGE */, mipmap = false, } = {}) {
         const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(gl, data, width, height, internalFormat, format, type, options);
-    }
-    constructor(gl, data, width, height, internalFormat, format, type, { min = "nearest" /* NEAREST */, mag = "nearest" /* NEAREST */, wrapS = "clamp-to-edge" /* CLAMP_TO_EDGE */, wrapT = "clamp-to-edge" /* CLAMP_TO_EDGE */, mipmap = false, } = {}) {
-        this.glTexture = createTexture(gl, data, width, height, mapGlTextureInternalFormat(gl, internalFormat), mapGlTextureFormat(gl, format), mapGlTextureType(gl, type), mapGlTextureWrap(gl, wrapS), mapGlTextureWrap(gl, wrapT), mapGlTextureFilter(gl, min), mapGlTextureFilter(gl, mag), mipmap);
-        this.width = width;
-        this.height = height;
-        this.internalFormat = internalFormat;
+        return new Texture(createTexture(gl, data, width, height, mapGlTextureInternalFormat(gl, internalFormat), mapGlTextureFormat(gl, format), mapGlTextureType(gl, type), mapGlTextureWrap(gl, wrapS), mapGlTextureWrap(gl, wrapT), mapGlTextureFilter(gl, min), mapGlTextureFilter(gl, mag), mipmap), width, height);
     }
 }
 function mapGlTextureWrap(gl, wrap) {

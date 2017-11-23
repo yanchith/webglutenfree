@@ -146,9 +146,8 @@ export class Texture {
         image: ImageData,
         options?: TextureOptions,
     ): Texture {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return Texture.RGBA8FromRGBAUint8Array(
-            gl,
+        return Texture.fromRGBA8(
+            dev,
             image.data,
             image.width,
             image.height,
@@ -156,16 +155,15 @@ export class Texture {
         );
     }
 
-    static RGBA8FromRGBAUint8Array(
+    static fromRGBA8(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Uint8Array | Uint8ClampedArray | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(
-            gl,
+        return Texture.fromArrayBufferView(
+            dev,
             !data || data instanceof Uint8Array
                 ? data
                 // Note: we also have to convert Uint8ClampedArray to Uint8Array
@@ -181,16 +179,15 @@ export class Texture {
         );
     }
 
-    static RG16FFromRGFloat32Array(
+    static fromRG16F(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(
-            gl,
+        return Texture.fromArrayBufferView(
+            dev,
             !data || data instanceof Float32Array
                 ? data
                 : new Float32Array(data),
@@ -203,16 +200,15 @@ export class Texture {
         );
     }
 
-    static RGB16FFromRGBFloat32Array(
+    static fromRGB16F(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(
-            gl,
+        return Texture.fromArrayBufferView(
+            dev,
             !data || data instanceof Float32Array
                 ? data
                 : new Float32Array(data),
@@ -225,16 +221,15 @@ export class Texture {
         );
     }
 
-    static RGBA16FFromRGBAFloat32Array(
+    static fromRGBA16F(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(
-            gl,
+        return Texture.fromArrayBufferView(
+            dev,
             !data || data instanceof Float32Array
                 ? data
                 : new Float32Array(data),
@@ -247,16 +242,15 @@ export class Texture {
         );
     }
 
-    static RGB32FFromRGBFloat32Array(
+    static fromRGB32F(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(
-            gl,
+        return Texture.fromArrayBufferView(
+            dev,
             !data || data instanceof Float32Array
                 ? data
                 : new Float32Array(data),
@@ -269,16 +263,15 @@ export class Texture {
         );
     }
 
-    static RGBA32FFromRGBAFloat32Array(
+    static fromRGBA32F(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array | null,
         width: number,
         height: number,
         options?: TextureOptions,
     ): Texture {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(
-            gl,
+        return Texture.fromArrayBufferView(
+            dev,
             !data || data instanceof Float32Array
                 ? data
                 : new Float32Array(data),
@@ -299,34 +292,6 @@ export class Texture {
         internalFormat: TextureInternalFormat,
         format: TextureFormat,
         type: TextureType,
-        options?: TextureOptions,
-    ): Texture {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(
-            gl,
-            data,
-            width,
-            height,
-            internalFormat,
-            format,
-            type,
-            options,
-        );
-    }
-
-    readonly glTexture: WebGLTexture;
-    readonly width: number;
-    readonly height: number;
-    readonly internalFormat: TextureInternalFormat;
-
-    private constructor(
-        gl: WebGL2RenderingContext,
-        data: ArrayBufferView | null,
-        width: number,
-        height: number,
-        internalFormat: TextureInternalFormat,
-        format: TextureFormat,
-        type: TextureType,
         {
             min = TextureFilter.NEAREST,
             mag = TextureFilter.NEAREST,
@@ -334,24 +299,32 @@ export class Texture {
             wrapT = TextureWrap.CLAMP_TO_EDGE,
             mipmap = false,
         }: TextureOptions = {},
-    ) {
-        this.glTexture = glutil.createTexture(
-            gl,
-            data,
-            width, height,
-            mapGlTextureInternalFormat(gl, internalFormat),
-            mapGlTextureFormat(gl, format),
-            mapGlTextureType(gl, type),
-            mapGlTextureWrap(gl, wrapS),
-            mapGlTextureWrap(gl, wrapT),
-            mapGlTextureFilter(gl, min),
-            mapGlTextureFilter(gl, mag),
-            mipmap,
+    ): Texture {
+        const gl = dev instanceof Device ? dev.gl : dev;
+        return new Texture(
+            glutil.createTexture(
+                gl,
+                data,
+                width, height,
+                mapGlTextureInternalFormat(gl, internalFormat),
+                mapGlTextureFormat(gl, format),
+                mapGlTextureType(gl, type),
+                mapGlTextureWrap(gl, wrapS),
+                mapGlTextureWrap(gl, wrapT),
+                mapGlTextureFilter(gl, min),
+                mapGlTextureFilter(gl, mag),
+                mipmap,
+            ),
+            width,
+            height,
         );
-        this.width = width;
-        this.height = height;
-        this.internalFormat = internalFormat;
     }
+
+    private constructor(
+        readonly glTexture: WebGLTexture,
+        readonly width: number,
+        readonly height: number,
+    ) { }
 }
 
 function mapGlTextureWrap(

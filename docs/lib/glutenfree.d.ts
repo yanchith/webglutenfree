@@ -1,10 +1,17 @@
 /// <reference types="webgl2" />
 
+export interface DeviceOptions {
+	antialias?: boolean;
+	enableEXTColorBufferFloat?: boolean;
+	enableOESTextureFloatLinear?: boolean;
+}
 export declare class Device {
 	readonly gl: WebGL2RenderingContext;
-	static createAndMount(element?: HTMLElement): Device;
-	static fromCanvas(canvas: HTMLCanvasElement): Device;
-	static fromContext(gl: WebGL2RenderingContext): Device;
+	readonly extColorBufferFloat: object | undefined;
+	readonly oesTextureFloatLinear: OES_texture_float_linear | undefined;
+	static createAndMount(element?: HTMLElement, options?: DeviceOptions): Device;
+	static fromCanvas(canvas: HTMLCanvasElement, options?: DeviceOptions): Device;
+	static fromContext(gl: WebGL2RenderingContext, {enableEXTColorBufferFloat, enableOESTextureFloatLinear}?: DeviceOptions): Device;
 	private constructor();
 	readonly bufferWidth: number;
 	readonly bufferHeight: number;
@@ -196,18 +203,17 @@ export declare const enum TextureType {
 	FLOAT = "FLOAT",
 }
 export declare class Texture {
-	static fromImage(dev: WebGL2RenderingContext | Device, image: ImageData, options?: TextureOptions): Texture;
-	static RGBA8FromRGBAUint8Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint8Array | Uint8ClampedArray | null, width: number, height: number, options?: TextureOptions): Texture;
-	static RG16FFromRGFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
-	static RGB16FFromRGBFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
-	static RGBA16FFromRGBAFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
-	static RGB32FFromRGBFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
-	static RGBA32FFromRGBAFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
-	static fromArrayBufferView(dev: WebGL2RenderingContext | Device, data: ArrayBufferView | null, width: number, height: number, internalFormat: TextureInternalFormat, format: TextureFormat, type: TextureType, options?: TextureOptions): Texture;
 	readonly glTexture: WebGLTexture;
 	readonly width: number;
 	readonly height: number;
-	readonly internalFormat: TextureInternalFormat;
+	static fromImage(dev: WebGL2RenderingContext | Device, image: ImageData, options?: TextureOptions): Texture;
+	static fromRGBA8(dev: WebGL2RenderingContext | Device, data: number[] | Uint8Array | Uint8ClampedArray | null, width: number, height: number, options?: TextureOptions): Texture;
+	static fromRG16F(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
+	static fromRGB16F(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
+	static fromRGBA16F(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
+	static fromRGB32F(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
+	static fromRGBA32F(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array | null, width: number, height: number, options?: TextureOptions): Texture;
+	static fromArrayBufferView(dev: WebGL2RenderingContext | Device, data: ArrayBufferView | null, width: number, height: number, internalFormat: TextureInternalFormat, format: TextureFormat, type: TextureType, {min, mag, wrapS, wrapT, mipmap}?: TextureOptions): Texture;
 	private constructor();
 }
 export declare class Framebuffer {

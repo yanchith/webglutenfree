@@ -30,23 +30,25 @@ const gaussianKernel = [
     0.003028,
 ];
 
-const dev = Device.createAndMount();
+const dev = Device.createAndMount(document.body, {
+    enableEXTColorBufferFloat: true,
+});
 const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 
-const initialTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
+const initialTexture = Texture.fromRGBA32F(dev, null, w, h);
 const initialFbo = Framebuffer.create(dev, [initialTexture]);
 
-const splitColorTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
-const splitBrightTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
+const splitColorTexture = Texture.fromRGBA32F(dev, null, w, h);
+const splitBrightTexture = Texture.fromRGBA32F(dev, null, w, h);
 const splitFbo = Framebuffer.create(dev, [
     splitColorTexture,
     splitBrightTexture,
 ]);
 
-const bloomReadTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
+const bloomReadTexture = Texture.fromRGBA32F(dev, null, w, h);
 const bloomReadFbo = Framebuffer.create(dev, [bloomReadTexture]);
 
-const bloomWriteTexture = Texture.RGBA8FromRGBAUint8Array(dev, null, w, h);
+const bloomWriteTexture = Texture.fromRGBA32F(dev, null, w, h);
 const bloomWriteFbo = Framebuffer.create(dev, [bloomWriteTexture]);
 
 const view = mat4.create();
@@ -358,7 +360,7 @@ const screenspace = VertexArray.create(dev, {
     ],
 });
 
-const nAdditionalBloomPasses = 2;
+const nAdditionalBloomPasses = 0;
 
 const blurDirection = vec2.create();
 const bloomProps = {
