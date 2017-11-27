@@ -66,9 +66,7 @@ const cmd = Command.create(dev, {
 });
 
 const bunny = VertexArray.create(dev, cmd.locate({
-    attributes: {
-        a_vertex_position: bunnyPositions,
-    },
+    attributes: { a_vertex_position: bunnyPositions },
     elements: bunnyCells,
 }));
 
