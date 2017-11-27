@@ -6,40 +6,39 @@ import {
     Framebuffer,
 } from "./lib/glutenfree.js";
 
-const gaussianKernel = [
-    0.00598,
-    0.060626,
-    0.241843,
-    0.383103,
-    0.241843,
-    0.060626,
-    0.00598,
-];
+const N_BLOOM_PASSES = 3;
 
-const dev = Device.createAndMount(document.body, {
-    enableEXTColorBufferFloat: true,
-});
+const GAUSSIAN = [
+    0.000229,
+    0.005977,
+    0.060598,
+    0.241732,
+    0.382928,
+    0.241732,
+    0.060598,
+    0.005977,
+    0.000229,
+]
+
+const dev = Device.createAndMount(document.body);
 const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 
-const initialTexture = Texture.fromRGBA32F(dev, null, w, h);
-const initialFbo = Framebuffer.create(dev, [initialTexture]);
+const initialTex = Texture.fromRGBA8(dev, null, w, h);
+const initialFbo = Framebuffer.create(dev, [initialTex]);
 
-const splitColorTexture = Texture.fromRGBA32F(dev, null, w, h);
-const splitBrightTexture = Texture.fromRGBA32F(dev, null, w, h);
-const splitFbo = Framebuffer.create(dev, [
-    splitColorTexture,
-    splitBrightTexture,
-]);
+const splitColorTex = Texture.fromRGBA8(dev, null, w, h);
+const splitBrightTex = Texture.fromRGBA8(dev, null, w, h);
+const splitFbo = Framebuffer.create(dev, [splitColorTex, splitBrightTex]);
 
-const bloomReadTexture = Texture.fromRGBA32F(dev, null, w, h);
-const bloomReadFbo = Framebuffer.create(dev, [bloomReadTexture]);
+const bloomReadTex = Texture.fromRGBA8(dev, null, w, h);
+const bloomReadFbo = Framebuffer.create(dev, [bloomReadTex]);
 
-const bloomWriteTexture = Texture.fromRGBA32F(dev, null, w, h);
-const bloomWriteFbo = Framebuffer.create(dev, [bloomWriteTexture]);
+const bloomWriteTex = Texture.fromRGBA8(dev, null, w, h);
+const bloomWriteFbo = Framebuffer.create(dev, [bloomWriteTex]);
 
 const view = mat4.create();
 
-const render = Command.create(dev, {
+const scene = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
 
@@ -170,13 +169,13 @@ const split = Command.create(dev, {
             float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 
             o_color = color;
-            o_bright = brightness > 0.7 ? color : vec4(0.0);
+            o_bright = brightness > 0.7 ? color : vec4(0.0, 0.0, 0.0, 1.0);
         }
     `,
     uniforms: {
         u_image: {
             type: "texture",
-            value: initialTexture,
+            value: initialTex,
         },
     },
     framebuffer: splitFbo,
@@ -200,7 +199,7 @@ const bloom = Command.create(dev, {
     frag: `#version 300 es
         precision mediump float;
 
-        #define KERNEL_LENGTH ${gaussianKernel.length}
+        #define KERNEL_LENGTH ${GAUSSIAN.length}
 
         uniform sampler2D u_image;
         uniform float[KERNEL_LENGTH] u_kernel;
@@ -229,7 +228,7 @@ const bloom = Command.create(dev, {
     uniforms: {
         u_kernel: {
             type: "1fv",
-            value: gaussianKernel,
+            value: GAUSSIAN,
         },
         u_blur_direction: {
             type: "2f",
@@ -248,8 +247,6 @@ const tonemap = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
 
-        uniform mat4 u_projection, u_view, u_model;
-
         layout (location = 0) in vec2 a_vertex_position;
         layout (location = 1) in vec2 a_tex_coord;
 
@@ -257,10 +254,7 @@ const tonemap = Command.create(dev, {
 
         void main() {
             v_tex_coord = a_tex_coord;
-            gl_Position = u_projection
-                * u_view
-                * u_model
-                * vec4(a_vertex_position, 0.0, 1.0);
+            gl_Position = vec4(a_vertex_position, 0.0, 1.0);
         }
     `,
     frag: `#version 300 es
@@ -291,33 +285,13 @@ const tonemap = Command.create(dev, {
         }
     `,
     uniforms: {
-        u_model: {
-            type: "matrix4fv",
-            value: mat4.fromScaling(mat4.create(), [1000, 1000, 1]),
-        },
-        u_view: {
-            type: "matrix4fv",
-            value: mat4.identity(mat4.create()),
-        },
-        u_projection: {
-            type: "matrix4fv",
-            value: mat4.ortho(
-                mat4.create(),
-                -w / 2,
-                w / 2,
-                -h / 2,
-                h / 2,
-                -0.1,
-                1000.0,
-            ),
-        },
         u_image_color: {
             type: "texture",
-            value: splitColorTexture,
+            value: splitColorTex,
         },
         u_image_bloom: {
             type: "texture",
-            value: bloomReadTexture,
+            value: bloomReadTex,
         },
     },
     clear: { color: [0, 0, 0, 1] },
@@ -344,42 +318,44 @@ const screenspace = VertexArray.create(dev, {
     ],
 });
 
-const nAdditionalBloomPasses = 0;
+const nBloomPasses = Math.max(0, N_BLOOM_PASSES);
 
 const HORIZONTAL = vec2.fromValues(1, 0);
 const VERTICAL = vec2.fromValues(0, 1);
 
 const loop = time => {
     // Render geometry into texture
-    render.execute(cube, time);
+    scene.execute(cube, time);
 
     // Split color and brightness to 2 render targets (splitColor, splitBright)
     split.execute(screenspace);
 
-    // Do first 2 blur passes: splitBright -> bloomWrite -> bloomRead
-    bloom.execute(screenspace, {
-        texture: splitBrightTexture,
-        direction: HORIZONTAL,
-        fbo: bloomWriteFbo,
-    });
-    bloom.execute(screenspace, {
-        texture: bloomWriteTexture,
-        direction: VERTICAL,
-        fbo: bloomReadFbo,
-    });
-
-    // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
-    for (let i = 0; i < nAdditionalBloomPasses; i++) {
+    if (nBloomPasses) {
+        // Do first 2 bloom passes: splitBright -> bloomWrite -> bloomRead
         bloom.execute(screenspace, {
-            texture: bloomReadTexture,
+            texture: splitBrightTex,
             direction: HORIZONTAL,
             fbo: bloomWriteFbo,
         });
         bloom.execute(screenspace, {
-            texture: bloomWriteTexture,
+            texture: bloomWriteTex,
             direction: VERTICAL,
             fbo: bloomReadFbo,
         });
+
+        // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
+        for (let i = 1; i < nBloomPasses; i++) {
+            bloom.execute(screenspace, {
+                texture: bloomReadTex,
+                direction: HORIZONTAL,
+                fbo: bloomWriteFbo,
+            });
+            bloom.execute(screenspace, {
+                texture: bloomWriteTex,
+                direction: VERTICAL,
+                fbo: bloomReadFbo,
+            });
+        }
     }
 
     // Blend together blurred highlights with original color and perform tonemapping
