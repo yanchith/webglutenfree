@@ -1,10 +1,9 @@
 import { Device, Command, VertexArray } from "./lib/glutenfree.js";
 
 const dev = Device.mount();
-const [w, h] = [dev.bufferWidth, dev.bufferHeight];
+const [w, h] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
 const view = mat4.identity(mat4.create());
-mat4.translate(view, view, [0, 0, -1])
 
 const cmd = Command.create(dev, {
     vert: `#version 300 es
@@ -48,13 +47,13 @@ const cmd = Command.create(dev, {
                 w / 2,
                 -h / 2,
                 h / 2,
-                0.1,
-                10.0,
+                -0.1,
+                1000.0,
             ),
         },
         u_model: {
             type: "matrix4fv",
-            value: mat4.fromScaling(mat4.create(), [100, 100, 100]),
+            value: mat4.fromScaling(mat4.create(), [50, 50, 100]),
         },
         u_view: {
             type: "matrix4fv",

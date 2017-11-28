@@ -39,16 +39,16 @@ function computeKernelWeight(kernel) {
     return weight <= 0 ? 1 : weight;
 }
 
-const currentKernel = kernels.edgeDetect;
+const KERNEL = kernels.edgeDetect;
 
 const dev = Device.mount();
-const [w, h] = [dev.bufferWidth, dev.bufferHeight];
+const [w, h] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
 async function run() {
     const imageData = await loadImage("img/lenna.png", true);
     const imageTexture = Texture.fromImage(dev, imageData);
 
-    const kern = Command.create(dev, {
+    const cmd = Command.create(dev, {
         vert: `#version 300 es
             precision mediump float;
 
@@ -97,7 +97,7 @@ async function run() {
         uniforms: {
             u_model: {
                 type: "matrix4fv",
-                value: mat4.fromScaling(mat4.create(), [1000, 1000, 1]),
+                value: mat4.fromScaling(mat4.create(), [400, 400, 1]),
             },
             u_view: {
                 type: "matrix4fv",
@@ -117,11 +117,11 @@ async function run() {
             },
             u_kernel: {
                 type: "1fv",
-                value: currentKernel,
+                value: KERNEL,
             },
             u_kernel_weight: {
                 type: "1f",
-                value: computeKernelWeight(currentKernel),
+                value: computeKernelWeight(KERNEL),
             },
             u_image: {
                 type: "texture",
@@ -130,7 +130,7 @@ async function run() {
         },
     });
 
-    const square = VertexArray.create(dev, kern.locate({
+    const square = VertexArray.create(dev, cmd.locate({
         attributes: {
             a_vertex_position: [
                 [1, 1],
@@ -151,7 +151,7 @@ async function run() {
         ],
     }));
 
-    kern.execute(square);
+    cmd.execute(square);
 }
 
 run();
