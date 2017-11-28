@@ -1,23 +1,31 @@
 /// <reference types="webgl2" />
 
 export interface DeviceOptions {
-	enableEXTColorBufferFloat?: boolean;
-	enableOESTextureFloatLinear?: boolean;
+	pixelRatio?: number;
+	viewport?: [number, number];
+	extensions?: Extension[];
+}
+export declare const enum Extension {
+	EXTColorBufferFloat = "EXT_color_buffer_float",
+	OESTextureFloatLinear = "OES_texture_float_linear",
 }
 export declare class Device {
 	readonly gl: WebGL2RenderingContext;
 	readonly canvas: HTMLCanvasElement;
-	readonly extColorBufferFloat: object | undefined;
-	readonly oesTextureFloatLinear: OES_texture_float_linear | undefined;
+	private explicitPixelRatio;
+	private explicitViewport;
 	static mount(element?: HTMLElement, options?: DeviceOptions): Device;
 	static fromCanvas(canvas: HTMLCanvasElement, options?: DeviceOptions): Device;
-	static fromContext(gl: WebGL2RenderingContext, {enableEXTColorBufferFloat, enableOESTextureFloatLinear}?: DeviceOptions): Device;
+	static fromContext(gl: WebGL2RenderingContext, {pixelRatio, viewport, extensions}?: DeviceOptions): Device;
 	private constructor();
 	readonly bufferWidth: number;
 	readonly bufferHeight: number;
 	readonly canvasWidth: number;
 	readonly canvasHeight: number;
-	updateCanvas(): void;
+	readonly canvasCSSWitdh: number;
+	readonly canvasCSSHeight: number;
+	readonly pixelRatio: number;
+	update(): void;
 }
 export declare type VertexBufferType = VertexBufferProps["type"];
 export declare type VertexBufferProps = VertexBufferInt8Props | VertexBufferInt16Props | VertexBufferInt32Props | VertexBufferUint8Props | VertexBufferUint16Props | VertexBufferUint32Props | VertexBufferFloat32Props;

@@ -1,39 +1,33 @@
 class Device {
-    constructor(gl, canvas, extColorBufferFloat, oesTextureFloatLinear) {
+    constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
         this.gl = gl;
         this.canvas = canvas;
-        this.extColorBufferFloat = extColorBufferFloat;
-        this.oesTextureFloatLinear = oesTextureFloatLinear;
+        this.explicitPixelRatio = explicitPixelRatio;
+        this.explicitViewport = explicitViewport;
     }
     static mount(element = document.body, options) {
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        const dpr = window.devicePixelRatio;
-        canvas.width = canvas.clientWidth * dpr;
-        canvas.height = canvas.clientHeight * dpr;
-        return Device.fromCanvas(canvas, options);
+        const dev = Device.fromCanvas(canvas, options);
+        dev.update();
+        return dev;
     }
     static fromCanvas(canvas, options) {
         const gl = canvas.getContext("webgl2");
         if (!gl) {
-            throw new Error("Could not acquire webgl2 context");
+            throw new Error("Could not get webgl2 context");
         }
         return Device.fromContext(gl, options);
     }
-    static fromContext(gl, { enableEXTColorBufferFloat = false, enableOESTextureFloatLinear = false, } = {}) {
-        const extColorBufferFloat = enableEXTColorBufferFloat
-            ? gl.getExtension("EXT_color_buffer_float")
-            : undefined;
-        if (enableEXTColorBufferFloat && !extColorBufferFloat) {
-            throw new Error("Could not acquire extension: EXT_color_buffer_float");
+    static fromContext(gl, { pixelRatio, viewport, extensions, } = {}) {
+        if (extensions) {
+            extensions.forEach(ext => {
+                if (!gl.getExtension(ext)) {
+                    throw new Error(`Could not get extension ${ext}`);
+                }
+            });
         }
-        const oesTextureFloatLinear = enableOESTextureFloatLinear
-            ? gl.getExtension("OES_texture_float_linear")
-            : undefined;
-        if (enableOESTextureFloatLinear && !oesTextureFloatLinear) {
-            throw new Error("Could not acquire extension: OES_texture_float_linear");
-        }
-        return new Device(gl, gl.canvas, extColorBufferFloat, oesTextureFloatLinear);
+        return new Device(gl, gl.canvas, pixelRatio, viewport);
     }
     get bufferWidth() {
         return this.gl.drawingBufferWidth;
@@ -47,14 +41,29 @@ class Device {
     get canvasHeight() {
         return this.canvas.height;
     }
-    updateCanvas() {
-        const gl = this.gl;
-        const dpr = window.devicePixelRatio;
-        const width = gl.canvas.clientWidth * dpr;
-        const height = gl.canvas.clientHeight * dpr;
-        if (width !== gl.canvas.clientWidth || height !== gl.canvas.clientHeight) {
-            gl.canvas.width = width;
-            gl.canvas.height = height;
+    get canvasCSSWitdh() {
+        return this.canvas.clientWidth;
+    }
+    get canvasCSSHeight() {
+        return this.canvas.clientHeight;
+    }
+    get pixelRatio() {
+        return this.explicitPixelRatio || window.devicePixelRatio;
+    }
+    update() {
+        const dpr = this.pixelRatio;
+        const canvas = this.canvas;
+        const width = this.explicitViewport
+            && this.explicitViewport[0]
+            || canvas.clientWidth * dpr;
+        const height = this.explicitViewport
+            && this.explicitViewport[1]
+            || canvas.clientHeight * dpr;
+        if (width !== canvas.width) {
+            canvas.width = width;
+        }
+        if (height !== canvas.height) {
+            canvas.height = height;
         }
     }
 }

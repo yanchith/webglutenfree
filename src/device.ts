@@ -1,9 +1,12 @@
-// Temporary, until available in typings
-export type EXTColorBufferFloat = object;
-
 export interface DeviceOptions {
-    enableEXTColorBufferFloat?: boolean;
-    enableOESTextureFloatLinear?: boolean;
+    pixelRatio?: number;
+    viewport?: [number, number];
+    extensions?: Extension[];
+}
+
+export const enum Extension {
+    EXTColorBufferFloat = "EXT_color_buffer_float",
+    OESTextureFloatLinear = "OES_texture_float_linear",
 }
 
 export class Device {
@@ -14,10 +17,9 @@ export class Device {
     ): Device {
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        const dpr = window.devicePixelRatio;
-        canvas.width = canvas.clientWidth * dpr;
-        canvas.height = canvas.clientHeight * dpr;
-        return Device.fromCanvas(canvas, options);
+        const dev = Device.fromCanvas(canvas, options);
+        dev.update();
+        return dev;
     }
 
     static fromCanvas(
@@ -25,44 +27,39 @@ export class Device {
         options?: DeviceOptions,
     ): Device {
         const gl = canvas.getContext("webgl2");
-        if (!gl) { throw new Error("Could not acquire webgl2 context"); }
+        if (!gl) { throw new Error("Could not get webgl2 context"); }
         return Device.fromContext(gl, options);
     }
 
     static fromContext(
         gl: WebGL2RenderingContext,
         {
-            enableEXTColorBufferFloat = false,
-            enableOESTextureFloatLinear = false,
+            pixelRatio,
+            viewport,
+            extensions,
         }: DeviceOptions = {},
     ): Device {
-        const extColorBufferFloat = enableEXTColorBufferFloat
-            ? gl.getExtension("EXT_color_buffer_float")
-            : undefined;
-        if (enableEXTColorBufferFloat && !extColorBufferFloat) {
-            throw new Error("Could not acquire extension: EXT_color_buffer_float");
-        }
-
-        const oesTextureFloatLinear = enableOESTextureFloatLinear
-            ? gl.getExtension("OES_texture_float_linear")
-            : undefined;
-        if (enableOESTextureFloatLinear && !oesTextureFloatLinear) {
-            throw new Error("Could not acquire extension: OES_texture_float_linear");
+        if (extensions) {
+            extensions.forEach(ext => {
+                if (!gl.getExtension(ext)) {
+                    throw new Error(`Could not get extension ${ext}`);
+                }
+            });
         }
 
         return new Device(
             gl,
             gl.canvas,
-            extColorBufferFloat,
-            oesTextureFloatLinear,
+            pixelRatio,
+            viewport,
         );
     }
 
     private constructor(
         readonly gl: WebGL2RenderingContext,
         readonly canvas: HTMLCanvasElement,
-        readonly extColorBufferFloat?: EXTColorBufferFloat,
-        readonly oesTextureFloatLinear?: OES_texture_float_linear,
+        private explicitPixelRatio?: number,
+        private explicitViewport?: [number, number],
     ) { }
 
     get bufferWidth(): number {
@@ -81,14 +78,28 @@ export class Device {
         return this.canvas.height;
     }
 
-    updateCanvas(): void {
-        const gl = this.gl;
-        const dpr = window.devicePixelRatio;
-        const width = gl.canvas.clientWidth * dpr;
-        const height = gl.canvas.clientHeight * dpr;
-        if (width !== gl.canvas.clientWidth || height !== gl.canvas.clientHeight) {
-            gl.canvas.width = width;
-            gl.canvas.height = height;
-        }
+    get canvasCSSWitdh(): number {
+        return this.canvas.clientWidth;
+    }
+
+    get canvasCSSHeight(): number {
+        return this.canvas.clientHeight;
+    }
+
+    get pixelRatio(): number {
+        return this.explicitPixelRatio || window.devicePixelRatio;
+    }
+
+    update(): void {
+        const dpr = this.pixelRatio;
+        const canvas = this.canvas;
+        const width = this.explicitViewport
+            && this.explicitViewport[0]
+            || canvas.clientWidth * dpr;
+        const height = this.explicitViewport
+            && this.explicitViewport[1]
+            || canvas.clientHeight * dpr;
+        if (width !== canvas.width) { canvas.width = width; }
+        if (height !== canvas.height) { canvas.height = height; }
     }
 }

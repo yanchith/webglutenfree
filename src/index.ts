@@ -1,4 +1,4 @@
-export { Device } from "./device";
+export { Device, Extension } from "./device";
 export {
     Command,
     CommandProps,
