@@ -78,7 +78,7 @@ export class Device {
         return this.canvas.height;
     }
 
-    get canvasCSSWitdh(): number {
+    get canvasCSSWidth(): number {
         return this.canvas.clientWidth;
     }
 

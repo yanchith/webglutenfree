@@ -22,7 +22,7 @@ export declare class Device {
 	readonly bufferHeight: number;
 	readonly canvasWidth: number;
 	readonly canvasHeight: number;
-	readonly canvasCSSWitdh: number;
+	readonly canvasCSSWidth: number;
 	readonly canvasCSSHeight: number;
 	readonly pixelRatio: number;
 	update(): void;

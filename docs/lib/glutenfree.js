@@ -41,7 +41,7 @@ class Device {
     get canvasHeight() {
         return this.canvas.height;
     }
-    get canvasCSSWitdh() {
+    get canvasCSSWidth() {
         return this.canvas.clientWidth;
     }
     get canvasCSSHeight() {
