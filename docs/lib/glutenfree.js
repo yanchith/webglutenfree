@@ -1,6 +1,7 @@
 class Device {
-    constructor(gl, extColorBufferFloat, oesTextureFloatLinear) {
+    constructor(gl, canvas, extColorBufferFloat, oesTextureFloatLinear) {
         this.gl = gl;
+        this.canvas = canvas;
         this.extColorBufferFloat = extColorBufferFloat;
         this.oesTextureFloatLinear = oesTextureFloatLinear;
     }
@@ -37,7 +38,7 @@ class Device {
         if (enableOESTextureFloatLinear && !oesTextureFloatLinear) {
             throw new Error("Could not acquire extension: OES_texture_float_linear");
         }
-        return new Device(gl, extColorBufferFloat, oesTextureFloatLinear);
+        return new Device(gl, gl.canvas, extColorBufferFloat, oesTextureFloatLinear);
     }
     get bufferWidth() {
         return this.gl.drawingBufferWidth;
@@ -46,10 +47,10 @@ class Device {
         return this.gl.drawingBufferHeight;
     }
     get canvasWidth() {
-        return this.gl.canvas.width;
+        return this.canvas.width;
     }
     get canvasHeight() {
-        return this.gl.canvas.height;
+        return this.canvas.height;
     }
     updateCanvas() {
         const gl = this.gl;
@@ -260,11 +261,17 @@ class Command {
             }
             return new UniformDescriptor(identifier, location, uniform);
         });
-        const blendDescriptor = blend && typeof blend === "object" && blend
-            ? new BlendDescriptor(mapGlBlendFunc(gl, blend.src), mapGlBlendFunc(gl, blend.dst), mapGlBlendEquation(gl, blend.equation || "add" /* ADD */), blend.color)
-            : blend
-                ? new BlendDescriptor(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.FUNC_ADD)
-                : undefined;
+        const blendDescriptor = blend
+            ? new BlendDescriptor(mapGlBlendFunc(gl, typeof blend.src === "object" ? blend.src.rgb : blend.src), mapGlBlendFunc(gl, typeof blend.src === "object" ? blend.src.alpha : blend.src), mapGlBlendFunc(gl, typeof blend.dst === "object" ? blend.dst.rgb : blend.dst), mapGlBlendFunc(gl, typeof blend.dst === "object" ? blend.dst.alpha : blend.dst), mapGlBlendEquation(gl, blend.equation
+                ? typeof blend.equation === "object"
+                    ? blend.equation.rgb
+                    : blend.equation
+                : "add" /* ADD */), mapGlBlendEquation(gl, blend.equation
+                ? typeof blend.equation === "object"
+                    ? blend.equation.alpha
+                    : blend.equation
+                : "add" /* ADD */), blend.color)
+            : undefined;
         const framebufferDescriptor = framebuffer
             ? new FramebufferDescriptor(framebuffer)
             : undefined;
@@ -326,8 +333,8 @@ class Command {
         const { gl, blendDescriptor } = this;
         if (blendDescriptor) {
             gl.enable(gl.BLEND);
-            gl.blendFunc(blendDescriptor.srcFactor, blendDescriptor.destFactor);
-            gl.blendEquation(blendDescriptor.equation);
+            gl.blendFuncSeparate(blendDescriptor.srcRGB, blendDescriptor.dstRGB, blendDescriptor.srcAlpha, blendDescriptor.dstAlpha);
+            gl.blendEquationSeparate(blendDescriptor.equationRGB, blendDescriptor.equationAlpha);
             if (blendDescriptor.color) {
                 const [r, g, b, a] = blendDescriptor.color;
                 gl.blendColor(r, g, b, a);
@@ -505,10 +512,13 @@ function access(props, value) {
     return typeof value === "function" ? value(props) : value;
 }
 class BlendDescriptor {
-    constructor(srcFactor, destFactor, equation, color) {
-        this.srcFactor = srcFactor;
-        this.destFactor = destFactor;
-        this.equation = equation;
+    constructor(srcRGB, srcAlpha, dstRGB, dstAlpha, equationRGB, equationAlpha, color) {
+        this.srcRGB = srcRGB;
+        this.srcAlpha = srcAlpha;
+        this.dstRGB = dstRGB;
+        this.dstAlpha = dstAlpha;
+        this.equationRGB = equationRGB;
+        this.equationAlpha = equationAlpha;
         this.color = color;
     }
 }

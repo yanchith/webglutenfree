@@ -7,6 +7,7 @@ export interface DeviceOptions {
 }
 export declare class Device {
 	readonly gl: WebGL2RenderingContext;
+	readonly canvas: HTMLCanvasElement;
 	readonly extColorBufferFloat: object | undefined;
 	readonly oesTextureFloatLinear: OES_texture_float_linear | undefined;
 	static createAndMount(element?: HTMLElement, options?: DeviceOptions): Device;
@@ -233,11 +234,20 @@ export interface CommandProps<P> {
 	};
 	primitive?: Primitive;
 	blend?: {
-		src: BlendFunction;
-		dst: BlendFunction;
-		equation?: BlendEquation;
+		src: BlendFunction | {
+			rgb: BlendFunction;
+			alpha: BlendFunction;
+		};
+		dst: BlendFunction | {
+			rgb: BlendFunction;
+			alpha: BlendFunction;
+		};
+		equation?: BlendEquation | {
+			rgb: BlendEquation;
+			alpha: BlendEquation;
+		};
 		color?: Color;
-	} | boolean;
+	};
 	framebuffer?: AccessorOrValue<P, Framebuffer>;
 	clear?: {
 		color?: Color;

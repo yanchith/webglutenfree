@@ -59,6 +59,7 @@ export class Device {
 
         return new Device(
             gl,
+            gl.canvas,
             extColorBufferFloat,
             oesTextureFloatLinear,
         );
@@ -66,6 +67,7 @@ export class Device {
 
     private constructor(
         readonly gl: WebGL2RenderingContext,
+        readonly canvas: HTMLCanvasElement,
         readonly extColorBufferFloat?: EXTColorBufferFloat,
         readonly oesTextureFloatLinear?: OES_texture_float_linear,
     ) { }
@@ -79,11 +81,11 @@ export class Device {
     }
 
     get canvasWidth(): number {
-        return this.gl.canvas.width;
+        return this.canvas.width;
     }
 
     get canvasHeight(): number {
-        return this.gl.canvas.height;
+        return this.canvas.height;
     }
 
     updateCanvas(): void {

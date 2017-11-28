@@ -16,11 +16,11 @@ export interface CommandProps<P> {
     uniforms?: { [key: string]: Uniform<P> };
     primitive?: Primitive;
     blend?: {
-        src: BlendFunction;
-        dst: BlendFunction;
-        equation?: BlendEquation;
+        src: BlendFunction | { rgb: BlendFunction; alpha: BlendFunction };
+        dst: BlendFunction | { rgb: BlendFunction; alpha: BlendFunction };
+        equation?: BlendEquation | { rgb: BlendEquation; alpha: BlendEquation };
         color?: Color;
-    } | boolean; // true is shorthand for (SRC_ALPHA, 1 - SRC_SLPHA, FUNC_ADD)
+    };
     framebuffer?: AccessorOrValue<P, Framebuffer>;
     clear?: {
         color?: Color;
@@ -251,20 +251,43 @@ export class Command<P = void> {
                 return new UniformDescriptor(identifier, location, uniform);
             });
 
-        const blendDescriptor = blend && typeof blend === "object" && blend
+        const blendDescriptor = blend
             ? new BlendDescriptor(
-                mapGlBlendFunc(gl, blend.src),
-                mapGlBlendFunc(gl, blend.dst),
-                mapGlBlendEquation(gl, blend.equation || BlendEquation.ADD),
+                mapGlBlendFunc(
+                    gl,
+                    typeof blend.src === "object" ? blend.src.rgb : blend.src,
+                ),
+                mapGlBlendFunc(
+                    gl,
+                    typeof blend.src === "object" ? blend.src.alpha : blend.src,
+                ),
+                mapGlBlendFunc(
+                    gl,
+                    typeof blend.dst === "object" ? blend.dst.rgb : blend.dst,
+                ),
+                mapGlBlendFunc(
+                    gl,
+                    typeof blend.dst === "object" ? blend.dst.alpha : blend.dst,
+                ),
+                mapGlBlendEquation(
+                    gl,
+                    blend.equation
+                        ? typeof blend.equation === "object"
+                            ? blend.equation.rgb
+                            : blend.equation
+                        : BlendEquation.ADD,
+                ),
+                mapGlBlendEquation(
+                    gl,
+                    blend.equation
+                        ? typeof blend.equation === "object"
+                            ? blend.equation.alpha
+                            : blend.equation
+                        : BlendEquation.ADD,
+                ),
                 blend.color,
             )
-            : blend
-                ? new BlendDescriptor(
-                    gl.SRC_ALPHA,
-                    gl.ONE_MINUS_SRC_ALPHA,
-                    gl.FUNC_ADD,
-                )
-                : undefined;
+            : undefined;
 
         const framebufferDescriptor = framebuffer
             ? new FramebufferDescriptor(framebuffer)
@@ -362,8 +385,16 @@ export class Command<P = void> {
         const { gl, blendDescriptor } = this;
         if (blendDescriptor) {
             gl.enable(gl.BLEND);
-            gl.blendFunc(blendDescriptor.srcFactor, blendDescriptor.destFactor);
-            gl.blendEquation(blendDescriptor.equation);
+            gl.blendFuncSeparate(
+                blendDescriptor.srcRGB,
+                blendDescriptor.dstRGB,
+                blendDescriptor.srcAlpha,
+                blendDescriptor.dstAlpha,
+            );
+            gl.blendEquationSeparate(
+                blendDescriptor.equationRGB,
+                blendDescriptor.equationAlpha,
+            );
             if (blendDescriptor.color) {
                 const [r, g, b, a] = blendDescriptor.color;
                 gl.blendColor(r, g, b, a);
@@ -560,9 +591,12 @@ function access<P, R>(props: P, value: ((props: P) => R) | R): R {
 
 class BlendDescriptor {
     constructor(
-        readonly srcFactor: number,
-        readonly destFactor: number,
-        readonly equation: number,
+        readonly srcRGB: number,
+        readonly srcAlpha: number,
+        readonly dstRGB: number,
+        readonly dstAlpha: number,
+        readonly equationRGB: number,
+        readonly equationAlpha: number,
         readonly color?: Color,
     ) { }
 }
