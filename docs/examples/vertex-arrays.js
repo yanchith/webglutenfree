@@ -1,6 +1,6 @@
 import { Device, Command, VertexArray } from "./lib/glutenfree.js";
 
-const dev = Device.createAndMount();
+const dev = Device.mount();
 const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 
 const cmd = Command.create(dev, {

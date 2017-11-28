@@ -1,7 +1,6 @@
 /// <reference types="webgl2" />
 
 export interface DeviceOptions {
-	antialias?: boolean;
 	enableEXTColorBufferFloat?: boolean;
 	enableOESTextureFloatLinear?: boolean;
 }
@@ -10,7 +9,7 @@ export declare class Device {
 	readonly canvas: HTMLCanvasElement;
 	readonly extColorBufferFloat: object | undefined;
 	readonly oesTextureFloatLinear: OES_texture_float_linear | undefined;
-	static createAndMount(element?: HTMLElement, options?: DeviceOptions): Device;
+	static mount(element?: HTMLElement, options?: DeviceOptions): Device;
 	static fromCanvas(canvas: HTMLCanvasElement, options?: DeviceOptions): Device;
 	static fromContext(gl: WebGL2RenderingContext, {enableEXTColorBufferFloat, enableOESTextureFloatLinear}?: DeviceOptions): Device;
 	private constructor();
@@ -226,13 +225,15 @@ export declare class Framebuffer {
 	private constructor();
 }
 export declare type Color = [number, number, number, number];
+export declare type AccessorOrValue<P, R> = Accessor<P, R> | R;
+export declare type Accessor<P, R> = (props: P) => R;
 export interface CommandProps<P> {
 	vert: string;
 	frag: string;
+	primitive?: Primitive;
 	uniforms?: {
 		[key: string]: Uniform<P>;
 	};
-	primitive?: Primitive;
 	blend?: {
 		src: BlendFunction | {
 			rgb: BlendFunction;
@@ -255,8 +256,15 @@ export interface CommandProps<P> {
 		stencil?: number;
 	};
 }
-export declare type AccessorOrValue<P, R> = Accessor<P, R> | R;
-export declare type Accessor<P, R> = (props: P) => R;
+export declare const enum Primitive {
+	TRIANGLES = "triangles",
+	TRIANGLE_STRIP = "triangle-strip",
+	TRIANGLE_FAN = "triangle-fan",
+	POINTS = "points",
+	LINES = "lines",
+	LINE_STRIP = "line-strip",
+	LINE_LOOP = "line-loop",
+}
 export declare type Uniform<P> = Uniform1f<P> | Uniform1fv<P> | Uniform1i<P> | Uniform1iv<P> | Uniform1ui<P> | Uniform1uiv<P> | Uniform2f<P> | Uniform2fv<P> | Uniform2i<P> | Uniform2iv<P> | Uniform2ui<P> | Uniform2uiv<P> | Uniform3f<P> | Uniform3fv<P> | Uniform3i<P> | Uniform3iv<P> | Uniform3ui<P> | Uniform3uiv<P> | Uniform4f<P> | Uniform4fv<P> | Uniform4i<P> | Uniform4iv<P> | Uniform4ui<P> | Uniform4uiv<P> | UniformMatrix2fv<P> | UniformMatrix3fv<P> | UniformMatrix4fv<P> | UniformTexture<P>;
 export interface Uniform1f<P> {
 	type: "1f";
@@ -369,15 +377,6 @@ export interface UniformMatrix4fv<P> {
 export interface UniformTexture<P> {
 	type: "texture";
 	value: AccessorOrValue<P, Texture>;
-}
-export declare const enum Primitive {
-	TRIANGLES = "triangles",
-	TRIANGLE_STRIP = "triangle-strip",
-	TRIANGLE_FAN = "triangle-fan",
-	POINTS = "points",
-	LINES = "lines",
-	LINE_STRIP = "line-strip",
-	LINE_LOOP = "line-loop",
 }
 export declare const enum BlendFunction {
 	ZERO = "zero",

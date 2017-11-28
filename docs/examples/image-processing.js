@@ -41,7 +41,7 @@ function computeKernelWeight(kernel) {
 
 const currentKernel = kernels.edgeDetect;
 
-const dev = Device.createAndMount();
+const dev = Device.mount();
 const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 
 async function run() {

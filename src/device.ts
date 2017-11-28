@@ -2,19 +2,21 @@
 export type EXTColorBufferFloat = object;
 
 export interface DeviceOptions {
-    antialias?: boolean;
     enableEXTColorBufferFloat?: boolean;
     enableOESTextureFloatLinear?: boolean;
 }
 
 export class Device {
 
-    static createAndMount(
+    static mount(
         element: HTMLElement = document.body,
         options?: DeviceOptions,
     ): Device {
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
+        const dpr = window.devicePixelRatio;
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
         return Device.fromCanvas(canvas, options);
     }
 
@@ -22,17 +24,8 @@ export class Device {
         canvas: HTMLCanvasElement,
         options?: DeviceOptions,
     ): Device {
-        // This is here to prevent rollup warning caused by ts __rest helper.
-        // https://github.com/rollup/rollup/wiki/Troubleshooting#this-is-undefined
-        const antialias = options && typeof options.antialias !== "undefined"
-            ? options.antialias
-            : true;
-
-        const gl = canvas.getContext("webgl2", { antialias });
+        const gl = canvas.getContext("webgl2");
         if (!gl) { throw new Error("Could not acquire webgl2 context"); }
-        const dpr = window.devicePixelRatio;
-        canvas.width = canvas.clientWidth * dpr;
-        canvas.height = canvas.clientHeight * dpr;
         return Device.fromContext(gl, options);
     }
 

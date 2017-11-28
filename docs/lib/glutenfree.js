@@ -5,24 +5,19 @@ class Device {
         this.extColorBufferFloat = extColorBufferFloat;
         this.oesTextureFloatLinear = oesTextureFloatLinear;
     }
-    static createAndMount(element = document.body, options) {
+    static mount(element = document.body, options) {
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        return Device.fromCanvas(canvas, options);
-    }
-    static fromCanvas(canvas, options) {
-        // This is here to prevent rollup warning caused by ts __rest helper.
-        // https://github.com/rollup/rollup/wiki/Troubleshooting#this-is-undefined
-        const antialias = options && typeof options.antialias !== "undefined"
-            ? options.antialias
-            : true;
-        const gl = canvas.getContext("webgl2", { antialias });
-        if (!gl) {
-            throw new Error("Could not acquire webgl2 context");
-        }
         const dpr = window.devicePixelRatio;
         canvas.width = canvas.clientWidth * dpr;
         canvas.height = canvas.clientHeight * dpr;
+        return Device.fromCanvas(canvas, options);
+    }
+    static fromCanvas(canvas, options) {
+        const gl = canvas.getContext("webgl2");
+        if (!gl) {
+            throw new Error("Could not acquire webgl2 context");
+        }
         return Device.fromContext(gl, options);
     }
     static fromContext(gl, { enableEXTColorBufferFloat = false, enableOESTextureFloatLinear = false, } = {}) {

@@ -20,7 +20,7 @@ const GAUSSIAN = [
     0.000229,
 ]
 
-const dev = Device.createAndMount(document.body);
+const dev = Device.mount();
 const [w, h] = [dev.bufferWidth, dev.bufferHeight];
 
 const initialTex = Texture.fromRGBA8(dev, null, w, h);

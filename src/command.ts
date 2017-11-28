@@ -10,11 +10,14 @@ const UNKNOWN_ATTRIB_LOCATION = -1;
 
 export type Color = [number, number, number, number];
 
+export type AccessorOrValue<P, R> = Accessor<P, R> | R;
+export type Accessor<P, R> = (props: P) => R;
+
 export interface CommandProps<P> {
     vert: string;
     frag: string;
-    uniforms?: { [key: string]: Uniform<P> };
     primitive?: Primitive;
+    uniforms?: { [key: string]: Uniform<P> };
     blend?: {
         src: BlendFunction | { rgb: BlendFunction; alpha: BlendFunction };
         dst: BlendFunction | { rgb: BlendFunction; alpha: BlendFunction };
@@ -29,8 +32,15 @@ export interface CommandProps<P> {
     };
 }
 
-export type AccessorOrValue<P, R> = Accessor<P, R> | R;
-export type Accessor<P, R> = (props: P) => R;
+export const enum Primitive {
+    TRIANGLES = "triangles",
+    TRIANGLE_STRIP = "triangle-strip",
+    TRIANGLE_FAN = "triangle-fan",
+    POINTS = "points",
+    LINES = "lines",
+    LINE_STRIP = "line-strip",
+    LINE_LOOP = "line-loop",
+}
 
 export type Uniform<P> =
     | Uniform1f<P> | Uniform1fv<P>
@@ -183,16 +193,6 @@ export interface UniformMatrix4fv<P> {
 export interface UniformTexture<P> {
     type: "texture";
     value: AccessorOrValue<P, Texture>;
-}
-
-export const enum Primitive {
-    TRIANGLES = "triangles",
-    TRIANGLE_STRIP = "triangle-strip",
-    TRIANGLE_FAN = "triangle-fan",
-    POINTS = "points",
-    LINES = "lines",
-    LINE_STRIP = "line-strip",
-    LINE_LOOP = "line-loop",
 }
 
 export const enum BlendFunction {
