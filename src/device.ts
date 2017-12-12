@@ -105,7 +105,7 @@ export class Device {
         if (height !== canvas.height) { canvas.height = height; }
     }
 
-    clearColor(
+    clearColorBuffer(
         r: number,
         g: number,
         b: number,
@@ -119,7 +119,7 @@ export class Device {
         if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
     }
 
-    clearDepth(depth: number, fbo?: Framebuffer): void {
+    clearDepthBuffer(depth: number, fbo?: Framebuffer): void {
         const gl = this.gl;
         if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
         gl.clearDepth(depth);
@@ -127,7 +127,7 @@ export class Device {
         if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
     }
 
-    clearStencil(stencil: number, fbo?: Framebuffer): void {
+    clearStencilBuffer(stencil: number, fbo?: Framebuffer): void {
         const gl = this.gl;
         if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
         gl.clearStencil(stencil);
