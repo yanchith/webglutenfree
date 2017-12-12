@@ -97,12 +97,19 @@ export declare class Texture {
 	static fromArrayBufferView(dev: WebGL2RenderingContext | Device, data: ArrayBufferView | null, width: number, height: number, internalFormat: TextureInternalFormat, format: TextureFormat, type: TextureType, {min, mag, wrapS, wrapT, mipmap}?: TextureOptions): Texture;
 	private constructor();
 }
+export interface FramebufferProps {
+	width: number;
+	height: number;
+	color: Texture | Texture[];
+	depth?: Texture;
+	stencil?: Texture;
+}
 export declare class Framebuffer {
 	readonly glFramebuffer: WebGLFramebuffer;
-	readonly glColorAttachments: number[];
 	readonly width: number;
 	readonly height: number;
-	static create(dev: WebGL2RenderingContext | Device, textures: Texture[]): Framebuffer;
+	readonly glColorAttachments: number[];
+	static create(dev: WebGL2RenderingContext | Device, {width, height, color, depth, stencil}: FramebufferProps): Framebuffer;
 	private constructor();
 }
 export interface DeviceOptions {

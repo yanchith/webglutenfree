@@ -117,8 +117,20 @@ class Device {
     }
 }
 
-function never(x, message) {
-    throw new Error(message || "Unexpected object: " + x);
+function equal(a, b, msg) {
+    if (a !== b) {
+        throw new Error(fmt(msg || `Not equal: ${a} ${b}`));
+    }
+}
+function never(a, msg) {
+    throw new Error(fmt(msg || `Unexpected object: ${a}`));
+}
+
+function fmt(msg) {
+    if (msg) {
+        return `Assertion Failed: ${msg}`;
+    }
+    return `Assertion Failed`;
 }
 
 /*
@@ -253,38 +265,6 @@ function createTexture(gl, data, width, height, internalFormat, format, type, wr
     }
     gl.bindTexture(gl.TEXTURE_2D, null);
     return texture;
-}
-/*
-███████╗██████╗  █████╗ ███╗   ███╗███████╗
-██╔════╝██╔══██╗██╔══██╗████╗ ████║██╔════╝
-█████╗  ██████╔╝███████║██╔████╔██║█████╗
-██╔══╝  ██╔══██╗██╔══██║██║╚██╔╝██║██╔══╝
-██║     ██║  ██║██║  ██║██║ ╚═╝ ██║███████╗
-╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝
-
-██████╗ ██╗   ██╗███████╗███████╗███████╗██████╗
-██╔══██╗██║   ██║██╔════╝██╔════╝██╔════╝██╔══██╗
-██████╔╝██║   ██║█████╗  █████╗  █████╗  ██████╔╝
-██╔══██╗██║   ██║██╔══╝  ██╔══╝  ██╔══╝  ██╔══██╗
-██████╔╝╚██████╔╝██║     ██║     ███████╗██║  ██║
-╚═════╝  ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═╝
-*/
-function createFramebuffer(gl, colorAttachments) {
-    const fbo = gl.createFramebuffer();
-    if (!fbo) {
-        throw new Error("Could not create framebuffer");
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    colorAttachments.forEach((texture, i) => {
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, texture, 0);
-    });
-    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE) {
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        return fbo;
-    }
-    gl.deleteFramebuffer(fbo);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    throw new Error("Framebuffer not complete");
 }
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
@@ -950,20 +930,42 @@ function mapGlTextureType(gl, type) {
 }
 
 class Framebuffer {
-    constructor(glFramebuffer, glColorAttachments, width, height) {
+    constructor(glFramebuffer, width, height, glColorAttachments) {
         this.glFramebuffer = glFramebuffer;
-        this.glColorAttachments = glColorAttachments;
         this.width = width;
         this.height = height;
+        this.glColorAttachments = glColorAttachments;
     }
-    static create(dev, textures) {
+    static create(dev, { width, height, color, depth, stencil }) {
         const gl = dev instanceof Device ? dev.gl : dev;
-        const fbo = createFramebuffer(gl, textures.map(t => t.glTexture));
-        const [width, height] = textures.reduce((accum, curr) => {
-            const [w, h] = accum;
-            return [Math.min(w, curr.width), Math.min(h, curr.height)];
-        }, [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER]);
-        return new Framebuffer(fbo, textures.map((_, i) => gl.COLOR_ATTACHMENT0 + i), width, height);
+        const fbo = gl.createFramebuffer();
+        if (!fbo) {
+            throw new Error("Could not create framebuffer");
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        const colorBuffers = Array.isArray(color) ? color : [color];
+        colorBuffers.forEach((buffer, i) => {
+            equal(width, buffer.width);
+            equal(height, buffer.height);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
+        });
+        if (depth) {
+            equal(width, depth.width);
+            equal(height, depth.height);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depth, 0);
+        }
+        if (stencil) {
+            equal(width, stencil.width);
+            equal(height, stencil.height);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.TEXTURE_2D, stencil, 0);
+        }
+        const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        if (status !== gl.FRAMEBUFFER_COMPLETE) {
+            gl.deleteFramebuffer(fbo);
+            throw new Error("Framebuffer not complete");
+        }
+        return new Framebuffer(fbo, width, height, colorBuffers.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
     }
 }
 

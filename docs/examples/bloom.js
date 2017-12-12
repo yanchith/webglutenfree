@@ -21,20 +21,36 @@ const GAUSSIAN = [
 ]
 
 const dev = Device.mount();
-const [w, h] = [dev.bufferWidth, dev.bufferHeight];
+const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const initialTex = Texture.fromRGBA8(dev, null, w, h);
-const initialFbo = Framebuffer.create(dev, [initialTex]);
+const initialTex = Texture.fromRGBA8(dev, null, width, height);
+const initialFbo = Framebuffer.create(dev, {
+    width,
+    height,
+    color: [initialTex],
+});
 
-const splitColorTex = Texture.fromRGBA8(dev, null, w, h);
-const splitBrightTex = Texture.fromRGBA8(dev, null, w, h);
-const splitFbo = Framebuffer.create(dev, [splitColorTex, splitBrightTex]);
+const splitColorTex = Texture.fromRGBA8(dev, null, width, height);
+const splitBrightTex = Texture.fromRGBA8(dev, null, width, height);
+const splitFbo = Framebuffer.create(dev, {
+    width,
+    height,
+    color: [splitColorTex, splitBrightTex],
+});
 
-const bloomReadTex = Texture.fromRGBA8(dev, null, w, h);
-const bloomReadFbo = Framebuffer.create(dev, [bloomReadTex]);
+const bloomReadTex = Texture.fromRGBA8(dev, null, width, height);
+const bloomReadFbo = Framebuffer.create(dev, {
+    width,
+    height,
+    color: [bloomReadTex],
+});
 
-const bloomWriteTex = Texture.fromRGBA8(dev, null, w, h);
-const bloomWriteFbo = Framebuffer.create(dev, [bloomWriteTex]);
+const bloomWriteTex = Texture.fromRGBA8(dev, null, width, height);
+const bloomWriteFbo = Framebuffer.create(dev, {
+    width,
+    height,
+    color: [bloomWriteTex],
+});
 
 const view = mat4.create();
 
@@ -80,7 +96,7 @@ const scene = Command.create(dev, {
             value: mat4.perspective(
                 mat4.create(),
                 Math.PI / 4,
-                w / h,
+                width / height,
                 0.1,
                 1000.0,
             ),
