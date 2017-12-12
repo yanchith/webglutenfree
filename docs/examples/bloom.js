@@ -62,8 +62,6 @@ const scene = Command.create(dev, {
 
         layout (location = 0) in vec4 a_vertex_position;
 
-        out vec2 v_tex_coord;
-
         void main() {
             gl_Position = u_projection * u_view * u_model * a_vertex_position;
         }
