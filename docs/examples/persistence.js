@@ -1,3 +1,8 @@
+/**
+ * Implemented straight from this excellent talk by Gregg Tavares:
+ * https://www.youtube.com/watch?v=rfQ8rKGTVlg#t=31m42s
+ */
+
 import {
     Device,
     Command,
@@ -6,6 +11,8 @@ import {
     Framebuffer,
 } from "./lib/glutenfree.js";
 import { positions as bunnyPositions, cells as bunnyCells } from "./lib/bunny.js"
+
+const PERSISTENCE_FACTOR = 0.8;
 
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -54,7 +61,7 @@ const draw = Command.create(dev, {
         out vec4 o_color;
 
         void main() {
-            o_color = vec4(0.0, 1.0, 0.0, 0.3);
+            o_color = vec4(0.8, 0.3, 0.7, 1.0);
         }
     `,
     uniforms: {
@@ -85,7 +92,7 @@ const draw = Command.create(dev, {
     blend: {
         src: "constant-alpha",
         dst: "one-minus-constant-alpha",
-        color: [0, 0, 0, 0.2],
+        color: [0, 0, 0, 0.9],
     },
     framebuffer: ({ target }) => target,
 });
@@ -107,28 +114,38 @@ const blend = Command.create(dev, {
     frag: `#version 300 es
         precision mediump float;
 
-        uniform sampler2D u_source;
+        uniform sampler2D u_new_frame, u_ping;
+        uniform float u_blend_factor;
 
         in vec2 v_tex_coord;
 
         layout (location = 0) out vec4 o_color;
 
+        vec4 blend_alpha(vec4 src_color, vec4 dst_color, float factor) {
+            return (src_color * factor) + (dst_color * (1. - factor));
+        }
+
         void main() {
-            o_color = texture(u_source, v_tex_coord);
+            vec4 c1 = texture(u_new_frame, v_tex_coord);
+            vec4 c2 = texture(u_ping, v_tex_coord);
+            o_color = blend_alpha(c2, c1, u_blend_factor);
         }
     `,
     uniforms: {
-        u_source: {
+        u_new_frame: {
             type: "texture",
-            value: ({ source }) => source,
+            value: ({ newFrame }) => newFrame,
+        },
+        u_ping: {
+            type: "texture",
+            value: ({ ping }) => ping,
+        },
+        u_blend_factor: {
+            type: "1f",
+            value: PERSISTENCE_FACTOR,
         }
     },
-    blend: {
-        src: "constant-alpha",
-        dst: "one-minus-constant-alpha",
-        color: [0, 0, 0, 0.5],
-    },
-    framebuffer: ({ target }) => target,
+    framebuffer: ({ pong }) => pong,
 });
 
 const copyToCanvas = Command.create(dev, {
@@ -171,15 +188,15 @@ const bunny = VertexArray.create(dev, draw.locate({
     elements: bunnyCells,
 }));
 
-const screenspace = VertexArray.create(dev, {
+const screenspace = VertexArray.create(dev, blend.locate({
     attributes: {
-        0: [
+        a_vertex_position: [
             [1, 1],
             [-1, 1],
             [1, -1],
             [-1, -1],
         ],
-        1: [
+        a_tex_coord: [
             [1, 1],
             [0, 1],
             [1, 0],
@@ -190,17 +207,14 @@ const screenspace = VertexArray.create(dev, {
         [0, 3, 2],
         [1, 3, 0],
     ],
-});
+}));
 
-dev.clearColorBuffer(0, 0, 0, 1, pingFbo);
-dev.clearColorBuffer(0, 0, 0, 1, pongFbo);
-
-let source = {
+let ping = {
     tex: pingTex,
     fbo: pingFbo,
 }
 
-let target = {
+let pong = {
     tex: pongTex,
     fbo: pongFbo,
 }
@@ -208,13 +222,32 @@ let target = {
 const loop = time => {
     dev.clearColorBuffer(0, 0, 0, 1, newFrameFbo);
     dev.clearColorBuffer(0, 0, 0, 1);
+
+    /*
+
+    By repeating the following process, we gain a buildup of past frame memory
+    in our ping/pong buffers, with an exponential falloff.
+
+    */
+
+    // We first draw the scene to a "newFrame" fbo
     draw.execute(bunny, { time, target: newFrameFbo });
-    blend.execute(screenspace, { source: newFrameTex, target: target.fbo });
-    blend.execute(screenspace, { source: source.tex, target: target.fbo });
-    copyToCanvas.execute(screenspace, { source: target.tex })
-    const tmp = source;
-    source = target;
-    target = tmp;
+
+    // Then blend newFrame and ping to pong proportionate to PERSISTENCE_FACTOR
+    blend.execute(screenspace, {
+        newFrame: newFrameTex,
+        ping: ping.tex,
+        pong: pong.fbo,
+    });
+
+    // Lastly copy the contents of pong to canvas
+    copyToCanvas.execute(screenspace, { source: pong.tex })
+
+    // ... and swap the fbos
+    const tmp = ping;
+    ping = pong;
+    pong = tmp;
+
     window.requestAnimationFrame(loop);
 }
 
