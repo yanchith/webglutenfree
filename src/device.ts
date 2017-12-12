@@ -1,3 +1,5 @@
+import { Framebuffer } from "./framebuffer";
+
 export interface DeviceOptions {
     pixelRatio?: number;
     viewport?: [number, number];
@@ -101,5 +103,53 @@ export class Device {
             || canvas.clientHeight * dpr;
         if (width !== canvas.width) { canvas.width = width; }
         if (height !== canvas.height) { canvas.height = height; }
+    }
+
+    clearColor(
+        r: number,
+        g: number,
+        b: number,
+        a: number,
+        fbo?: Framebuffer,
+    ): void {
+        const gl = this.gl;
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
+        gl.clearColor(r, g, b, a);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
+    }
+
+    clearDepth(depth: number, fbo?: Framebuffer): void {
+        const gl = this.gl;
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
+        gl.clearDepth(depth);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
+    }
+
+    clearStencil(stencil: number, fbo?: Framebuffer): void {
+        const gl = this.gl;
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
+        gl.clearStencil(stencil);
+        gl.clear(gl.STENCIL_BUFFER_BIT);
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
+    }
+
+    clear(
+        r: number,
+        g: number,
+        b: number,
+        a: number,
+        depth: number,
+        stencil: number,
+        fbo?: Framebuffer,
+    ): void {
+        const gl = this.gl;
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
+        gl.clearColor(r, g, b, a);
+        gl.clearDepth(depth);
+        gl.clearStencil(stencil);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
     }
 }

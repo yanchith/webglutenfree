@@ -11,7 +11,7 @@ const UNKNOWN_ATTRIB_LOCATION = -1;
 export type Color = [number, number, number, number];
 
 export type AccessorOrValue<P, R> = Accessor<P, R> | R;
-export type Accessor<P, R> = (props: P) => R;
+export type Accessor<P, R> = (props: P, index: number) => R;
 
 export interface CommandProps<P> {
     vert: string;
@@ -25,11 +25,6 @@ export interface CommandProps<P> {
         color?: Color;
     };
     framebuffer?: AccessorOrValue<P, Framebuffer>;
-    clear?: {
-        color?: Color;
-        depth?: number;
-        stencil?: number;
-    };
 }
 
 export const enum Primitive {
@@ -231,7 +226,6 @@ export class Command<P = void> {
             primitive = Primitive.TRIANGLES,
             blend = false,
             framebuffer,
-            clear,
         }: CommandProps<P>,
     ): Command<P> {
         const gl = dev instanceof Device ? dev.gl : dev;
@@ -293,10 +287,6 @@ export class Command<P = void> {
             ? new FramebufferDescriptor(framebuffer)
             : undefined;
 
-        const clearDescriptor = clear
-            ? new ClearDescriptor(clear.color, clear.depth, clear.stencil)
-            : undefined;
-
         return new Command(
             gl,
             program,
@@ -304,7 +294,6 @@ export class Command<P = void> {
             uniformDescriptors,
             blendDescriptor,
             framebufferDescriptor,
-            clearDescriptor,
         );
     }
 
@@ -315,50 +304,27 @@ export class Command<P = void> {
         private uniformDescriptors: UniformDescriptor<P>[],
         private blendDescriptor?: BlendDescriptor,
         private framebufferDescriptor?: FramebufferDescriptor<P>,
-        private clearDescriptor?: ClearDescriptor,
     ) { }
 
     execute(
-        vao: VertexArray,
+        vao: VertexArray | VertexArray[],
         props: P,
     ): void {
         const { gl, glProgram } = this;
 
         gl.useProgram(glProgram);
-        this.updateUniforms(props);
-        gl.bindVertexArray(vao.glVertexArrayObject);
-
-        let bufferWidth = gl.drawingBufferWidth;
-        let bufferHeight = gl.drawingBufferHeight;
-
-        const framebuffer = this.framebufferDescriptor
-            ? access(props, this.framebufferDescriptor.definition)
-            : undefined;
-
-        if (framebuffer) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glFramebuffer);
-            gl.drawBuffers(framebuffer.glColorAttachments);
-            bufferWidth = framebuffer.width;
-            bufferHeight = framebuffer.height;
-        }
-
-        this.clear();
 
         this.beginBlend();
 
-        gl.viewport(0, 0, bufferWidth, bufferHeight);
-        if (vao.hasElements) {
-            this.drawElements(vao.count, vao.instanceCount);
+        if (Array.isArray(vao)) {
+            vao.forEach((v, i) => this.executeInner(v, props, i));
         } else {
-            this.drawArrays(vao.count, vao.instanceCount);
+            this.executeInner(vao, props, 0);
         }
 
         this.endBlend();
 
-        if (framebuffer) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        }
-
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.bindVertexArray(null);
     }
 
@@ -379,6 +345,38 @@ export class Command<P = void> {
                 return accum;
             }, {});
         return { attributes: locatedAttributes, elements };
+    }
+
+    private executeInner(
+        vao: VertexArray,
+        props: P,
+        index: number,
+    ): void {
+        const gl = this.gl;
+
+        let bufferWidth = gl.drawingBufferWidth;
+        let bufferHeight = gl.drawingBufferHeight;
+
+        const fbo = this.framebufferDescriptor
+            ? access(props, index, this.framebufferDescriptor.definition)
+            : undefined;
+
+        if (fbo) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer);
+            gl.drawBuffers(fbo.glColorAttachments);
+            bufferWidth = fbo.width;
+            bufferHeight = fbo.height;
+        }
+        gl.viewport(0, 0, bufferWidth, bufferHeight);
+
+        this.updateUniforms(props, index);
+
+        gl.bindVertexArray(vao.glVertexArrayObject);
+        if (vao.hasElements) {
+            this.drawElements(vao.count, vao.instanceCount);
+        } else {
+            this.drawArrays(vao.count, vao.instanceCount);
+        }
     }
 
     private beginBlend(): void {
@@ -405,29 +403,6 @@ export class Command<P = void> {
     private endBlend(): void {
         const { gl, blendDescriptor } = this;
         if (blendDescriptor) { gl.disable(gl.BLEND); }
-    }
-
-    private clear(): void {
-        const { gl, clearDescriptor } = this;
-        if (clearDescriptor) {
-            let clearBits = 0 | 0;
-            if (typeof clearDescriptor.color !== "undefined") {
-                const [r, g, b, a] = clearDescriptor.color;
-                gl.clearColor(r, g, b, a);
-                clearBits |= gl.COLOR_BUFFER_BIT;
-            }
-            if (typeof clearDescriptor.depth !== "undefined") {
-                gl.clearDepth(clearDescriptor.depth);
-                clearBits |= gl.DEPTH_BUFFER_BIT;
-            }
-            if (typeof clearDescriptor.stencil !== "undefined") {
-                gl.clearStencil(clearDescriptor.stencil);
-                clearBits |= gl.STENCIL_BUFFER_BIT;
-            }
-            if (clearBits) {
-                gl.clear(clearBits);
-            }
-        }
     }
 
     private drawArrays(count: number, instCount: number): void {
@@ -459,7 +434,7 @@ export class Command<P = void> {
         }
     }
 
-    private updateUniforms(props: P): void {
+    private updateUniforms(props: P, index: number): void {
         const gl = this.gl;
 
         let textureUnitOffset = 0;
@@ -471,107 +446,119 @@ export class Command<P = void> {
         }) => {
             switch (def.type) {
                 case "1f":
-                    gl.uniform1f(loc, access(props, def.value));
+                    gl.uniform1f(loc, access(props, index, def.value));
                     break;
                 case "1fv":
-                    gl.uniform1fv(loc, access(props, def.value));
+                    gl.uniform1fv(loc, access(props, index, def.value));
                     break;
                 case "1i":
-                    gl.uniform1i(loc, access(props, def.value));
+                    gl.uniform1i(loc, access(props, index, def.value));
                     break;
                 case "1iv":
-                    gl.uniform1iv(loc, access(props, def.value));
+                    gl.uniform1iv(loc, access(props, index, def.value));
                     break;
                 case "1ui":
-                    gl.uniform1ui(loc, access(props, def.value));
+                    gl.uniform1ui(loc, access(props, index, def.value));
                     break;
                 case "1uiv":
-                    gl.uniform1uiv(loc, access(props, def.value));
+                    gl.uniform1uiv(loc, access(props, index, def.value));
                     break;
                 case "2f": {
-                    const [x, y] = access(props, def.value);
+                    const [x, y] = access(props, index, def.value);
                     gl.uniform2f(loc, x, y);
                     break;
                 }
                 case "2fv":
-                    gl.uniform2fv(loc, access(props, def.value));
+                    gl.uniform2fv(loc, access(props, index, def.value));
                     break;
                 case "2i": {
-                    const [x, y] = access(props, def.value);
+                    const [x, y] = access(props, index, def.value);
                     gl.uniform2i(loc, x, y);
                     break;
                 }
                 case "2iv":
-                    gl.uniform2iv(loc, access(props, def.value));
+                    gl.uniform2iv(loc, access(props, index, def.value));
                     break;
                 case "2ui": {
-                    const [x, y] = access(props, def.value);
+                    const [x, y] = access(props, index, def.value);
                     gl.uniform2ui(loc, x, y);
                     break;
                 }
                 case "2uiv":
-                    gl.uniform2uiv(loc, access(props, def.value));
+                    gl.uniform2uiv(loc, access(props, index, def.value));
                     break;
                 case "3f": {
-                    const [x, y, z] = access(props, def.value);
+                    const [x, y, z] = access(props, index, def.value);
                     gl.uniform3f(loc, x, y, z);
                     break;
                 }
                 case "3fv":
-                    gl.uniform3fv(loc, access(props, def.value));
+                    gl.uniform3fv(loc, access(props, index, def.value));
                     break;
                 case "3i": {
-                    const [x, y, z] = access(props, def.value);
+                    const [x, y, z] = access(props, index, def.value);
                     gl.uniform3i(loc, x, y, z);
                     break;
                 }
                 case "3iv":
-                    gl.uniform3iv(loc, access(props, def.value));
+                    gl.uniform3iv(loc, access(props, index, def.value));
                     break;
                 case "3ui": {
-                    const [x, y, z] = access(props, def.value);
+                    const [x, y, z] = access(props, index, def.value);
                     gl.uniform3ui(loc, x, y, z);
                     break;
                 }
                 case "3uiv":
-                    gl.uniform3uiv(loc, access(props, def.value));
+                    gl.uniform3uiv(loc, access(props, index, def.value));
                     break;
                 case "4f": {
-                    const [x, y, z, w] = access(props, def.value);
+                    const [x, y, z, w] = access(props, index, def.value);
                     gl.uniform4f(loc, x, y, z, w);
                     break;
                 }
                 case "4fv":
-                    gl.uniform4fv(loc, access(props, def.value));
+                    gl.uniform4fv(loc, access(props, index, def.value));
                     break;
                 case "4i": {
-                    const [x, y, z, w] = access(props, def.value);
+                    const [x, y, z, w] = access(props, index, def.value);
                     gl.uniform4i(loc, x, y, z, w);
                     break;
                 }
                 case "4iv":
-                    gl.uniform4iv(loc, access(props, def.value));
+                    gl.uniform4iv(loc, access(props, index, def.value));
                     break;
                 case "4ui": {
-                    const [x, y, z, w] = access(props, def.value);
+                    const [x, y, z, w] = access(props, index, def.value);
                     gl.uniform4ui(loc, x, y, z, w);
                     break;
                 }
                 case "4uiv":
-                    gl.uniform4uiv(loc, access(props, def.value));
+                    gl.uniform4uiv(loc, access(props, index, def.value));
                     break;
                 case "matrix2fv":
-                    gl.uniformMatrix2fv(loc, false, access(props, def.value));
+                    gl.uniformMatrix2fv(
+                        loc,
+                        false,
+                        access(props, index, def.value),
+                    );
                     break;
                 case "matrix3fv":
-                    gl.uniformMatrix3fv(loc, false, access(props, def.value));
+                    gl.uniformMatrix3fv(
+                        loc,
+                        false,
+                        access(props, index, def.value),
+                    );
                     break;
                 case "matrix4fv":
-                    gl.uniformMatrix4fv(loc, false, access(props, def.value));
+                    gl.uniformMatrix4fv(
+                        loc,
+                        false,
+                        access(props, index, def.value),
+                    );
                     break;
                 case "texture":
                     // TODO: is this the best way? (is it fast? can we cache?)
-                    const texture = access(props, def.value);
+                    const texture = access(props, index, def.value);
                     const currentTexture = textureUnitOffset++;
                     gl.activeTexture(gl.TEXTURE0 + currentTexture);
                     gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
@@ -585,8 +572,12 @@ export class Command<P = void> {
     }
 }
 
-function access<P, R>(props: P, value: ((props: P) => R) | R): R {
-    return typeof value === "function" ? value(props) : value;
+function access<P, R>(
+    props: P,
+    index: number,
+    value: ((props: P, index: number) => R) | R,
+): R {
+    return typeof value === "function" ? value(props, index) : value;
 }
 
 class BlendDescriptor {
@@ -603,14 +594,6 @@ class BlendDescriptor {
 
 class FramebufferDescriptor<P> {
     constructor(readonly definition: AccessorOrValue<P, Framebuffer>) { }
-}
-
-class ClearDescriptor {
-    constructor(
-        readonly color?: [number, number, number, number],
-        readonly depth?: number,
-        readonly stencil?: number,
-    ) { }
 }
 
 class UniformDescriptor<P> {
