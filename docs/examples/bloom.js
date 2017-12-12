@@ -27,7 +27,7 @@ const initialTex = Texture.fromRGBA8(dev, null, width, height);
 const initialFbo = Framebuffer.create(dev, {
     width,
     height,
-    color: [initialTex],
+    color: initialTex,
 });
 
 const splitColorTex = Texture.fromRGBA8(dev, null, width, height);
@@ -38,18 +38,18 @@ const splitFbo = Framebuffer.create(dev, {
     color: [splitColorTex, splitBrightTex],
 });
 
-const bloomReadTex = Texture.fromRGBA8(dev, null, width, height);
-const bloomReadFbo = Framebuffer.create(dev, {
+const bloomPingTex = Texture.fromRGBA8(dev, null, width, height);
+const bloomPingFbo = Framebuffer.create(dev, {
     width,
     height,
-    color: [bloomReadTex],
+    color: bloomPingTex,
 });
 
-const bloomWriteTex = Texture.fromRGBA8(dev, null, width, height);
-const bloomWriteFbo = Framebuffer.create(dev, {
+const bloomPongTex = Texture.fromRGBA8(dev, null, width, height);
+const bloomPongFbo = Framebuffer.create(dev, {
     width,
     height,
-    color: [bloomWriteTex],
+    color: bloomPongTex,
 });
 
 const view = mat4.create();
@@ -304,7 +304,7 @@ const tonemap = Command.create(dev, {
         },
         u_image_bloom: {
             type: "texture",
-            value: bloomReadTex,
+            value: bloomPingTex,
         },
     },
 });
@@ -352,25 +352,25 @@ const loop = time => {
         bloom.execute(screenspace, {
             texture: splitBrightTex,
             direction: HORIZONTAL,
-            fbo: bloomWriteFbo,
+            fbo: bloomPongFbo,
         });
         bloom.execute(screenspace, {
-            texture: bloomWriteTex,
+            texture: bloomPongTex,
             direction: VERTICAL,
-            fbo: bloomReadFbo,
+            fbo: bloomPingFbo,
         });
 
         // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
         for (let i = 1; i < nBloomPasses; i++) {
             bloom.execute(screenspace, {
-                texture: bloomReadTex,
+                texture: bloomPingTex,
                 direction: HORIZONTAL,
-                fbo: bloomWriteFbo,
+                fbo: bloomPongFbo,
             });
             bloom.execute(screenspace, {
-                texture: bloomWriteTex,
+                texture: bloomPongTex,
                 direction: VERTICAL,
-                fbo: bloomReadFbo,
+                fbo: bloomPingFbo,
             });
         }
     }

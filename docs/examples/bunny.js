@@ -2,7 +2,7 @@ import { Device, Command, VertexArray } from "./lib/glutenfree.js";
 import { positions as bunnyPositions, cells as bunnyCells } from "./lib/bunny.js"
 
 const dev = Device.mount();
-const [w, h] = [dev.bufferWidth, dev.bufferHeight];
+const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const view = mat4.create();
 
@@ -36,7 +36,7 @@ const cmd = Command.create(dev, {
             value: mat4.perspective(
                 mat4.create(),
                 Math.PI / 4,
-                w / h,
+                width / height,
                 0.1,
                 1000.0,
             ),

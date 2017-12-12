@@ -1,7 +1,7 @@
 import { Device, Command, VertexArray } from "./lib/glutenfree.js";
 
 const dev = Device.mount();
-const [w, h] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
+const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
 const cmd = Command.create(dev, {
     vert: `#version 300 es
@@ -46,10 +46,10 @@ const cmd = Command.create(dev, {
             type: "matrix4fv",
             value: mat4.ortho(
                 mat4.create(),
-                -w / 2,
-                w / 2,
-                -h / 2,
-                h / 2,
+                -width / 2,
+                width / 2,
+                -height / 2,
+                height / 2,
                 -0.1,
                 1000.0,
             ),
