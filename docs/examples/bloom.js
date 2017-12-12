@@ -336,9 +336,10 @@ const HORIZONTAL = vec2.fromValues(1, 0);
 const VERTICAL = vec2.fromValues(0, 1);
 
 const loop = time => {
-    // We only need to clear the initial fbo, as we always overwrite the others
-    // completely
-    dev.clearColorBuffer(0, 0, 0, 1, initialFbo)
+    // We only need to clear the initial fbo and the BACK buffer, as we always
+    // overwrite the others completely
+    dev.clearColorBuffer(0, 0, 0, 1);
+    dev.clearColorBuffer(0, 0, 0, 1, initialFbo);
 
     // Render geometry into texture
     scene.execute(cube, time);
