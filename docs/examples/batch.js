@@ -36,7 +36,7 @@ const cmd = Command.create(dev, {
     uniforms: {
         u_model: {
             type: "matrix4fv",
-            value: model => model,
+            value: (props, i) => props[i],
         },
         u_view: {
             type: "matrix4fv",
@@ -99,5 +99,7 @@ const squareModelMatrix = mat4.fromTranslation(mat4.create(), [-200, 0, 0]);
 mat4.scale(triangleModelMatrix, triangleModelMatrix, [500, 500, 1]);
 mat4.scale(squareModelMatrix, squareModelMatrix, [500, 500, 1]);
 
-cmd.execute(triangle, triangleModelMatrix);
-cmd.execute(square, squareModelMatrix);
+cmd.execute(
+    [triangle, square],
+    [triangleModelMatrix, squareModelMatrix],
+);

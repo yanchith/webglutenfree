@@ -60,9 +60,6 @@ const cmd = Command.create(dev, {
             value: () => mat4.rotateZ(view, view, 0.01),
         },
     },
-    clear: {
-        color: [0, 0, 0, 1],
-    }
 });
 
 const instanced = VertexArray.create(dev, cmd.locate({
@@ -118,6 +115,7 @@ const instanced = VertexArray.create(dev, cmd.locate({
 }));
 
 const loop = time => {
+    dev.clearColorBuffer(0, 0, 0, 1);
     cmd.execute(instanced);
     window.requestAnimationFrame(loop);
 }

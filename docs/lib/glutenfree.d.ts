@@ -1,132 +1,5 @@
 /// <reference types="webgl2" />
 
-export interface DeviceOptions {
-	pixelRatio?: number;
-	viewport?: [number, number];
-	extensions?: Extension[];
-}
-export declare const enum Extension {
-	EXTColorBufferFloat = "EXT_color_buffer_float",
-	OESTextureFloatLinear = "OES_texture_float_linear",
-}
-export declare class Device {
-	readonly gl: WebGL2RenderingContext;
-	readonly canvas: HTMLCanvasElement;
-	private explicitPixelRatio;
-	private explicitViewport;
-	static mount(element?: HTMLElement, options?: DeviceOptions): Device;
-	static fromCanvas(canvas: HTMLCanvasElement, options?: DeviceOptions): Device;
-	static fromContext(gl: WebGL2RenderingContext, {pixelRatio, viewport, extensions}?: DeviceOptions): Device;
-	private constructor();
-	readonly bufferWidth: number;
-	readonly bufferHeight: number;
-	readonly canvasWidth: number;
-	readonly canvasHeight: number;
-	readonly canvasCSSWidth: number;
-	readonly canvasCSSHeight: number;
-	readonly pixelRatio: number;
-	update(): void;
-}
-export declare type VertexBufferType = VertexBufferProps["type"];
-export declare type VertexBufferProps = VertexBufferInt8Props | VertexBufferInt16Props | VertexBufferInt32Props | VertexBufferUint8Props | VertexBufferUint16Props | VertexBufferUint32Props | VertexBufferFloat32Props;
-export interface VertexBufferInt8Props {
-	type: "i8";
-	data: number[] | Int8Array;
-}
-export interface VertexBufferInt16Props {
-	type: "i16";
-	data: number[] | Int16Array;
-}
-export interface VertexBufferInt32Props {
-	type: "i32";
-	data: number[] | Int32Array;
-}
-export interface VertexBufferUint8Props {
-	type: "u8";
-	data: number[] | Uint8Array | Uint8ClampedArray;
-}
-export interface VertexBufferUint16Props {
-	type: "u16";
-	data: number[] | Uint16Array;
-}
-export interface VertexBufferUint32Props {
-	type: "u32";
-	data: number[] | Uint32Array;
-}
-export interface VertexBufferFloat32Props {
-	type: "f32";
-	data: number[] | Float32Array;
-}
-export declare class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
-	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferInt8Props): VertexBuffer<"i8">;
-	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferInt16Props): VertexBuffer<"i16">;
-	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferInt32Props): VertexBuffer<"i32">;
-	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferUint8Props): VertexBuffer<"u8">;
-	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferUint16Props): VertexBuffer<"u16">;
-	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferUint32Props): VertexBuffer<"u32">;
-	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferFloat32Props): VertexBuffer<"f32">;
-	static fromInt8Array(dev: WebGL2RenderingContext | Device, data: number[] | Int8Array): VertexBuffer<"i8">;
-	static fromInt16Array(dev: WebGL2RenderingContext | Device, data: number[] | Int16Array): VertexBuffer<"i16">;
-	static fromInt32Array(dev: WebGL2RenderingContext | Device, data: number[] | Int32Array): VertexBuffer<"i32">;
-	static fromUint8Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint8Array | Uint8ClampedArray): VertexBuffer<"u8">;
-	static fromUint16Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint16Array): VertexBuffer<"u16">;
-	static fromUint32Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint32Array): VertexBuffer<"u32">;
-	static fromFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array): VertexBuffer<"f32">;
-	readonly gl: WebGL2RenderingContext;
-	readonly type: T;
-	readonly glType: number;
-	readonly glBuffer: WebGLBuffer;
-	private constructor();
-}
-export declare type ElementBufferProps = ElementBufferArrayProps | ElementBufferObjectProps;
-export interface ElementBufferObjectProps {
-	type: "u32";
-	data: number[] | Uint32Array;
-}
-export declare type ElementBufferArrayProps = number[] | [number, number][] | [number, number, number][];
-export declare class ElementBuffer {
-	readonly glBuffer: WebGLBuffer;
-	readonly count: number;
-	static create(dev: WebGL2RenderingContext | Device, props: ElementBufferProps): ElementBuffer;
-	static fromArray(dev: WebGL2RenderingContext | Device, data: ElementBufferArrayProps): ElementBuffer;
-	static fromUint32Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint32Array): ElementBuffer;
-	private constructor();
-}
-export declare type Attribute = AttributeArray | AttributeObject;
-export declare type AttributeArray = number[] | [number, number][] | [number, number, number][] | [number, number, number, number][];
-export declare type AttributeObject = AttributePointer | AttributeIPointer;
-export interface AttributePointer {
-	type: "pointer";
-	value: VertexBuffer | PointerValue;
-	count: number;
-	size: number;
-	normalized?: boolean;
-	divisor?: number;
-}
-export interface AttributeIPointer {
-	type: "ipointer";
-	value: VertexBuffer<IPointerValue["type"]> | IPointerValue;
-	count: number;
-	size: number;
-	divisor?: number;
-}
-export declare type PointerValue = VertexBufferProps;
-export declare type IPointerValue = VertexBufferInt8Props | VertexBufferInt16Props | VertexBufferInt32Props | VertexBufferUint8Props | VertexBufferUint16Props | VertexBufferUint32Props;
-export interface VertexArrayProps {
-	attributes: {
-		[name: string]: Attribute;
-		[location: number]: Attribute;
-	};
-	elements?: ElementBuffer | ElementBufferProps;
-}
-export declare class VertexArray {
-	readonly glVertexArrayObject: WebGLVertexArrayObject;
-	readonly hasElements: boolean;
-	readonly count: number;
-	readonly instanceCount: number;
-	static create(dev: WebGL2RenderingContext | Device, {attributes, elements}: VertexArrayProps): VertexArray;
-	private constructor();
-}
 export interface TextureOptions {
 	min?: MinFilter;
 	mag?: MagFilter;
@@ -232,9 +105,140 @@ export declare class Framebuffer {
 	static create(dev: WebGL2RenderingContext | Device, textures: Texture[]): Framebuffer;
 	private constructor();
 }
+export interface DeviceOptions {
+	pixelRatio?: number;
+	viewport?: [number, number];
+	extensions?: Extension[];
+}
+export declare const enum Extension {
+	EXTColorBufferFloat = "EXT_color_buffer_float",
+	OESTextureFloatLinear = "OES_texture_float_linear",
+}
+export declare class Device {
+	readonly gl: WebGL2RenderingContext;
+	readonly canvas: HTMLCanvasElement;
+	private explicitPixelRatio;
+	private explicitViewport;
+	static mount(element?: HTMLElement, options?: DeviceOptions): Device;
+	static fromCanvas(canvas: HTMLCanvasElement, options?: DeviceOptions): Device;
+	static fromContext(gl: WebGL2RenderingContext, {pixelRatio, viewport, extensions}?: DeviceOptions): Device;
+	private constructor();
+	readonly bufferWidth: number;
+	readonly bufferHeight: number;
+	readonly canvasWidth: number;
+	readonly canvasHeight: number;
+	readonly canvasCSSWidth: number;
+	readonly canvasCSSHeight: number;
+	readonly pixelRatio: number;
+	update(): void;
+	clearColorBuffer(r: number, g: number, b: number, a: number, fbo?: Framebuffer): void;
+	clearDepthBuffer(depth: number, fbo?: Framebuffer): void;
+	clearStencilBuffer(stencil: number, fbo?: Framebuffer): void;
+	clear(r: number, g: number, b: number, a: number, depth: number, stencil: number, fbo?: Framebuffer): void;
+}
+export declare type VertexBufferType = VertexBufferProps["type"];
+export declare type VertexBufferProps = VertexBufferInt8Props | VertexBufferInt16Props | VertexBufferInt32Props | VertexBufferUint8Props | VertexBufferUint16Props | VertexBufferUint32Props | VertexBufferFloat32Props;
+export interface VertexBufferInt8Props {
+	type: "i8";
+	data: number[] | Int8Array;
+}
+export interface VertexBufferInt16Props {
+	type: "i16";
+	data: number[] | Int16Array;
+}
+export interface VertexBufferInt32Props {
+	type: "i32";
+	data: number[] | Int32Array;
+}
+export interface VertexBufferUint8Props {
+	type: "u8";
+	data: number[] | Uint8Array | Uint8ClampedArray;
+}
+export interface VertexBufferUint16Props {
+	type: "u16";
+	data: number[] | Uint16Array;
+}
+export interface VertexBufferUint32Props {
+	type: "u32";
+	data: number[] | Uint32Array;
+}
+export interface VertexBufferFloat32Props {
+	type: "f32";
+	data: number[] | Float32Array;
+}
+export declare class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferInt8Props): VertexBuffer<"i8">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferInt16Props): VertexBuffer<"i16">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferInt32Props): VertexBuffer<"i32">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferUint8Props): VertexBuffer<"u8">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferUint16Props): VertexBuffer<"u16">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferUint32Props): VertexBuffer<"u32">;
+	static create(dev: WebGL2RenderingContext | Device, props: VertexBufferFloat32Props): VertexBuffer<"f32">;
+	static fromInt8Array(dev: WebGL2RenderingContext | Device, data: number[] | Int8Array): VertexBuffer<"i8">;
+	static fromInt16Array(dev: WebGL2RenderingContext | Device, data: number[] | Int16Array): VertexBuffer<"i16">;
+	static fromInt32Array(dev: WebGL2RenderingContext | Device, data: number[] | Int32Array): VertexBuffer<"i32">;
+	static fromUint8Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint8Array | Uint8ClampedArray): VertexBuffer<"u8">;
+	static fromUint16Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint16Array): VertexBuffer<"u16">;
+	static fromUint32Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint32Array): VertexBuffer<"u32">;
+	static fromFloat32Array(dev: WebGL2RenderingContext | Device, data: number[] | Float32Array): VertexBuffer<"f32">;
+	readonly gl: WebGL2RenderingContext;
+	readonly type: T;
+	readonly glType: number;
+	readonly glBuffer: WebGLBuffer;
+	private constructor();
+}
+export declare type ElementBufferProps = ElementBufferArrayProps | ElementBufferObjectProps;
+export interface ElementBufferObjectProps {
+	type: "u32";
+	data: number[] | Uint32Array;
+}
+export declare type ElementBufferArrayProps = number[] | [number, number][] | [number, number, number][];
+export declare class ElementBuffer {
+	readonly glBuffer: WebGLBuffer;
+	readonly count: number;
+	static create(dev: WebGL2RenderingContext | Device, props: ElementBufferProps): ElementBuffer;
+	static fromArray(dev: WebGL2RenderingContext | Device, data: ElementBufferArrayProps): ElementBuffer;
+	static fromUint32Array(dev: WebGL2RenderingContext | Device, data: number[] | Uint32Array): ElementBuffer;
+	private constructor();
+}
+export declare type Attribute = AttributeArray | AttributeObject;
+export declare type AttributeArray = number[] | [number, number][] | [number, number, number][] | [number, number, number, number][];
+export declare type AttributeObject = AttributePointer | AttributeIPointer;
+export interface AttributePointer {
+	type: "pointer";
+	value: VertexBuffer | PointerValue;
+	count: number;
+	size: number;
+	normalized?: boolean;
+	divisor?: number;
+}
+export interface AttributeIPointer {
+	type: "ipointer";
+	value: VertexBuffer<IPointerValue["type"]> | IPointerValue;
+	count: number;
+	size: number;
+	divisor?: number;
+}
+export declare type PointerValue = VertexBufferProps;
+export declare type IPointerValue = VertexBufferInt8Props | VertexBufferInt16Props | VertexBufferInt32Props | VertexBufferUint8Props | VertexBufferUint16Props | VertexBufferUint32Props;
+export interface VertexArrayProps {
+	attributes: {
+		[name: string]: Attribute;
+		[location: number]: Attribute;
+	};
+	elements?: ElementBuffer | ElementBufferProps;
+}
+export declare class VertexArray {
+	readonly glVertexArrayObject: WebGLVertexArrayObject;
+	readonly hasElements: boolean;
+	readonly count: number;
+	readonly instanceCount: number;
+	static create(dev: WebGL2RenderingContext | Device, {attributes, elements}: VertexArrayProps): VertexArray;
+	private constructor();
+}
 export declare type Color = [number, number, number, number];
 export declare type AccessorOrValue<P, R> = Accessor<P, R> | R;
-export declare type Accessor<P, R> = (props: P) => R;
+export declare type Accessor<P, R> = (props: P, index: number) => R;
 export interface CommandProps<P> {
 	vert: string;
 	frag: string;
@@ -258,11 +262,6 @@ export interface CommandProps<P> {
 		color?: Color;
 	};
 	framebuffer?: AccessorOrValue<P, Framebuffer>;
-	clear?: {
-		color?: Color;
-		depth?: number;
-		stencil?: number;
-	};
 }
 export declare const enum Primitive {
 	TRIANGLES = "triangles",
@@ -416,17 +415,16 @@ export declare class Command<P = void> {
 	private uniformDescriptors;
 	private blendDescriptor;
 	private framebufferDescriptor;
-	private clearDescriptor;
-	static create<P = void>(dev: WebGL2RenderingContext | Device, {vert, frag, uniforms, primitive, blend, framebuffer, clear}: CommandProps<P>): Command<P>;
+	static create<P = void>(dev: WebGL2RenderingContext | Device, {vert, frag, uniforms, primitive, blend, framebuffer}: CommandProps<P>): Command<P>;
 	private constructor();
-	execute(vao: VertexArray, props: P): void;
+	execute(vao: VertexArray | VertexArray[], props: P): void;
 	locate({attributes, elements}: VertexArrayProps): VertexArrayProps;
+	private executeInner(vao, props, index);
 	private beginBlend();
 	private endBlend();
-	private clear();
 	private drawArrays(count, instCount);
 	private drawElements(count, instCount);
-	private updateUniforms(props);
+	private updateUniforms(props, index);
 }
 
 export as namespace glutenfree;

@@ -60,9 +60,6 @@ const cmd = Command.create(dev, {
         dst: "one-minus-constant-alpha",
         color: [0, 0, 0, 0.2],
     },
-    clear: {
-        color: [0, 0, 0, 1],
-    }
 });
 
 const bunny = VertexArray.create(dev, cmd.locate({
@@ -71,6 +68,7 @@ const bunny = VertexArray.create(dev, cmd.locate({
 }));
 
 const loop = time => {
+    dev.clearColorBuffer(0, 0, 0, 1);
     cmd.execute(bunny, time);
     window.requestAnimationFrame(loop);
 }
