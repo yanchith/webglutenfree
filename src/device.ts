@@ -17,11 +17,13 @@ export class Device {
         element: HTMLElement = document.body,
         options?: DeviceOptions,
     ): Device {
+        if (element instanceof HTMLCanvasElement) {
+            return Device.fromCanvas(element, options);
+        }
+
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        const dev = Device.fromCanvas(canvas, options);
-        dev.update();
-        return dev;
+        return Device.fromCanvas(canvas, options);
     }
 
     static fromCanvas(
@@ -49,12 +51,14 @@ export class Device {
             });
         }
 
-        return new Device(
+        const dev = new Device(
             gl,
             gl.canvas,
             pixelRatio,
             viewport,
         );
+        dev.update();
+        return dev;
     }
 
     private constructor(

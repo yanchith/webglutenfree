@@ -6,11 +6,12 @@ class Device {
         this.explicitViewport = explicitViewport;
     }
     static mount(element = document.body, options) {
+        if (element instanceof HTMLCanvasElement) {
+            return Device.fromCanvas(element, options);
+        }
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        const dev = Device.fromCanvas(canvas, options);
-        dev.update();
-        return dev;
+        return Device.fromCanvas(canvas, options);
     }
     static fromCanvas(canvas, options) {
         const gl = canvas.getContext("webgl2");
@@ -27,7 +28,9 @@ class Device {
                 }
             });
         }
-        return new Device(gl, gl.canvas, pixelRatio, viewport);
+        const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
+        dev.update();
+        return dev;
     }
     get bufferWidth() {
         return this.gl.drawingBufferWidth;
