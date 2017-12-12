@@ -89,11 +89,6 @@ const draw = Command.create(dev, {
             ),
         },
     },
-    blend: {
-        src: "constant-alpha",
-        dst: "one-minus-constant-alpha",
-        color: [0, 0, 0, 0.9],
-    },
     framebuffer: ({ target }) => target,
 });
 
