@@ -4,7 +4,7 @@ import {
     VertexArray,
     Texture,
     Framebuffer,
-} from "./lib/glutenfree.js";
+} from "./lib/glutenfree.es.min.js";
 
 const N_BLOOM_PASSES = 3;
 

@@ -1,4 +1,4 @@
-import { Device, Command, VertexArray } from "./lib/glutenfree.js";
+import { Device, Command, VertexArray } from "./lib/glutenfree.es.min.js";
 
 const dev = Device.mount();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];

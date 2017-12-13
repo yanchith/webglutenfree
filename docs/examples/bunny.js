@@ -1,4 +1,4 @@
-import { Device, Command, VertexArray } from "./lib/glutenfree.js";
+import { Device, Command, VertexArray } from "./lib/glutenfree.es.min.js";
 import { positions as bunnyPositions, cells as bunnyCells } from "./lib/bunny.js"
 
 const dev = Device.mount();

@@ -3,7 +3,7 @@ import {
     Command,
     VertexArray,
     Texture,
-} from "./lib/glutenfree.js";
+} from "./lib/glutenfree.es.min.js";
 import { loadImage } from "./lib/load-image.js";
 
 const kernels = {

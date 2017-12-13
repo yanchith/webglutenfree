@@ -5,7 +5,7 @@
   "author": "yanchith",
   "license": "MIT",
   "main": "dist/glutenfree.umd.js",
-  "module": "dist/glutenfree.js",
+  "module": "dist/glutenfree.es.js",
   "types": "dist/glutenfree.d.ts",
   "scripts": {
     "serve": "http-server docs -p 8000",
@@ -15,13 +15,15 @@
     "build:watch": "tsc --outDir build --watch",
     "tslint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
     "predist": "rimraf dist",
-    "dist": "yarn dist:esm && yarn dist:umd && yarn dist:dts && yarn dist:demolib",
-    "dist:esm": "rollup --config",
-    "dist:umd": "rollup --config rollup.config.umd.js",
+    "dist": "yarn dist:esm && yarn dist:umd && yarn dist:esm:prod && yarn dist:umd:prod && yarn dist:dts && yarn dist:demolib",
+    "dist:esm": "FORMAT=es rollup --config",
+    "dist:esm:prod": "NODE_ENV=production FORMAT=es rollup --config",
+    "dist:umd": "FORMAT=umd rollup --config",
+    "dist:umd:prod": "NODE_ENV=production FORMAT=umd rollup --config",
     "dist:dts": "dts-bundle-generator src/index.ts -o dist/glutenfree.d.ts --umd-module-name glutenfree",
     "dist:demolib": "yarn __rmdemolib && yarn __cpdemolib",
-    "__rmdemolib": "rm docs/lib/glutenfree.{js,js.map,d.ts}",
-    "__cpdemolib": "cp dist/glutenfree.{js,js.map,d.ts} docs/lib",
+    "__rmdemolib": "rm docs/lib/glutenfree.{es.min.js,es.min.js.map}",
+    "__cpdemolib": "cp dist/glutenfree.{es.min.js,es.min.js.map} docs/lib",
     "clean": "rimraf dist"
   },
   "devDependencies": {
@@ -30,7 +32,10 @@
     "http-server": "^0.10.0",
     "rimraf": "^2.6.2",
     "rollup": "^0.50.1",
+    "rollup-plugin-replace": "^2.0.0",
+    "rollup-plugin-uglify": "^2.0.1",
     "tslint": "^5.8.0",
-    "typescript": "^2.6.1"
+    "typescript": "^2.6.1",
+    "uglify-es": "^3.2.2"
   }
 }

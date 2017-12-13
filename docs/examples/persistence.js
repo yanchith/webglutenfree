@@ -9,7 +9,7 @@ import {
     VertexArray,
     Texture,
     Framebuffer,
-} from "./lib/glutenfree.js";
+} from "./lib/glutenfree.es.min.js";
 import { positions as bunnyPositions, cells as bunnyCells } from "./lib/bunny.js"
 
 const PERSISTENCE_FACTOR = 0.8;
