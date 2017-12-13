@@ -130,17 +130,35 @@
             editor.setValue(code);
         }
 
+        function hashToPath(hash) {
+            return `./examples/${hash.substring(1)}.js`
+        }
+
+        function pathToHash(path) {
+            const trimExample = path.substring(11);
+            const trimJs = trimExample.substring(0, trimExample.length - 3);
+            return `#${trimJs}`;
+        }
+
         menuElem.addEventListener("click", ev => {
             if (ev.target.dataset.href) {
                 document.querySelectorAll(".selected")
                     .forEach(elem => elem.classList.remove("selected"))
                 ev.target.classList.add("selected");
-                fetchExample(ev.target.dataset.href);
+                const href = ev.target.dataset.href;
+                window.location.hash = pathToHash(href);
+                fetchExample(href);
+
             }
             ev.preventDefault();
         }, true);
 
-        fetchExample("./examples/triangle.js");
+        const hash = window.location.hash;
+        if (hash) {
+            fetchExample(hashToPath(hash));
+        } else {
+            fetchExample("./examples/triangle.js");
+        }
     </script>
 </body>
 
