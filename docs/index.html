@@ -124,10 +124,27 @@
             iframe.postMessage({ code: editor.getValue() });
         }));
 
+        function navigate() {
+            const path = hashToPath(window.location.hash);
+            const elem = document.querySelector(`[data-href="${path}"]`);
+            if (elem) {
+                selectElement(elem);
+                fetchExample(path);
+            } else {
+                fetchExample("./examples/triangle.js");
+            }
+        }
+
         async function fetchExample(src) {
             const resp = await window.fetch(src);
             const code = await resp.text();
             editor.setValue(code);
+        }
+
+        function selectElement(elem) {
+            document.querySelectorAll(".selected")
+                .forEach(el => el.classList.remove("selected"))
+            elem.classList.add("selected");
         }
 
         function hashToPath(hash) {
@@ -142,23 +159,13 @@
 
         menuElem.addEventListener("click", ev => {
             if (ev.target.dataset.href) {
-                document.querySelectorAll(".selected")
-                    .forEach(elem => elem.classList.remove("selected"))
-                ev.target.classList.add("selected");
-                const href = ev.target.dataset.href;
-                window.location.hash = pathToHash(href);
-                fetchExample(href);
-
+                window.location.hash = pathToHash(ev.target.dataset.href);
             }
             ev.preventDefault();
         }, true);
 
-        const hash = window.location.hash;
-        if (hash) {
-            fetchExample(hashToPath(hash));
-        } else {
-            fetchExample("./examples/triangle.js");
-        }
+        navigate();
+        window.addEventListener("hashchange", _ => navigate());
     </script>
 </body>
 
