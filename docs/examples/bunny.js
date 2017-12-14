@@ -68,7 +68,7 @@ const bunny = VertexArray.create(dev, cmd.locate({
 }));
 
 const loop = time => {
-    dev.clearColorBuffer(0, 0, 0, 1);
+    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 0);
     cmd.execute(bunny, time);
     window.requestAnimationFrame(loop);
 }

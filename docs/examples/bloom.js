@@ -337,7 +337,7 @@ const loop = time => {
     // We only need to clear the initial fbo and the BACK buffer, as we always
     // overwrite the others completely
     dev.clearColorBuffer(0, 0, 0, 1);
-    dev.clearColorBuffer(0, 0, 0, 1, initialFbo);
+    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 0, initialFbo);
 
     // Render geometry into texture
     scene.execute(cube, time);

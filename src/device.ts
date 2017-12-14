@@ -139,6 +139,51 @@ export class Device {
         if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
     }
 
+    clearColorAndDepthBuffers(
+        r: number,
+        g: number,
+        b: number,
+        a: number,
+        depth: number,
+        fbo?: Framebuffer,
+    ): void {
+        const gl = this.gl;
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
+        gl.clearColor(r, g, b, a);
+        gl.clearDepth(depth);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
+    }
+
+    clearDepthAndStencilBuffers(
+        depth: number,
+        stencil: number,
+        fbo?: Framebuffer,
+    ): void {
+        const gl = this.gl;
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
+        gl.clearDepth(depth);
+        gl.clearStencil(stencil);
+        gl.clear(gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
+    }
+
+    clearColorAndStencilBuffers(
+        r: number,
+        g: number,
+        b: number,
+        a: number,
+        stencil: number,
+        fbo?: Framebuffer,
+    ): void {
+        const gl = this.gl;
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
+        gl.clearColor(r, g, b, a);
+        gl.clearStencil(stencil);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
+    }
+
     clear(
         r: number,
         g: number,
