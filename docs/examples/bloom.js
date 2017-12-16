@@ -99,7 +99,7 @@ const scene = Command.create(dev, {
         },
         u_view: {
             type: "matrix4fv",
-            value: time => mat4.lookAt(
+            value: ({ time }) => mat4.lookAt(
                 view,
                 [30 * Math.cos(time / 1000), 5, 30 * Math.sin(time / 1000)],
                 [0, 0, 0],
@@ -117,7 +117,7 @@ const scene = Command.create(dev, {
             ),
         },
     },
-    framebuffer: initialFbo,
+    framebuffer: ({ target }) => target,
 });
 
 const split = Command.create(dev, {
@@ -161,7 +161,7 @@ const split = Command.create(dev, {
             value: initialTex,
         },
     },
-    framebuffer: splitFbo,
+    framebuffer: ({ target }) => target,
 });
 
 const bloom = Command.create(dev, {
@@ -219,10 +219,10 @@ const bloom = Command.create(dev, {
         },
         u_image: {
             type: "texture",
-            value: ({ texture }) => texture,
+            value: ({ source }) => source,
         },
     },
-    framebuffer: ({ fbo }) => fbo,
+    framebuffer: ({ target }) => target,
 });
 
 const tonemap = Command.create(dev, {
@@ -291,35 +291,35 @@ const loop = time => {
     dev.clearColorAndDepthBuffers(0, 0, 0, 1, 1, initialFbo);
 
     // Render geometry into texture
-    scene.execute(time);
+    scene.execute({ time, target: initialFbo });
 
     // Split color and brightness to 2 render targets (splitColor, splitBright)
-    split.execute();
+    split.execute({ target: splitFbo });
 
     if (nBloomPasses) {
         // Do first 2 bloom passes: splitBright -> bloomWrite -> bloomRead
         bloom.execute({
-            texture: splitBrightTex,
+            source: splitBrightTex,
             direction: HORIZONTAL,
-            fbo: bloomPongFbo,
+            target: bloomPongFbo,
         });
         bloom.execute({
-            texture: bloomPongTex,
+            source: bloomPongTex,
             direction: VERTICAL,
-            fbo: bloomPingFbo,
+            target: bloomPingFbo,
         });
 
         // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
         for (let i = 1; i < nBloomPasses; i++) {
             bloom.execute({
-                texture: bloomPingTex,
+                source: bloomPingTex,
                 direction: HORIZONTAL,
-                fbo: bloomPongFbo,
+                target: bloomPongFbo,
             });
             bloom.execute({
-                texture: bloomPongTex,
+                source: bloomPongTex,
                 direction: VERTICAL,
-                fbo: bloomPingFbo,
+                target: bloomPingFbo,
             });
         }
     }
