@@ -3,7 +3,7 @@ import * as glutil from "./glutil";
 import { Device } from "./device";
 import { VertexArray, VertexArrayProps } from "./vertex-array";
 import { Texture } from "./texture";
-import { Framebuffer } from "./framebuffer";
+import { Framebuffer, FramebufferProps } from "./framebuffer";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
@@ -31,8 +31,8 @@ export interface CommandProps<P> {
         equation?: BlendEquation | { rgb: BlendEquation; alpha: BlendEquation };
         color?: Color;
     };
-    framebuffer?: AccessorOrValue<P, Framebuffer>;
     primitive?: Primitive;
+    framebuffer?: FramebufferProps | AccessorOrValue<P, Framebuffer>;
 }
 
 export const enum Primitive {
@@ -289,7 +289,8 @@ export class Command<P = void> {
         gl.deleteShader(vertShader);
         gl.deleteShader(fragShader);
 
-        const vertexArrayDescriptor = typeof data === "function" || data instanceof VertexArray
+        const vertexArrayDescriptor = typeof data === "function"
+            || data instanceof VertexArray
             ? data
             : VertexArray.create(dev, locate(gl, program, data));
 
@@ -357,6 +358,13 @@ export class Command<P = void> {
             )
             : undefined;
 
+        const framebufferDescriptor = framebuffer
+            ? typeof framebuffer === "function"
+                || framebuffer instanceof Framebuffer
+                ? framebuffer
+                : Framebuffer.create(gl, framebuffer)
+            : undefined;
+
         return new Command(
             gl,
             program,
@@ -365,7 +373,7 @@ export class Command<P = void> {
             uniformDescriptors,
             depthDescriptor,
             blendDescriptor,
-            framebuffer,
+            framebufferDescriptor,
         );
     }
 
