@@ -18,9 +18,16 @@ export interface CommandProps<P> {
     frag: string;
     primitive?: Primitive;
     uniforms?: { [key: string]: Uniform<P> };
+    depth?: {
+        func: DepthFunction;
+        mask?: boolean;
+        range?: [number, number];
+    };
     blend?: {
-        src: BlendFunction | { rgb: BlendFunction; alpha: BlendFunction };
-        dst: BlendFunction | { rgb: BlendFunction; alpha: BlendFunction };
+        func: {
+            src: BlendFunction | { rgb: BlendFunction; alpha: BlendFunction };
+            dst: BlendFunction | { rgb: BlendFunction; alpha: BlendFunction };
+        };
         equation?: BlendEquation | { rgb: BlendEquation; alpha: BlendEquation };
         color?: Color;
     };
@@ -190,6 +197,17 @@ export interface UniformTexture<P> {
     value: AccessorOrValue<P, Texture>;
 }
 
+export const enum DepthFunction {
+    ALWAYS = "always",
+    NEVER = "never",
+    EQUAL = "equal",
+    NOTEQUAL = "notequal",
+    LESS = "less",
+    LEQUAL = "lequal",
+    GREATER = "greater",
+    GEQUAL = "gequal",
+}
+
 export const enum BlendFunction {
     ZERO = "zero",
     ONE = "one",
@@ -224,7 +242,8 @@ export class Command<P = void> {
             frag,
             uniforms = {},
             primitive = Primitive.TRIANGLES,
-            blend = false,
+            depth,
+            blend,
             framebuffer,
         }: CommandProps<P>,
     ): Command<P> {
@@ -245,23 +264,56 @@ export class Command<P = void> {
                 return new UniformDescriptor(identifier, location, uniform);
             });
 
+        if (depth) {
+            assert.requireNonNull(depth.func, "depth.func");
+        }
+        const depthDescriptor = depth
+            ? new DepthDescriptor(
+                mapGlDepthFunc(gl, depth.func || DepthFunction.LESS),
+                typeof depth.mask === "boolean" ? depth.mask : true,
+                depth.range ? depth.range[0] : 0,
+                depth.range ? depth.range[1] : 1,
+            )
+            : undefined;
+
+        if (blend) {
+            assert.requireNonNull(blend.func, "blend.func");
+            assert.requireNonNull(blend.func.src, "blend.func.src");
+            assert.requireNonNull(blend.func.dst, "blend.func.dst");
+            if (typeof blend.func.src === "object") {
+                assert.requireNonNull(blend.func.src.rgb, "blend.func.src.rgb");
+                assert.requireNonNull(blend.func.src.alpha, "blend.func.src.alpha");
+            }
+            if (typeof blend.func.dst === "object") {
+                assert.requireNonNull(blend.func.dst.rgb, "blend.func.dst.rgb");
+                assert.requireNonNull(blend.func.dst.alpha, "blend.func.dst.alpha");
+            }
+        }
         const blendDescriptor = blend
             ? new BlendDescriptor(
                 mapGlBlendFunc(
                     gl,
-                    typeof blend.src === "object" ? blend.src.rgb : blend.src,
+                    typeof blend.func.src === "object"
+                        ? blend.func.src.rgb
+                        : blend.func.src,
                 ),
                 mapGlBlendFunc(
                     gl,
-                    typeof blend.src === "object" ? blend.src.alpha : blend.src,
+                    typeof blend.func.src === "object"
+                        ? blend.func.src.alpha
+                        : blend.func.src,
                 ),
                 mapGlBlendFunc(
                     gl,
-                    typeof blend.dst === "object" ? blend.dst.rgb : blend.dst,
+                    typeof blend.func.dst === "object"
+                        ? blend.func.dst.rgb
+                        : blend.func.dst,
                 ),
                 mapGlBlendFunc(
                     gl,
-                    typeof blend.dst === "object" ? blend.dst.alpha : blend.dst,
+                    typeof blend.func.dst === "object"
+                        ? blend.func.dst.alpha
+                        : blend.func.dst,
                 ),
                 mapGlBlendEquation(
                     gl,
@@ -292,6 +344,7 @@ export class Command<P = void> {
             program,
             mapGlPrimitive(gl, primitive),
             uniformDescriptors,
+            depthDescriptor,
             blendDescriptor,
             framebufferDescriptor,
         );
@@ -302,6 +355,7 @@ export class Command<P = void> {
         private glProgram: WebGLProgram,
         private glPrimitive: number,
         private uniformDescriptors: UniformDescriptor<P>[],
+        private depthDescriptor?: DepthDescriptor,
         private blendDescriptor?: BlendDescriptor,
         private framebufferDescriptor?: FramebufferDescriptor<P>,
     ) { }
@@ -314,6 +368,7 @@ export class Command<P = void> {
 
         gl.useProgram(glProgram);
 
+        this.beginDepth();
         this.beginBlend();
 
         if (Array.isArray(vao)) {
@@ -323,6 +378,7 @@ export class Command<P = void> {
         }
 
         this.endBlend();
+        this.endDepth();
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.bindVertexArray(null);
@@ -377,6 +433,21 @@ export class Command<P = void> {
         } else {
             this.drawArrays(vao.count, vao.instanceCount);
         }
+    }
+
+    private beginDepth(): void {
+        const { gl, depthDescriptor } = this;
+        if (depthDescriptor) {
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(depthDescriptor.func);
+            gl.depthMask(depthDescriptor.mask);
+            gl.depthRange(depthDescriptor.rangeStart, depthDescriptor.rangeEnd);
+        }
+    }
+
+    private endDepth(): void {
+        const { gl, depthDescriptor } = this;
+        if (depthDescriptor) { gl.disable(gl.DEPTH_TEST); }
     }
 
     private beginBlend(): void {
@@ -580,6 +651,15 @@ function access<P, R>(
     return typeof value === "function" ? value(props, index) : value;
 }
 
+class DepthDescriptor {
+    constructor(
+        readonly func: number,
+        readonly mask: boolean,
+        readonly rangeStart: number,
+        readonly rangeEnd: number,
+    ) { }
+}
+
 class BlendDescriptor {
     constructor(
         readonly srcRGB: number,
@@ -617,6 +697,23 @@ function mapGlPrimitive(
         case Primitive.LINE_STRIP: return gl.LINE_STRIP;
         case Primitive.LINE_LOOP: return gl.LINE_LOOP;
         default: return assert.never(primitive);
+    }
+}
+
+function mapGlDepthFunc(
+    gl: WebGL2RenderingContext,
+    func: DepthFunction,
+): number {
+    switch (func) {
+        case DepthFunction.ALWAYS: return gl.ALWAYS;
+        case DepthFunction.NEVER: return gl.NEVER;
+        case DepthFunction.EQUAL: return gl.EQUAL;
+        case DepthFunction.NOTEQUAL: return gl.NOTEQUAL;
+        case DepthFunction.LESS: return gl.LESS;
+        case DepthFunction.LEQUAL: return gl.LEQUAL;
+        case DepthFunction.GREATER: return gl.GREATER;
+        case DepthFunction.GEQUAL: return gl.GEQUAL;
+        default: return assert.never(func);
     }
 }
 

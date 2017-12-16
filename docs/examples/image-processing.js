@@ -4,6 +4,7 @@ import {
     VertexArray,
     Texture,
 } from "./lib/glutenfree.es.min.js";
+import * as square from "./lib/square.js"
 import { loadImage } from "./lib/load-image.js";
 
 const kernels = {
@@ -54,8 +55,8 @@ async function run() {
 
             uniform mat4 u_projection, u_model, u_view;
 
-            in vec2 a_vertex_position;
-            in vec2 a_tex_coord;
+            layout (location = 0) in vec2 a_position;
+            layout (location = 1) in vec2 a_tex_coord;
 
             out vec2 v_tex_coord;
 
@@ -64,7 +65,7 @@ async function run() {
                 gl_Position = u_projection
                     * u_view
                     * u_model
-                    * vec4(a_vertex_position, 0.0, 1.0);
+                    * vec4(a_position, 0.0, 1.0);
             }
         `,
         frag: `#version 300 es
@@ -130,28 +131,15 @@ async function run() {
         },
     });
 
-    const square = VertexArray.create(dev, cmd.locate({
+    const screenspace = VertexArray.create(dev, cmd.locate({
         attributes: {
-            a_vertex_position: [
-                [1, 1],
-                [-1, 1],
-                [1, -1],
-                [-1, -1],
-            ],
-            a_tex_coord: [
-                [1, 1],
-                [0, 1],
-                [1, 0],
-                [0, 0],
-            ],
+            a_position: square.positions,
+            a_tex_coord: square.texCoords,
         },
-        elements: [
-            [0, 3, 2],
-            [1, 3, 0],
-        ],
+        elements: square.elements,
     }));
 
-    cmd.execute(square);
+    cmd.execute(screenspace);
 }
 
 run();

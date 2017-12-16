@@ -5,6 +5,8 @@ import {
     Texture,
     Framebuffer,
 } from "./lib/glutenfree.es.min.js";
+import * as square from "./lib/square.js"
+import * as cube from "./lib/cube.js"
 
 const N_BLOOM_PASSES = 3;
 
@@ -60,10 +62,13 @@ const scene = Command.create(dev, {
 
         uniform mat4 u_projection, u_view, u_model;
 
-        layout (location = 0) in vec4 a_vertex_position;
+        layout (location = 0) in vec3 a_position;
 
         void main() {
-            gl_Position = u_projection * u_view * u_model * a_vertex_position;
+            gl_Position = u_projection
+                * u_view
+                * u_model
+                * vec4(a_position, 1.0);
         }
     `,
     frag: `#version 300 es
@@ -78,7 +83,7 @@ const scene = Command.create(dev, {
     uniforms: {
         u_model: {
             type: "matrix4fv",
-            value: mat4.fromScaling(mat4.create(), [7, 7, 7]),
+            value: mat4.fromScaling(mat4.create(), [2, 2, 2]),
         },
         u_view: {
             type: "matrix4fv",
@@ -103,66 +108,18 @@ const scene = Command.create(dev, {
     framebuffer: initialFbo,
 });
 
-const cube = VertexArray.create(dev, {
-    attributes: {
-        0: [
-            [-0.5, -0.5, -0.5],
-            [0.5, -0.5, -0.5],
-            [0.5, 0.5, -0.5],
-            [0.5, 0.5, -0.5],
-            [-0.5, 0.5, -0.5],
-            [-0.5, -0.5, -0.5],
-
-            [-0.5, -0.5, 0.5],
-            [0.5, -0.5, 0.5],
-            [0.5, 0.5, 0.5],
-            [0.5, 0.5, 0.5],
-            [-0.5, 0.5, 0.5],
-            [-0.5, -0.5, 0.5],
-
-            [-0.5, 0.5, 0.5],
-            [-0.5, 0.5, -0.5],
-            [-0.5, -0.5, -0.5],
-            [-0.5, -0.5, -0.5],
-            [-0.5, -0.5, 0.5],
-            [-0.5, 0.5, 0.5],
-
-            [0.5, 0.5, 0.5],
-            [0.5, 0.5, -0.5],
-            [0.5, -0.5, -0.5],
-            [0.5, -0.5, -0.5],
-            [0.5, -0.5, 0.5],
-            [0.5, 0.5, 0.5],
-
-            [-0.5, -0.5, -0.5],
-            [0.5, -0.5, -0.5],
-            [0.5, -0.5, 0.5],
-            [0.5, -0.5, 0.5],
-            [-0.5, -0.5, 0.5],
-            [-0.5, -0.5, -0.5],
-
-            [-0.5, 0.5, -0.5],
-            [0.5, 0.5, -0.5],
-            [0.5, 0.5, 0.5],
-            [0.5, 0.5, 0.5],
-            [-0.5, 0.5, 0.5],
-            [-0.5, 0.5, -0.5],
-        ]
-    },
-})
-
 const split = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
 
-        layout (location = 0) in vec2 a_vertex_position;
+        layout (location = 0) in vec2 a_position;
         layout (location = 1) in vec2 a_tex_coord;
 
         out vec2 v_tex_coord;
 
         void main() {
             v_tex_coord = a_tex_coord;
-            gl_Position = vec4(a_vertex_position, 0.0, 1.0);
+            gl_Position = vec4(a_position, 0.0, 1.0);
         }
     `,
     frag: `#version 300 es
@@ -198,14 +155,14 @@ const bloom = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
 
-        layout (location = 0) in vec2 a_vertex_position;
+        layout (location = 0) in vec2 a_position;
         layout (location = 1) in vec2 a_tex_coord;
 
         out vec2 v_tex_coord;
 
         void main() {
             v_tex_coord = a_tex_coord;
-            gl_Position = vec4(a_vertex_position, 0.0, 1.0);
+            gl_Position = vec4(a_position, 0.0, 1.0);
         }
     `,
     frag: `#version 300 es
@@ -258,14 +215,14 @@ const tonemap = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
 
-        layout (location = 0) in vec2 a_vertex_position;
+        layout (location = 0) in vec2 a_position;
         layout (location = 1) in vec2 a_tex_coord;
 
         out vec2 v_tex_coord;
 
         void main() {
             v_tex_coord = a_tex_coord;
-            gl_Position = vec4(a_vertex_position, 0.0, 1.0);
+            gl_Position = vec4(a_position, 0.0, 1.0);
         }
     `,
     frag: `#version 300 es
@@ -307,26 +264,20 @@ const tonemap = Command.create(dev, {
     },
 });
 
-const screenspace = VertexArray.create(dev, {
+const screenspace = VertexArray.create(dev, split.locate({
     attributes: {
-        0: [
-            [1, 1],
-            [-1, 1],
-            [1, -1],
-            [-1, -1],
-        ],
-        1: [
-            [1, 1],
-            [0, 1],
-            [1, 0],
-            [0, 0],
-        ],
+        a_position: square.positions,
+        a_tex_coord: square.texCoords,
     },
-    elements: [
-        [0, 3, 2],
-        [1, 3, 0],
-    ],
-});
+    elements: square.elements,
+}));
+
+const cubeMesh = VertexArray.create(dev, scene.locate({
+    attributes: {
+        a_position: cube.positions,
+    },
+    elements: cube.elements,
+}));
 
 const nBloomPasses = Math.max(0, N_BLOOM_PASSES);
 
@@ -337,10 +288,10 @@ const loop = time => {
     // We only need to clear the initial fbo and the BACK buffer, as we always
     // overwrite the others completely
     dev.clearColorBuffer(0, 0, 0, 1);
-    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 0, initialFbo);
+    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 1, initialFbo);
 
     // Render geometry into texture
-    scene.execute(cube, time);
+    scene.execute(cubeMesh, time);
 
     // Split color and brightness to 2 render targets (splitColor, splitBright)
     split.execute(screenspace);

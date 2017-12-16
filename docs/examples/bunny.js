@@ -1,5 +1,5 @@
 import { Device, Command, VertexArray } from "./lib/glutenfree.es.min.js";
-import { positions as bunnyPositions, cells as bunnyCells } from "./lib/bunny.js"
+import * as bunny from "./lib/bunny.js"
 
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -12,13 +12,13 @@ const cmd = Command.create(dev, {
 
         uniform mat4 u_projection, u_model, u_view;
 
-        layout (location = 0) in vec3 a_vertex_position;
+        layout (location = 0) in vec3 a_position;
 
         void main() {
             gl_Position = u_projection
-                * u_model
                 * u_view
-                * vec4(a_vertex_position, 1.0);
+                * u_model
+                * vec4(a_position, 1.0);
         }
     `,
     frag: `#version 300 es
@@ -27,7 +27,7 @@ const cmd = Command.create(dev, {
         out vec4 o_color;
 
         void main() {
-            o_color = vec4(0.0, 1.0, 0.0, 0.3);
+            o_color = vec4(0.1, 1.0, 0.3, 1.0);
         }
     `,
     uniforms: {
@@ -38,7 +38,7 @@ const cmd = Command.create(dev, {
                 Math.PI / 4,
                 width / height,
                 0.1,
-                1000.0,
+                1000,
             ),
         },
         u_model: {
@@ -56,20 +56,22 @@ const cmd = Command.create(dev, {
         },
     },
     blend: {
-        src: "constant-alpha",
-        dst: "one-minus-constant-alpha",
+        func: {
+            src: "constant-alpha",
+            dst: "one-minus-constant-alpha",
+        },
         color: [0, 0, 0, 0.2],
     },
 });
 
-const bunny = VertexArray.create(dev, cmd.locate({
-    attributes: { a_vertex_position: bunnyPositions },
-    elements: bunnyCells,
+const bunnyMesh = VertexArray.create(dev, cmd.locate({
+    attributes: { a_position: bunny.positions },
+    elements: bunny.elements,
 }));
 
 const loop = time => {
-    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 0);
-    cmd.execute(bunny, time);
+    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 1);
+    cmd.execute(bunnyMesh, time);
     window.requestAnimationFrame(loop);
 }
 

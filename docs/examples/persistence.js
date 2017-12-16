@@ -10,7 +10,8 @@ import {
     Texture,
     Framebuffer,
 } from "./lib/glutenfree.es.min.js";
-import { positions as bunnyPositions, cells as bunnyCells } from "./lib/bunny.js"
+import * as square from "./lib/square.js"
+import * as bunny from "./lib/bunny.js"
 
 const PERSISTENCE_FACTOR = 0.8;
 
@@ -46,13 +47,13 @@ const draw = Command.create(dev, {
 
         uniform mat4 u_projection, u_model, u_view;
 
-        layout (location = 0) in vec3 a_vertex_position;
+        layout (location = 0) in vec3 a_position;
 
         void main() {
             gl_Position = u_projection
                 * u_model
                 * u_view
-                * vec4(a_vertex_position, 1.0);
+                * vec4(a_position, 1.0);
         }
     `,
     frag: `#version 300 es
@@ -96,14 +97,14 @@ const blend = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
 
-        layout (location = 0) in vec2 a_vertex_position;
+        layout (location = 0) in vec2 a_position;
         layout (location = 1) in vec2 a_tex_coord;
 
         out vec2 v_tex_coord;
 
         void main() {
             v_tex_coord = a_tex_coord;
-            gl_Position = vec4(a_vertex_position, 0.0, 1.0);
+            gl_Position = vec4(a_position, 0.0, 1.0);
         }
     `,
     frag: `#version 300 es
@@ -147,14 +148,14 @@ const copyToCanvas = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
 
-        layout (location = 0) in vec2 a_vertex_position;
+        layout (location = 0) in vec2 a_position;
         layout (location = 1) in vec2 a_tex_coord;
 
         out vec2 v_tex_coord;
 
         void main() {
             v_tex_coord = a_tex_coord;
-            gl_Position = vec4(a_vertex_position, 0.0, 1.0);
+            gl_Position = vec4(a_position, 0.0, 1.0);
         }
     `,
     frag: `#version 300 es
@@ -178,30 +179,17 @@ const copyToCanvas = Command.create(dev, {
     },
 })
 
-const bunny = VertexArray.create(dev, draw.locate({
-    attributes: { a_vertex_position: bunnyPositions },
-    elements: bunnyCells,
+const bunnyMesh = VertexArray.create(dev, draw.locate({
+    attributes: { a_position: bunny.positions },
+    elements: bunny.elements,
 }));
 
 const screenspace = VertexArray.create(dev, blend.locate({
     attributes: {
-        a_vertex_position: [
-            [1, 1],
-            [-1, 1],
-            [1, -1],
-            [-1, -1],
-        ],
-        a_tex_coord: [
-            [1, 1],
-            [0, 1],
-            [1, 0],
-            [0, 0],
-        ],
+        a_position: square.positions,
+        a_tex_coord: square.texCoords,
     },
-    elements: [
-        [0, 3, 2],
-        [1, 3, 0],
-    ],
+    elements: square.elements,
 }));
 
 let ping = {
@@ -215,7 +203,7 @@ let pong = {
 }
 
 const loop = time => {
-    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 0, newFrameFbo);
+    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 1, newFrameFbo);
     dev.clearColorBuffer(0, 0, 0, 1);
 
     /*
@@ -226,7 +214,7 @@ const loop = time => {
     */
 
     // We first draw the scene to a "newFrame" fbo
-    draw.execute(bunny, { time, target: newFrameFbo });
+    draw.execute(bunnyMesh, { time, target: newFrameFbo });
 
     // Then blend newFrame and ping to pong proportionate to PERSISTENCE_FACTOR
     blend.execute(screenspace, {

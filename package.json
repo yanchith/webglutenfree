@@ -24,7 +24,8 @@
     "dist:demolib": "yarn __rmdemolib && yarn __cpdemolib",
     "__rmdemolib": "rm docs/lib/glutenfree.{es.min.js,es.min.js.map}",
     "__cpdemolib": "cp dist/glutenfree.{es.min.js,es.min.js.map} docs/lib",
-    "clean": "rimraf dist"
+    "clean": "rimraf build && rimraf dist",
+    "cleandist": "yarn build && yarn dist"
   },
   "devDependencies": {
     "@types/webgl2": "^0.0.2",

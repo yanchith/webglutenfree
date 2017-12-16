@@ -13,18 +13,18 @@ const cmd = Command.create(dev, {
         uniform mat4 u_model;
         uniform mat4 u_view;
 
-        layout (location = 0) in vec2 a_vertex_position;
-        layout (location = 1) in vec2 a_vertex_offset;
-        layout (location = 2) in vec4 a_vertex_color;
+        layout (location = 0) in vec2 a_position;
+        layout (location = 1) in vec4 a_color;
+        layout (location = 2) in vec2 a_offset;
 
         out vec4 v_vertex_color;
 
         void main() {
-            v_vertex_color = a_vertex_color;
+            v_vertex_color = a_color;
             gl_Position = u_projection
                 * u_view
                 * u_model
-                * vec4(a_vertex_position + a_vertex_offset, 0.0, 1.0);
+                * vec4(a_position + a_offset, 0.0, 1.0);
         }
     `,
     frag: `#version 300 es
@@ -64,13 +64,13 @@ const cmd = Command.create(dev, {
 
 const instanced = VertexArray.create(dev, cmd.locate({
     attributes: {
-        a_vertex_position: [
+        a_position: [
             [1, 1],
             [-1, 1],
             [1, -1],
             [-1, -1],
         ],
-        a_vertex_offset: {
+        a_offset: {
             type: "pointer",
             value: {
                 type: "f32",
@@ -88,7 +88,7 @@ const instanced = VertexArray.create(dev, cmd.locate({
             size: 2,
             divisor: 1,
         },
-        a_vertex_color: {
+        a_color: {
             type: "pointer",
             value: {
                 type: "u8",
