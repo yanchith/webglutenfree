@@ -30,6 +30,10 @@ const cmd = Command.create(dev, {
             o_color = vec4(0.1, 1.0, 0.3, 1.0);
         }
     `,
+    data: {
+        attributes: { a_position: bunny.positions },
+        elements: bunny.elements,
+    },
     uniforms: {
         u_projection: {
             type: "matrix4fv",
@@ -64,14 +68,9 @@ const cmd = Command.create(dev, {
     },
 });
 
-const bunnyMesh = VertexArray.create(dev, cmd.locate({
-    attributes: { a_position: bunny.positions },
-    elements: bunny.elements,
-}));
-
 const loop = time => {
     dev.clearColorAndDepthBuffers(0, 0, 0, 1, 1);
-    cmd.execute(bunnyMesh, time);
+    cmd.execute(time);
     window.requestAnimationFrame(loop);
 }
 

@@ -95,6 +95,13 @@ async function run() {
                 o_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
             }
         `,
+        data: {
+            attributes: {
+                a_position: square.positions,
+                a_tex_coord: square.texCoords,
+            },
+            elements: square.elements,
+        },
         uniforms: {
             u_model: {
                 type: "matrix4fv",
@@ -131,15 +138,7 @@ async function run() {
         },
     });
 
-    const screenspace = VertexArray.create(dev, cmd.locate({
-        attributes: {
-            a_position: square.positions,
-            a_tex_coord: square.texCoords,
-        },
-        elements: square.elements,
-    }));
-
-    cmd.execute(screenspace);
+    cmd.execute();
 }
 
 run();

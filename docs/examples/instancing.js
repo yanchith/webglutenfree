@@ -38,6 +38,57 @@ const cmd = Command.create(dev, {
             o_color = v_vertex_color;
         }
     `,
+    data: {
+        attributes: {
+            a_position: [
+                [1, 1],
+                [-1, 1],
+                [1, -1],
+                [-1, -1],
+            ],
+            a_offset: {
+                type: "pointer",
+                value: {
+                    type: "f32",
+                    data: [
+                        3, 3,
+                        0, 3,
+                        3, 0,
+                        -3, -3,
+                        0, -3,
+                        -3, 0,
+                        0, 0,
+                    ],
+                },
+                count: 7,
+                size: 2,
+                divisor: 1,
+            },
+            a_color: {
+                type: "pointer",
+                value: {
+                    type: "u8",
+                    data: [
+                        255, 0, 0, 255,
+                        0, 255, 0, 255,
+                        0, 0, 255, 255,
+                        0, 255, 255, 255,
+                        255, 0, 255, 255,
+                        255, 255, 0, 255,
+                        255, 255, 255, 255,
+                    ],
+                },
+                count: 7,
+                size: 4,
+                normalized: true,
+                divisor: 1,
+            },
+        },
+        elements: [
+            [0, 3, 2],
+            [1, 3, 0],
+        ],
+    },
     uniforms: {
         u_projection: {
             type: "matrix4fv",
@@ -62,61 +113,9 @@ const cmd = Command.create(dev, {
     },
 });
 
-const instanced = VertexArray.create(dev, cmd.locate({
-    attributes: {
-        a_position: [
-            [1, 1],
-            [-1, 1],
-            [1, -1],
-            [-1, -1],
-        ],
-        a_offset: {
-            type: "pointer",
-            value: {
-                type: "f32",
-                data: [
-                    3, 3,
-                    0, 3,
-                    3, 0,
-                    -3, -3,
-                    0, -3,
-                    -3, 0,
-                    0, 0,
-                ],
-            },
-            count: 7,
-            size: 2,
-            divisor: 1,
-        },
-        a_color: {
-            type: "pointer",
-            value: {
-                type: "u8",
-                data: [
-                    255, 0, 0, 255,
-                    0, 255, 0, 255,
-                    0, 0, 255, 255,
-                    0, 255, 255, 255,
-                    255, 0, 255, 255,
-                    255, 255, 0, 255,
-                    255, 255, 255, 255,
-                ],
-            },
-            count: 7,
-            size: 4,
-            normalized: true,
-            divisor: 1,
-        },
-    },
-    elements: [
-        [0, 3, 2],
-        [1, 3, 0],
-    ],
-}));
-
 const loop = time => {
     dev.clearColorBuffer(0, 0, 0, 1);
-    cmd.execute(instanced);
+    cmd.execute();
     window.requestAnimationFrame(loop);
 }
 

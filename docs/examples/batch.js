@@ -31,14 +31,20 @@ const cmd = Command.create(dev, {
             o_color = vec4(1.0);
         }
     `,
+    data: ({ geometry }) => geometry,
     uniforms: {
         u_model: {
             type: "matrix4fv",
-            value: (props, i) => props[i],
+            value: ({ modelMatrix }) => modelMatrix,
         },
         u_view: {
             type: "matrix4fv",
-            value: mat4.identity(mat4.create()),
+            value: mat4.lookAt(
+                mat4.create(),
+                [3, 5, 10],
+                [0, 1, 0],
+                [0, 1, 0],
+            ),
         },
         u_projection: {
             type: "matrix4fv",
@@ -53,23 +59,26 @@ const cmd = Command.create(dev, {
     },
 });
 
-const cubeMesh = VertexArray.create(dev, {
-    attributes: { 0: cube.positions },
+const cubeMesh = VertexArray.create(dev, cmd.locate({
+    attributes: { a_position: cube.positions },
     elements: cube.elements
-})
+}));
 
-const bunnyMesh = VertexArray.create(dev, {
-    attributes: { 0: bunny.positions },
+const bunnyMesh = VertexArray.create(dev, cmd.locate({
+    attributes: { a_position: bunny.positions },
     elements: bunny.elements,
-})
+}));
 
-const triangleModelMatrix = mat4.fromTranslation(mat4.create(), [200, 0, 0]);
-const squareModelMatrix = mat4.fromTranslation(mat4.create(), [-200, 0, 0]);
-
-mat4.scale(triangleModelMatrix, triangleModelMatrix, [500, 500, 1]);
-mat4.scale(squareModelMatrix, squareModelMatrix, [500, 500, 1]);
-
-cmd.execute(
-    [cubeMesh, bunnyMesh],
-    [triangleModelMatrix, squareModelMatrix],
+const cubeModelMatrix = mat4.fromScaling(mat4.create(), [0.5, 0.5, 0.5]);
+const bunnyModelMatrix = mat4.fromRotationTranslationScale(
+    mat4.create(),
+    quat.fromEuler(quat.create(), 0, 120, 0),
+    [-3, 0, 0],
+    [0.2, 0.2, 0.2],
 );
+
+dev.clearColorBuffer(0, 0, 0, 1);
+cmd.execute([
+    { geometry: cubeMesh, modelMatrix: cubeModelMatrix },
+    { geometry: bunnyMesh, modelMatrix: bunnyModelMatrix },
+]);

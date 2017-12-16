@@ -16,7 +16,7 @@ export type Accessor<P, R> = (props: P, index: number) => R;
 export interface CommandProps<P> {
     vert: string;
     frag: string;
-    primitive?: Primitive;
+    data: VertexArrayProps | AccessorOrValue<P, VertexArray>;
     uniforms?: { [key: string]: Uniform<P> };
     depth?: {
         func: DepthFunction;
@@ -32,6 +32,7 @@ export interface CommandProps<P> {
         color?: Color;
     };
     framebuffer?: AccessorOrValue<P, Framebuffer>;
+    primitive?: Primitive;
 }
 
 export const enum Primitive {
@@ -240,6 +241,7 @@ export class Command<P = void> {
         {
             vert,
             frag,
+            data,
             uniforms = {},
             primitive = Primitive.TRIANGLES,
             depth,
@@ -247,6 +249,38 @@ export class Command<P = void> {
             framebuffer,
         }: CommandProps<P>,
     ): Command<P> {
+        assert.requireNonNull(vert, "vert");
+        assert.requireNonNull(frag, "frag");
+        assert.requireNonNull(data, "data");
+        if (depth) {
+            assert.requireNonNull(depth.func, "depth.func");
+        }
+        if (blend) {
+            assert.requireNonNull(blend.func, "blend.func");
+            assert.requireNonNull(blend.func.src, "blend.func.src");
+            assert.requireNonNull(blend.func.dst, "blend.func.dst");
+            if (typeof blend.func.src === "object") {
+                assert.requireNonNull(
+                    blend.func.src.rgb,
+                    "blend.func.src.rgb",
+                );
+                assert.requireNonNull(
+                    blend.func.src.alpha,
+                    "blend.func.src.alpha",
+                );
+            }
+            if (typeof blend.func.dst === "object") {
+                assert.requireNonNull(
+                    blend.func.dst.rgb,
+                    "blend.func.dst.rgb",
+                );
+                assert.requireNonNull(
+                    blend.func.dst.alpha,
+                    "blend.func.dst.alpha",
+                );
+            }
+        }
+
         const gl = dev instanceof Device ? dev.gl : dev;
         const vertShader = glutil.createShader(gl, gl.VERTEX_SHADER, vert);
         const fragShader = glutil.createShader(gl, gl.FRAGMENT_SHADER, frag);
@@ -254,6 +288,10 @@ export class Command<P = void> {
 
         gl.deleteShader(vertShader);
         gl.deleteShader(fragShader);
+
+        const vertexArrayDescriptor = typeof data === "function" || data instanceof VertexArray
+            ? data
+            : VertexArray.create(dev, locate(gl, program, data));
 
         const uniformDescriptors = Object.entries(uniforms)
             .map(([identifier, uniform]) => {
@@ -264,9 +302,6 @@ export class Command<P = void> {
                 return new UniformDescriptor(identifier, location, uniform);
             });
 
-        if (depth) {
-            assert.requireNonNull(depth.func, "depth.func");
-        }
         const depthDescriptor = depth
             ? new DepthDescriptor(
                 mapGlDepthFunc(gl, depth.func || DepthFunction.LESS),
@@ -276,19 +311,6 @@ export class Command<P = void> {
             )
             : undefined;
 
-        if (blend) {
-            assert.requireNonNull(blend.func, "blend.func");
-            assert.requireNonNull(blend.func.src, "blend.func.src");
-            assert.requireNonNull(blend.func.dst, "blend.func.dst");
-            if (typeof blend.func.src === "object") {
-                assert.requireNonNull(blend.func.src.rgb, "blend.func.src.rgb");
-                assert.requireNonNull(blend.func.src.alpha, "blend.func.src.alpha");
-            }
-            if (typeof blend.func.dst === "object") {
-                assert.requireNonNull(blend.func.dst.rgb, "blend.func.dst.rgb");
-                assert.requireNonNull(blend.func.dst.alpha, "blend.func.dst.alpha");
-            }
-        }
         const blendDescriptor = blend
             ? new BlendDescriptor(
                 mapGlBlendFunc(
@@ -335,18 +357,15 @@ export class Command<P = void> {
             )
             : undefined;
 
-        const framebufferDescriptor = framebuffer
-            ? new FramebufferDescriptor(framebuffer)
-            : undefined;
-
         return new Command(
             gl,
             program,
             mapGlPrimitive(gl, primitive),
+            vertexArrayDescriptor,
             uniformDescriptors,
             depthDescriptor,
             blendDescriptor,
-            framebufferDescriptor,
+            framebuffer,
         );
     }
 
@@ -354,16 +373,14 @@ export class Command<P = void> {
         private gl: WebGL2RenderingContext,
         private glProgram: WebGLProgram,
         private glPrimitive: number,
+        private vertexArrayDescriptor: AccessorOrValue<P, VertexArray>,
         private uniformDescriptors: UniformDescriptor<P>[],
         private depthDescriptor?: DepthDescriptor,
         private blendDescriptor?: BlendDescriptor,
-        private framebufferDescriptor?: FramebufferDescriptor<P>,
+        private framebufferDescriptor?: AccessorOrValue<P, Framebuffer>,
     ) { }
 
-    execute(
-        vao: VertexArray | VertexArray[],
-        props: P,
-    ): void {
+    execute(props: P | P[]): void {
         const { gl, glProgram } = this;
 
         gl.useProgram(glProgram);
@@ -371,10 +388,10 @@ export class Command<P = void> {
         this.beginDepth();
         this.beginBlend();
 
-        if (Array.isArray(vao)) {
-            vao.forEach((v, i) => this.executeInner(v, props, i));
+        if (Array.isArray(props)) {
+            props.forEach((p, i) => this.executeInner(p, i));
         } else {
-            this.executeInner(vao, props, 0);
+            this.executeInner(props, 0);
         }
 
         this.endBlend();
@@ -384,37 +401,21 @@ export class Command<P = void> {
         gl.bindVertexArray(null);
     }
 
-    locate({ attributes, elements }: VertexArrayProps): VertexArrayProps {
-        type Attributes = VertexArrayProps["attributes"];
-        const { gl, glProgram } = this;
-        const locatedAttributes = Object.entries(attributes)
-            .reduce<Attributes>((accum, [identifier, definition]) => {
-                if (INT_PATTERN.test(identifier)) {
-                    accum[identifier] = definition;
-                } else {
-                    const location = gl.getAttribLocation(glProgram, identifier);
-                    if (location === UNKNOWN_ATTRIB_LOCATION) {
-                        throw new Error(`No location for attrib: ${identifier}`);
-                    }
-                    accum[location] = definition;
-                }
-                return accum;
-            }, {});
-        return { attributes: locatedAttributes, elements };
+    locate(vertexArrayProps: VertexArrayProps): VertexArrayProps {
+        return locate(this.gl, this.glProgram, vertexArrayProps);
     }
 
     private executeInner(
-        vao: VertexArray,
         props: P,
         index: number,
     ): void {
-        const gl = this.gl;
+        const { gl, vertexArrayDescriptor, framebufferDescriptor } = this;
 
         let bufferWidth = gl.drawingBufferWidth;
         let bufferHeight = gl.drawingBufferHeight;
 
-        const fbo = this.framebufferDescriptor
-            ? access(props, index, this.framebufferDescriptor.definition)
+        const fbo = framebufferDescriptor
+            ? access(props, index, framebufferDescriptor)
             : undefined;
 
         if (fbo) {
@@ -423,10 +424,12 @@ export class Command<P = void> {
             bufferWidth = fbo.width;
             bufferHeight = fbo.height;
         }
+
         gl.viewport(0, 0, bufferWidth, bufferHeight);
 
         this.updateUniforms(props, index);
 
+        const vao = access(props, index, vertexArrayDescriptor);
         gl.bindVertexArray(vao.glVertexArrayObject);
         if (vao.hasElements) {
             this.drawElements(vao.count, vao.instanceCount);
@@ -643,6 +646,28 @@ export class Command<P = void> {
     }
 }
 
+function locate(
+    gl: WebGL2RenderingContext,
+    glProgram: WebGLProgram,
+    { attributes, elements }: VertexArrayProps,
+): VertexArrayProps {
+    type Attributes = VertexArrayProps["attributes"];
+    const locatedAttributes = Object.entries(attributes)
+        .reduce<Attributes>((accum, [identifier, definition]) => {
+            if (INT_PATTERN.test(identifier)) {
+                accum[identifier] = definition;
+            } else {
+                const location = gl.getAttribLocation(glProgram, identifier);
+                if (location === UNKNOWN_ATTRIB_LOCATION) {
+                    throw new Error(`No location for attrib: ${identifier}`);
+                }
+                accum[location] = definition;
+            }
+            return accum;
+        }, {});
+    return { attributes: locatedAttributes, elements };
+}
+
 function access<P, R>(
     props: P,
     index: number,
@@ -670,10 +695,6 @@ class BlendDescriptor {
         readonly equationAlpha: number,
         readonly color?: Color,
     ) { }
-}
-
-class FramebufferDescriptor<P> {
-    constructor(readonly definition: AccessorOrValue<P, Framebuffer>) { }
 }
 
 class UniformDescriptor<P> {

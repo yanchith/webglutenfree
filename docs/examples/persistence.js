@@ -41,6 +41,14 @@ const pongFbo = Framebuffer.create(dev, {
 
 const view = mat4.create();
 
+const screenspace = VertexArray.create(dev, {
+    attributes: {
+        0: square.positions,
+        1: square.texCoords,
+    },
+    elements: square.elements,
+});
+
 const draw = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
@@ -65,6 +73,10 @@ const draw = Command.create(dev, {
             o_color = vec4(0.8, 0.3, 0.7, 1.0);
         }
     `,
+    data: {
+        attributes: { a_position: bunny.positions },
+        elements: bunny.elements,
+    },
     uniforms: {
         u_projection: {
             type: "matrix4fv",
@@ -127,6 +139,7 @@ const blend = Command.create(dev, {
             o_color = blend_alpha(c2, c1, u_blend_factor);
         }
     `,
+    data: screenspace,
     uniforms: {
         u_new_frame: {
             type: "texture",
@@ -171,6 +184,7 @@ const copyToCanvas = Command.create(dev, {
             o_color = texture(u_source, v_tex_coord);
         }
     `,
+    data: screenspace,
     uniforms: {
         u_source: {
             type: "texture",
@@ -179,18 +193,7 @@ const copyToCanvas = Command.create(dev, {
     },
 })
 
-const bunnyMesh = VertexArray.create(dev, draw.locate({
-    attributes: { a_position: bunny.positions },
-    elements: bunny.elements,
-}));
 
-const screenspace = VertexArray.create(dev, blend.locate({
-    attributes: {
-        a_position: square.positions,
-        a_tex_coord: square.texCoords,
-    },
-    elements: square.elements,
-}));
 
 let ping = {
     tex: pingTex,
@@ -214,17 +217,13 @@ const loop = time => {
     */
 
     // We first draw the scene to a "newFrame" fbo
-    draw.execute(bunnyMesh, { time, target: newFrameFbo });
+    draw.execute({ time, target: newFrameFbo });
 
     // Then blend newFrame and ping to pong proportionate to PERSISTENCE_FACTOR
-    blend.execute(screenspace, {
-        newFrame: newFrameTex,
-        ping: ping.tex,
-        pong: pong.fbo,
-    });
+    blend.execute({ newFrame: newFrameTex, ping: ping.tex, pong: pong.fbo });
 
     // Lastly copy the contents of pong to canvas
-    copyToCanvas.execute(screenspace, { source: pong.tex })
+    copyToCanvas.execute({ source: pong.tex })
 
     // ... and swap the fbos
     const tmp = ping;

@@ -27,27 +27,26 @@ const cmd = Command.create(dev, {
             o_color = v_color;
         }
     `,
+    data: {
+        attributes: {
+            0: [
+                [-0.3, -0.5],
+                [0.3, -0.5],
+                [0, 0.5],
+            ],
+            1: [
+                [1, 0, 0, 1],
+                [0, 1, 0, 1],
+                [0, 0, 1, 1],
+            ],
+        },
+        elements: [
+            [0, 1],
+            [1, 2],
+            [2, 0],
+        ],
+    },
     primitive: "lines",
 });
 
-const triangle = VertexArray.create(dev, {
-    attributes: {
-        0: [
-            [-0.3, -0.5],
-            [0.3, -0.5],
-            [0, 0.5],
-        ],
-        1: [
-            [1, 0, 0, 1],
-            [0, 1, 0, 1],
-            [0, 0, 1, 1],
-        ]
-    },
-    elements: [
-        [0, 1],
-        [1, 2],
-        [2, 0],
-    ],
-});
-
-cmd.execute(triangle);
+cmd.execute();

@@ -54,6 +54,14 @@ const bloomPongFbo = Framebuffer.create(dev, {
     color: bloomPongTex,
 });
 
+const screenspace = VertexArray.create(dev, {
+    attributes: {
+        0: square.positions,
+        1: square.texCoords,
+    },
+    elements: square.elements,
+});
+
 const view = mat4.create();
 
 const scene = Command.create(dev, {
@@ -80,6 +88,10 @@ const scene = Command.create(dev, {
             o_color = vec4(0.9, 0.8, 0.9, 0.5);
         }
     `,
+    data: {
+        attributes: { a_position: cube.positions },
+        elements: cube.elements,
+    },
     uniforms: {
         u_model: {
             type: "matrix4fv",
@@ -142,6 +154,7 @@ const split = Command.create(dev, {
             o_bright = brightness > 0.7 ? color : vec4(0.0, 0.0, 0.0, 1.0);
         }
     `,
+    data: screenspace,
     uniforms: {
         u_image: {
             type: "texture",
@@ -194,6 +207,7 @@ const bloom = Command.create(dev, {
             color = vec4(color_sum.rgb, 1.0);
         }
     `,
+    data: screenspace,
     uniforms: {
         u_kernel: {
             type: "1fv",
@@ -252,6 +266,7 @@ const tonemap = Command.create(dev, {
             o_color = vec4(mapped, 1.0);
         }
     `,
+    data: screenspace,
     uniforms: {
         u_image_color: {
             type: "texture",
@@ -263,21 +278,6 @@ const tonemap = Command.create(dev, {
         },
     },
 });
-
-const screenspace = VertexArray.create(dev, split.locate({
-    attributes: {
-        a_position: square.positions,
-        a_tex_coord: square.texCoords,
-    },
-    elements: square.elements,
-}));
-
-const cubeMesh = VertexArray.create(dev, scene.locate({
-    attributes: {
-        a_position: cube.positions,
-    },
-    elements: cube.elements,
-}));
 
 const nBloomPasses = Math.max(0, N_BLOOM_PASSES);
 
@@ -291,19 +291,19 @@ const loop = time => {
     dev.clearColorAndDepthBuffers(0, 0, 0, 1, 1, initialFbo);
 
     // Render geometry into texture
-    scene.execute(cubeMesh, time);
+    scene.execute(time);
 
     // Split color and brightness to 2 render targets (splitColor, splitBright)
-    split.execute(screenspace);
+    split.execute();
 
     if (nBloomPasses) {
         // Do first 2 bloom passes: splitBright -> bloomWrite -> bloomRead
-        bloom.execute(screenspace, {
+        bloom.execute({
             texture: splitBrightTex,
             direction: HORIZONTAL,
             fbo: bloomPongFbo,
         });
-        bloom.execute(screenspace, {
+        bloom.execute({
             texture: bloomPongTex,
             direction: VERTICAL,
             fbo: bloomPingFbo,
@@ -311,12 +311,12 @@ const loop = time => {
 
         // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
         for (let i = 1; i < nBloomPasses; i++) {
-            bloom.execute(screenspace, {
+            bloom.execute({
                 texture: bloomPingTex,
                 direction: HORIZONTAL,
                 fbo: bloomPongFbo,
             });
-            bloom.execute(screenspace, {
+            bloom.execute({
                 texture: bloomPongTex,
                 direction: VERTICAL,
                 fbo: bloomPingFbo,
@@ -325,7 +325,7 @@ const loop = time => {
     }
 
     // Blend together blurred highlights with original color and perform tonemapping
-    tonemap.execute(screenspace);
+    tonemap.execute();
 
     window.requestAnimationFrame(loop);
 }
