@@ -30,10 +30,6 @@ const cmd = Command.create(dev, {
             o_color = vec4(0.1, 1.0, 0.3, 1.0);
         }
     `,
-    data: {
-        attributes: { a_position: bunny.positions },
-        elements: bunny.elements,
-    },
     uniforms: {
         u_projection: {
             type: "matrix4fv",
@@ -58,6 +54,10 @@ const cmd = Command.create(dev, {
                 [0, 1, 0]
             ),
         },
+    },
+    data: {
+        attributes: { a_position: bunny.positions },
+        elements: bunny.elements,
     },
     blend: {
         func: {

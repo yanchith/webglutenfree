@@ -31,7 +31,6 @@ const cmd = Command.create(dev, {
             o_color = vec4(1.0);
         }
     `,
-    data: ({ geometry }) => geometry,
     uniforms: {
         u_model: {
             type: "matrix4fv",
@@ -57,6 +56,7 @@ const cmd = Command.create(dev, {
             ),
         },
     },
+    data: ({ geometry }) => geometry,
 });
 
 const cubeMesh = VertexArray.create(dev, cmd.locate({

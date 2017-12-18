@@ -38,6 +38,28 @@ const cmd = Command.create(dev, {
             o_color = v_vertex_color;
         }
     `,
+    uniforms: {
+        u_projection: {
+            type: "matrix4fv",
+            value: mat4.ortho(
+                mat4.create(),
+                -width / 2,
+                width / 2,
+                -height / 2,
+                height / 2,
+                -0.1,
+                1000.0,
+            ),
+        },
+        u_model: {
+            type: "matrix4fv",
+            value: mat4.fromScaling(mat4.create(), [50, 50, 100]),
+        },
+        u_view: {
+            type: "matrix4fv",
+            value: () => mat4.rotateZ(view, view, 0.01),
+        },
+    },
     data: {
         attributes: {
             a_position: [
@@ -88,28 +110,6 @@ const cmd = Command.create(dev, {
             [0, 3, 2],
             [1, 3, 0],
         ],
-    },
-    uniforms: {
-        u_projection: {
-            type: "matrix4fv",
-            value: mat4.ortho(
-                mat4.create(),
-                -width / 2,
-                width / 2,
-                -height / 2,
-                height / 2,
-                -0.1,
-                1000.0,
-            ),
-        },
-        u_model: {
-            type: "matrix4fv",
-            value: mat4.fromScaling(mat4.create(), [50, 50, 100]),
-        },
-        u_view: {
-            type: "matrix4fv",
-            value: () => mat4.rotateZ(view, view, 0.01),
-        },
     },
 });
 

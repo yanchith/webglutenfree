@@ -10,39 +10,28 @@ const UNKNOWN_ATTRIB_LOCATION = -1;
 
 export type Color = [number, number, number, number];
 
-export type AccessorOrValue<P, R> = Accessor<P, R> | R;
-export type Accessor<P, R> = (props: P, index: number) => R;
+export type Access<P, R> = R | ((props: P, index: number) => R);
 
 export interface CommandProps<P> {
     vert: string;
     frag: string;
-    data: VertexArrayProps | AccessorOrValue<P, VertexArray>;
     uniforms?: { [key: string]: Uniform<P> };
+    data: VertexArrayProps | Access<P, VertexArray>;
+    framebuffer?: FramebufferProps | Access<P, Framebuffer>;
+    primitive?: Primitive;
     depth?: {
-        func: DepthFunction;
+        func: DepthFunc;
         mask?: boolean;
         range?: [number, number];
     };
     blend?: {
         func: {
-            src: BlendFunction | { rgb: BlendFunction; alpha: BlendFunction };
-            dst: BlendFunction | { rgb: BlendFunction; alpha: BlendFunction };
+            src: BlendFunc | { rgb: BlendFunc; alpha: BlendFunc };
+            dst: BlendFunc | { rgb: BlendFunc; alpha: BlendFunc };
         };
         equation?: BlendEquation | { rgb: BlendEquation; alpha: BlendEquation };
         color?: Color;
     };
-    primitive?: Primitive;
-    framebuffer?: FramebufferProps | AccessorOrValue<P, Framebuffer>;
-}
-
-export const enum Primitive {
-    TRIANGLES = "triangles",
-    TRIANGLE_STRIP = "triangle-strip",
-    TRIANGLE_FAN = "triangle-fan",
-    POINTS = "points",
-    LINES = "lines",
-    LINE_STRIP = "line-strip",
-    LINE_LOOP = "line-loop",
 }
 
 export type Uniform<P> =
@@ -60,145 +49,155 @@ export type Uniform<P> =
 
 export interface Uniform1f<P> {
     type: "1f";
-    value: AccessorOrValue<P, number>;
+    value: Access<P, number>;
 }
 
 export interface Uniform1fv<P> {
     type: "1fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
+    value: Access<P, Float32Array | number[]>;
 }
 
 export interface Uniform1i<P> {
     type: "1i";
-    value: AccessorOrValue<P, number>;
+    value: Access<P, number>;
 }
 
 export interface Uniform1iv<P> {
     type: "1iv";
-    value: AccessorOrValue<P, Int32Array | number[]>;
+    value: Access<P, Int32Array | number[]>;
 }
 
 export interface Uniform1ui<P> {
     type: "1ui";
-    value: AccessorOrValue<P, number>;
+    value: Access<P, number>;
 }
 
 export interface Uniform1uiv<P> {
     type: "1uiv";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
+    value: Access<P, Uint32Array | number[]>;
 }
 
 export interface Uniform2f<P> {
     type: "2f";
-    value: AccessorOrValue<P, Float32Array | number[]>;
+    value: Access<P, Float32Array | number[]>;
 }
 
 export interface Uniform2fv<P> {
     type: "2fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
+    value: Access<P, Float32Array | number[]>;
 }
 
 export interface Uniform2i<P> {
     type: "2i";
-    value: AccessorOrValue<P, Int32Array | number[]>;
+    value: Access<P, Int32Array | number[]>;
 }
 
 export interface Uniform2iv<P> {
     type: "2iv";
-    value: AccessorOrValue<P, Int32Array | number[]>;
+    value: Access<P, Int32Array | number[]>;
 }
 
 export interface Uniform2ui<P> {
     type: "2ui";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
+    value: Access<P, Uint32Array | number[]>;
 }
 
 export interface Uniform2uiv<P> {
     type: "2uiv";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
+    value: Access<P, Uint32Array | number[]>;
 }
 
 export interface Uniform3f<P> {
     type: "3f";
-    value: AccessorOrValue<P, Float32Array | number[]>;
+    value: Access<P, Float32Array | number[]>;
 }
 
 export interface Uniform3fv<P> {
     type: "3fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
+    value: Access<P, Float32Array | number[]>;
 }
 
 export interface Uniform3i<P> {
     type: "3i";
-    value: AccessorOrValue<P, Int32Array | number[]>;
+    value: Access<P, Int32Array | number[]>;
 }
 
 export interface Uniform3iv<P> {
     type: "3iv";
-    value: AccessorOrValue<P, Int32Array | number[]>;
+    value: Access<P, Int32Array | number[]>;
 }
 
 export interface Uniform3ui<P> {
     type: "3ui";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
+    value: Access<P, Uint32Array | number[]>;
 }
 
 export interface Uniform3uiv<P> {
     type: "3uiv";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
+    value: Access<P, Uint32Array | number[]>;
 }
 
 export interface Uniform4f<P> {
     type: "4f";
-    value: AccessorOrValue<P, Float32Array | number[]>;
+    value: Access<P, Float32Array | number[]>;
 }
 
 export interface Uniform4fv<P> {
     type: "4fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
+    value: Access<P, Float32Array | number[]>;
 }
 
 export interface Uniform4i<P> {
     type: "4i";
-    value: AccessorOrValue<P, Int32Array | number[]>;
+    value: Access<P, Int32Array | number[]>;
 }
 
 export interface Uniform4iv<P> {
     type: "4iv";
-    value: AccessorOrValue<P, Int32Array | number[]>;
+    value: Access<P, Int32Array | number[]>;
 }
 
 export interface Uniform4ui<P> {
     type: "4ui";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
+    value: Access<P, Uint32Array | number[]>;
 }
 
 export interface Uniform4uiv<P> {
     type: "4uiv";
-    value: AccessorOrValue<P, Uint32Array | number[]>;
+    value: Access<P, Uint32Array | number[]>;
 }
 
 export interface UniformMatrix2fv<P> {
     type: "matrix2fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
+    value: Access<P, Float32Array | number[]>;
 }
 
 export interface UniformMatrix3fv<P> {
     type: "matrix3fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
+    value: Access<P, Float32Array | number[]>;
 }
 
 export interface UniformMatrix4fv<P> {
     type: "matrix4fv";
-    value: AccessorOrValue<P, Float32Array | number[]>;
+    value: Access<P, Float32Array | number[]>;
 }
 
 export interface UniformTexture<P> {
     type: "texture";
-    value: AccessorOrValue<P, Texture>;
+    value: Access<P, Texture>;
 }
 
-export const enum DepthFunction {
+export const enum Primitive {
+    TRIANGLES = "triangles",
+    TRIANGLE_STRIP = "triangle-strip",
+    TRIANGLE_FAN = "triangle-fan",
+    POINTS = "points",
+    LINES = "lines",
+    LINE_STRIP = "line-strip",
+    LINE_LOOP = "line-loop",
+}
+
+export const enum DepthFunc {
     ALWAYS = "always",
     NEVER = "never",
     EQUAL = "equal",
@@ -209,7 +208,7 @@ export const enum DepthFunction {
     GEQUAL = "gequal",
 }
 
-export const enum BlendFunction {
+export const enum BlendFunc {
     ZERO = "zero",
     ONE = "one",
     SRC_COLOR = "src-color",
@@ -241,12 +240,12 @@ export class Command<P = void> {
         {
             vert,
             frag,
-            data,
             uniforms = {},
+            data,
+            framebuffer,
             primitive = Primitive.TRIANGLES,
             depth,
             blend,
-            framebuffer,
         }: CommandProps<P>,
     ): Command<P> {
         assert.requireNonNull(vert, "vert");
@@ -289,11 +288,6 @@ export class Command<P = void> {
         gl.deleteShader(vertShader);
         gl.deleteShader(fragShader);
 
-        const vertexArrayDescriptor = typeof data === "function"
-            || data instanceof VertexArray
-            ? data
-            : VertexArray.create(dev, locate(gl, program, data));
-
         const uniformDescriptors = Object.entries(uniforms)
             .map(([identifier, uniform]) => {
                 const location = gl.getUniformLocation(program, identifier);
@@ -303,9 +297,22 @@ export class Command<P = void> {
                 return new UniformDescriptor(identifier, location, uniform);
             });
 
+        const vertexArrayDescriptor = typeof data === "function"
+            || data instanceof VertexArray
+            ? data
+            : VertexArray.create(dev, locate(gl, program, data));
+
+
+        const framebufferDescriptor = framebuffer
+            ? typeof framebuffer === "function"
+                || framebuffer instanceof Framebuffer
+                ? framebuffer
+                : Framebuffer.create(gl, framebuffer)
+            : undefined;
+
         const depthDescriptor = depth
             ? new DepthDescriptor(
-                mapGlDepthFunc(gl, depth.func || DepthFunction.LESS),
+                mapGlDepthFunc(gl, depth.func || DepthFunc.LESS),
                 typeof depth.mask === "boolean" ? depth.mask : true,
                 depth.range ? depth.range[0] : 0,
                 depth.range ? depth.range[1] : 1,
@@ -358,22 +365,15 @@ export class Command<P = void> {
             )
             : undefined;
 
-        const framebufferDescriptor = framebuffer
-            ? typeof framebuffer === "function"
-                || framebuffer instanceof Framebuffer
-                ? framebuffer
-                : Framebuffer.create(gl, framebuffer)
-            : undefined;
-
         return new Command(
             gl,
             program,
             mapGlPrimitive(gl, primitive),
-            vertexArrayDescriptor,
             uniformDescriptors,
+            vertexArrayDescriptor,
+            framebufferDescriptor,
             depthDescriptor,
             blendDescriptor,
-            framebufferDescriptor,
         );
     }
 
@@ -381,11 +381,11 @@ export class Command<P = void> {
         private gl: WebGL2RenderingContext,
         private glProgram: WebGLProgram,
         private glPrimitive: number,
-        private vertexArrayDescriptor: AccessorOrValue<P, VertexArray>,
         private uniformDescriptors: UniformDescriptor<P>[],
+        private vertexArrayDescriptor: Access<P, VertexArray>,
+        private framebufferDescriptor?: Access<P, Framebuffer>,
         private depthDescriptor?: DepthDescriptor,
         private blendDescriptor?: BlendDescriptor,
-        private framebufferDescriptor?: AccessorOrValue<P, Framebuffer>,
     ) { }
 
     execute(props: P | P[]): void {
@@ -731,42 +731,40 @@ function mapGlPrimitive(
 
 function mapGlDepthFunc(
     gl: WebGL2RenderingContext,
-    func: DepthFunction,
+    func: DepthFunc,
 ): number {
     switch (func) {
-        case DepthFunction.ALWAYS: return gl.ALWAYS;
-        case DepthFunction.NEVER: return gl.NEVER;
-        case DepthFunction.EQUAL: return gl.EQUAL;
-        case DepthFunction.NOTEQUAL: return gl.NOTEQUAL;
-        case DepthFunction.LESS: return gl.LESS;
-        case DepthFunction.LEQUAL: return gl.LEQUAL;
-        case DepthFunction.GREATER: return gl.GREATER;
-        case DepthFunction.GEQUAL: return gl.GEQUAL;
+        case DepthFunc.ALWAYS: return gl.ALWAYS;
+        case DepthFunc.NEVER: return gl.NEVER;
+        case DepthFunc.EQUAL: return gl.EQUAL;
+        case DepthFunc.NOTEQUAL: return gl.NOTEQUAL;
+        case DepthFunc.LESS: return gl.LESS;
+        case DepthFunc.LEQUAL: return gl.LEQUAL;
+        case DepthFunc.GREATER: return gl.GREATER;
+        case DepthFunc.GEQUAL: return gl.GEQUAL;
         default: return assert.never(func);
     }
 }
 
 function mapGlBlendFunc(
     gl: WebGL2RenderingContext,
-    func: BlendFunction,
+    func: BlendFunc,
 ): number {
     switch (func) {
-        case BlendFunction.ZERO: return gl.ZERO;
-        case BlendFunction.ONE: return gl.ONE;
-        case BlendFunction.SRC_COLOR: return gl.SRC_COLOR;
-        case BlendFunction.SRC_ALPHA: return gl.SRC_ALPHA;
-        case BlendFunction.ONE_MINUS_SRC_COLOR: return gl.ONE_MINUS_SRC_COLOR;
-        case BlendFunction.ONE_MINUS_SRC_ALPHA: return gl.ONE_MINUS_SRC_ALPHA;
-        case BlendFunction.DST_COLOR: return gl.DST_COLOR;
-        case BlendFunction.DST_ALPHA: return gl.DST_ALPHA;
-        case BlendFunction.ONE_MINUS_DST_COLOR: return gl.ONE_MINUS_DST_COLOR;
-        case BlendFunction.ONE_MINUS_DST_ALPHA: return gl.ONE_MINUS_DST_ALPHA;
-        case BlendFunction.CONSTANT_COLOR: return gl.CONSTANT_COLOR;
-        case BlendFunction.CONSTANT_ALPHA: return gl.CONSTANT_ALPHA;
-        case BlendFunction.ONE_MINUS_CONSTANT_COLOR:
-            return gl.ONE_MINUS_CONSTANT_COLOR;
-        case BlendFunction.ONE_MINUS_CONSTANT_ALPHA:
-            return gl.ONE_MINUS_CONSTANT_ALPHA;
+        case BlendFunc.ZERO: return gl.ZERO;
+        case BlendFunc.ONE: return gl.ONE;
+        case BlendFunc.SRC_COLOR: return gl.SRC_COLOR;
+        case BlendFunc.SRC_ALPHA: return gl.SRC_ALPHA;
+        case BlendFunc.ONE_MINUS_SRC_COLOR: return gl.ONE_MINUS_SRC_COLOR;
+        case BlendFunc.ONE_MINUS_SRC_ALPHA: return gl.ONE_MINUS_SRC_ALPHA;
+        case BlendFunc.DST_COLOR: return gl.DST_COLOR;
+        case BlendFunc.DST_ALPHA: return gl.DST_ALPHA;
+        case BlendFunc.ONE_MINUS_DST_COLOR: return gl.ONE_MINUS_DST_COLOR;
+        case BlendFunc.ONE_MINUS_DST_ALPHA: return gl.ONE_MINUS_DST_ALPHA;
+        case BlendFunc.CONSTANT_COLOR: return gl.CONSTANT_COLOR;
+        case BlendFunc.CONSTANT_ALPHA: return gl.CONSTANT_ALPHA;
+        case BlendFunc.ONE_MINUS_CONSTANT_COLOR: return gl.ONE_MINUS_CONSTANT_COLOR;
+        case BlendFunc.ONE_MINUS_CONSTANT_ALPHA: return gl.ONE_MINUS_CONSTANT_ALPHA;
         default: return assert.never(func);
     }
 }

@@ -88,10 +88,6 @@ const scene = Command.create(dev, {
             o_color = vec4(0.9, 0.8, 0.9, 0.5);
         }
     `,
-    data: {
-        attributes: { a_position: cube.positions },
-        elements: cube.elements,
-    },
     uniforms: {
         u_model: {
             type: "matrix4fv",
@@ -116,6 +112,10 @@ const scene = Command.create(dev, {
                 1000.0,
             ),
         },
+    },
+    data: {
+        attributes: { a_position: cube.positions },
+        elements: cube.elements,
     },
     framebuffer: ({ target }) => target,
 });
@@ -154,13 +154,13 @@ const split = Command.create(dev, {
             o_bright = brightness > 0.7 ? color : vec4(0.0, 0.0, 0.0, 1.0);
         }
     `,
-    data: screenspace,
     uniforms: {
         u_image: {
             type: "texture",
             value: initialTex,
         },
     },
+    data: screenspace,
     framebuffer: ({ target }) => target,
 });
 
@@ -207,7 +207,6 @@ const bloom = Command.create(dev, {
             color = vec4(color_sum.rgb, 1.0);
         }
     `,
-    data: screenspace,
     uniforms: {
         u_kernel: {
             type: "1fv",
@@ -222,6 +221,7 @@ const bloom = Command.create(dev, {
             value: ({ source }) => source,
         },
     },
+    data: screenspace,
     framebuffer: ({ target }) => target,
 });
 
@@ -266,7 +266,6 @@ const tonemap = Command.create(dev, {
             o_color = vec4(mapped, 1.0);
         }
     `,
-    data: screenspace,
     uniforms: {
         u_image_color: {
             type: "texture",
@@ -277,6 +276,7 @@ const tonemap = Command.create(dev, {
             value: bloomPingTex,
         },
     },
+    data: screenspace,
 });
 
 const nBloomPasses = Math.max(0, N_BLOOM_PASSES);

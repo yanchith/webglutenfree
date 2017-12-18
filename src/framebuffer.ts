@@ -69,16 +69,16 @@ export class Framebuffer {
 
         return new Framebuffer(
             fbo,
+            colorBuffers.map((_, i) => gl.COLOR_ATTACHMENT0 + i),
             width,
             height,
-            colorBuffers.map((_, i) => gl.COLOR_ATTACHMENT0 + i),
         );
     }
 
     private constructor(
         readonly glFramebuffer: WebGLFramebuffer,
+        readonly glColorAttachments: number[],
         readonly width: number,
         readonly height: number,
-        readonly glColorAttachments: number[],
     ) { }
 }

@@ -73,10 +73,6 @@ const draw = Command.create(dev, {
             o_color = vec4(0.8, 0.3, 0.7, 1.0);
         }
     `,
-    data: {
-        attributes: { a_position: bunny.positions },
-        elements: bunny.elements,
-    },
     uniforms: {
         u_projection: {
             type: "matrix4fv",
@@ -101,6 +97,10 @@ const draw = Command.create(dev, {
                 [0, 1, 0]
             ),
         },
+    },
+    data: {
+        attributes: { a_position: bunny.positions },
+        elements: bunny.elements,
     },
     framebuffer: ({ target }) => target,
 });
