@@ -29,12 +29,12 @@ const cmd = Command.create(dev, {
     `,
     data: {
         attributes: {
-            0: [
+            a_position: [
                 [-0.3, -0.5],
                 [0.3, -0.5],
                 [0, 0.5],
             ],
-            1: [
+            a_color: [
                 [1, 0, 0, 1],
                 [0, 1, 0, 1],
                 [0, 0, 1, 1],
