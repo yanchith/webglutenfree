@@ -32,9 +32,9 @@ export interface CommandProps<P> {
         };
         mask?: StencilOrSeparate<number>;
         op?: {
-            sfail: StencilOrSeparate<StencilOp>;
-            dfail: StencilOrSeparate<StencilOp>;
-            dpass: StencilOrSeparate<StencilOp>;
+            fail: StencilOrSeparate<StencilOp>;
+            zfail: StencilOrSeparate<StencilOp>;
+            zpass: StencilOrSeparate<StencilOp>;
         };
     };
     blend?: {
@@ -458,20 +458,20 @@ export class Command<P = void> {
                 bFuncMask,
                 fMask,
                 bMask,
-                fOpSFail,
-                bOpSFail,
-                fOpDFail,
-                bOpDFail,
-                fOpDPass,
-                bOpDPass,
+                fOpFail,
+                bOpFail,
+                fOpZFail,
+                bOpZFail,
+                fOpZPass,
+                bOpZPass,
             } = stencilDescr;
             gl.enable(gl.STENCIL_TEST);
             gl.stencilFuncSeparate(gl.FRONT, fFunc, fFuncRef, fFuncMask);
             gl.stencilFuncSeparate(gl.BACK, bFunc, bfuncRef, bFuncMask);
             gl.stencilMaskSeparate(gl.FRONT, fMask);
             gl.stencilMaskSeparate(gl.BACK, bMask);
-            gl.stencilOpSeparate(gl.FRONT, fOpSFail, fOpDFail, fOpDPass);
-            gl.stencilOpSeparate(gl.BACK, bOpSFail, bOpDFail, bOpDPass);
+            gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
+            gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
         }
     }
 
@@ -722,12 +722,12 @@ class StencilDescriptor {
         readonly bFuncMask: number,
         readonly fMask: number,
         readonly bMask: number,
-        readonly fOpSFail: number,
-        readonly bOpSFail: number,
-        readonly fOpDFail: number,
-        readonly bOpDFail: number,
-        readonly fOpDPass: number,
-        readonly bOpDPass: number,
+        readonly fOpFail: number,
+        readonly bOpFail: number,
+        readonly fOpZFail: number,
+        readonly bOpZFail: number,
+        readonly fOpZPass: number,
+        readonly bOpZPass: number,
     ) { }
 }
 
@@ -899,49 +899,49 @@ function parseStencil(
         mapGlStencilOp(
             gl,
             stencil.op
-                ? typeof stencil.op.sfail === "object"
-                    ? stencil.op.sfail.front
-                    : stencil.op.sfail
+                ? typeof stencil.op.fail === "object"
+                    ? stencil.op.fail.front
+                    : stencil.op.fail
                 : StencilOp.KEEP,
         ),
         mapGlStencilOp(
             gl,
             stencil.op
-                ? typeof stencil.op.sfail === "object"
-                    ? stencil.op.sfail.back
-                    : stencil.op.sfail
+                ? typeof stencil.op.fail === "object"
+                    ? stencil.op.fail.back
+                    : stencil.op.fail
                 : StencilOp.KEEP,
         ),
         mapGlStencilOp(
             gl,
             stencil.op
-                ? typeof stencil.op.dfail === "object"
-                    ? stencil.op.dfail.front
-                    : stencil.op.dfail
+                ? typeof stencil.op.zfail === "object"
+                    ? stencil.op.zfail.front
+                    : stencil.op.zfail
                 : StencilOp.KEEP,
         ),
         mapGlStencilOp(
             gl,
             stencil.op
-                ? typeof stencil.op.dfail === "object"
-                    ? stencil.op.dfail.back
-                    : stencil.op.dfail
+                ? typeof stencil.op.zfail === "object"
+                    ? stencil.op.zfail.back
+                    : stencil.op.zfail
                 : StencilOp.KEEP,
         ),
         mapGlStencilOp(
             gl,
             stencil.op
-                ? typeof stencil.op.dpass === "object"
-                    ? stencil.op.dpass.front
-                    : stencil.op.dpass
+                ? typeof stencil.op.zpass === "object"
+                    ? stencil.op.zpass.front
+                    : stencil.op.zpass
                 : StencilOp.KEEP,
         ),
         mapGlStencilOp(
             gl,
             stencil.op
-                ? typeof stencil.op.dpass === "object"
-                    ? stencil.op.dpass.back
-                    : stencil.op.dpass
+                ? typeof stencil.op.zpass === "object"
+                    ? stencil.op.zpass.back
+                    : stencil.op.zpass
                 : StencilOp.KEEP,
         ),
     );

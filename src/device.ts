@@ -30,7 +30,13 @@ export class Device {
         canvas: HTMLCanvasElement,
         options?: DeviceOptions,
     ): Device {
-        const gl = canvas.getContext("webgl2");
+        const gl = canvas.getContext("webgl2", {
+            // TODO: make these available in DeviceOptions
+            depth: true,
+            stencil: true,
+            antialias: true,
+            preserveDrawingBuffer: true,
+        });
         if (!gl) { throw new Error("Could not get webgl2 context"); }
         return Device.fromContext(gl, options);
     }

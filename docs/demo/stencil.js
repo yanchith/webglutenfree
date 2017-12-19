@@ -61,14 +61,20 @@ const drawObjects = Command.create(dev, {
         },
     },
     data: ({ geometry }) => geometry,
+    depth: { func: "less" },
     stencil: {
-        func: { func: "always" },
+        func: {
+            func: "always",
+            ref: 1,
+            mask: 0xFF,
+        },
+        mask: 0xFF,
         op: {
-            sfail: "keep",
-            dfail: "keep",
-            dpass: "replace",
-        }
-    }
+            fail: "keep",
+            zfail: "keep",
+            zpass: "replace",
+        },
+    },
 });
 
 const drawOutlines = Command.create(dev, {
@@ -118,12 +124,13 @@ const drawOutlines = Command.create(dev, {
             ref: 1,
             mask: 0xFF,
         },
+        mask: 0x00,
         op: {
-            sfail: "keep",
-            dfail: "keep",
-            dpass: "keep",
-        }
-    }
+            fail: "keep",
+            zfail: "keep",
+            zpass: "keep",
+        },
+    },
 });
 
 const cubeMesh = VertexArray.create(dev, drawObjects.locate({
