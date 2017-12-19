@@ -3,7 +3,7 @@ export {
     Command,
     CommandProps,
     Primitive,
-    DepthFunc,
+    DepthOrStencilFunc,
     BlendFunc,
     BlendEquation,
 } from "./command";

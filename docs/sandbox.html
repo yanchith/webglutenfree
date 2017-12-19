@@ -20,7 +20,7 @@
 </head>
 
 <body>
-    <script src="./demo/stats.js"></script>
+    <script src="./demolib/stats.js"></script>
     <script type="module">
         const stats = new Stats();
         document.body.appendChild(stats.dom);
@@ -34,7 +34,7 @@
     let's include it globally -->
     <script src="./lib/gl-matrix-min.js"></script>
     <script type="module">
-        import { Channel } from "./demo/sandbox/channel.js";
+        import { Channel } from "./demolib/sandbox/channel.js";
         const chan = new Channel(window);
         chan.onMessage(msg => {
             if (msg.code) {

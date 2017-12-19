@@ -8,9 +8,9 @@ import { Framebuffer, FramebufferProps } from "./framebuffer";
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 
-export type Color = [number, number, number, number];
-
 export type Access<P, R> = R | ((props: P, index: number) => R);
+export type StencilOrSeparate<T> = T | { front: T, back: T };
+export type BlendOrSeparate<T> = T | { rgb: T, alpha: T };
 
 export interface CommandProps<P> {
     vert: string;
@@ -20,17 +20,30 @@ export interface CommandProps<P> {
     framebuffer?: FramebufferProps | Access<P, Framebuffer>;
     primitive?: Primitive;
     depth?: {
-        func: DepthFunc;
+        func: DepthOrStencilFunc;
         mask?: boolean;
         range?: [number, number];
     };
+    stencil?: {
+        func: {
+            func: StencilOrSeparate<DepthOrStencilFunc>;
+            ref?: StencilOrSeparate<number>;
+            mask?: StencilOrSeparate<number>;
+        };
+        mask?: StencilOrSeparate<number>;
+        op?: {
+            sfail: StencilOrSeparate<StencilOp>;
+            dfail: StencilOrSeparate<StencilOp>;
+            dpass: StencilOrSeparate<StencilOp>;
+        };
+    };
     blend?: {
         func: {
-            src: BlendFunc | { rgb: BlendFunc; alpha: BlendFunc };
-            dst: BlendFunc | { rgb: BlendFunc; alpha: BlendFunc };
+            src: BlendOrSeparate<BlendFunc>;
+            dst: BlendOrSeparate<BlendFunc>;
         };
-        equation?: BlendEquation | { rgb: BlendEquation; alpha: BlendEquation };
-        color?: Color;
+        equation?: BlendOrSeparate<BlendEquation>;
+        color?: [number, number, number, number];
     };
 }
 
@@ -197,7 +210,7 @@ export const enum Primitive {
     LINE_LOOP = "line-loop",
 }
 
-export const enum DepthFunc {
+export const enum DepthOrStencilFunc {
     ALWAYS = "always",
     NEVER = "never",
     EQUAL = "equal",
@@ -206,6 +219,17 @@ export const enum DepthFunc {
     LEQUAL = "lequal",
     GREATER = "greater",
     GEQUAL = "gequal",
+}
+
+export const enum StencilOp {
+    KEEP = "keep",
+    ZERO = "zero",
+    REPLACE = "replace",
+    INCR = "incr",
+    INCR_WRAP = "incr-wrap",
+    DECR = "decr",
+    DECR_WRAP = "decr-wrap",
+    INVERT = "invert",
 }
 
 export const enum BlendFunc {
@@ -245,6 +269,7 @@ export class Command<P = void> {
             framebuffer,
             primitive = Primitive.TRIANGLES,
             depth,
+            stencil,
             blend,
         }: CommandProps<P>,
     ): Command<P> {
@@ -279,101 +304,55 @@ export class Command<P = void> {
                 );
             }
         }
+        if (stencil) {
+            assert.requireNonNull(stencil.func, "stencil.func");
+            // TODO: complete stencil validation... validation framework?
+        }
 
         const gl = dev instanceof Device ? dev.gl : dev;
-        const vertShader = glutil.createShader(gl, gl.VERTEX_SHADER, vert);
-        const fragShader = glutil.createShader(gl, gl.FRAGMENT_SHADER, frag);
-        const program = glutil.createProgram(gl, vertShader, fragShader);
+        const vs = glutil.createShader(gl, gl.VERTEX_SHADER, vert);
+        const fs = glutil.createShader(gl, gl.FRAGMENT_SHADER, frag);
+        const prog = glutil.createProgram(gl, vs, fs);
 
-        gl.deleteShader(vertShader);
-        gl.deleteShader(fragShader);
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
 
-        const uniformDescriptors = Object.entries(uniforms)
-            .map(([identifier, uniform]) => {
-                const location = gl.getUniformLocation(program, identifier);
-                if (!location) {
-                    throw new Error(`No location for uniform: ${identifier}`);
+        const uniformDescrs = Object.entries(uniforms)
+            .map(([ident, uniform]) => {
+                const loc = gl.getUniformLocation(prog, ident);
+                if (!loc) {
+                    throw new Error(`No location for uniform: ${ident}`);
                 }
-                return new UniformDescriptor(identifier, location, uniform);
+                return new UniformDescriptor(ident, loc, uniform);
             });
 
-        const vertexArrayDescriptor = typeof data === "function"
+        const vertexArrayDescr = typeof data === "function"
             || data instanceof VertexArray
             ? data
-            : VertexArray.create(dev, locate(gl, program, data));
+            : VertexArray.create(dev, locate(gl, prog, data));
 
 
-        const framebufferDescriptor = framebuffer
+        const framebufferDescr = framebuffer
             ? typeof framebuffer === "function"
                 || framebuffer instanceof Framebuffer
                 ? framebuffer
                 : Framebuffer.create(gl, framebuffer)
             : undefined;
 
-        const depthDescriptor = depth
-            ? new DepthDescriptor(
-                mapGlDepthFunc(gl, depth.func || DepthFunc.LESS),
-                typeof depth.mask === "boolean" ? depth.mask : true,
-                depth.range ? depth.range[0] : 0,
-                depth.range ? depth.range[1] : 1,
-            )
-            : undefined;
-
-        const blendDescriptor = blend
-            ? new BlendDescriptor(
-                mapGlBlendFunc(
-                    gl,
-                    typeof blend.func.src === "object"
-                        ? blend.func.src.rgb
-                        : blend.func.src,
-                ),
-                mapGlBlendFunc(
-                    gl,
-                    typeof blend.func.src === "object"
-                        ? blend.func.src.alpha
-                        : blend.func.src,
-                ),
-                mapGlBlendFunc(
-                    gl,
-                    typeof blend.func.dst === "object"
-                        ? blend.func.dst.rgb
-                        : blend.func.dst,
-                ),
-                mapGlBlendFunc(
-                    gl,
-                    typeof blend.func.dst === "object"
-                        ? blend.func.dst.alpha
-                        : blend.func.dst,
-                ),
-                mapGlBlendEquation(
-                    gl,
-                    blend.equation
-                        ? typeof blend.equation === "object"
-                            ? blend.equation.rgb
-                            : blend.equation
-                        : BlendEquation.ADD,
-                ),
-                mapGlBlendEquation(
-                    gl,
-                    blend.equation
-                        ? typeof blend.equation === "object"
-                            ? blend.equation.alpha
-                            : blend.equation
-                        : BlendEquation.ADD,
-                ),
-                blend.color,
-            )
-            : undefined;
+        const depthDescr = parseDepth(gl, depth);
+        const stencilDescr = parseStencil(gl, stencil);
+        const blendDescr = parseBlend(gl, blend);
 
         return new Command(
             gl,
-            program,
+            prog,
             mapGlPrimitive(gl, primitive),
-            uniformDescriptors,
-            vertexArrayDescriptor,
-            framebufferDescriptor,
-            depthDescriptor,
-            blendDescriptor,
+            uniformDescrs,
+            vertexArrayDescr,
+            framebufferDescr,
+            depthDescr,
+            stencilDescr,
+            blendDescr,
         );
     }
 
@@ -381,11 +360,12 @@ export class Command<P = void> {
         private gl: WebGL2RenderingContext,
         private glProgram: WebGLProgram,
         private glPrimitive: number,
-        private uniformDescriptors: UniformDescriptor<P>[],
-        private vertexArrayDescriptor: Access<P, VertexArray>,
-        private framebufferDescriptor?: Access<P, Framebuffer>,
-        private depthDescriptor?: DepthDescriptor,
-        private blendDescriptor?: BlendDescriptor,
+        private uniformDescrs: UniformDescriptor<P>[],
+        private vertexArrayDescr: Access<P, VertexArray>,
+        private framebufferDescr?: Access<P, Framebuffer>,
+        private depthDescr?: DepthDescriptor,
+        private stencilDescr?: StencilDescriptor,
+        private blendDescr?: BlendDescriptor,
     ) { }
 
     execute(props: P | P[]): void {
@@ -394,6 +374,7 @@ export class Command<P = void> {
         gl.useProgram(glProgram);
 
         this.beginDepth();
+        this.beginStencil();
         this.beginBlend();
 
         if (Array.isArray(props)) {
@@ -402,11 +383,15 @@ export class Command<P = void> {
             this.executeInner(props, 0);
         }
 
-        this.endBlend();
-        this.endDepth();
-
+        // FBOs and VAOs are bound without unbinding in the inner loop
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.bindVertexArray(null);
+
+        this.endBlend();
+        this.endStencil();
+        this.endDepth();
+
+        gl.useProgram(null);
     }
 
     locate(vertexArrayProps: VertexArrayProps): VertexArrayProps {
@@ -417,13 +402,13 @@ export class Command<P = void> {
         props: P,
         index: number,
     ): void {
-        const { gl, vertexArrayDescriptor, framebufferDescriptor } = this;
+        const { gl, vertexArrayDescr, framebufferDescr } = this;
 
         let bufferWidth = gl.drawingBufferWidth;
         let bufferHeight = gl.drawingBufferHeight;
 
-        const fbo = framebufferDescriptor
-            ? access(props, index, framebufferDescriptor)
+        const fbo = framebufferDescr
+            ? access(props, index, framebufferDescr)
             : undefined;
 
         if (fbo) {
@@ -437,7 +422,7 @@ export class Command<P = void> {
 
         this.updateUniforms(props, index);
 
-        const vao = access(props, index, vertexArrayDescriptor);
+        const vao = access(props, index, vertexArrayDescr);
         gl.bindVertexArray(vao.glVertexArrayObject);
         if (vao.hasElements) {
             this.drawElements(vao.count, vao.instanceCount);
@@ -447,44 +432,78 @@ export class Command<P = void> {
     }
 
     private beginDepth(): void {
-        const { gl, depthDescriptor } = this;
-        if (depthDescriptor) {
+        const { gl, depthDescr } = this;
+        if (depthDescr) {
             gl.enable(gl.DEPTH_TEST);
-            gl.depthFunc(depthDescriptor.func);
-            gl.depthMask(depthDescriptor.mask);
-            gl.depthRange(depthDescriptor.rangeStart, depthDescriptor.rangeEnd);
+            gl.depthFunc(depthDescr.func);
+            gl.depthMask(depthDescr.mask);
+            gl.depthRange(depthDescr.rangeStart, depthDescr.rangeEnd);
         }
     }
 
     private endDepth(): void {
-        const { gl, depthDescriptor } = this;
-        if (depthDescriptor) { gl.disable(gl.DEPTH_TEST); }
+        const { gl, depthDescr } = this;
+        if (depthDescr) { gl.disable(gl.DEPTH_TEST); }
+    }
+
+    private beginStencil(): void {
+        const { gl, stencilDescr } = this;
+        if (stencilDescr) {
+            const {
+                fFunc,
+                bFunc,
+                fFuncRef,
+                bfuncRef,
+                fFuncMask,
+                bFuncMask,
+                fMask,
+                bMask,
+                fOpSFail,
+                bOpSFail,
+                fOpDFail,
+                bOpDFail,
+                fOpDPass,
+                bOpDPass,
+            } = stencilDescr;
+            gl.enable(gl.STENCIL_TEST);
+            gl.stencilFuncSeparate(gl.FRONT, fFunc, fFuncRef, fFuncMask);
+            gl.stencilFuncSeparate(gl.BACK, bFunc, bfuncRef, bFuncMask);
+            gl.stencilMaskSeparate(gl.FRONT, fMask);
+            gl.stencilMaskSeparate(gl.BACK, bMask);
+            gl.stencilOpSeparate(gl.FRONT, fOpSFail, fOpDFail, fOpDPass);
+            gl.stencilOpSeparate(gl.BACK, bOpSFail, bOpDFail, bOpDPass);
+        }
+    }
+
+    private endStencil(): void {
+        const { gl, stencilDescr } = this;
+        if (stencilDescr) { gl.disable(gl.STENCIL_TEST); }
     }
 
     private beginBlend(): void {
-        const { gl, blendDescriptor } = this;
-        if (blendDescriptor) {
+        const { gl, blendDescr } = this;
+        if (blendDescr) {
             gl.enable(gl.BLEND);
             gl.blendFuncSeparate(
-                blendDescriptor.srcRGB,
-                blendDescriptor.dstRGB,
-                blendDescriptor.srcAlpha,
-                blendDescriptor.dstAlpha,
+                blendDescr.srcRGB,
+                blendDescr.dstRGB,
+                blendDescr.srcAlpha,
+                blendDescr.dstAlpha,
             );
             gl.blendEquationSeparate(
-                blendDescriptor.equationRGB,
-                blendDescriptor.equationAlpha,
+                blendDescr.equationRGB,
+                blendDescr.equationAlpha,
             );
-            if (blendDescriptor.color) {
-                const [r, g, b, a] = blendDescriptor.color;
+            if (blendDescr.color) {
+                const [r, g, b, a] = blendDescr.color;
                 gl.blendColor(r, g, b, a);
             }
         }
     }
 
     private endBlend(): void {
-        const { gl, blendDescriptor } = this;
-        if (blendDescriptor) { gl.disable(gl.BLEND); }
+        const { gl, blendDescr } = this;
+        if (blendDescr) { gl.disable(gl.BLEND); }
     }
 
     private drawArrays(count: number, instCount: number): void {
@@ -521,7 +540,7 @@ export class Command<P = void> {
 
         let textureUnitOffset = 0;
 
-        this.uniformDescriptors.forEach(({
+        this.uniformDescrs.forEach(({
             identifier: ident,
             location: loc,
             definition: def,
@@ -693,6 +712,25 @@ class DepthDescriptor {
     ) { }
 }
 
+class StencilDescriptor {
+    constructor(
+        readonly fFunc: number,
+        readonly bFunc: number,
+        readonly fFuncRef: number,
+        readonly bfuncRef: number,
+        readonly fFuncMask: number,
+        readonly bFuncMask: number,
+        readonly fMask: number,
+        readonly bMask: number,
+        readonly fOpSFail: number,
+        readonly bOpSFail: number,
+        readonly fOpDFail: number,
+        readonly bOpDFail: number,
+        readonly fOpDPass: number,
+        readonly bOpDPass: number,
+    ) { }
+}
+
 class BlendDescriptor {
     constructor(
         readonly srcRGB: number,
@@ -701,7 +739,7 @@ class BlendDescriptor {
         readonly dstAlpha: number,
         readonly equationRGB: number,
         readonly equationAlpha: number,
-        readonly color?: Color,
+        readonly color?: [number, number, number, number],
     ) { }
 }
 
@@ -729,20 +767,34 @@ function mapGlPrimitive(
     }
 }
 
-function mapGlDepthFunc(
+function mapGlDepthOrStencilFunc(
     gl: WebGL2RenderingContext,
-    func: DepthFunc,
+    func: DepthOrStencilFunc,
 ): number {
     switch (func) {
-        case DepthFunc.ALWAYS: return gl.ALWAYS;
-        case DepthFunc.NEVER: return gl.NEVER;
-        case DepthFunc.EQUAL: return gl.EQUAL;
-        case DepthFunc.NOTEQUAL: return gl.NOTEQUAL;
-        case DepthFunc.LESS: return gl.LESS;
-        case DepthFunc.LEQUAL: return gl.LEQUAL;
-        case DepthFunc.GREATER: return gl.GREATER;
-        case DepthFunc.GEQUAL: return gl.GEQUAL;
+        case DepthOrStencilFunc.ALWAYS: return gl.ALWAYS;
+        case DepthOrStencilFunc.NEVER: return gl.NEVER;
+        case DepthOrStencilFunc.EQUAL: return gl.EQUAL;
+        case DepthOrStencilFunc.NOTEQUAL: return gl.NOTEQUAL;
+        case DepthOrStencilFunc.LESS: return gl.LESS;
+        case DepthOrStencilFunc.LEQUAL: return gl.LEQUAL;
+        case DepthOrStencilFunc.GREATER: return gl.GREATER;
+        case DepthOrStencilFunc.GEQUAL: return gl.GEQUAL;
         default: return assert.never(func);
+    }
+}
+
+function mapGlStencilOp(gl: WebGL2RenderingContext, op: StencilOp): number {
+    switch (op) {
+        case StencilOp.KEEP: return gl.KEEP;
+        case StencilOp.ZERO: return gl.ZERO;
+        case StencilOp.REPLACE: return gl.REPLACE;
+        case StencilOp.INCR: return gl.INCR;
+        case StencilOp.INCR_WRAP: return gl.INCR_WRAP;
+        case StencilOp.DECR: return gl.DECR;
+        case StencilOp.DECR_WRAP: return gl.DECR_WRAP;
+        case StencilOp.INVERT: return gl.INVERT;
+        default: return assert.never(op);
     }
 }
 
@@ -781,4 +833,166 @@ function mapGlBlendEquation(
         case BlendEquation.MAX: return gl.MAX;
         default: return assert.never(equation);
     }
+}
+
+function parseDepth(
+    gl: WebGL2RenderingContext,
+    depth: CommandProps<void>["depth"],
+): DepthDescriptor | undefined {
+    if (!depth) { return undefined; }
+    return new DepthDescriptor(
+        mapGlDepthOrStencilFunc(gl, depth.func || DepthOrStencilFunc.LESS),
+        typeof depth.mask === "boolean" ? depth.mask : true,
+        depth.range ? depth.range[0] : 0,
+        depth.range ? depth.range[1] : 1,
+    );
+}
+
+function parseStencil(
+    gl: WebGL2RenderingContext,
+    stencil: CommandProps<void>["stencil"],
+): StencilDescriptor | undefined {
+    if (!stencil) { return undefined; }
+    return new StencilDescriptor(
+        mapGlDepthOrStencilFunc(
+            gl,
+            typeof stencil.func.func === "object"
+                ? stencil.func.func.front
+                : stencil.func.func,
+        ),
+        mapGlDepthOrStencilFunc(
+            gl,
+            typeof stencil.func.func === "object"
+                ? stencil.func.func.back
+                : stencil.func.func,
+        ),
+        typeof stencil.func.ref !== "undefined"
+            ? typeof stencil.func.ref === "object"
+                ? stencil.func.ref.front
+                : stencil.func.ref
+            : 1,
+        typeof stencil.func.ref !== "undefined"
+            ? typeof stencil.func.ref === "object"
+                ? stencil.func.ref.back
+                : stencil.func.ref
+            : 1,
+        typeof stencil.func.mask !== "undefined"
+            ? typeof stencil.func.mask === "object"
+                ? stencil.func.mask.front
+                : stencil.func.mask
+            : 0xFF,
+        typeof stencil.func.mask !== "undefined"
+            ? typeof stencil.func.mask === "object"
+                ? stencil.func.mask.back
+                : stencil.func.mask
+            : 0xFF,
+        typeof stencil.mask !== "undefined"
+            ? typeof stencil.mask === "object"
+                ? stencil.mask.front
+                : stencil.mask
+            : 0xFF,
+        typeof stencil.mask !== "undefined"
+            ? typeof stencil.mask === "object"
+                ? stencil.mask.back
+                : stencil.mask
+            : 0xFF,
+        mapGlStencilOp(
+            gl,
+            stencil.op
+                ? typeof stencil.op.sfail === "object"
+                    ? stencil.op.sfail.front
+                    : stencil.op.sfail
+                : StencilOp.KEEP,
+        ),
+        mapGlStencilOp(
+            gl,
+            stencil.op
+                ? typeof stencil.op.sfail === "object"
+                    ? stencil.op.sfail.back
+                    : stencil.op.sfail
+                : StencilOp.KEEP,
+        ),
+        mapGlStencilOp(
+            gl,
+            stencil.op
+                ? typeof stencil.op.dfail === "object"
+                    ? stencil.op.dfail.front
+                    : stencil.op.dfail
+                : StencilOp.KEEP,
+        ),
+        mapGlStencilOp(
+            gl,
+            stencil.op
+                ? typeof stencil.op.dfail === "object"
+                    ? stencil.op.dfail.back
+                    : stencil.op.dfail
+                : StencilOp.KEEP,
+        ),
+        mapGlStencilOp(
+            gl,
+            stencil.op
+                ? typeof stencil.op.dpass === "object"
+                    ? stencil.op.dpass.front
+                    : stencil.op.dpass
+                : StencilOp.KEEP,
+        ),
+        mapGlStencilOp(
+            gl,
+            stencil.op
+                ? typeof stencil.op.dpass === "object"
+                    ? stencil.op.dpass.back
+                    : stencil.op.dpass
+                : StencilOp.KEEP,
+        ),
+    );
+}
+
+function parseBlend(
+    gl: WebGL2RenderingContext,
+    blend: CommandProps<void>["blend"],
+): BlendDescriptor | undefined {
+    if (!blend) { return undefined; }
+    return new BlendDescriptor(
+        mapGlBlendFunc(
+            gl,
+            typeof blend.func.src === "object"
+                ? blend.func.src.rgb
+                : blend.func.src,
+        ),
+        mapGlBlendFunc(
+            gl,
+            typeof blend.func.src === "object"
+                ? blend.func.src.alpha
+                : blend.func.src,
+        ),
+        mapGlBlendFunc(
+            gl,
+            typeof blend.func.dst === "object"
+                ? blend.func.dst.rgb
+                : blend.func.dst,
+        ),
+        mapGlBlendFunc(
+            gl,
+            typeof blend.func.dst === "object"
+                ? blend.func.dst.alpha
+                : blend.func.dst,
+        ),
+        mapGlBlendEquation(
+            gl,
+            blend.equation
+                ? typeof blend.equation === "object"
+                    ? blend.equation.rgb
+                    : blend.equation
+                : BlendEquation.ADD,
+        ),
+        mapGlBlendEquation(
+            gl,
+            blend.equation
+                ? typeof blend.equation === "object"
+                    ? blend.equation.alpha
+                    : blend.equation
+                : BlendEquation.ADD,
+        ),
+        blend.color,
+    );
 }

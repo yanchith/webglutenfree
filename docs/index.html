@@ -82,30 +82,31 @@
             color: lawngreen;
         }
     </style>
-    <link rel="stylesheet" href="./demo/codemirror/codemirror.css"></link>
-    <link rel="stylesheet" href="./demo/codemirror/liquibyte.css"></link>
-    <link rel="stylesheet" href="./demo/codemirror/solarized.css"></link>
+    <link rel="stylesheet" href="./demolib/codemirror/codemirror.css"></link>
+    <link rel="stylesheet" href="./demolib/codemirror/liquibyte.css"></link>
+    <link rel="stylesheet" href="./demolib/codemirror/solarized.css"></link>
 </head>
 
 <body>
     <iframe id="iframe" src="sandbox.html"></iframe>
     <div id="editor"></div>
     <div id="menu">
-        <div data-href="./examples/triangle.js" class="selected">triangle</div>
-        <div data-href="./examples/line.js">line</div>
-        <div data-href="./examples/bunny.js">bunny</div>
-        <div data-href="./examples/batch.js">batch</div>
-        <div data-href="./examples/instancing.js">instancing</div>
-        <div data-href="./examples/image-processing.js">image processing</div>
-        <div data-href="./examples/persistence.js">persistence</div>
-        <div data-href="./examples/bloom.js">bloom</div>
+        <div data-href="./demo/triangle.js" class="selected">triangle</div>
+        <div data-href="./demo/line.js">line</div>
+        <div data-href="./demo/bunny.js">bunny</div>
+        <div data-href="./demo/batch.js">batch</div>
+        <div data-href="./demo/instancing.js">instancing</div>
+        <div data-href="./demo/stencil.js">stencil</div>
+        <div data-href="./demo/image-processing.js">image processing</div>
+        <div data-href="./demo/persistence.js">persistence</div>
+        <div data-href="./demo/bloom.js">bloom</div>
     </div>
 
-    <script src="./demo/codemirror/codemirror.js"></script>
-    <script src="./demo/codemirror/javascript.js"></script>
+    <script src="./demolib/codemirror/codemirror.js"></script>
+    <script src="./demolib/codemirror/javascript.js"></script>
     <script type="module">
-        import { IFrame } from "./demo/sandbox/iframe.js";
-        import { debounce } from "./demo/sandbox/util.js";
+        import { IFrame } from "./demolib/sandbox/iframe.js";
+        import { debounce } from "./demolib/sandbox/util.js";
 
         const iframeElem = document.getElementById("iframe");
         const editorElem = document.getElementById("editor");
@@ -131,7 +132,7 @@
                 selectElement(elem);
                 fetchExample(path);
             } else {
-                fetchExample("./examples/triangle.js");
+                fetchExample("./demo/triangle.js");
             }
         }
 
@@ -148,12 +149,12 @@
         }
 
         function hashToPath(hash) {
-            return `./examples/${hash.substring(1)}.js`
+            return `./demo/${hash.substring(1)}.js`
         }
 
         function pathToHash(path) {
-            const trimExample = path.substring(11);
-            const trimJs = trimExample.substring(0, trimExample.length - 3);
+            const trimDemo = path.substring("./demo/".length);
+            const trimJs = trimDemo.substring(0, trimDemo.length - ".js".length);
             return `#${trimJs}`;
         }
 
