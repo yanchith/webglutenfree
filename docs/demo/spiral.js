@@ -1,0 +1,85 @@
+import { Device, Command } from "./lib/glutenfree.es.min.js";
+import * as spiral from "./lib/spiral.js"
+
+const dev = Device.mount();
+const [width, height] = [dev.bufferWidth, dev.bufferHeight];
+
+const view = mat4.create();
+
+const cmd = Command.create(dev, {
+    vert: `#version 300 es
+        precision mediump float;
+
+        uniform mat4 u_projection, u_model, u_view;
+
+        layout (location = 0) in vec3 a_position;
+        layout (location = 1) in vec3 a_normal;
+
+        out vec4 v_color;
+
+        void main() {
+            v_color = vec4(a_normal, 1.0);
+            gl_Position = u_projection
+                * u_view
+                * u_model
+                * vec4(a_position, 1.0);
+        }
+    `,
+    frag: `#version 300 es
+        precision mediump float;
+
+        in vec4 v_color;
+
+        out vec4 o_color;
+
+        void main() {
+            o_color = v_color;
+        }
+    `,
+    uniforms: {
+        u_projection: {
+            type: "matrix4fv",
+            value: mat4.perspective(
+                mat4.create(),
+                Math.PI / 4,
+                width / height,
+                0.1,
+                1000,
+            ),
+        },
+        u_model: {
+            type: "matrix4fv",
+            value: mat4.fromRotation(mat4.create(), Math.PI / 2, [1, 0, 0]),
+        },
+        u_view: {
+            type: "matrix4fv",
+            value: time => mat4.lookAt(
+                view,
+                [30 * Math.cos(time / 5000), 2.5, 30 * Math.sin(time / 5000)],
+                [0, 0, 0],
+                [0, 1, 0]
+            ),
+        },
+    },
+    data: {
+        attributes: {
+            a_position: spiral.positions,
+            a_normal: spiral.normals,
+        },
+    },
+    blend: {
+        func: {
+            src: "constant-alpha",
+            dst: "one-minus-constant-alpha",
+        },
+        color: [0, 0, 0, 0.4],
+    },
+});
+
+const loop = time => {
+    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 1);
+    cmd.execute(time);
+    window.requestAnimationFrame(loop);
+}
+
+window.requestAnimationFrame(loop);
