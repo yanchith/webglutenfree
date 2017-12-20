@@ -1,9 +1,4 @@
-import {
-    Device,
-    Command,
-    VertexArray,
-    Texture,
-} from "./lib/glutenfree.es.min.js";
+import { Device, Command, Texture } from "./lib/glutenfree.es.min.js";
 import * as square from "./lib/square.js"
 import { loadImage } from "./lib/load-image.js";
 
