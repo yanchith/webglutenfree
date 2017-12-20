@@ -13,12 +13,7 @@ const projection = mat4.perspective(
     1000,
 );
 
-const view = mat4.lookAt(
-    mat4.create(),
-    [3, 5, 10],
-    [0, 1, 0],
-    [0, 1, 0],
-);
+const view = mat4.create();
 
 const drawObjects = Command.create(dev, {
     vert: `#version 300 es
@@ -43,7 +38,13 @@ const drawObjects = Command.create(dev, {
         out vec4 o_color;
 
         void main() {
-            o_color = vec4(1.0);
+            float depth = gl_FragCoord.z / gl_FragCoord.w;
+            float factor = 1.0 - 1.0 / depth * 5.0;
+            o_color = mix(
+                vec4(0.2, 0.0, 0.8, 1.0),
+                vec4(0.2, 0.0, 0.0, 1.0),
+                factor
+            );
         }
     `,
     uniforms: {
@@ -53,7 +54,12 @@ const drawObjects = Command.create(dev, {
         },
         u_view: {
             type: "matrix4fv",
-            value: view,
+            value: ({ time }) => mat4.lookAt(
+                view,
+                [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
+                [0, 1, 0],
+                [0, 1, 0],
+            ),
         },
         u_projection: {
             type: "matrix4fv",
@@ -110,7 +116,12 @@ const drawOutlines = Command.create(dev, {
         },
         u_view: {
             type: "matrix4fv",
-            value: view,
+            value: ({ time }) => mat4.lookAt(
+                view,
+                [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
+                [0, 1, 0],
+                [0, 1, 0],
+            ),
         },
         u_projection: {
             type: "matrix4fv",
@@ -125,11 +136,6 @@ const drawOutlines = Command.create(dev, {
             mask: 0xFF,
         },
         mask: 0x00,
-        op: {
-            fail: "keep",
-            zfail: "keep",
-            zpass: "keep",
-        },
     },
 });
 
@@ -151,15 +157,20 @@ const bunnyModel = mat4.fromRotationTranslationScale(
     [0.2, 0.2, 0.2],
 );
 
-const cubeOutlineModel = mat4.scale(mat4.create(), cubeModel, [1.1, 1.1, 1.1]);
-const bunnyOutlineModel = mat4.scale(mat4.create(), bunnyModel, [1.1, 1.1, 1.1]);
+const cubeOutlnModel = mat4.scale(mat4.create(), cubeModel, [1.04, 1.04, 1.04]);
+const bunnyOutlnModel = mat4.scale(mat4.create(), bunnyModel, [1.04, 1.04, 1.04]);
 
-dev.clear(0, 0, 0, 1, 1, 0);
-drawObjects.execute([
-    { geometry: cubeMesh, model: cubeModel },
-    { geometry: bunnyMesh, model: bunnyModel },
-]);
-drawOutlines.execute([
-    { geometry: cubeMesh, model: cubeOutlineModel },
-    { geometry: bunnyMesh, model: bunnyOutlineModel },
-]);
+const loop = time => {
+    dev.clear(0, 0, 0, 1, 1, 0);
+    drawObjects.execute([
+        { time, geometry: cubeMesh, model: cubeModel },
+        { time, geometry: bunnyMesh, model: bunnyModel },
+    ]);
+    drawOutlines.execute([
+        { time, geometry: cubeMesh, model: cubeOutlnModel },
+        { time, geometry: bunnyMesh, model: bunnyOutlnModel },
+    ]);
+    window.requestAnimationFrame(loop);
+}
+
+window.requestAnimationFrame(loop);

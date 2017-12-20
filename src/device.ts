@@ -3,6 +3,13 @@ import { Framebuffer } from "./framebuffer";
 export interface DeviceOptions {
     pixelRatio?: number;
     viewport?: [number, number];
+    context?: {
+        antialias?: boolean,
+        alpha?: boolean;
+        depth?: boolean;
+        stencil?: boolean;
+        preserveDrawingBuffer?: boolean;
+    };
     extensions?: Extension[];
 }
 
@@ -28,14 +35,21 @@ export class Device {
 
     static fromCanvas(
         canvas: HTMLCanvasElement,
-        options?: DeviceOptions,
+        options: DeviceOptions = {},
     ): Device {
+        const {
+            antialias = true,
+            alpha = true,
+            depth = true,
+            stencil = true,
+            preserveDrawingBuffer = false,
+        } = options.context || {};
         const gl = canvas.getContext("webgl2", {
-            // TODO: make these available in DeviceOptions
-            depth: true,
-            stencil: true,
-            antialias: true,
-            preserveDrawingBuffer: true,
+            antialias,
+            alpha,
+            depth,
+            stencil,
+            preserveDrawingBuffer,
         });
         if (!gl) { throw new Error("Could not get webgl2 context"); }
         return Device.fromContext(gl, options);
