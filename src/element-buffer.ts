@@ -69,8 +69,8 @@ export class ElementBuffer {
 
     init(): void {
         const { gl, data } = this;
-        const buffer = gl.createBuffer();
-        if (buffer) {
+        if (!gl.isContextLost()) {
+            const buffer = gl.createBuffer();
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);

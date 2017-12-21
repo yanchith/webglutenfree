@@ -3,8 +3,8 @@ import * as glutil from "./glutil";
 import { Device } from "./device";
 
 export interface TextureOptions {
-    min?: MinFilter;
-    mag?: MagFilter;
+    min?: TextureMinFilter;
+    mag?: TextureMagFilter;
     wrapS?: TextureWrap;
     wrapT?: TextureWrap;
     mipmap?: boolean;
@@ -25,8 +25,8 @@ export const enum TextureFilter {
     LINEAR_MIPMAP_LINEAR = "linear-mipmap-linear",
 }
 
-export type MinFilter = TextureFilter;
-export type MagFilter = TextureFilter.NEAREST | TextureFilter.LINEAR;
+export type TextureMinFilter = TextureFilter;
+export type TextureMagFilter = TextureFilter.NEAREST | TextureFilter.LINEAR;
 
 export const enum TextureInternalFormat {
     // R
@@ -320,11 +320,40 @@ export class Texture {
         );
     }
 
+    private gl: WebGL2RenderingContext;
+
+    readonly width: number;
+    readonly height: number;
+    readonly internalFormat: TextureInternalFormat;
+    readonly format: TextureFormat;
+    readonly type: TextureType;
+    readonly wrapS: TextureWrap;
+    readonly wrapT: TextureWrap;
+    readonly minFilter: TextureMinFilter;
+    readonly magFilter: TextureMagFilter;
+
+    readonly glTexture: WebGLTexture | null;
+    readonly glInternalForma: number;
+    readonly glFormat: number;
+    readonly glType: number;
+    readonly glWrapS: number;
+    readonly glWrapT: number;
+    readonly glMinFilter: number;
+    readonly glMagFilter: number;
+
     private constructor(
-        readonly glTexture: WebGLTexture,
-        readonly width: number,
-        readonly height: number,
+        gl: WebGL2RenderingContext,
+        width: number,
+        height: number,
     ) { }
+
+    init(): void {
+
+    }
+
+    restore(): void {
+
+    }
 }
 
 function mapGlTextureWrap(
@@ -431,17 +460,18 @@ function mapGlTextureFormat(
     }
 }
 
-function mapGlTextureType(
+export function mapGlTextureType(
     gl: WebGL2RenderingContext,
     type: TextureType,
 ): number {
     switch (type) {
-        case TextureType.UNSIGNED_BYTE: return gl.UNSIGNED_BYTE;
-        case TextureType.UNSIGNED_SHORT: return gl.UNSIGNED_SHORT;
-        case TextureType.UNSIGNED_INT: return gl.UNSIGNED_INT;
         case TextureType.BYTE: return gl.BYTE;
         case TextureType.SHORT: return gl.SHORT;
         case TextureType.INT: return gl.INT;
+        case TextureType.UNSIGNED_BYTE: return gl.UNSIGNED_BYTE;
+        case TextureType.UNSIGNED_SHORT: return gl.UNSIGNED_SHORT;
+        case TextureType.UNSIGNED_INT: return gl.UNSIGNED_INT;
         case TextureType.FLOAT: return gl.FLOAT;
+        default: return assert.never(type);
     }
 }
