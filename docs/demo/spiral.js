@@ -49,13 +49,13 @@ const cmd = Command.create(dev, {
         },
         u_model: {
             type: "matrix4fv",
-            value: mat4.fromRotation(mat4.create(), Math.PI / 2, [1, 0, 0]),
+            value: mat4.fromRotation(mat4.create(), Math.PI / 2, [0.4, 1, 0]),
         },
         u_view: {
             type: "matrix4fv",
             value: time => mat4.lookAt(
                 view,
-                [30 * Math.cos(time / 5000), 2.5, 30 * Math.sin(time / 5000)],
+                [50 * Math.cos(time / 5000), 2.5, 50 * Math.sin(time / 5000)],
                 [0, 0, 0],
                 [0, 1, 0]
             ),
