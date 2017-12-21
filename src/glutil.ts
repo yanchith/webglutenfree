@@ -52,55 +52,6 @@ export function createShader(
 }
 
 /*
-██████╗ ██╗   ██╗███████╗███████╗███████╗██████╗
-██╔══██╗██║   ██║██╔════╝██╔════╝██╔════╝██╔══██╗
-██████╔╝██║   ██║█████╗  █████╗  █████╗  ██████╔╝
-██╔══██╗██║   ██║██╔══╝  ██╔══╝  ██╔══╝  ██╔══██╗
-██████╔╝╚██████╔╝██║     ██║     ███████╗██║  ██║
-╚═════╝  ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═╝
-*/
-
-export function createArrayBuffer(
-    gl: WebGL2RenderingContext,
-    values: ArrayBuffer | ArrayBufferView,
-): WebGLBuffer {
-    const buffer = gl.createBuffer();
-    if (!buffer) { throw new Error("Could not create buffer"); }
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(
-        gl.ARRAY_BUFFER,
-        Array.isArray(values)
-            ? new Float32Array(values)
-            : values,
-        gl.STATIC_DRAW,
-    );
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    return buffer;
-}
-
-export function createElementArrayBuffer(
-    gl: WebGL2RenderingContext,
-    elements: Uint32Array,
-): WebGLBuffer {
-    const buffer = gl.createBuffer();
-    if (!buffer) { throw new Error("Could not create buffer"); }
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-    gl.bufferData(
-        gl.ELEMENT_ARRAY_BUFFER,
-        Array.isArray(elements)
-            ? new Uint32Array(elements)
-            : elements,
-        gl.STATIC_DRAW,
-    );
-
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-    return buffer;
-}
-
-/*
 ██╗   ██╗███████╗██████╗ ████████╗███████╗██╗  ██╗
 ██║   ██║██╔════╝██╔══██╗╚══██╔══╝██╔════╝╚██╗██╔╝
 ██║   ██║█████╗  ██████╔╝   ██║   █████╗   ╚███╔╝

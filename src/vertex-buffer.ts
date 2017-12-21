@@ -1,5 +1,4 @@
 import * as assert from "./assert";
-import * as glutil from "./glutil";
 import { Device } from "./device";
 
 export type VertexBufferType = VertexBufferProps["type"];
@@ -104,8 +103,8 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         return new VertexBuffer(
             gl,
             "i8",
-            gl.BYTE,
             data instanceof Int8Array ? data : new Int8Array(data),
+            gl.BYTE,
         );
     }
 
@@ -117,8 +116,8 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         return new VertexBuffer(
             gl,
             "i16",
-            gl.SHORT,
             data instanceof Int16Array ? data : new Int16Array(data),
+            gl.SHORT,
         );
     }
 
@@ -130,8 +129,8 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         return new VertexBuffer(
             gl,
             "i32",
-            gl.INT,
             data instanceof Int32Array ? data : new Int32Array(data),
+            gl.INT,
         );
     }
 
@@ -143,11 +142,11 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         return new VertexBuffer(
             gl,
             "u8",
-            gl.UNSIGNED_BYTE,
             // Note: we also have to convert Uint8ClampedArray to Uint8Array
             // because of webgl bug
             // https://github.com/KhronosGroup/WebGL/issues/1533
             data instanceof Uint8Array ? data : new Uint8Array(data),
+            gl.UNSIGNED_BYTE,
         );
     }
 
@@ -159,8 +158,8 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         return new VertexBuffer(
             gl,
             "u16",
-            gl.UNSIGNED_SHORT,
             data instanceof Uint16Array ? data : new Uint16Array(data),
+            gl.UNSIGNED_SHORT,
         );
     }
 
@@ -172,8 +171,8 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         return new VertexBuffer(
             gl,
             "u32",
-            gl.UNSIGNED_INT,
             data instanceof Uint32Array ? data : new Uint32Array(data),
+            gl.UNSIGNED_INT,
         );
     }
 
@@ -185,25 +184,44 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         return new VertexBuffer(
             gl,
             "f32",
-            gl.FLOAT,
             data instanceof Float32Array ? data : new Float32Array(data),
+            gl.FLOAT,
         );
     }
 
     readonly gl: WebGL2RenderingContext;
     readonly type: T;
+    readonly data: ArrayBuffer | ArrayBufferView;
     readonly glType: number;
-    readonly glBuffer: WebGLBuffer;
+    readonly glBuffer: WebGLBuffer | null;
 
     private constructor(
         gl: WebGL2RenderingContext,
         type: T,
-        glType: number,
         data: ArrayBuffer | ArrayBufferView,
+        glType: number,
     ) {
         this.gl = gl;
         this.type = type;
+        this.data = data;
         this.glType = glType;
-        this.glBuffer = glutil.createArrayBuffer(gl, data);
+        this.glBuffer = null;
+
+        this.init();
+    }
+
+    init(): void {
+        const { gl, data } = this;
+        const buffer = gl.createBuffer();
+        if (buffer) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            (this as any).glBuffer = buffer;
+        }
+    }
+
+    restore(): void {
+        if (!this.glBuffer) { this.init(); }
     }
 }

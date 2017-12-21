@@ -1,5 +1,4 @@
 import * as array from "./array";
-import * as glutil from "./glutil";
 import { Device } from "./device";
 
 export type ElementBufferProps =
@@ -14,6 +13,7 @@ export interface ElementBufferObjectProps {
 
 export type ElementBufferArrayProps =
     | number[]
+    | [number][]
     | [number, number][]
     | [number, number, number][]
     ;
@@ -47,12 +47,38 @@ export class ElementBuffer {
     ): ElementBuffer {
         const gl = dev instanceof Device ? dev.gl : dev;
         const arr = Array.isArray(data) ? new Uint32Array(data) : data;
-        const buffer = glutil.createElementArrayBuffer(gl, arr);
-        return new ElementBuffer(buffer, arr.length);
+        return new ElementBuffer(gl, arr);
     }
 
-    private constructor(
-        readonly glBuffer: WebGLBuffer,
-        readonly count: number,
-    ) { }
+    readonly data: Uint32Array;
+    readonly glBuffer: WebGLBuffer | null;
+
+    private gl: WebGL2RenderingContext;
+
+    private constructor(gl: WebGL2RenderingContext, data: Uint32Array) {
+        this.gl = gl;
+        this.data = data;
+        this.glBuffer = null;
+
+        this.init();
+    }
+
+    get count(): number {
+        return this.data.length;
+    }
+
+    init(): void {
+        const { gl, data } = this;
+        const buffer = gl.createBuffer();
+        if (buffer) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+            (this as any).glBuffer = buffer;
+        }
+    }
+
+    restore(): void {
+        if (!this.glBuffer) { this.init(); }
+    }
 }

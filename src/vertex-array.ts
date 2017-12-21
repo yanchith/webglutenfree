@@ -114,14 +114,14 @@ export class VertexArray {
                 type: attrib.type === "ipointer"
                     ? glutil.AttribType.IPOINTER
                     : glutil.AttribType.POINTER,
-                buffer: attrib.buffer.glBuffer,
+                buffer: attrib.buffer.glBuffer!,
                 bufferType: attrib.buffer.glType,
                 size: attrib.size,
                 location: attribLocations[i],
                 normalized: attrib.normalized,
                 divisor: attrib.divisor,
             })),
-            elems ? elems.glBuffer : undefined,
+            elems ? elems.glBuffer! : undefined,
         );
 
         // Compute max safe instance count
