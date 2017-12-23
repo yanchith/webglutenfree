@@ -1,5 +1,4 @@
 import * as assert from "./assert";
-import * as glutil from "./glutil";
 import { Device } from "./device";
 
 export interface TextureOptions {
@@ -114,15 +113,15 @@ export const enum TextureFormat {
 }
 
 export const enum TextureType {
-    UNSIGNED_BYTE = "UNSIGNED_BYTE",
-    UNSIGNED_SHORT = "UNSIGNED_SHORT",
-    UNSIGNED_INT = "UNSIGNED_INT",
+    UNSIGNED_BYTE = "unsigned byte",
+    UNSIGNED_SHORT = "unsigned short",
+    UNSIGNED_INT = "unsigned int",
 
-    BYTE = "BYTE",
-    SHORT = "SHORT",
-    INT = "INT",
+    BYTE = "byte",
+    SHORT = "short",
+    INT = "int",
 
-    FLOAT = "FLOAT",
+    FLOAT = "float",
 
     // TODO: support exotic formats
     // HALF_FLOAT = "HALF_FLOAT",
@@ -302,28 +301,22 @@ export class Texture {
     ): Texture {
         const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(
-            glutil.createTexture(
-                gl,
-                data,
-                width, height,
-                mapGlTextureInternalFormat(gl, internalFormat),
-                mapGlTextureFormat(gl, format),
-                mapGlTextureType(gl, type),
-                mapGlTextureWrap(gl, wrapS),
-                mapGlTextureWrap(gl, wrapT),
-                mapGlTextureFilter(gl, min),
-                mapGlTextureFilter(gl, mag),
-                mipmap,
-            ),
-            width,
-            height,
+            gl,
+            data,
+            width, height,
+            internalFormat,
+            format,
+            type,
+            wrapS, wrapT,
+            min, mag,
+            mipmap,
         );
     }
 
-    private gl: WebGL2RenderingContext;
-
+    readonly data: ArrayBufferView | null;
     readonly width: number;
     readonly height: number;
+
     readonly internalFormat: TextureInternalFormat;
     readonly format: TextureFormat;
     readonly type: TextureType;
@@ -331,9 +324,10 @@ export class Texture {
     readonly wrapT: TextureWrap;
     readonly minFilter: TextureMinFilter;
     readonly magFilter: TextureMagFilter;
+    readonly mipmap: boolean;
 
     readonly glTexture: WebGLTexture | null;
-    readonly glInternalForma: number;
+    readonly glInternalFormat: number;
     readonly glFormat: number;
     readonly glType: number;
     readonly glWrapS: number;
@@ -341,18 +335,94 @@ export class Texture {
     readonly glMinFilter: number;
     readonly glMagFilter: number;
 
+    private gl: WebGL2RenderingContext;
+
     private constructor(
         gl: WebGL2RenderingContext,
+        data: ArrayBufferView | null,
         width: number,
         height: number,
-    ) { }
+        internalFormat: TextureInternalFormat,
+        format: TextureFormat,
+        type: TextureType,
+        wrapS: TextureWrap,
+        wrapT: TextureWrap,
+        minFilter: TextureMinFilter,
+        magFilter: TextureMagFilter,
+        mipmap: boolean,
+    ) {
+        this.gl = gl;
+        this.data = data;
+        this.width = width;
+        this.height = height;
+        this.internalFormat = internalFormat;
+        this.format = format;
+        this.type = type;
+        this.wrapS = wrapS;
+        this.wrapT = wrapT;
+        this.minFilter = minFilter;
+        this.magFilter = magFilter;
+        this.mipmap = mipmap;
+        this.glInternalFormat = mapGlTextureInternalFormat(gl, internalFormat);
+        this.glFormat = mapGlTextureFormat(gl, format);
+        this.glType = mapGlTextureType(gl, type);
+        this.glWrapS = mapGlTextureWrap(gl, wrapS);
+        this.glWrapT = mapGlTextureWrap(gl, wrapT);
+        this.glMinFilter = mapGlTextureFilter(gl, minFilter);
+        this.glMagFilter = mapGlTextureFilter(gl, magFilter);
+        this.glTexture = null;
+
+        this.init();
+    }
 
     init(): void {
+        const {
+            gl,
+            data,
+            width,
+            height,
+            glInternalFormat,
+            glFormat,
+            glType,
+            glWrapS,
+            glWrapT,
+            glMinFilter,
+            glMagFilter,
+            mipmap,
+        } = this;
+        if (!gl.isContextLost()) {
+            const texture = gl.createTexture();
 
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+
+            gl.texStorage2D(gl.TEXTURE_2D, 1, glInternalFormat, width, height);
+            if (data) {
+                gl.texSubImage2D(
+                    gl.TEXTURE_2D,
+                    0,
+                    0, 0,
+                    width, height,
+                    glFormat,
+                    glType,
+                    data,
+                );
+            }
+
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, glWrapS);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, glWrapT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glMinFilter);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glMagFilter);
+
+            if (mipmap) { gl.generateMipmap(gl.TEXTURE_2D); }
+
+            gl.bindTexture(gl.TEXTURE_2D, null);
+
+            (this as any).glTexture = texture;
+        }
     }
 
     restore(): void {
-
+        if (!this.glTexture) { this.init(); }
     }
 }
 
@@ -364,7 +434,7 @@ function mapGlTextureWrap(
         case TextureWrap.CLAMP_TO_EDGE: return gl.CLAMP_TO_EDGE;
         case TextureWrap.REPEAT: return gl.REPEAT;
         case TextureWrap.MIRRORED_REPEAT: return gl.MIRRORED_REPEAT;
-        default: return assert.never(wrap);
+        default: return assert.never(wrap, `Unknown texture wrap: ${wrap}`);
     }
 }
 
@@ -383,7 +453,10 @@ function mapGlTextureFilter(
             return gl.NEAREST_MIPMAP_LINEAR;
         case TextureFilter.LINEAR_MIPMAP_LINEAR:
             return gl.LINEAR_MIPMAP_LINEAR;
-        default: return assert.never(filter);
+        default: return assert.never(
+            filter,
+            `Unknown texture filter: ${filter}`,
+        );
     }
 }
 
@@ -439,7 +512,10 @@ function mapGlTextureInternalFormat(
         case TextureInternalFormat.RGBA32I: return gl.RGBA32I;
         case TextureInternalFormat.RGBA16F: return gl.RGBA16F;
         case TextureInternalFormat.RGBA32F: return gl.RGBA32F;
-        default: return assert.never(internalFormat);
+        default: return assert.never(
+            internalFormat,
+            `Unknown texture internal format: ${internalFormat}`,
+        );
     }
 }
 
@@ -456,7 +532,10 @@ function mapGlTextureFormat(
         case TextureFormat.RG_INTEGER: return gl.RG_INTEGER;
         case TextureFormat.RGB_INTEGER: return gl.RGB_INTEGER;
         case TextureFormat.RGBA_INTEGER: return gl.RGBA_INTEGER;
-        default: return assert.never(format);
+        default: return assert.never(
+            format,
+            `Unknown texture format: ${format}`,
+        );
     }
 }
 
@@ -472,6 +551,6 @@ export function mapGlTextureType(
         case TextureType.UNSIGNED_SHORT: return gl.UNSIGNED_SHORT;
         case TextureType.UNSIGNED_INT: return gl.UNSIGNED_INT;
         case TextureType.FLOAT: return gl.FLOAT;
-        default: return assert.never(type);
+        default: return assert.never(type, `Unknown texture type: ${type}`);
     }
 }

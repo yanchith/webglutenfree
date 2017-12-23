@@ -47,13 +47,13 @@ export interface VertexBufferFloat32Props {
 }
 
 export const enum VertexBufferType {
-    BYTE = "BYTE",
-    SHORT = "SHORT",
-    INT = "INT",
-    UNSIGNED_BYTE = "UNSIGNED_BYTE",
-    UNSIGNED_SHORT = "UNSIGNED_SHORT",
-    UNSIGNED_INT = "UNSIGNED_INT",
-    FLOAT = "FLOAT",
+    UNSIGNED_BYTE = "unsigned byte",
+    UNSIGNED_SHORT = "unsigned short",
+    UNSIGNED_INT = "unsigned int",
+    BYTE = "byte",
+    SHORT = "short",
+    INT = "int",
+    FLOAT = "float",
 }
 
 export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
@@ -247,6 +247,6 @@ function mapGlVertexBufferType(
         case VertexBufferType.UNSIGNED_SHORT: return gl.UNSIGNED_SHORT;
         case VertexBufferType.UNSIGNED_INT: return gl.UNSIGNED_INT;
         case VertexBufferType.FLOAT: return gl.FLOAT;
-        default: return assert.never(type);
+        default: return assert.never(type, `Unexpexted buffer type: ${type}`);
     }
 }

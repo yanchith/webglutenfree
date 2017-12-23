@@ -763,7 +763,10 @@ function mapGlPrimitive(
         case Primitive.LINES: return gl.LINES;
         case Primitive.LINE_STRIP: return gl.LINE_STRIP;
         case Primitive.LINE_LOOP: return gl.LINE_LOOP;
-        default: return assert.never(primitive);
+        default: return assert.never(
+            primitive,
+            `Unknown primitive: ${primitive}`,
+        );
     }
 }
 
@@ -780,7 +783,10 @@ function mapGlDepthOrStencilFunc(
         case DepthOrStencilFunc.LEQUAL: return gl.LEQUAL;
         case DepthOrStencilFunc.GREATER: return gl.GREATER;
         case DepthOrStencilFunc.GEQUAL: return gl.GEQUAL;
-        default: return assert.never(func);
+        default: return assert.never(
+            func,
+            `Unknown depth or stencil function: ${func}`,
+        );
     }
 }
 
@@ -794,7 +800,7 @@ function mapGlStencilOp(gl: WebGL2RenderingContext, op: StencilOp): number {
         case StencilOp.DECR: return gl.DECR;
         case StencilOp.DECR_WRAP: return gl.DECR_WRAP;
         case StencilOp.INVERT: return gl.INVERT;
-        default: return assert.never(op);
+        default: return assert.never(op, `Unknown stencil op: ${op}`);
     }
 }
 
@@ -817,7 +823,7 @@ function mapGlBlendFunc(
         case BlendFunc.CONSTANT_ALPHA: return gl.CONSTANT_ALPHA;
         case BlendFunc.ONE_MINUS_CONSTANT_COLOR: return gl.ONE_MINUS_CONSTANT_COLOR;
         case BlendFunc.ONE_MINUS_CONSTANT_ALPHA: return gl.ONE_MINUS_CONSTANT_ALPHA;
-        default: return assert.never(func);
+        default: return assert.never(func, `Unknown blend func: ${func}`);
     }
 }
 
@@ -831,7 +837,10 @@ function mapGlBlendEquation(
         case BlendEquation.REVERSE_SUBTRACT: return gl.FUNC_REVERSE_SUBTRACT;
         case BlendEquation.MIN: return gl.MIN;
         case BlendEquation.MAX: return gl.MAX;
-        default: return assert.never(equation);
+        default: return assert.never(
+            equation,
+            `Unknown blend equation, ${equation}`,
+        );
     }
 }
 

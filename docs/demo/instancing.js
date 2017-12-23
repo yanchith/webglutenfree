@@ -71,7 +71,7 @@ const cmd = Command.create(dev, {
             a_offset: {
                 type: "pointer",
                 value: {
-                    type: "f32",
+                    type: "float",
                     data: [
                         3, 3,
                         0, 3,
@@ -89,7 +89,7 @@ const cmd = Command.create(dev, {
             a_color: {
                 type: "pointer",
                 value: {
-                    type: "u8",
+                    type: "unsigned byte",
                     data: [
                         255, 0, 0, 255,
                         0, 255, 0, 255,
