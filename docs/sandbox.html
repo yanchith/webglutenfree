@@ -30,8 +30,8 @@
         }
         window.requestAnimationFrame(fpsloop);
     </script>
-    <!-- Since gl-matrix does not have a module release at the time of writing,
-    let's include it globally -->
+    <!-- These do not have es module releases -->
+    <script src="./lib/webgl-debug.js"></script>
     <script src="./lib/gl-matrix-min.js"></script>
     <script type="module">
         import { Channel } from "./demolib/sandbox/channel.js";
