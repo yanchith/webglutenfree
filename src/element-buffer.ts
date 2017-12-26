@@ -50,10 +50,10 @@ export class ElementBuffer {
         return new ElementBuffer(gl, arr);
     }
 
-    readonly data: Uint32Array;
     readonly glBuffer: WebGLBuffer | null;
 
     private gl: WebGL2RenderingContext;
+    private data: Uint32Array;
 
     private constructor(gl: WebGL2RenderingContext, data: Uint32Array) {
         this.gl = gl;

@@ -207,12 +207,12 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     }
 
     readonly type: T;
-    readonly data: VertexBufferTypedArray;
 
     readonly glType: number;
     readonly glBuffer: WebGLBuffer | null;
 
     private gl: WebGL2RenderingContext;
+    private data: VertexBufferTypedArray;
 
     private constructor(
         gl: WebGL2RenderingContext,

@@ -313,7 +313,6 @@ export class Texture {
         );
     }
 
-    readonly data: ArrayBufferView | null;
     readonly width: number;
     readonly height: number;
 
@@ -336,6 +335,7 @@ export class Texture {
     readonly glMagFilter: number;
 
     private gl: WebGL2RenderingContext;
+    private data: ArrayBufferView | null;
 
     private constructor(
         gl: WebGL2RenderingContext,

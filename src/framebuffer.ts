@@ -17,16 +17,71 @@ export class Framebuffer {
         { width, height, color, depth, stencil }: FramebufferProps,
     ): Framebuffer {
         const gl = dev instanceof Device ? dev.gl : dev;
+        const colorBuffers = Array.isArray(color) ? color : [color];
+        colorBuffers.forEach(buffer => {
+            assert.equal(width, buffer.width);
+            assert.equal(height, buffer.height);
+        });
+        if (depth) {
+            assert.equal(width, depth.width);
+            assert.equal(height, depth.height);
+        }
+        if (stencil) {
+            assert.equal(width, stencil.width);
+            assert.equal(height, stencil.height);
+        }
+
+        return new Framebuffer(
+            gl,
+            width,
+            height,
+            colorBuffers,
+            depth,
+            stencil,
+        );
+    }
+
+    readonly width: number;
+    readonly height: number;
+
+    readonly glFramebuffer: WebGLFramebuffer | null;
+    readonly glColorAttachments: number[];
+
+    private gl: WebGL2RenderingContext;
+
+    private colorBuffers: Texture[];
+    private depthBuffer?: Texture;
+    private stencilBuffer?: Texture;
+
+    private constructor(
+        gl: WebGL2RenderingContext,
+        width: number,
+        height: number,
+        colorBuffers: Texture[],
+        depthBuffer?: Texture,
+        stencilBuffer?: Texture,
+    ) {
+        this.gl = gl;
+        this.width = width;
+        this.height = height;
+        this.colorBuffers = colorBuffers;
+        this.depthBuffer = depthBuffer;
+        this.stencilBuffer = stencilBuffer;
+        this.glColorAttachments = colorBuffers
+            .map((_, i) => gl.COLOR_ATTACHMENT0 + i);
+        this.glFramebuffer = null;
+
+        this.init();
+    }
+
+    init(): void {
+        const { gl, colorBuffers, depthBuffer, stencilBuffer } = this;
 
         const fbo = gl.createFramebuffer();
-        if (!fbo) { throw new Error("Could not create framebuffer"); }
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
-        const colorBuffers = Array.isArray(color) ? color : [color];
         colorBuffers.forEach((buffer, i) => {
-            assert.equal(width, buffer.width);
-            assert.equal(height, buffer.height);
             gl.framebufferTexture2D(
                 gl.FRAMEBUFFER,
                 gl.COLOR_ATTACHMENT0 + i,
@@ -36,25 +91,21 @@ export class Framebuffer {
             );
         });
 
-        if (depth) {
-            assert.equal(width, depth.width);
-            assert.equal(height, depth.height);
+        if (depthBuffer) {
             gl.framebufferTexture2D(
                 gl.FRAMEBUFFER,
                 gl.DEPTH_ATTACHMENT,
                 gl.TEXTURE_2D,
-                depth,
+                depthBuffer,
                 0,
             );
         }
-        if (stencil) {
-            assert.equal(width, stencil.width);
-            assert.equal(height, stencil.height);
+        if (stencilBuffer) {
             gl.framebufferTexture2D(
                 gl.FRAMEBUFFER,
                 gl.STENCIL_ATTACHMENT,
                 gl.TEXTURE_2D,
-                stencil,
+                stencilBuffer,
                 0,
             );
         }
@@ -67,18 +118,11 @@ export class Framebuffer {
             throw new Error("Framebuffer not complete");
         }
 
-        return new Framebuffer(
-            fbo,
-            colorBuffers.map((_, i) => gl.COLOR_ATTACHMENT0 + i),
-            width,
-            height,
-        );
+        (this as any).glFramebuffer = fbo;
     }
 
-    private constructor(
-        readonly glFramebuffer: WebGLFramebuffer,
-        readonly glColorAttachments: number[],
-        readonly width: number,
-        readonly height: number,
-    ) { }
+    restore(): void {
+        const { gl, glFramebuffer } = this;
+        if (!gl.isFramebuffer(glFramebuffer)) { this.init(); }
+    }
 }
