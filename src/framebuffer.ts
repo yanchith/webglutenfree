@@ -122,7 +122,16 @@ export class Framebuffer {
     }
 
     restore(): void {
-        const { gl, glFramebuffer } = this;
+        const {
+            gl,
+            glFramebuffer,
+            colorBuffers,
+            depthBuffer,
+            stencilBuffer,
+        } = this;
+        colorBuffers.forEach(buffer => buffer.restore());
+        if (depthBuffer) { depthBuffer.restore(); }
+        if (stencilBuffer) { stencilBuffer.restore(); }
         if (!gl.isFramebuffer(glFramebuffer)) { this.init(); }
     }
 }
