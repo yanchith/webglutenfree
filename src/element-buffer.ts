@@ -79,6 +79,6 @@ export class ElementBuffer {
     }
 
     restore(): void {
-        if (!this.glBuffer) { this.init(); }
+        this.init();
     }
 }

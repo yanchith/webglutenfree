@@ -422,7 +422,7 @@ export class Texture {
     }
 
     restore(): void {
-        if (!this.glTexture) { this.init(); }
+        this.init();
     }
 }
 

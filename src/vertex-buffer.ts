@@ -46,6 +46,15 @@ export interface VertexBufferFloat32Props {
     data: number[] | Float32Array;
 }
 
+export type VertexBufferTypedArray =
+    | Int8Array
+    | Int16Array
+    | Int32Array
+    | Uint8Array
+    | Uint16Array
+    | Uint32Array
+    | Float32Array;
+
 export const enum VertexBufferType {
     UNSIGNED_BYTE = "unsigned byte",
     UNSIGNED_SHORT = "unsigned short",
@@ -198,7 +207,7 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     }
 
     readonly type: T;
-    readonly data: ArrayBuffer | ArrayBufferView;
+    readonly data: VertexBufferTypedArray;
 
     readonly glType: number;
     readonly glBuffer: WebGLBuffer | null;
@@ -208,7 +217,7 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     private constructor(
         gl: WebGL2RenderingContext,
         type: T,
-        data: ArrayBuffer | ArrayBufferView,
+        data: VertexBufferTypedArray,
     ) {
         this.gl = gl;
         this.type = type;
@@ -217,6 +226,10 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         this.glBuffer = null;
 
         this.init();
+    }
+
+    get count(): number {
+        return this.data.length;
     }
 
     init(): void {
@@ -231,7 +244,7 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     }
 
     restore(): void {
-        if (!this.glBuffer) { this.init(); }
+        this.init();
     }
 }
 

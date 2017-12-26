@@ -423,7 +423,7 @@ export class Command<P = void> {
         this.updateUniforms(props, index);
 
         const vao = access(props, index, vertexArrayDescr);
-        gl.bindVertexArray(vao.glVertexArrayObject);
+        gl.bindVertexArray(vao.glVertexArray);
         if (vao.hasElements) {
             this.drawElements(vao.count, vao.instanceCount);
         } else {

@@ -1,6 +1,5 @@
 import * as assert from "./assert";
 import * as array from "./array";
-import * as glutil from "./glutil";
 import { Device } from "./device";
 import {
     VertexBuffer,
@@ -19,10 +18,10 @@ import {
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 
-export type AttributeType =
-    | "pointer"
-    | "ipointer"
-    ;
+export const enum AttributeType {
+    POINTER = "pointer",
+    IPOINTER = "ipointer",
+}
 
 export type Attribute =
     | AttributeArray
@@ -42,7 +41,7 @@ export type AttributeObject =
     ;
 
 export interface AttributePointer {
-    type: "pointer";
+    type: AttributeType.POINTER;
     value: VertexBuffer | PointerValue;
     count: number;
     size: number;
@@ -51,7 +50,7 @@ export interface AttributePointer {
 }
 
 export interface AttributeIPointer {
-    type: "ipointer";
+    type: AttributeType.IPOINTER;
     value: VertexBuffer<IPointerValue["type"]> | IPointerValue;
     count: number;
     size: number;
@@ -84,73 +83,133 @@ export class VertexArray {
         { attributes, elements }: VertexArrayProps,
     ): VertexArray {
         const gl = dev instanceof Device ? dev.gl : dev;
-        // Setup attributes
+        const attrs = Object.entries(attributes)
+            .map(([locationStr, definition]) => {
+                if (!INT_PATTERN.test(locationStr)) {
+                    throw new Error("Location not a number. Use Command#locate");
+                }
+                const location = parseInt(locationStr, 10);
+                return AttributeDescriptor.create(gl, location, definition);
+            });
 
-        const attribDescriptors: AttributeDescriptor[] = [];
-        const attribLocations: number[] = [];
-        Object.entries(attributes).forEach(([locationStr, definition]) => {
-            if (!INT_PATTERN.test(locationStr)) {
-                throw new Error("Location not a number. Use Command#locate");
-            }
-            const location = parseInt(locationStr, 10);
-            attribLocations.push(location);
-            attribDescriptors.push(AttributeDescriptor.create(gl, definition));
-        });
-
-        // Setup elements
-
-        let elems: ElementBuffer | undefined;
-        if (elements) {
-            elems = elements instanceof ElementBuffer
+        const elementBuffer = elements
+            ? elements instanceof ElementBuffer
                 ? elements
-                : ElementBuffer.create(gl, elements);
-        }
+                : ElementBuffer.create(gl, elements)
+            : undefined;
 
-        // Create vertex array
+        const count = elementBuffer
+            ? elementBuffer.count
+            : attrs.length
+                ? attrs
+                    .map(attr => attr.count)
+                    .reduce((min, curr) => Math.min(min, curr))
+                : 0;
 
-        const vao = glutil.createVertexArray(
-            gl,
-            attribDescriptors.map((attrib, i) => ({
-                type: attrib.type === "ipointer"
-                    ? glutil.AttribType.IPOINTER
-                    : glutil.AttribType.POINTER,
-                buffer: attrib.buffer.glBuffer!,
-                bufferType: attrib.buffer.glType,
-                size: attrib.size,
-                location: attribLocations[i],
-                normalized: attrib.normalized,
-                divisor: attrib.divisor,
-            })),
-            elems ? elems.glBuffer! : undefined,
-        );
-
-        // Compute max safe instance count
-
-        const instancedBuffers = attribDescriptors
-            .filter(buffer => !!buffer.divisor);
-
-        const instanceCount = instancedBuffers.length
-            ? instancedBuffers
-                .map(b => b.count * b.divisor)
+        const instAttrs = attrs.filter(attr => !!attr.divisor);
+        const instanceCount = instAttrs.length
+            ? instAttrs
+                .map(attr => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
 
-        // Create VAO
-
-        return new VertexArray(
-            vao,
-            !!elems,
-            elems ? elems.count : attribDescriptors[0].count,
-            instanceCount,
-        );
+        return new VertexArray(gl, attrs, elementBuffer, count, instanceCount);
     }
 
+    readonly count: number;
+    readonly instanceCount: number;
+
+    readonly glVertexArray: WebGLVertexArrayObject | null;
+
+    private gl: WebGL2RenderingContext;
+
+    // The buffers
+    private attributes: AttributeDescriptor[];
+    private elementBuffer?: ElementBuffer;
+
     private constructor(
-        readonly glVertexArrayObject: WebGLVertexArrayObject,
-        readonly hasElements: boolean,
-        readonly count: number, // Either count of vertex data or of elements
-        readonly instanceCount: number,
-    ) { }
+        gl: WebGL2RenderingContext,
+        attributes: AttributeDescriptor[],
+        elements: ElementBuffer | undefined,
+        count: number,
+        instanceCount: number,
+    ) {
+        this.gl = gl;
+        this.elementBuffer = elements;
+        this.attributes = attributes;
+        this.count = count;
+        this.instanceCount = instanceCount;
+        this.glVertexArray = null;
+
+        this.init();
+    }
+
+    get hasElements(): boolean {
+        return !!this.elementBuffer;
+    }
+
+    init(): void {
+        const { gl, attributes, elementBuffer } = this;
+        if (!gl.isContextLost()) {
+            const vao = gl.createVertexArray();
+
+            gl.bindVertexArray(vao);
+            attributes.forEach(({
+                location,
+                type,
+                buffer: { glBuffer, glType: glBufferType },
+                size,
+                normalized = false,
+                divisor,
+            }) => {
+                // Enable sending attribute arrays for location
+                gl.enableVertexAttribArray(location);
+
+                // Send buffer
+                gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
+                switch (type) {
+                    case AttributeType.POINTER:
+                        gl.vertexAttribPointer(
+                            location,
+                            size,
+                            glBufferType,
+                            normalized,
+                            0,
+                            0,
+                        );
+                        break;
+                    case AttributeType.IPOINTER:
+                        gl.vertexAttribIPointer(
+                            location,
+                            size,
+                            glBufferType,
+                            0,
+                            0,
+                        );
+                        break;
+                    default: assert.never(type);
+                }
+                if (divisor) { gl.vertexAttribDivisor(location, divisor); }
+            });
+
+            if (elementBuffer) {
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
+            }
+
+            gl.bindVertexArray(null);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+            (this as any).glVertexArray = vao;
+        }
+    }
+
+    restore(): void {
+        if (this.elementBuffer) { this.elementBuffer.init(); }
+        this.attributes.forEach(attr => attr.buffer.init());
+        this.init();
+    }
 }
 
 // TODO: this could use some further refactoring. Currently its just former
@@ -159,13 +218,15 @@ class AttributeDescriptor {
 
     static create(
         gl: WebGL2RenderingContext,
+        location: number,
         props: Attribute,
     ): AttributeDescriptor {
         if (Array.isArray(props)) {
             if (array.is2DArray(props)) {
                 const r = array.ravel(props);
                 return new AttributeDescriptor(
-                    "pointer",
+                    location,
+                    AttributeType.POINTER,
                     VertexBuffer.fromFloat32Array(gl, r.data),
                     r.shape[0],
                     r.shape[1],
@@ -174,7 +235,8 @@ class AttributeDescriptor {
                 );
             }
             return new AttributeDescriptor(
-                "pointer",
+                location,
+                AttributeType.POINTER,
                 VertexBuffer.fromFloat32Array(gl, props),
                 props.length,
                 1,
@@ -183,24 +245,25 @@ class AttributeDescriptor {
             );
         }
 
+        const buffer = props.value instanceof VertexBuffer
+            ? props.value
+            // Typescript is not smart enough here
+            : VertexBuffer.create(gl, props.value as any);
+
         switch (props.type) {
-            case "pointer": return new AttributeDescriptor(
+            case AttributeType.POINTER: return new AttributeDescriptor(
+                location,
                 props.type,
-                props.value instanceof VertexBuffer
-                    ? props.value
-                    // Note: typescript is not smart enough to infer what we know
-                    : VertexBuffer.create(gl, props.value as any),
+                buffer,
                 props.count,
                 props.size,
                 props.normalized || false,
                 props.divisor || 0,
             );
-            case "ipointer": return new AttributeDescriptor(
+            case AttributeType.IPOINTER: return new AttributeDescriptor(
+                location,
                 props.type,
-                props.value instanceof VertexBuffer
-                    ? props.value
-                    // Note: typescript is not smart enough to infer what we know
-                    : VertexBuffer.create(gl, props.value as any),
+                buffer,
                 props.count,
                 props.size,
                 false,
@@ -208,29 +271,15 @@ class AttributeDescriptor {
             );
             default: return assert.never(props);
         }
-
     }
-
-    readonly type: AttributeType;
-    readonly buffer: VertexBuffer;
-    readonly count: number;
-    readonly size: number;
-    readonly normalized: boolean;
-    readonly divisor: number;
 
     private constructor(
-        type: AttributeType,
-        buffer: VertexBuffer,
-        count: number,
-        size: number,
-        normalized: boolean,
-        divisor: number,
-    ) {
-        this.type = type;
-        this.buffer = buffer;
-        this.count = count;
-        this.size = size;
-        this.normalized = normalized;
-        this.divisor = divisor;
-    }
+        readonly location: number,
+        readonly type: AttributeType,
+        readonly buffer: VertexBuffer,
+        readonly count: number,
+        readonly size: number,
+        readonly normalized: boolean,
+        readonly divisor: number,
+    ) { }
 }

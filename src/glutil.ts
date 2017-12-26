@@ -1,5 +1,3 @@
-import * as assert from "./assert";
-
 /*
 ███████╗██╗  ██╗ █████╗ ██████╗ ███████╗██████╗
 ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗
@@ -49,80 +47,4 @@ export function createShader(
         .map((l, i) => `${i + 1}: ${l}`)
         .join("\n");
     throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
-}
-
-/*
-██╗   ██╗███████╗██████╗ ████████╗███████╗██╗  ██╗
-██║   ██║██╔════╝██╔══██╗╚══██╔══╝██╔════╝╚██╗██╔╝
-██║   ██║█████╗  ██████╔╝   ██║   █████╗   ╚███╔╝
-╚██╗ ██╔╝██╔══╝  ██╔══██╗   ██║   ██╔══╝   ██╔██╗
- ╚████╔╝ ███████╗██║  ██║   ██║   ███████╗██╔╝ ██╗
-  ╚═══╝  ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝
-
- █████╗ ██████╗ ██████╗  █████╗ ██╗   ██╗
-██╔══██╗██╔══██╗██╔══██╗██╔══██╗╚██╗ ██╔╝
-███████║██████╔╝██████╔╝███████║ ╚████╔╝
-██╔══██║██╔══██╗██╔══██╗██╔══██║  ╚██╔╝
-██║  ██║██║  ██║██║  ██║██║  ██║   ██║
-╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝
-*/
-
-export const enum AttribType {
-    POINTER = 0,
-    IPOINTER = 1,
-}
-
-export function createVertexArray(
-    gl: WebGL2RenderingContext,
-    buffers: {
-        type: AttribType,
-        buffer: WebGLBuffer;
-        bufferType: number,
-        size: number;
-        location: number,
-        normalized?: boolean,
-        divisor?: number,
-    }[],
-    elementBuffer?: WebGLBuffer,
-): WebGLVertexArrayObject {
-    const vao = gl.createVertexArray();
-    if (!vao) { throw new Error("Could not create Vertex Array Object"); }
-
-    gl.bindVertexArray(vao);
-    buffers.forEach(({
-        type,
-        buffer,
-        bufferType,
-        size,
-        location,
-        normalized = false,
-        divisor,
-    }) => {
-        // Enable sending attribute arrays for location
-        gl.enableVertexAttribArray(location);
-
-        // Send buffer
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        switch (type) {
-            case AttribType.POINTER:
-                gl.vertexAttribPointer(location, size, bufferType, normalized, 0, 0);
-                break;
-            case AttribType.IPOINTER:
-                gl.vertexAttribIPointer(location, size, bufferType, 0, 0);
-                break;
-            default: assert.never(type);
-        }
-        if (divisor) { gl.vertexAttribDivisor(location, divisor); }
-    });
-
-    if (elementBuffer) {
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
-    }
-
-    gl.bindVertexArray(null);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-    return vao;
 }
