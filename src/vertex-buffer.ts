@@ -234,17 +234,16 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
 
     init(): void {
         const { gl, data } = this;
-        if (!gl.isContextLost()) {
-            const buffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            (this as any).glBuffer = buffer;
-        }
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        (this as any).glBuffer = buffer;
     }
 
     restore(): void {
-        this.init();
+        const { gl, glBuffer } = this;
+        if (!gl.isBuffer(glBuffer)) { this.init(); }
     }
 }
 

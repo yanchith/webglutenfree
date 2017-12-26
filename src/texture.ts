@@ -390,39 +390,38 @@ export class Texture {
             glMagFilter,
             mipmap,
         } = this;
-        if (!gl.isContextLost()) {
-            const texture = gl.createTexture();
+        const texture = gl.createTexture();
 
-            gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
 
-            gl.texStorage2D(gl.TEXTURE_2D, 1, glInternalFormat, width, height);
-            if (data) {
-                gl.texSubImage2D(
-                    gl.TEXTURE_2D,
-                    0,
-                    0, 0,
-                    width, height,
-                    glFormat,
-                    glType,
-                    data,
-                );
-            }
-
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, glWrapS);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, glWrapT);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glMinFilter);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glMagFilter);
-
-            if (mipmap) { gl.generateMipmap(gl.TEXTURE_2D); }
-
-            gl.bindTexture(gl.TEXTURE_2D, null);
-
-            (this as any).glTexture = texture;
+        gl.texStorage2D(gl.TEXTURE_2D, 1, glInternalFormat, width, height);
+        if (data) {
+            gl.texSubImage2D(
+                gl.TEXTURE_2D,
+                0,
+                0, 0,
+                width, height,
+                glFormat,
+                glType,
+                data,
+            );
         }
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, glWrapS);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, glWrapT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glMinFilter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glMagFilter);
+
+        if (mipmap) { gl.generateMipmap(gl.TEXTURE_2D); }
+
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        (this as any).glTexture = texture;
     }
 
     restore(): void {
-        this.init();
+        const { gl, glTexture } = this;
+        if (!gl.isTexture(glTexture)) { this.init(); }
     }
 }
 

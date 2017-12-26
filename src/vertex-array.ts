@@ -206,9 +206,10 @@ export class VertexArray {
     }
 
     restore(): void {
-        if (this.elementBuffer) { this.elementBuffer.init(); }
-        this.attributes.forEach(attr => attr.buffer.init());
-        this.init();
+        const { gl, glVertexArray, attributes, elementBuffer } = this;
+        if (elementBuffer) { elementBuffer.restore(); }
+        attributes.forEach(attr => attr.buffer.restore());
+        if (!gl.isVertexArray(glVertexArray)) { this.init(); }
     }
 }
 
