@@ -16,9 +16,11 @@ export interface CommandProps<P> {
     vert: string;
     frag: string;
     uniforms?: { [key: string]: Uniform<P> };
-    data: VertexArrayProps | Access<P, VertexArray>;
+    data?: VertexArrayProps | Access<P, VertexArray>;
     framebuffer?: FramebufferProps | Access<P, Framebuffer>;
     primitive?: Primitive;
+    count?: number;
+    offset?: number;
     depth?: {
         func: DepthOrStencilFunc;
         mask?: boolean;
@@ -268,6 +270,8 @@ export class Command<P = void> {
             data,
             framebuffer,
             primitive = Primitive.TRIANGLES,
+            count = 0,
+            offset = 0,
             depth,
             stencil,
             blend,
@@ -326,15 +330,15 @@ export class Command<P = void> {
                 return new UniformDescriptor(ident, loc, uniform);
             });
 
-        const vertexArrayDescr = typeof data === "function"
-            || data instanceof VertexArray
-            ? data
-            : VertexArray.create(dev, locate(gl, prog, data));
+        const vertexArrayAcc = data
+            ? typeof data === "function" || data instanceof VertexArray
+                ? data
+                : VertexArray.create(dev, locate(gl, prog, data))
+            : undefined;
 
 
-        const framebufferDescr = framebuffer
-            ? typeof framebuffer === "function"
-                || framebuffer instanceof Framebuffer
+        const framebufferAcc = framebuffer
+            ? typeof framebuffer === "function" || framebuffer instanceof Framebuffer
                 ? framebuffer
                 : Framebuffer.create(gl, framebuffer)
             : undefined;
@@ -348,8 +352,10 @@ export class Command<P = void> {
             prog,
             mapGlPrimitive(gl, primitive),
             uniformDescrs,
-            vertexArrayDescr,
-            framebufferDescr,
+            count,
+            offset,
+            vertexArrayAcc,
+            framebufferAcc,
             depthDescr,
             stencilDescr,
             blendDescr,
@@ -361,8 +367,10 @@ export class Command<P = void> {
         private glProgram: WebGLProgram,
         private glPrimitive: number,
         private uniformDescrs: UniformDescriptor<P>[],
-        private vertexArrayDescr: Access<P, VertexArray>,
-        private framebufferDescr?: Access<P, Framebuffer>,
+        private count: number,
+        private offset: number,
+        private vertexArrayAcc?: Access<P, VertexArray>,
+        private framebufferAcc?: Access<P, Framebuffer>,
         private depthDescr?: DepthDescriptor,
         private stencilDescr?: StencilDescriptor,
         private blendDescr?: BlendDescriptor,
@@ -398,19 +406,13 @@ export class Command<P = void> {
         return locate(this.gl, this.glProgram, vertexArrayProps);
     }
 
-    private executeInner(
-        props: P,
-        index: number,
-    ): void {
-        const { gl, vertexArrayDescr, framebufferDescr } = this;
+    private executeInner(props: P, index: number): void {
+        const { gl, count, offset, vertexArrayAcc, framebufferAcc } = this;
 
         let bufferWidth = gl.drawingBufferWidth;
         let bufferHeight = gl.drawingBufferHeight;
 
-        const fbo = framebufferDescr
-            ? access(props, index, framebufferDescr)
-            : undefined;
-
+        const fbo = framebufferAcc && access(props, index, framebufferAcc);
         if (fbo) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer);
             gl.drawBuffers(fbo.glColorAttachments);
@@ -422,12 +424,17 @@ export class Command<P = void> {
 
         this.updateUniforms(props, index);
 
-        const vao = access(props, index, vertexArrayDescr);
-        gl.bindVertexArray(vao.glVertexArray);
-        if (vao.hasElements) {
-            this.drawElements(vao.count, vao.instanceCount);
+        const vao = vertexArrayAcc && access(props, index, vertexArrayAcc);
+        if (vao) {
+            gl.bindVertexArray(vao.glVertexArray);
+            const drawCount = count ? Math.min(count, vao.count) : vao.count;
+            if (vao.hasElements) {
+                this.drawElements(drawCount, offset, vao.instanceCount);
+            } else {
+                this.drawArrays(drawCount, offset, vao.instanceCount);
+            }
         } else {
-            this.drawArrays(vao.count, vao.instanceCount);
+            this.drawArrays(count || 0, offset, 0);
         }
     }
 
@@ -506,23 +513,27 @@ export class Command<P = void> {
         if (blendDescr) { gl.disable(gl.BLEND); }
     }
 
-    private drawArrays(count: number, instCount: number): void {
+    private drawArrays(count: number, offset: number, instCount: number): void {
         const { gl, glPrimitive } = this;
         if (instCount) {
-            gl.drawArraysInstanced(glPrimitive, 0, count, instCount);
+            gl.drawArraysInstanced(glPrimitive, offset, count, instCount);
         } else {
-            gl.drawArrays(glPrimitive, 0, count);
+            gl.drawArrays(glPrimitive, offset, count);
         }
     }
 
-    private drawElements(count: number, instCount: number): void {
+    private drawElements(
+        count: number,
+        offset: number,
+        instCount: number,
+    ): void {
         const { gl, glPrimitive } = this;
         if (instCount) {
             gl.drawElementsInstanced(
                 glPrimitive,
                 count,
                 gl.UNSIGNED_INT, // We only support u32 indices
-                0,
+                offset,
                 instCount,
             );
         } else {
@@ -530,7 +541,7 @@ export class Command<P = void> {
                 glPrimitive,
                 count,
                 gl.UNSIGNED_INT, // We only support u32 indices
-                0,
+                offset,
             );
         }
     }
@@ -821,8 +832,10 @@ function mapGlBlendFunc(
         case BlendFunc.ONE_MINUS_DST_ALPHA: return gl.ONE_MINUS_DST_ALPHA;
         case BlendFunc.CONSTANT_COLOR: return gl.CONSTANT_COLOR;
         case BlendFunc.CONSTANT_ALPHA: return gl.CONSTANT_ALPHA;
-        case BlendFunc.ONE_MINUS_CONSTANT_COLOR: return gl.ONE_MINUS_CONSTANT_COLOR;
-        case BlendFunc.ONE_MINUS_CONSTANT_ALPHA: return gl.ONE_MINUS_CONSTANT_ALPHA;
+        case BlendFunc.ONE_MINUS_CONSTANT_COLOR:
+            return gl.ONE_MINUS_CONSTANT_COLOR;
+        case BlendFunc.ONE_MINUS_CONSTANT_ALPHA:
+            return gl.ONE_MINUS_CONSTANT_ALPHA;
         default: return assert.never(func, `Unknown blend func: ${func}`);
     }
 }
