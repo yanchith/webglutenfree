@@ -8,10 +8,10 @@ const cmd = Command.create(dev, {
 
         out vec4 v_color;
 
-        vec4[3] VERTICES = vec4[3] (
+        const vec4[3] VERTICES = vec4[3] (
+            vec4(-0.9, -0.5, 0, 1),
             vec4(-0.3, -0.5, 0, 1),
-            vec4(0.3, -0.5, 0, 1),
-            vec4(0, 0.5, 0, 1)
+            vec4(-0.6, 0.5, 0, 1)
         );
 
         void main() {
@@ -19,7 +19,7 @@ const cmd = Command.create(dev, {
             int cid = (gl_VertexID + 1) % 3;
             v_color = vec4(0, 0, 0, 1);
             v_color[cid] = 1.0;
-            gl_Position = VERTICES[vid];
+            gl_Position = 0.1 * float(gl_VertexID / 3) + VERTICES[vid];
         }
     `,
     frag: `#version 300 es
@@ -33,7 +33,7 @@ const cmd = Command.create(dev, {
             o_color = v_color;
         }
     `,
-    count: 3,
+    count: 150,
 });
 
 cmd.execute();
