@@ -362,22 +362,63 @@ export class Command<P = void> {
         );
     }
 
+    readonly count: number;
+    readonly offset: number;
+
+    // CONFIG
+    private gl: WebGL2RenderingContext;
+
+    private glProgram: WebGLProgram;
+    private glPrimitive: number;
+
+    private uniformDescrs: UniformDescriptor<P>[];
+    private vertexArrayAcc?: Access<P, VertexArray>;
+    private framebufferAcc?: Access<P, Framebuffer>;
+    private depthDescr?: DepthDescriptor;
+    private stencilDescr?: StencilDescriptor;
+    private blendDescr?: BlendDescriptor;
+
+    // STATE
+    private currVao: WebGLVertexArrayObject | null;
+    private currFbo: WebGLFramebuffer | null;
+
     private constructor(
-        private gl: WebGL2RenderingContext,
-        private glProgram: WebGLProgram,
-        private glPrimitive: number,
-        private uniformDescrs: UniformDescriptor<P>[],
-        private count: number,
-        private offset: number,
-        private vertexArrayAcc?: Access<P, VertexArray>,
-        private framebufferAcc?: Access<P, Framebuffer>,
-        private depthDescr?: DepthDescriptor,
-        private stencilDescr?: StencilDescriptor,
-        private blendDescr?: BlendDescriptor,
-    ) { }
+        gl: WebGL2RenderingContext,
+        glProgram: WebGLProgram,
+        glPrimitive: number,
+        uniformDescrs: UniformDescriptor<P>[],
+        count: number,
+        offset: number,
+        vertexArrayAcc?: Access<P, VertexArray>,
+        framebufferAcc?: Access<P, Framebuffer>,
+        depthDescr?: DepthDescriptor,
+        stencilDescr?: StencilDescriptor,
+        blendDescr?: BlendDescriptor,
+    ) {
+        this.gl = gl;
+        this.glProgram = glProgram;
+        this.glPrimitive = glPrimitive;
+        this.uniformDescrs = uniformDescrs;
+        this.count = count;
+        this.offset = offset;
+        this.vertexArrayAcc = vertexArrayAcc;
+        this.framebufferAcc = framebufferAcc;
+        this.depthDescr = depthDescr;
+        this.stencilDescr = stencilDescr;
+        this.blendDescr = blendDescr;
+
+        this.currVao = null;
+        this.currFbo = null;
+    }
 
     execute(props: P | P[]): void {
         const { gl, glProgram } = this;
+
+        /*
+        When batching (passing in an array of props), the price for
+        gl.useProgram, enabling depth/stencil tests and blending is paid only
+        once for all draw calls.
+        */
 
         gl.useProgram(glProgram);
 
@@ -392,8 +433,8 @@ export class Command<P = void> {
         }
 
         // FBOs and VAOs are bound without unbinding in the inner loop
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.bindVertexArray(null);
+        this.unbindFbo();
+        this.unbindVao();
 
         this.endBlend();
         this.endStencil();
@@ -409,13 +450,17 @@ export class Command<P = void> {
     private executeInner(props: P, index: number): void {
         const { gl, count, offset, vertexArrayAcc, framebufferAcc } = this;
 
+        /*
+        Enabling multiple FBOs and VAOs per draw batch is a nice feature. We
+        cache currently bound FBO/VAO to prevent needless rebinding.
+        */
+
         let bufferWidth = gl.drawingBufferWidth;
         let bufferHeight = gl.drawingBufferHeight;
 
         const fbo = framebufferAcc && access(props, index, framebufferAcc);
         if (fbo) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer);
-            gl.drawBuffers(fbo.glColorAttachments);
+            this.bindFbo(fbo);
             bufferWidth = fbo.width;
             bufferHeight = fbo.height;
         }
@@ -426,7 +471,7 @@ export class Command<P = void> {
 
         const vao = vertexArrayAcc && access(props, index, vertexArrayAcc);
         if (vao) {
-            gl.bindVertexArray(vao.glVertexArray);
+            this.bindVao(vao);
             const drawCount = count ? Math.min(count, vao.count) : vao.count;
             if (vao.hasElements) {
                 this.drawElements(drawCount, offset, vao.instanceCount);
@@ -436,6 +481,33 @@ export class Command<P = void> {
         } else {
             this.drawArrays(count, offset, 0);
         }
+    }
+
+    private bindVao(vao: VertexArray): void {
+        if (vao !== this.currVao) {
+            this.currVao = vao;
+            this.gl.bindVertexArray(vao.glVertexArray);
+        }
+    }
+
+    private unbindVao(): void {
+        this.gl.bindVertexArray(null);
+        this.currVao = null;
+    }
+
+    private bindFbo(fbo: Framebuffer): void {
+        const gl = this.gl;
+        if (fbo !== this.currFbo) {
+            this.currFbo = fbo;
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer);
+            gl.drawBuffers(fbo.glColorAttachments);
+        }
+    }
+
+    private unbindFbo(): void {
+        const gl = this.gl;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        this.currFbo = null;
     }
 
     private beginDepth(): void {
