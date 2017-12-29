@@ -434,7 +434,7 @@ export class Command<P = void> {
                 this.drawArrays(drawCount, offset, vao.instanceCount);
             }
         } else {
-            this.drawArrays(count || 0, offset, 0);
+            this.drawArrays(count, offset, 0);
         }
     }
 
