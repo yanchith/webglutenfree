@@ -14,16 +14,12 @@ const cmd = Command.create(dev, {
             vec4(0, 0.5, 0, 1)
         );
 
-        vec4[3] COLORS = vec4[3] (
-            vec4(1, 0, 0, 1),
-            vec4(0, 1, 0, 1),
-            vec4(0, 0, 1, 1)
-        );
-
         void main() {
-            int id = gl_VertexID % 3;
-            v_color = COLORS[id];
-            gl_Position = VERTICES[id];
+            int vid = gl_VertexID % 3;
+            int cid = (gl_VertexID + 1) % 3;
+            v_color = vec4(0, 0, 0, 1);
+            v_color[cid] = 1.0;
+            gl_Position = VERTICES[vid];
         }
     `,
     frag: `#version 300 es
