@@ -30,9 +30,16 @@ export type Attribute =
 
 export type AttributeArray =
     | number[]
+    | [number][]
     | [number, number][]
     | [number, number, number][]
     | [number, number, number, number][]
+    /*
+    Unfortunately, typescript does not always infer tuple types when in
+    nested optional structutes, so we provide a number[][] typing fallback.
+    If explicit tuples make it to typescript, the fallback might go away.
+    */
+    | number[][]
     ;
 
 export type AttributeObject =

@@ -12,10 +12,17 @@ export interface ElementBufferObjectProps {
 }
 
 export type ElementBufferArrayProps =
-    | number[]
-    | [number][]
-    | [number, number][]
-    | [number, number, number][]
+    // TODO: what should be the default for number[]?
+    | number[] // POINTS, TRIANGLE_STRIP, TRIANGLE_FAN, LINE_STRIP, LINE_LOOP
+    | [number][] // POINTS
+    | [number, number][] // LINES
+    | [number, number, number][] // TRIANGLES
+    /*
+    Unfortunately, typescript does not always infer tuple types when in
+    nested optional structutes, so we provide a number[][] typing fallback.
+    If explicit tuples make it to typescript, the fallback might go away.
+    */
+    | number[][]
     ;
 
 export class ElementBuffer {
