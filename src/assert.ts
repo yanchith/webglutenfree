@@ -44,8 +44,7 @@ export function paramRange(
         p,
         start,
         end,
-        fmt(`\
-Expected parameter ${name} to be in range [${start}, ${end}], but got ${p}`),
+        fmt(`Expected parameter ${name} to be in range [${start}, ${end}], but got ${p}`),
     );
 }
 
