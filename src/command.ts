@@ -2,6 +2,7 @@ import * as assert from "./assert";
 import * as glutil from "./glutil";
 import { Device } from "./device";
 import { VertexArray, VertexArrayProps } from "./vertex-array";
+import { Primitive, mapGlPrimitive } from "./element-buffer";
 import { Texture } from "./texture";
 import { Framebuffer, FramebufferProps } from "./framebuffer";
 
@@ -18,9 +19,9 @@ export interface CommandProps<P> {
     uniforms?: { [key: string]: Uniform<P> };
     data?: VertexArrayProps | Access<P, VertexArray>;
     framebuffer?: FramebufferProps | Access<P, Framebuffer>;
-    primitive?: Primitive;
     count?: number;
     offset?: number;
+    primitive?: Primitive;
     depth?: {
         func: DepthOrStencilFunc;
         mask?: boolean;
@@ -202,16 +203,6 @@ export interface UniformTexture<P> {
     value: Access<P, Texture>;
 }
 
-export const enum Primitive {
-    TRIANGLES = "triangles",
-    TRIANGLE_STRIP = "triangle-strip",
-    TRIANGLE_FAN = "triangle-fan",
-    POINTS = "points",
-    LINES = "lines",
-    LINE_STRIP = "line-strip",
-    LINE_LOOP = "line-loop",
-}
-
 export const enum DepthOrStencilFunc {
     ALWAYS = "always",
     NEVER = "never",
@@ -269,47 +260,47 @@ export class Command<P = void> {
             uniforms = {},
             data,
             framebuffer,
-            primitive = Primitive.TRIANGLES,
             count = 0,
             offset = 0,
+            primitive,
             depth,
             stencil,
             blend,
         }: CommandProps<P>,
     ): Command<P> {
-        assert.requireNonNull(vert, "vert");
-        assert.requireNonNull(frag, "frag");
-        assert.requireNonNull(data, "data");
+        assert.paramNonNull(vert, "vert");
+        assert.paramNonNull(frag, "frag");
+        assert.paramNonNull(data, "data");
         if (depth) {
-            assert.requireNonNull(depth.func, "depth.func");
+            assert.paramNonNull(depth.func, "depth.func");
         }
         if (blend) {
-            assert.requireNonNull(blend.func, "blend.func");
-            assert.requireNonNull(blend.func.src, "blend.func.src");
-            assert.requireNonNull(blend.func.dst, "blend.func.dst");
+            assert.paramNonNull(blend.func, "blend.func");
+            assert.paramNonNull(blend.func.src, "blend.func.src");
+            assert.paramNonNull(blend.func.dst, "blend.func.dst");
             if (typeof blend.func.src === "object") {
-                assert.requireNonNull(
+                assert.paramNonNull(
                     blend.func.src.rgb,
                     "blend.func.src.rgb",
                 );
-                assert.requireNonNull(
+                assert.paramNonNull(
                     blend.func.src.alpha,
                     "blend.func.src.alpha",
                 );
             }
             if (typeof blend.func.dst === "object") {
-                assert.requireNonNull(
+                assert.paramNonNull(
                     blend.func.dst.rgb,
                     "blend.func.dst.rgb",
                 );
-                assert.requireNonNull(
+                assert.paramNonNull(
                     blend.func.dst.alpha,
                     "blend.func.dst.alpha",
                 );
             }
         }
         if (stencil) {
-            assert.requireNonNull(stencil.func, "stencil.func");
+            assert.paramNonNull(stencil.func, "stencil.func");
             // TODO: complete stencil validation... validation framework?
         }
 
@@ -350,10 +341,10 @@ export class Command<P = void> {
         return new Command(
             gl,
             prog,
-            mapGlPrimitive(gl, primitive),
             uniformDescrs,
             count,
             offset,
+            primitive,
             vertexArrayAcc,
             framebufferAcc,
             depthDescr,
@@ -369,7 +360,7 @@ export class Command<P = void> {
     private gl: WebGL2RenderingContext;
 
     private glProgram: WebGLProgram;
-    private glPrimitive: number;
+    private glPrimitive?: number;
 
     private uniformDescrs: UniformDescriptor<P>[];
     private vertexArrayAcc?: Access<P, VertexArray>;
@@ -385,10 +376,10 @@ export class Command<P = void> {
     private constructor(
         gl: WebGL2RenderingContext,
         glProgram: WebGLProgram,
-        glPrimitive: number,
         uniformDescrs: UniformDescriptor<P>[],
         count: number,
         offset: number,
+        primitive?: Primitive,
         vertexArrayAcc?: Access<P, VertexArray>,
         framebufferAcc?: Access<P, Framebuffer>,
         depthDescr?: DepthDescriptor,
@@ -397,7 +388,7 @@ export class Command<P = void> {
     ) {
         this.gl = gl;
         this.glProgram = glProgram;
-        this.glPrimitive = glPrimitive;
+        this.glPrimitive = primitive && mapGlPrimitive(gl, primitive);
         this.uniformDescrs = uniformDescrs;
         this.count = count;
         this.offset = offset;
@@ -448,7 +439,14 @@ export class Command<P = void> {
     }
 
     private executeInner(props: P, index: number): void {
-        const { gl, count, offset, vertexArrayAcc, framebufferAcc } = this;
+        const {
+            gl,
+            glPrimitive,
+            count,
+            offset,
+            vertexArrayAcc,
+            framebufferAcc,
+        } = this;
 
         /*
         Enabling multiple FBOs and VAOs per draw batch is a nice feature. We
@@ -472,14 +470,24 @@ export class Command<P = void> {
         const vao = vertexArrayAcc && access(props, index, vertexArrayAcc);
         if (vao) {
             this.bindVao(vao);
-            const drawCount = count ? Math.min(count, vao.count) : vao.count;
+            const prim = typeof glPrimitive === "undefined"
+                ? typeof vao.glPrimitive === "undefined"
+                    ? gl.TRIANGLES
+                    : vao.glPrimitive
+                : glPrimitive;
+            const cnt = count ? Math.min(count, vao.count) : vao.count;
             if (vao.hasElements) {
-                this.drawElements(drawCount, offset, vao.instanceCount);
+                this.drawElements(prim, cnt, offset, vao.instanceCount);
             } else {
-                this.drawArrays(drawCount, offset, vao.instanceCount);
+                this.drawArrays(prim, cnt, offset, vao.instanceCount);
             }
         } else {
-            this.drawArrays(count, offset, 0);
+            this.drawArrays(
+                typeof glPrimitive === "undefined" ? gl.TRIANGLES : glPrimitive,
+                count,
+                offset,
+                0,
+            );
         }
     }
 
@@ -585,24 +593,29 @@ export class Command<P = void> {
         if (blendDescr) { gl.disable(gl.BLEND); }
     }
 
-    private drawArrays(count: number, offset: number, instCount: number): void {
-        const { gl, glPrimitive } = this;
-        if (instCount) {
-            gl.drawArraysInstanced(glPrimitive, offset, count, instCount);
-        } else {
-            gl.drawArrays(glPrimitive, offset, count);
-        }
-    }
-
-    private drawElements(
+    private drawArrays(
+        primitive: number,
         count: number,
         offset: number,
         instCount: number,
     ): void {
-        const { gl, glPrimitive } = this;
+        if (instCount) {
+            this.gl.drawArraysInstanced(primitive, offset, count, instCount);
+        } else {
+            this.gl.drawArrays(primitive, offset, count);
+        }
+    }
+
+    private drawElements(
+        primitive: number,
+        count: number,
+        offset: number,
+        instCount: number,
+    ): void {
+        const gl = this.gl;
         if (instCount) {
             gl.drawElementsInstanced(
-                glPrimitive,
+                primitive,
                 count,
                 gl.UNSIGNED_INT, // We only support u32 indices
                 offset,
@@ -610,7 +623,7 @@ export class Command<P = void> {
             );
         } else {
             gl.drawElements(
-                glPrimitive,
+                primitive,
                 count,
                 gl.UNSIGNED_INT, // We only support u32 indices
                 offset,
@@ -832,25 +845,6 @@ class UniformDescriptor<P> {
         readonly location: WebGLUniformLocation,
         readonly definition: Uniform<P>,
     ) { }
-}
-
-function mapGlPrimitive(
-    gl: WebGL2RenderingContext,
-    primitive: Primitive,
-): number {
-    switch (primitive) {
-        case Primitive.TRIANGLES: return gl.TRIANGLES;
-        case Primitive.TRIANGLE_STRIP: return gl.TRIANGLE_STRIP;
-        case Primitive.TRIANGLE_FAN: return gl.TRIANGLE_FAN;
-        case Primitive.POINTS: return gl.POINTS;
-        case Primitive.LINES: return gl.LINES;
-        case Primitive.LINE_STRIP: return gl.LINE_STRIP;
-        case Primitive.LINE_LOOP: return gl.LINE_LOOP;
-        default: return assert.never(
-            primitive,
-            `Unknown primitive: ${primitive}`,
-        );
-    }
 }
 
 function mapGlDepthOrStencilFunc(

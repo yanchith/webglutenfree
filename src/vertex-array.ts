@@ -14,6 +14,7 @@ import {
 import {
     ElementBuffer,
     ElementBufferProps,
+    Primitive,
 } from "./element-buffer";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
@@ -29,11 +30,10 @@ export type Attribute =
     ;
 
 export type AttributeArray =
-    | number[]
-    | [number][]
-    | [number, number][]
-    | [number, number, number][]
-    | [number, number, number, number][]
+    | number[] // infers size 1
+    | [number, number][] // infers size 2
+    | [number, number, number][] // infers size 3
+    | [number, number, number, number][] // infers size 4
     /*
     Unfortunately, typescript does not always infer tuple types when in
     nested optional structutes, so we provide a number[][] typing fallback.
@@ -155,6 +155,14 @@ export class VertexArray {
         return !!this.elementBuffer;
     }
 
+    get primitive(): Primitive | undefined {
+        return this.elementBuffer && this.elementBuffer.primitive;
+    }
+
+    get glPrimitive(): number | undefined {
+        return this.elementBuffer && this.elementBuffer.glPrimitive;
+    }
+
     init(): void {
         const { gl, attributes, elementBuffer } = this;
         if (!gl.isContextLost()) {
@@ -230,14 +238,15 @@ class AttributeDescriptor {
         props: Attribute,
     ): AttributeDescriptor {
         if (Array.isArray(props)) {
-            if (array.is2DArray(props)) {
-                const r = array.ravel(props);
+            if (array.isArray2(props)) {
+                const s = array.shape2(props);
+                const r = array.ravel2(props, s);
                 return new AttributeDescriptor(
                     location,
                     AttributeType.POINTER,
-                    VertexBuffer.fromFloat32Array(gl, r.data),
-                    r.shape[0],
-                    r.shape[1],
+                    VertexBuffer.fromFloat32Array(gl, r),
+                    s[0],
+                    s[1],
                     false,
                     0,
                 );

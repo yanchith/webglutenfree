@@ -2,7 +2,6 @@ export { Device, Extension } from "./device";
 export {
     Command,
     CommandProps,
-    Primitive,
     DepthOrStencilFunc,
     BlendFunc,
     BlendEquation,
@@ -12,7 +11,7 @@ export {
     VertexBufferProps,
     VertexBufferType,
 } from "./vertex-buffer";
-export { ElementBuffer, ElementBufferProps } from "./element-buffer";
+export { ElementBuffer, ElementBufferProps, Primitive } from "./element-buffer";
 export { VertexArray, VertexArrayProps } from "./vertex-array";
 export {
     Texture,

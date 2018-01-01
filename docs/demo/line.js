@@ -46,7 +46,6 @@ const cmd = Command.create(dev, {
             [2, 0],
         ],
     },
-    primitive: "lines",
 });
 
 cmd.execute();
