@@ -4,7 +4,7 @@ import {
     VertexArray,
     Texture,
     Framebuffer,
-} from "./lib/glutenfree.es.min.js";
+} from "./lib/glutenfree.production.es.min.js";
 import * as square from "./lib/square.js"
 import * as cube from "./lib/cube.js"
 

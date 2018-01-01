@@ -1,4 +1,8 @@
-import { Device, Command, VertexArray } from "./lib/glutenfree.es.min.js";
+import {
+    Device,
+    Command,
+    VertexArray,
+} from "./lib/glutenfree.production.es.min.js";
 import * as cube from "./lib/cube.js"
 import * as bunny from "./lib/bunny.js"
 
