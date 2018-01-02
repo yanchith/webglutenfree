@@ -1,0 +1,26 @@
+# Mac
+.DS_Store
+
+# Node
+npm-debug.log
+node_modules/
+
+# Yarn
+yarn-error.log
+yarn.lock
+
+# Editors
+.vscode/
+.idea
+
+# Build dirs
+build/
+
+# Docs
+docs/
+
+# Scripts
+scripts/
+
+# Git repository
+.git/
