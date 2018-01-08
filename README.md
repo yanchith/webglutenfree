@@ -2,24 +2,81 @@
 
 We serve your draw calls type-safe and gluten-free.
 
-Everything is a bit experimental at the moment, but work is underway on
-stabilizing the features and getting to a first release.
+Glutenfree is a lightweight declarative abstraction layer on top of WebGL2.
+Concepts from WebGL map directly to Glutenfree declarations.
 
-These are our design goals:
+The library provides two abstractions: `Commands` and `Resources`.
 
--   Provide safe and simple access to WebGL2 features without sacrificing
-    performance
--   Handle most WebGL state transitions internally
--   Catch programmer errors via both static type checking and (optional) runtime
-    checks
--   Encourage init-time resource creation in the API
+`Commands` perform the necessary state transitions related to making a draw call.
 
-While glutenfree tastes best consumed from TypesSript, it is very usable from
-JavaScript as well. Try looking at our [gallery](https://yanchith.github.io/glutenfree/) (need ES
-module capable browser, eg. Chrome > 61).
+`Resources` are handles on raw WebGL resources, such as `WebGLBuffer` or
+`WebGLTexture`, with conveniences for construcion and reading/writing data.
 
-_Glutenfree_ is heavily inspired by [regl](http://regl.party), but we try to
-improve on some things:
--   if consumed from typescript, we can compile-time check for many issues
--   glutenfree requires WebGL2, which enables it to utilize new features, most
-    notably VAOs for improved buffer binding performance.
+Glutenfree tries to be safe and simple to use while adding minimal overhead.
+It does so by encouraging init-time resource creation, internally using
+VertexArrayObjects to bind Attributes, and performing assertions only in
+compile-time or in debug builds.
+
+While it can be consumed directly from JavaScript, using TypeScript adds an
+additional layer of safety.
+
+## Current State
+
+Work is underway on stabilizing the features and getting to a first release.
+We are mostly missing documentation.
+
+## Gallery
+
+Try looking at our [gallery](https://yanchith.github.io/glutenfree/)
+(with an ES module capable browser, eg. Firefox >= 59 or Chrome >= 61).
+
+## The Mandatory Triangle
+
+Drawing with Glutenfree consists of creating a `Command` (which minimally
+consists of vertex and fragment shaders), uploading `data` to the GPU, and
+executing the command.
+
+```javascript
+
+import { Device, Command } from "glutenfree";
+
+const dev = Device.mount();
+
+const cmd = Command.create(dev, {
+    vert: `#version 300 es
+        precision mediump float;
+
+        layout (location = 0) in vec2 a_position;
+
+        void main() {
+            gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+    `,
+    frag: `#version 300 es
+        precision mediump float;
+
+        out vec4 f_color;
+
+        void main() {
+            f_color = vec4(1);
+        }
+    `,
+    data: {
+        attributes: {
+            a_position: [
+                [-0.3, -0.5],
+                [0.3, -0.5],
+                [0, 0.5],
+            ],
+        },
+    },
+});
+
+cmd.execute();
+
+```
+
+## Acknowledgements
+
+Glutenfree is heavily inspired by the [regl](http://regl.party) library.
+Thank you!
