@@ -32,10 +32,10 @@ const cmd = Command.create(dev, {
 
         in vec4 v_vertex_color;
 
-        layout (location = 0) out vec4 o_color;
+        out vec4 f_color;
 
         void main() {
-            o_color = v_vertex_color;
+            f_color = v_vertex_color;
         }
     `,
     uniforms: {

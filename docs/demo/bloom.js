@@ -82,10 +82,10 @@ const scene = Command.create(dev, {
     frag: `#version 300 es
         precision mediump float;
 
-        layout (location = 0) out vec4 o_color;
+        out vec4 f_color;
 
         void main() {
-            o_color = vec4(0.9, 0.8, 0.9, 0.5);
+            f_color = vec4(0.9, 0.8, 0.9, 0.5);
         }
     `,
     uniforms: {
@@ -141,8 +141,9 @@ const split = Command.create(dev, {
 
         in vec2 v_tex_coord;
 
-        layout (location = 0) out vec4 o_color;
-        layout (location = 1) out vec4 o_bright;
+        // Set explicit locations for Framebuffer attachments
+        layout (location = 0) out vec4 f_color;
+        layout (location = 1) out vec4 f_bright;
 
         void main() {
             vec4 color = texture(u_image, v_tex_coord);
@@ -150,8 +151,8 @@ const split = Command.create(dev, {
             // Convert to grayscale and compute brightness
             float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 
-            o_color = color;
-            o_bright = brightness > 0.7 ? color : vec4(0.0, 0.0, 0.0, 1.0);
+            f_color = color;
+            f_bright = brightness > 0.7 ? color : vec4(0.0, 0.0, 0.0, 1.0);
         }
     `,
     uniforms: {
@@ -247,7 +248,7 @@ const tonemap = Command.create(dev, {
 
         in vec2 v_tex_coord;
 
-        out vec4 o_color;
+        out vec4 f_color;
 
         void main() {
             vec3 color = texture(u_image_color, v_tex_coord).rgb;
@@ -263,7 +264,7 @@ const tonemap = Command.create(dev, {
             // Gamma correction
             mapped = pow(mapped, vec3(1.0 / gamma));
 
-            o_color = vec4(mapped, 1.0);
+            f_color = vec4(mapped, 1.0);
         }
     `,
     uniforms: {

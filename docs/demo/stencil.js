@@ -39,12 +39,12 @@ const drawObjects = Command.create(dev, {
     frag: `#version 300 es
         precision mediump float;
 
-        out vec4 o_color;
+        out vec4 f_color;
 
         void main() {
             float depth = gl_FragCoord.z / gl_FragCoord.w;
             float factor = 1.0 - 1.0 / depth * 5.0;
-            o_color = mix(
+            f_color = mix(
                 vec4(0.2, 0.0, 0.8, 1.0),
                 vec4(0.2, 0.0, 0.0, 1.0),
                 factor
@@ -107,10 +107,10 @@ const drawOutlines = Command.create(dev, {
     frag: `#version 300 es
         precision mediump float;
 
-        out vec4 o_color;
+        out vec4 f_color;
 
         void main() {
-            o_color = vec4(0.0, 1.0, 0.0, 1.0);
+            f_color = vec4(0.0, 1.0, 0.0, 1.0);
         }
     `,
     uniforms: {

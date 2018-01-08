@@ -29,10 +29,10 @@ const cmd = Command.create(dev, {
     frag: `#version 300 es
         precision mediump float;
 
-        out vec4 o_color;
+        out vec4 f_color;
 
         void main() {
-            o_color = vec4(1.0);
+            f_color = vec4(1.0);
         }
     `,
     uniforms: {

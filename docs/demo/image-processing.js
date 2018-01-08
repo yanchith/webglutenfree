@@ -76,7 +76,7 @@ async function run() {
 
             in vec2 v_tex_coord;
 
-            out vec4 o_color;
+            out vec4 f_color;
 
             void main() {
                 vec2 pix = vec2(1) / vec2(textureSize(u_image, 0));
@@ -91,7 +91,7 @@ async function run() {
                     texture(u_image, v_tex_coord + pix * vec2(-1,  1)) * k[6] +
                     texture(u_image, v_tex_coord + pix * vec2( 0,  1)) * k[7] +
                     texture(u_image, v_tex_coord + pix * vec2( 1,  1)) * k[8] ;
-                o_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
+                f_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
             }
         `,
         uniforms: {

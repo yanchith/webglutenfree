@@ -67,10 +67,10 @@ const draw = Command.create(dev, {
     frag: `#version 300 es
         precision mediump float;
 
-        out vec4 o_color;
+        out vec4 f_color;
 
         void main() {
-            o_color = vec4(0.8, 0.3, 0.7, 1.0);
+            f_color = vec4(0.8, 0.3, 0.7, 1.0);
         }
     `,
     uniforms: {
@@ -127,7 +127,7 @@ const blend = Command.create(dev, {
 
         in vec2 v_tex_coord;
 
-        layout (location = 0) out vec4 o_color;
+        out vec4 f_color;
 
         vec4 blend_alpha(vec4 src_color, vec4 dst_color, float factor) {
             return (src_color * factor) + (dst_color * (1. - factor));
@@ -136,7 +136,7 @@ const blend = Command.create(dev, {
         void main() {
             vec4 c1 = texture(u_new_frame, v_tex_coord);
             vec4 c2 = texture(u_ping, v_tex_coord);
-            o_color = blend_alpha(c2, c1, u_blend_factor);
+            f_color = blend_alpha(c2, c1, u_blend_factor);
         }
     `,
     data: screenspace,
@@ -178,10 +178,10 @@ const copyToCanvas = Command.create(dev, {
 
         in vec2 v_tex_coord;
 
-        layout (location = 0) out vec4 o_color;
+        out vec4 f_color;
 
         void main() {
-            o_color = texture(u_source, v_tex_coord);
+            f_color = texture(u_source, v_tex_coord);
         }
     `,
     data: screenspace,
