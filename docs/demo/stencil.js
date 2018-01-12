@@ -2,6 +2,9 @@ import {
     Device,
     Command,
     VertexArray,
+    DepthFunc,
+    StencilFunc,
+    StencilOp,
 } from "./lib/glutenfree.production.es.min.js";
 import * as cube from "./lib/cube.js"
 import * as bunny from "./lib/bunny.js"
@@ -71,18 +74,18 @@ const drawObjects = Command.create(dev, {
         },
     },
     data: ({ geometry }) => geometry,
-    depth: { func: "less" },
+    depth: { func: DepthFunc.LESS },
     stencil: {
         func: {
-            func: "always",
+            func: StencilFunc.ALWAYS,
             ref: 1,
             mask: 0xFF,
         },
         mask: 0xFF,
         op: {
-            fail: "keep",
-            zfail: "keep",
-            zpass: "replace",
+            fail: StencilOp.KEEP,
+            zfail: StencilOp.KEEP,
+            zpass: StencilOp.REPLACE,
         },
     },
 });
@@ -135,7 +138,7 @@ const drawOutlines = Command.create(dev, {
     data: ({ geometry }) => geometry,
     stencil: {
         func: {
-            func: "notequal",
+            func: StencilFunc.NOTEQUAL,
             ref: 1,
             mask: 0xFF,
         },

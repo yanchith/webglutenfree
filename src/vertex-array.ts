@@ -14,6 +14,7 @@ import {
 import {
     ElementBuffer,
     ElementBufferProps,
+    ElementBufferType,
     Primitive,
 } from "./element-buffer";
 
@@ -155,12 +156,12 @@ export class VertexArray {
         return !!this.elementBuffer;
     }
 
-    get primitive(): Primitive | undefined {
+    get elementPrimitive(): Primitive | undefined {
         return this.elementBuffer && this.elementBuffer.primitive;
     }
 
-    get glPrimitive(): number | undefined {
-        return this.elementBuffer && this.elementBuffer.glPrimitive;
+    get elementType(): ElementBufferType | undefined {
+        return this.elementBuffer && this.elementBuffer.type;
     }
 
     init(): void {
@@ -172,7 +173,7 @@ export class VertexArray {
             attributes.forEach(({
                 location,
                 type,
-                buffer: { glBuffer, glType: glBufferType },
+                buffer: { glBuffer, type: glBufferType },
                 size,
                 normalized = false,
                 divisor,

@@ -8,7 +8,7 @@ export type ElementBufferProps =
     ;
 
 export interface ElementBufferObjectProps {
-    type: "u32";
+    type: ElementBufferType;
     data: number[] | Uint32Array;
     primitive: Primitive;
 }
@@ -25,14 +25,21 @@ export type ElementBufferArrayProps =
     | number[][]
     ;
 
+export const enum ElementBufferType {
+    // Should we enable this?
+    // UNSIGNED_BYTE = 0x1401,
+    UNSIGNED_SHORT = 0x1403,
+    UNSIGNED_INT = 0x1405,
+}
+
 export const enum Primitive {
-    TRIANGLES = "triangles",
-    TRIANGLE_STRIP = "triangle-strip",
-    TRIANGLE_FAN = "triangle-fan",
-    POINTS = "points",
-    LINES = "lines",
-    LINE_STRIP = "line-strip",
-    LINE_LOOP = "line-loop",
+    POINTS = 0x0000,
+    LINES = 0x0001,
+    LINE_LOOP = 0x0002,
+    LINE_STRIP = 0x0003,
+    TRIANGLES = 0x0004,
+    TRIANGLE_STRIP = 0x0005,
+    TRIANGLE_FAN = 0x0006,
 }
 
 
@@ -61,6 +68,21 @@ export class ElementBuffer {
         return ElementBuffer.fromUint32Array(dev, data, Primitive.POINTS);
     }
 
+    static fromUint16Array(
+        dev: WebGL2RenderingContext | Device,
+        data: number[] | Uint16Array,
+        primitive: Primitive,
+    ): ElementBuffer {
+        const gl = dev instanceof Device ? dev.gl : dev;
+        const arr = Array.isArray(data) ? new Uint16Array(data) : data;
+        return new ElementBuffer(
+            gl,
+            arr,
+            ElementBufferType.UNSIGNED_SHORT,
+            primitive,
+        );
+    }
+
     static fromUint32Array(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Uint32Array,
@@ -68,26 +90,32 @@ export class ElementBuffer {
     ): ElementBuffer {
         const gl = dev instanceof Device ? dev.gl : dev;
         const arr = Array.isArray(data) ? new Uint32Array(data) : data;
-        return new ElementBuffer(gl, arr, primitive);
+        return new ElementBuffer(
+            gl,
+            arr,
+            ElementBufferType.UNSIGNED_INT,
+            primitive,
+        );
     }
 
+    readonly type: ElementBufferType;
     readonly primitive: Primitive;
 
     readonly glBuffer: WebGLBuffer | null;
-    readonly glPrimitive: number;
 
     private gl: WebGL2RenderingContext;
-    private data: Uint32Array;
+    private data: Uint16Array | Uint32Array;
 
     private constructor(
         gl: WebGL2RenderingContext,
-        data: Uint32Array,
+        data: Uint16Array | Uint32Array,
+        type: ElementBufferType,
         primitive: Primitive,
     ) {
         this.gl = gl;
         this.data = data;
+        this.type = type;
         this.primitive = primitive;
-        this.glPrimitive = mapGlPrimitive(gl, primitive);
         this.glBuffer = null;
 
         this.init();
@@ -109,24 +137,5 @@ export class ElementBuffer {
     restore(): void {
         const { gl, glBuffer } = this;
         if (!gl.isBuffer(glBuffer)) { this.init(); }
-    }
-}
-
-export function mapGlPrimitive(
-    gl: WebGL2RenderingContext,
-    primitive: Primitive,
-): number {
-    switch (primitive) {
-        case Primitive.TRIANGLES: return gl.TRIANGLES;
-        case Primitive.TRIANGLE_STRIP: return gl.TRIANGLE_STRIP;
-        case Primitive.TRIANGLE_FAN: return gl.TRIANGLE_FAN;
-        case Primitive.POINTS: return gl.POINTS;
-        case Primitive.LINES: return gl.LINES;
-        case Primitive.LINE_STRIP: return gl.LINE_STRIP;
-        case Primitive.LINE_LOOP: return gl.LINE_LOOP;
-        default: return assert.never(
-            primitive,
-            `Unknown primitive: ${primitive}`,
-        );
     }
 }

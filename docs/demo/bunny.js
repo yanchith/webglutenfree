@@ -1,4 +1,8 @@
-import { Device, Command } from "./lib/glutenfree.production.es.min.js";
+import {
+    Device,
+    Command,
+    BlendFunc,
+} from "./lib/glutenfree.production.es.min.js";
 import * as bunny from "./lib/bunny.js"
 
 const dev = Device.mount();
@@ -61,8 +65,8 @@ const cmd = Command.create(dev, {
     },
     blend: {
         func: {
-            src: "constant-alpha",
-            dst: "one-minus-constant-alpha",
+            src: BlendFunc.CONSTANT_ALPHA,
+            dst: BlendFunc.ONE_MINUS_CONSTANT_ALPHA,
         },
         color: [0, 0, 0, 0.2],
     },

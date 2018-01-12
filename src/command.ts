@@ -2,7 +2,7 @@ import * as assert from "./assert";
 import * as glutil from "./glutil";
 import { Device } from "./device";
 import { VertexArray, VertexArrayProps } from "./vertex-array";
-import { Primitive, mapGlPrimitive } from "./element-buffer";
+import { Primitive } from "./element-buffer";
 import { Texture } from "./texture";
 import { Framebuffer, FramebufferProps } from "./framebuffer";
 
@@ -23,13 +23,13 @@ export interface CommandProps<P> {
     offset?: number;
     primitive?: Primitive;
     depth?: {
-        func: DepthOrStencilFunc;
+        func: DepthFunc;
         mask?: boolean;
         range?: [number, number];
     };
     stencil?: {
         func: {
-            func: StencilOrSeparate<DepthOrStencilFunc>;
+            func: StencilOrSeparate<StencilFunc>;
             ref?: StencilOrSeparate<number>;
             mask?: StencilOrSeparate<number>;
         };
@@ -203,51 +203,62 @@ export interface UniformTexture<P> {
     value: Access<P, Texture>;
 }
 
-export const enum DepthOrStencilFunc {
-    ALWAYS = "always",
-    NEVER = "never",
-    EQUAL = "equal",
-    NOTEQUAL = "notequal",
-    LESS = "less",
-    LEQUAL = "lequal",
-    GREATER = "greater",
-    GEQUAL = "gequal",
+export const enum DepthFunc {
+    ALWAYS = 0x0207,
+    NEVER = 0x0200,
+    EQUAL = 0x0202,
+    NOTEQUAL = 0x0205,
+    LESS = 0x0201,
+    LEQUAL = 0x0203,
+    GREATER = 0x0204,
+    GEQUAL = 0x0206,
+}
+
+export const enum StencilFunc {
+    ALWAYS = 0x0207,
+    NEVER = 0x0200,
+    EQUAL = 0x0202,
+    NOTEQUAL = 0x0205,
+    LESS = 0x0201,
+    LEQUAL = 0x0203,
+    GREATER = 0x0204,
+    GEQUAL = 0x0206,
 }
 
 export const enum StencilOp {
-    KEEP = "keep",
-    ZERO = "zero",
-    REPLACE = "replace",
-    INCR = "incr",
-    INCR_WRAP = "incr-wrap",
-    DECR = "decr",
-    DECR_WRAP = "decr-wrap",
-    INVERT = "invert",
+    KEEP = 0x1E00,
+    ZERO = 0,
+    REPLACE = 0x1E01,
+    INCR = 0x1E02,
+    INCR_WRAP = 0x8507,
+    DECR = 0x1E03,
+    DECR_WRAP = 0x8508,
+    INVERT = 0x150A,
 }
 
 export const enum BlendFunc {
-    ZERO = "zero",
-    ONE = "one",
-    SRC_COLOR = "src-color",
-    SRC_ALPHA = "src-alpha",
-    ONE_MINUS_SRC_COLOR = "one-minus-src-color",
-    ONE_MINUS_SRC_ALPHA = "one-minus-src-alpha",
-    DST_COLOR = "dst-color",
-    DST_ALPHA = "dst-alpha",
-    ONE_MINUS_DST_COLOR = "one-minus-dst-color",
-    ONE_MINUS_DST_ALPHA = "one-minus-dst-alpha",
-    CONSTANT_COLOR = "constant-color",
-    CONSTANT_ALPHA = "constant-alpha",
-    ONE_MINUS_CONSTANT_COLOR = "one-minus-constant-color",
-    ONE_MINUS_CONSTANT_ALPHA = "one-minus-constant-alpha",
+    ZERO = 0,
+    ONE = 1,
+    SRC_COLOR = 0x0300,
+    SRC_ALPHA = 0x0302,
+    ONE_MINUS_SRC_COLOR = 0x0301,
+    ONE_MINUS_SRC_ALPHA = 0x0303,
+    DST_COLOR = 0x0306,
+    DST_ALPHA = 0x0304,
+    ONE_MINUS_DST_COLOR = 0x0307,
+    ONE_MINUS_DST_ALPHA = 0x0305,
+    CONSTANT_COLOR = 0x8001,
+    CONSTANT_ALPHA = 0x8003,
+    ONE_MINUS_CONSTANT_COLOR = 0x8002,
+    ONE_MINUS_CONSTANT_ALPHA = 0x8004,
 }
 
 export const enum BlendEquation {
-    ADD = "add",
-    SUBTRACT = "subtract",
-    REVERSE_SUBTRACT = "reverse-subtract",
-    MIN = "min",
-    MAX = "max",
+    FUNC_ADD = 0x8006,
+    FUNC_SUBTRACT = 0x800A,
+    FUNC_REVERSE_SUBTRACT = 0x800B,
+    MIN = 0x8007,
+    MAX = 0x8008,
 }
 
 export class Command<P = void> {
@@ -334,9 +345,9 @@ export class Command<P = void> {
                 : Framebuffer.create(gl, framebuffer)
             : undefined;
 
-        const depthDescr = parseDepth(gl, depth);
-        const stencilDescr = parseStencil(gl, stencil);
-        const blendDescr = parseBlend(gl, blend);
+        const depthDescr = parseDepth(depth);
+        const stencilDescr = parseStencil(stencil);
+        const blendDescr = parseBlend(blend);
 
         return new Command(
             gl,
@@ -360,8 +371,8 @@ export class Command<P = void> {
     private gl: WebGL2RenderingContext;
 
     private glProgram: WebGLProgram;
-    private glPrimitive?: number;
 
+    private primitive?: number;
     private uniformDescrs: UniformDescriptor<P>[];
     private vertexArrayAcc?: Access<P, VertexArray>;
     private framebufferAcc?: Access<P, Framebuffer>;
@@ -388,7 +399,7 @@ export class Command<P = void> {
     ) {
         this.gl = gl;
         this.glProgram = glProgram;
-        this.glPrimitive = primitive && mapGlPrimitive(gl, primitive);
+        this.primitive = typeof primitive === "number" ? primitive : undefined;
         this.uniformDescrs = uniformDescrs;
         this.count = count;
         this.offset = offset;
@@ -441,7 +452,7 @@ export class Command<P = void> {
     private executeInner(props: P, index: number): void {
         const {
             gl,
-            glPrimitive,
+            primitive,
             count,
             offset,
             vertexArrayAcc,
@@ -470,20 +481,21 @@ export class Command<P = void> {
         const vao = vertexArrayAcc && access(props, index, vertexArrayAcc);
         if (vao) {
             this.bindVao(vao);
-            const prim = typeof glPrimitive === "undefined"
-                ? typeof vao.glPrimitive === "undefined"
+            const prim = typeof primitive === "undefined"
+                ? typeof vao.elementPrimitive === "undefined"
                     ? gl.TRIANGLES
-                    : vao.glPrimitive
-                : glPrimitive;
+                    : vao.elementPrimitive
+                : primitive;
             const cnt = count ? Math.min(count, vao.count) : vao.count;
             if (vao.hasElements) {
-                this.drawElements(prim, cnt, offset, vao.instanceCount);
+                const ty = vao.elementType!;
+                this.drawElements(prim, cnt, ty, offset, vao.instanceCount);
             } else {
                 this.drawArrays(prim, cnt, offset, vao.instanceCount);
             }
         } else {
             this.drawArrays(
-                typeof glPrimitive === "undefined" ? gl.TRIANGLES : glPrimitive,
+                typeof primitive === "undefined" ? gl.TRIANGLES : primitive,
                 count,
                 offset,
                 0,
@@ -609,6 +621,7 @@ export class Command<P = void> {
     private drawElements(
         primitive: number,
         count: number,
+        type: number,
         offset: number,
         instCount: number,
     ): void {
@@ -617,7 +630,7 @@ export class Command<P = void> {
             gl.drawElementsInstanced(
                 primitive,
                 count,
-                gl.UNSIGNED_INT, // We only support u32 indices
+                type,
                 offset,
                 instCount,
             );
@@ -625,7 +638,7 @@ export class Command<P = void> {
             gl.drawElements(
                 primitive,
                 count,
-                gl.UNSIGNED_INT, // We only support u32 indices
+                type,
                 offset,
             );
         }
@@ -847,89 +860,12 @@ class UniformDescriptor<P> {
     ) { }
 }
 
-function mapGlDepthOrStencilFunc(
-    gl: WebGL2RenderingContext,
-    func: DepthOrStencilFunc,
-): number {
-    switch (func) {
-        case DepthOrStencilFunc.ALWAYS: return gl.ALWAYS;
-        case DepthOrStencilFunc.NEVER: return gl.NEVER;
-        case DepthOrStencilFunc.EQUAL: return gl.EQUAL;
-        case DepthOrStencilFunc.NOTEQUAL: return gl.NOTEQUAL;
-        case DepthOrStencilFunc.LESS: return gl.LESS;
-        case DepthOrStencilFunc.LEQUAL: return gl.LEQUAL;
-        case DepthOrStencilFunc.GREATER: return gl.GREATER;
-        case DepthOrStencilFunc.GEQUAL: return gl.GEQUAL;
-        default: return assert.never(
-            func,
-            `Unknown depth or stencil function: ${func}`,
-        );
-    }
-}
-
-function mapGlStencilOp(gl: WebGL2RenderingContext, op: StencilOp): number {
-    switch (op) {
-        case StencilOp.KEEP: return gl.KEEP;
-        case StencilOp.ZERO: return gl.ZERO;
-        case StencilOp.REPLACE: return gl.REPLACE;
-        case StencilOp.INCR: return gl.INCR;
-        case StencilOp.INCR_WRAP: return gl.INCR_WRAP;
-        case StencilOp.DECR: return gl.DECR;
-        case StencilOp.DECR_WRAP: return gl.DECR_WRAP;
-        case StencilOp.INVERT: return gl.INVERT;
-        default: return assert.never(op, `Unknown stencil op: ${op}`);
-    }
-}
-
-function mapGlBlendFunc(
-    gl: WebGL2RenderingContext,
-    func: BlendFunc,
-): number {
-    switch (func) {
-        case BlendFunc.ZERO: return gl.ZERO;
-        case BlendFunc.ONE: return gl.ONE;
-        case BlendFunc.SRC_COLOR: return gl.SRC_COLOR;
-        case BlendFunc.SRC_ALPHA: return gl.SRC_ALPHA;
-        case BlendFunc.ONE_MINUS_SRC_COLOR: return gl.ONE_MINUS_SRC_COLOR;
-        case BlendFunc.ONE_MINUS_SRC_ALPHA: return gl.ONE_MINUS_SRC_ALPHA;
-        case BlendFunc.DST_COLOR: return gl.DST_COLOR;
-        case BlendFunc.DST_ALPHA: return gl.DST_ALPHA;
-        case BlendFunc.ONE_MINUS_DST_COLOR: return gl.ONE_MINUS_DST_COLOR;
-        case BlendFunc.ONE_MINUS_DST_ALPHA: return gl.ONE_MINUS_DST_ALPHA;
-        case BlendFunc.CONSTANT_COLOR: return gl.CONSTANT_COLOR;
-        case BlendFunc.CONSTANT_ALPHA: return gl.CONSTANT_ALPHA;
-        case BlendFunc.ONE_MINUS_CONSTANT_COLOR:
-            return gl.ONE_MINUS_CONSTANT_COLOR;
-        case BlendFunc.ONE_MINUS_CONSTANT_ALPHA:
-            return gl.ONE_MINUS_CONSTANT_ALPHA;
-        default: return assert.never(func, `Unknown blend func: ${func}`);
-    }
-}
-
-function mapGlBlendEquation(
-    gl: WebGL2RenderingContext,
-    equation: BlendEquation,
-): number {
-    switch (equation) {
-        case BlendEquation.ADD: return gl.FUNC_ADD;
-        case BlendEquation.SUBTRACT: return gl.FUNC_SUBTRACT;
-        case BlendEquation.REVERSE_SUBTRACT: return gl.FUNC_REVERSE_SUBTRACT;
-        case BlendEquation.MIN: return gl.MIN;
-        case BlendEquation.MAX: return gl.MAX;
-        default: return assert.never(
-            equation,
-            `Unknown blend equation, ${equation}`,
-        );
-    }
-}
-
 function parseDepth(
-    gl: WebGL2RenderingContext,
     depth: CommandProps<void>["depth"],
 ): DepthDescriptor | undefined {
     if (!depth) { return undefined; }
     return new DepthDescriptor(
-        mapGlDepthOrStencilFunc(gl, depth.func || DepthOrStencilFunc.LESS),
+        depth.func || DepthFunc.LESS,
         typeof depth.mask === "boolean" ? depth.mask : true,
         depth.range ? depth.range[0] : 0,
         depth.range ? depth.range[1] : 1,
@@ -937,23 +873,16 @@ function parseDepth(
 }
 
 function parseStencil(
-    gl: WebGL2RenderingContext,
     stencil: CommandProps<void>["stencil"],
 ): StencilDescriptor | undefined {
     if (!stencil) { return undefined; }
     return new StencilDescriptor(
-        mapGlDepthOrStencilFunc(
-            gl,
-            typeof stencil.func.func === "object"
-                ? stencil.func.func.front
-                : stencil.func.func,
-        ),
-        mapGlDepthOrStencilFunc(
-            gl,
-            typeof stencil.func.func === "object"
-                ? stencil.func.func.back
-                : stencil.func.func,
-        ),
+        typeof stencil.func.func === "object"
+            ? stencil.func.func.front
+            : stencil.func.func,
+        typeof stencil.func.func === "object"
+            ? stencil.func.func.back
+            : stencil.func.func,
         typeof stencil.func.ref !== "undefined"
             ? typeof stencil.func.ref === "object"
                 ? stencil.func.ref.front
@@ -984,103 +913,66 @@ function parseStencil(
                 ? stencil.mask.back
                 : stencil.mask
             : 0xFF,
-        mapGlStencilOp(
-            gl,
-            stencil.op
-                ? typeof stencil.op.fail === "object"
-                    ? stencil.op.fail.front
-                    : stencil.op.fail
-                : StencilOp.KEEP,
-        ),
-        mapGlStencilOp(
-            gl,
-            stencil.op
-                ? typeof stencil.op.fail === "object"
-                    ? stencil.op.fail.back
-                    : stencil.op.fail
-                : StencilOp.KEEP,
-        ),
-        mapGlStencilOp(
-            gl,
-            stencil.op
-                ? typeof stencil.op.zfail === "object"
-                    ? stencil.op.zfail.front
-                    : stencil.op.zfail
-                : StencilOp.KEEP,
-        ),
-        mapGlStencilOp(
-            gl,
-            stencil.op
-                ? typeof stencil.op.zfail === "object"
-                    ? stencil.op.zfail.back
-                    : stencil.op.zfail
-                : StencilOp.KEEP,
-        ),
-        mapGlStencilOp(
-            gl,
-            stencil.op
-                ? typeof stencil.op.zpass === "object"
-                    ? stencil.op.zpass.front
-                    : stencil.op.zpass
-                : StencilOp.KEEP,
-        ),
-        mapGlStencilOp(
-            gl,
-            stencil.op
-                ? typeof stencil.op.zpass === "object"
-                    ? stencil.op.zpass.back
-                    : stencil.op.zpass
-                : StencilOp.KEEP,
-        ),
+        stencil.op
+            ? typeof stencil.op.fail === "object"
+                ? stencil.op.fail.front
+                : stencil.op.fail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.fail === "object"
+                ? stencil.op.fail.back
+                : stencil.op.fail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zfail === "object"
+                ? stencil.op.zfail.front
+                : stencil.op.zfail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zfail === "object"
+                ? stencil.op.zfail.back
+                : stencil.op.zfail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zpass === "object"
+                ? stencil.op.zpass.front
+                : stencil.op.zpass
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zpass === "object"
+                ? stencil.op.zpass.back
+                : stencil.op.zpass
+            : StencilOp.KEEP,
     );
 }
 
 function parseBlend(
-    gl: WebGL2RenderingContext,
     blend: CommandProps<void>["blend"],
 ): BlendDescriptor | undefined {
     if (!blend) { return undefined; }
     return new BlendDescriptor(
-        mapGlBlendFunc(
-            gl,
-            typeof blend.func.src === "object"
-                ? blend.func.src.rgb
-                : blend.func.src,
-        ),
-        mapGlBlendFunc(
-            gl,
-            typeof blend.func.src === "object"
-                ? blend.func.src.alpha
-                : blend.func.src,
-        ),
-        mapGlBlendFunc(
-            gl,
-            typeof blend.func.dst === "object"
-                ? blend.func.dst.rgb
-                : blend.func.dst,
-        ),
-        mapGlBlendFunc(
-            gl,
-            typeof blend.func.dst === "object"
-                ? blend.func.dst.alpha
-                : blend.func.dst,
-        ),
-        mapGlBlendEquation(
-            gl,
-            blend.equation
-                ? typeof blend.equation === "object"
-                    ? blend.equation.rgb
-                    : blend.equation
-                : BlendEquation.ADD,
-        ),
-        mapGlBlendEquation(
-            gl,
-            blend.equation
-                ? typeof blend.equation === "object"
-                    ? blend.equation.alpha
-                    : blend.equation
-                : BlendEquation.ADD,
-        ),
+        typeof blend.func.src === "object"
+            ? blend.func.src.rgb
+            : blend.func.src,
+        typeof blend.func.src === "object"
+            ? blend.func.src.alpha
+            : blend.func.src,
+        typeof blend.func.dst === "object"
+            ? blend.func.dst.rgb
+            : blend.func.dst,
+        typeof blend.func.dst === "object"
+            ? blend.func.dst.alpha
+            : blend.func.dst,
+        blend.equation
+            ? typeof blend.equation === "object"
+                ? blend.equation.rgb
+                : blend.equation
+            : BlendEquation.FUNC_ADD,
+        blend.equation
+            ? typeof blend.equation === "object"
+                ? blend.equation.alpha
+                : blend.equation
+            : BlendEquation.FUNC_ADD,
         blend.color,
     );
 }

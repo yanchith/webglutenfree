@@ -1,4 +1,8 @@
-import { Device, Command } from "./lib/glutenfree.production.es.min.js";
+import {
+    Device,
+    Command,
+    VertexBufferType,
+} from "./lib/glutenfree.production.es.min.js";
 
 const dev = Device.mount();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
@@ -71,7 +75,7 @@ const cmd = Command.create(dev, {
             a_offset: {
                 type: "pointer",
                 value: {
-                    type: "float",
+                    type: VertexBufferType.FLOAT,
                     data: [
                         3, 3,
                         0, 3,
@@ -89,7 +93,7 @@ const cmd = Command.create(dev, {
             a_color: {
                 type: "pointer",
                 value: {
-                    type: "unsigned byte",
+                    type: VertexBufferType.UNSIGNED_BYTE,
                     data: [
                         255, 0, 0, 255,
                         0, 255, 0, 255,

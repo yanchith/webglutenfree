@@ -56,13 +56,13 @@ export type VertexBufferTypedArray =
     | Float32Array;
 
 export const enum VertexBufferType {
-    UNSIGNED_BYTE = "unsigned byte",
-    UNSIGNED_SHORT = "unsigned short",
-    UNSIGNED_INT = "unsigned int",
-    BYTE = "byte",
-    SHORT = "short",
-    INT = "int",
-    FLOAT = "float",
+    BYTE = 0x1400,
+    UNSIGNED_BYTE = 0x1401,
+    SHORT = 0x1402,
+    UNSIGNED_SHORT = 0x1403,
+    INT = 0x1404,
+    UNSIGNED_INT = 0x1405,
+    FLOAT = 0x1406,
 }
 
 export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
@@ -208,7 +208,6 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
 
     readonly type: T;
 
-    readonly glType: number;
     readonly glBuffer: WebGLBuffer | null;
 
     private gl: WebGL2RenderingContext;
@@ -222,7 +221,6 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         this.gl = gl;
         this.type = type;
         this.data = data;
-        this.glType = mapGlVertexBufferType(gl, type);
         this.glBuffer = null;
 
         this.init();
@@ -244,21 +242,5 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
     restore(): void {
         const { gl, glBuffer } = this;
         if (!gl.isBuffer(glBuffer)) { this.init(); }
-    }
-}
-
-function mapGlVertexBufferType(
-    gl: WebGL2RenderingContext,
-    type: VertexBufferType,
-): number {
-    switch (type) {
-        case VertexBufferType.BYTE: return gl.BYTE;
-        case VertexBufferType.SHORT: return gl.SHORT;
-        case VertexBufferType.INT: return gl.INT;
-        case VertexBufferType.UNSIGNED_BYTE: return gl.UNSIGNED_BYTE;
-        case VertexBufferType.UNSIGNED_SHORT: return gl.UNSIGNED_SHORT;
-        case VertexBufferType.UNSIGNED_INT: return gl.UNSIGNED_INT;
-        case VertexBufferType.FLOAT: return gl.FLOAT;
-        default: return assert.never(type, `Unexpexted buffer type: ${type}`);
     }
 }
