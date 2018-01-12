@@ -18,64 +18,40 @@ const process = {
     },
 };
 
-export function paramNonNull(p: any, name: string): void {
-    nonNull(p, fmt(fmt(`Expected parameter ${name}, but got ${p}`)));
+export function nonNull(p: any, name?: string, msg?: string): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (typeof p === "undefined" || typeof p === "object" && !p) {
+            throw new Error(msg || fmt(`object ${name || ""} ${p}`));
+        }
+    }
 }
 
-export function paramNonEmpty(p: any[], name: string): void {
-    nonEmpty(p, fmt(`Expected parameter ${name} to be nonempty`));
+export function nonEmpty(p: any[], name?: string, msg?: string): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (!p || !p.length) {
+            throw new Error(msg || fmt(`array ${name || ""} empty`));
+        }
+    }
 }
 
-export function paramEqual(p: any, val: any, name: string): void {
-    equal(
-        p,
-        val,
-        fmt(`Expected parameter ${name} to be equal to ${val}, but got ${p}`),
-    );
+export function equal(p: any, val: any, name?: string, msg?: string): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (p !== val) {
+            throw new Error(msg || fmt(`${name || ""} values not equal: ${p} ${val}`));
+        }
+    }
 }
 
-export function paramRange(
+export function range(
     p: number,
     start: number,
     end: number,
-    name: string,
+    name?: string,
+    msg?: string,
 ): void {
-    range(
-        p,
-        start,
-        end,
-        fmt(`Expected parameter ${name} to be in range [${start}, ${end}], but got ${p}`),
-    );
-}
-
-export function nonNull(p: any, msg?: string): void {
-    if (process.env.NODE_ENV !== "production") {
-        if (typeof p === "undefined" || typeof p === "object" && !p) {
-            throw new Error(msg || fmt("Object null"));
-        }
-    }
-}
-
-export function nonEmpty(p: any[], msg?: string): void {
-    if (process.env.NODE_ENV !== "production") {
-        if (!p || !p.length) {
-            throw new Error(msg || fmt("Array empty"));
-        }
-    }
-}
-
-export function equal(p: any, val: any, msg?: string): void {
-    if (process.env.NODE_ENV !== "production") {
-        if (p !== val) {
-            throw new Error(msg || fmt(`Not equal: ${p} ${val}`));
-        }
-    }
-}
-
-export function range(p: number, start: number, end: number, msg?: string): void {
     if (process.env.NODE_ENV !== "production") {
         if (p < start || p > end) {
-            throw new Error(msg || fmt(`Value ${p} not in [${start}, ${end}]`));
+            throw new Error(msg || fmt(`${name || ""} value ${p} not in [${start}, ${end}]`));
         }
     }
 }
@@ -86,7 +62,6 @@ export function never(p: never, msg?: string): never {
     throw new Error(msg || fmt(`Unexpected object: ${p}`));
 }
 
-function fmt(msg?: string): string {
-    if (msg) { return `Assertion Failed: ${msg}`; }
-    return `Assertion Failed`;
+function fmt(msg: string): string {
+    return `Assertion Failed: ${msg}`;
 }

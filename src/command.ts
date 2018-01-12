@@ -268,39 +268,39 @@ export class Command<P = void> {
             blend,
         }: CommandProps<P>,
     ): Command<P> {
-        assert.paramNonNull(vert, "vert");
-        assert.paramNonNull(frag, "frag");
-        assert.paramNonNull(data, "data");
+        assert.nonNull(vert, "vert");
+        assert.nonNull(frag, "frag");
+        assert.nonNull(data, "data");
         if (depth) {
-            assert.paramNonNull(depth.func, "depth.func");
+            assert.nonNull(depth.func, "depth.func");
         }
         if (blend) {
-            assert.paramNonNull(blend.func, "blend.func");
-            assert.paramNonNull(blend.func.src, "blend.func.src");
-            assert.paramNonNull(blend.func.dst, "blend.func.dst");
+            assert.nonNull(blend.func, "blend.func");
+            assert.nonNull(blend.func.src, "blend.func.src");
+            assert.nonNull(blend.func.dst, "blend.func.dst");
             if (typeof blend.func.src === "object") {
-                assert.paramNonNull(
+                assert.nonNull(
                     blend.func.src.rgb,
                     "blend.func.src.rgb",
                 );
-                assert.paramNonNull(
+                assert.nonNull(
                     blend.func.src.alpha,
                     "blend.func.src.alpha",
                 );
             }
             if (typeof blend.func.dst === "object") {
-                assert.paramNonNull(
+                assert.nonNull(
                     blend.func.dst.rgb,
                     "blend.func.dst.rgb",
                 );
-                assert.paramNonNull(
+                assert.nonNull(
                     blend.func.dst.alpha,
                     "blend.func.dst.alpha",
                 );
             }
         }
         if (stencil) {
-            assert.paramNonNull(stencil.func, "stencil.func");
+            assert.nonNull(stencil.func, "stencil.func");
             // TODO: complete stencil validation... validation framework?
         }
 

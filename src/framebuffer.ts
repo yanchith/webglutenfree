@@ -19,16 +19,16 @@ export class Framebuffer {
         const gl = dev instanceof Device ? dev.gl : dev;
         const colorBuffers = Array.isArray(color) ? color : [color];
         colorBuffers.forEach(buffer => {
-            assert.equal(width, buffer.width);
-            assert.equal(height, buffer.height);
+            assert.equal(width, buffer.width, "width");
+            assert.equal(height, buffer.height, "height");
         });
         if (depth) {
-            assert.equal(width, depth.width);
-            assert.equal(height, depth.height);
+            assert.equal(width, depth.width, "width");
+            assert.equal(height, depth.height, "height");
         }
         if (stencil) {
-            assert.equal(width, stencil.width);
-            assert.equal(height, stencil.height);
+            assert.equal(width, stencil.width, "width");
+            assert.equal(height, stencil.height, "height");
         }
 
         return new Framebuffer(

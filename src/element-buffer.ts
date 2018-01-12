@@ -53,7 +53,7 @@ export class ElementBuffer {
     ) {
         if (array.isArray2(data)) {
             const s = array.shape2(data);
-            assert.paramRange(s[1], 2, 3, "element tuple length");
+            assert.range(s[1], 2, 3, "element tuple length");
             const r = array.ravel2(data, s);
             const prim = s[1] === 3 ? Primitive.TRIANGLES : Primitive.LINES;
             return ElementBuffer.fromUint32Array(dev, r, prim);
