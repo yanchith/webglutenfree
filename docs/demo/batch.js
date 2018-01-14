@@ -81,7 +81,7 @@ const bunnyModelMatrix = mat4.fromRotationTranslationScale(
     [0.2, 0.2, 0.2],
 );
 
-dev.clearColorBuffer(0, 0, 0, 1);
+dev.clearColor(0, 0, 0, 1);
 cmd.execute([
     { geometry: cubeMesh, modelMatrix: cubeModelMatrix },
     { geometry: bunnyMesh, modelMatrix: bunnyModelMatrix },

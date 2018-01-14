@@ -288,8 +288,8 @@ const VERTICAL = vec2.fromValues(0, 1);
 const loop = time => {
     // We only need to clear the initial fbo and the BACK buffer, as we always
     // overwrite the others completely
-    dev.clearColorBuffer(0, 0, 0, 1);
-    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 1, initialFbo);
+    dev.clearColor(0, 0, 0, 1);
+    dev.clearColorAndDepth(0, 0, 0, 1, 1, initialFbo);
 
     // Render geometry into texture
     scene.execute({ time, target: initialFbo });

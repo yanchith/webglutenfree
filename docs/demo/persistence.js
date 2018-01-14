@@ -206,8 +206,8 @@ let pong = {
 }
 
 const loop = time => {
-    dev.clearColorAndDepthBuffers(0, 0, 0, 1, 1, newFrameFbo);
-    dev.clearColorBuffer(0, 0, 0, 1);
+    dev.clearColorAndDepth(0, 0, 0, 1, 1, newFrameFbo);
+    dev.clearColor(0, 0, 0, 1);
 
     /*
 

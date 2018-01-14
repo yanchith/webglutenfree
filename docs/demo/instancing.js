@@ -118,7 +118,7 @@ const cmd = Command.create(dev, {
 });
 
 const loop = time => {
-    dev.clearColorBuffer(0, 0, 0, 1);
+    dev.clearColor(0, 0, 0, 1);
     cmd.execute();
     window.requestAnimationFrame(loop);
 }
