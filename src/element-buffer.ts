@@ -25,14 +25,14 @@ export type ElementBufferArrayProps =
     | number[][]
     ;
 
-export const enum ElementBufferType {
+export enum ElementBufferType {
     // Should we enable this?
     // UNSIGNED_BYTE = 0x1401,
     UNSIGNED_SHORT = 0x1403,
     UNSIGNED_INT = 0x1405,
 }
 
-export const enum Primitive {
+export enum Primitive {
     POINTS = 0x0000,
     LINES = 0x0001,
     LINE_LOOP = 0x0002,

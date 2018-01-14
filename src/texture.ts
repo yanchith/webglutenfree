@@ -8,13 +8,13 @@ export interface TextureOptions {
     mipmap?: boolean;
 }
 
-export const enum TextureWrap {
+export enum TextureWrap {
     CLAMP_TO_EDGE = 0x812F,
     REPEAT = 0x2901,
     MIRRORED_REPEAT = 0x8370,
 }
 
-export const enum TextureFilter {
+export enum TextureFilter {
     NEAREST = 0x2600,
     LINEAR = 0x2601,
     NEAREST_MIPMAP_NEAREST = 0x2700,
@@ -26,7 +26,7 @@ export const enum TextureFilter {
 export type TextureMinFilter = TextureFilter;
 export type TextureMagFilter = TextureFilter.NEAREST | TextureFilter.LINEAR;
 
-export const enum TextureInternalFormat {
+export enum TextureInternalFormat {
     // R
     R8 = 0x8229,
     R8_SNORM = 0x8F94,
@@ -92,7 +92,7 @@ export const enum TextureInternalFormat {
     // ALPHA
 }
 
-export const enum TextureFormat {
+export enum TextureFormat {
     RED = 0x1903,
     RG = 0x8227,
     RGB = 0x1907,
@@ -111,7 +111,7 @@ export const enum TextureFormat {
     // ALPHA
 }
 
-export const enum TextureType {
+export enum TextureType {
     BYTE = 0x1400,
     UNSIGNED_BYTE = 0x1401,
     SHORT = 0x1402,

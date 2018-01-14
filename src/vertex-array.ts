@@ -20,7 +20,7 @@ import {
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 
-export const enum AttributeType {
+export enum AttributeType {
     POINTER = "pointer",
     IPOINTER = "ipointer",
 }

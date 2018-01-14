@@ -55,7 +55,7 @@ export type VertexBufferTypedArray =
     | Uint32Array
     | Float32Array;
 
-export const enum VertexBufferType {
+export enum VertexBufferType {
     BYTE = 0x1400,
     UNSIGNED_BYTE = 0x1401,
     SHORT = 0x1402,

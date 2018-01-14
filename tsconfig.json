@@ -12,8 +12,6 @@
     "sourceMap": true,
     "noEmitOnError": true,
 
-    "preserveConstEnums": true,
-
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

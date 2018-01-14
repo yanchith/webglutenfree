@@ -203,7 +203,7 @@ export interface UniformTexture<P> {
     value: Access<P, Texture>;
 }
 
-export const enum DepthFunc {
+export enum DepthFunc {
     ALWAYS = 0x0207,
     NEVER = 0x0200,
     EQUAL = 0x0202,
@@ -214,7 +214,7 @@ export const enum DepthFunc {
     GEQUAL = 0x0206,
 }
 
-export const enum StencilFunc {
+export enum StencilFunc {
     ALWAYS = 0x0207,
     NEVER = 0x0200,
     EQUAL = 0x0202,
@@ -225,7 +225,7 @@ export const enum StencilFunc {
     GEQUAL = 0x0206,
 }
 
-export const enum StencilOp {
+export enum StencilOp {
     KEEP = 0x1E00,
     ZERO = 0,
     REPLACE = 0x1E01,
@@ -236,7 +236,7 @@ export const enum StencilOp {
     INVERT = 0x150A,
 }
 
-export const enum BlendFunc {
+export enum BlendFunc {
     ZERO = 0,
     ONE = 1,
     SRC_COLOR = 0x0300,
@@ -253,7 +253,7 @@ export const enum BlendFunc {
     ONE_MINUS_CONSTANT_ALPHA = 0x8004,
 }
 
-export const enum BlendEquation {
+export enum BlendEquation {
     FUNC_ADD = 0x8006,
     FUNC_SUBTRACT = 0x800A,
     FUNC_REVERSE_SUBTRACT = 0x800B,

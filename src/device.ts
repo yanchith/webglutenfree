@@ -13,7 +13,7 @@ export interface DeviceOptions {
     extensions?: Extension[];
 }
 
-export const enum Extension {
+export enum Extension {
     EXTColorBufferFloat = "EXT_color_buffer_float",
     OESTextureFloatLinear = "OES_texture_float_linear",
 }
