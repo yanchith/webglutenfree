@@ -1,7 +1,7 @@
 import {
     Device,
     Command,
-    VertexBufferType,
+    VertexBuffer,
 } from "./lib/glutenfree.production.es.min.js";
 
 const dev = Device.mount();
@@ -74,36 +74,30 @@ const cmd = Command.create(dev, {
             ],
             a_offset: {
                 type: "pointer",
-                value: {
-                    type: VertexBufferType.FLOAT,
-                    data: [
-                        3, 3,
-                        0, 3,
-                        3, 0,
-                        -3, -3,
-                        0, -3,
-                        -3, 0,
-                        0, 0,
-                    ],
-                },
+                value: VertexBuffer.fromFloat32Array(dev, [
+                    3, 3,
+                    0, 3,
+                    3, 0,
+                    -3, -3,
+                    0, -3,
+                    -3, 0,
+                    0, 0,
+                ]),
                 count: 7,
                 size: 2,
                 divisor: 1,
             },
             a_color: {
                 type: "pointer",
-                value: {
-                    type: VertexBufferType.UNSIGNED_BYTE,
-                    data: [
-                        255, 0, 0, 255,
-                        0, 255, 0, 255,
-                        0, 0, 255, 255,
-                        0, 255, 255, 255,
-                        255, 0, 255, 255,
-                        255, 255, 0, 255,
-                        255, 255, 255, 255,
-                    ],
-                },
+                value: VertexBuffer.fromUint8Array(dev, [
+                    255, 0, 0, 255,
+                    0, 255, 0, 255,
+                    0, 0, 255, 255,
+                    0, 255, 255, 255,
+                    255, 0, 255, 255,
+                    255, 255, 0, 255,
+                    255, 255, 255, 255,
+                ]),
                 count: 7,
                 size: 4,
                 normalized: true,

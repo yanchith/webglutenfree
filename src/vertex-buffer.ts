@@ -1,52 +1,6 @@
-import * as assert from "./assert";
 import { Device } from "./device";
 
-export type VertexBufferProps =
-    | VertexBufferInt8Props
-    | VertexBufferInt16Props
-    | VertexBufferInt32Props
-    | VertexBufferUint8Props
-    | VertexBufferUint16Props
-    | VertexBufferUint32Props
-    | VertexBufferFloat32Props
-    ;
-
-export interface VertexBufferInt8Props {
-    type: VertexBufferType.BYTE;
-    data: number[] | Int8Array;
-}
-
-export interface VertexBufferInt16Props {
-    type: VertexBufferType.SHORT;
-    data: number[] | Int16Array;
-}
-
-export interface VertexBufferInt32Props {
-    type: VertexBufferType.INT;
-    data: number[] | Int32Array;
-}
-
-export interface VertexBufferUint8Props {
-    type: VertexBufferType.UNSIGNED_BYTE;
-    data: number[] | Uint8Array | Uint8ClampedArray;
-}
-
-export interface VertexBufferUint16Props {
-    type: VertexBufferType.UNSIGNED_SHORT;
-    data: number[] | Uint16Array;
-}
-
-export interface VertexBufferUint32Props {
-    type: VertexBufferType.UNSIGNED_INT;
-    data: number[] | Uint32Array;
-}
-
-export interface VertexBufferFloat32Props {
-    type: VertexBufferType.FLOAT;
-    data: number[] | Float32Array;
-}
-
-export type VertexBufferTypedArray =
+type VertexBufferTypedArray =
     | Int8Array
     | Int16Array
     | Int32Array
@@ -55,6 +9,9 @@ export type VertexBufferTypedArray =
     | Uint32Array
     | Float32Array;
 
+/**
+ * Possible data types of vertex buffers.
+ */
 export enum VertexBufferType {
     BYTE = 0x1400,
     UNSIGNED_BYTE = 0x1401,
@@ -65,60 +22,15 @@ export enum VertexBufferType {
     FLOAT = 0x1406,
 }
 
+/**
+ * Vertex buffers contain GPU accessible data. Accessing them is usually done
+ * via setting up an attribute that reads the buffer.
+ */
 export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
 
-    static create(
-        dev: WebGL2RenderingContext | Device,
-        props: VertexBufferInt8Props,
-    ): VertexBuffer<VertexBufferType.BYTE>;
-    static create(
-        dev: WebGL2RenderingContext | Device,
-        props: VertexBufferInt16Props,
-    ): VertexBuffer<VertexBufferType.SHORT>;
-    static create(
-        dev: WebGL2RenderingContext | Device,
-        props: VertexBufferInt32Props,
-    ): VertexBuffer<VertexBufferType.INT>;
-    static create(
-        dev: WebGL2RenderingContext | Device,
-        props: VertexBufferUint8Props,
-    ): VertexBuffer<VertexBufferType.UNSIGNED_BYTE>;
-    static create(
-        dev: WebGL2RenderingContext | Device,
-        props: VertexBufferUint16Props,
-    ): VertexBuffer<VertexBufferType.UNSIGNED_SHORT>;
-    static create(
-        dev: WebGL2RenderingContext | Device,
-        props: VertexBufferUint32Props,
-    ): VertexBuffer<VertexBufferType.UNSIGNED_INT>;
-    static create(
-        dev: WebGL2RenderingContext | Device,
-        props: VertexBufferFloat32Props,
-    ): VertexBuffer<VertexBufferType.FLOAT>;
-    static create(
-        dev: WebGL2RenderingContext | Device,
-        props: VertexBufferProps,
-    ): VertexBuffer<VertexBufferType> {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        switch (props.type) {
-            case VertexBufferType.BYTE:
-                return VertexBuffer.fromInt8Array(gl, props.data);
-            case VertexBufferType.SHORT:
-                return VertexBuffer.fromInt16Array(gl, props.data);
-            case VertexBufferType.INT:
-                return VertexBuffer.fromInt32Array(gl, props.data);
-            case VertexBufferType.UNSIGNED_BYTE:
-                return VertexBuffer.fromUint8Array(gl, props.data);
-            case VertexBufferType.UNSIGNED_SHORT:
-                return VertexBuffer.fromUint16Array(gl, props.data);
-            case VertexBufferType.UNSIGNED_INT:
-                return VertexBuffer.fromUint32Array(gl, props.data);
-            case VertexBufferType.FLOAT:
-                return VertexBuffer.fromFloat32Array(gl, props.data);
-            default: return assert.never(props);
-        }
-    }
-
+    /**
+     * Create a new vertex buffer from bytes.
+     */
     static fromInt8Array(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Int8Array,
@@ -131,6 +43,9 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         );
     }
 
+    /**
+     * Create a new vertex buffer from short ints.
+     */
     static fromInt16Array(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Int16Array,
@@ -143,6 +58,9 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         );
     }
 
+    /**
+     * Create a new vertex buffer from ints.
+     */
     static fromInt32Array(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Int32Array,
@@ -155,6 +73,9 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         );
     }
 
+    /**
+     * Create a new vertex buffer from unsigned bytes.
+     */
     static fromUint8Array(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Uint8Array | Uint8ClampedArray,
@@ -170,6 +91,9 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         );
     }
 
+    /**
+     * Create a new vertex buffer from unsigned short ints.
+     */
     static fromUint16Array(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Uint16Array,
@@ -182,6 +106,9 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         );
     }
 
+    /**
+     * Create a new vertex buffer from unsigned ints.
+     */
     static fromUint32Array(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Uint32Array,
@@ -194,6 +121,9 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         );
     }
 
+    /**
+     * Create a new vertex buffer from floats.
+     */
     static fromFloat32Array(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Float32Array,
@@ -230,6 +160,9 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         return this.data.length;
     }
 
+    /**
+     * Force buffer reinitialization.
+     */
     init(): void {
         const { gl, data } = this;
         const buffer = gl.createBuffer();
@@ -239,6 +172,9 @@ export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
         (this as any).glBuffer = buffer;
     }
 
+    /**
+     * Reinitialize invalid buffer, eg. after context is lost.
+     */
     restore(): void {
         const { gl, glBuffer } = this;
         if (!gl.isBuffer(glBuffer)) { this.init(); }

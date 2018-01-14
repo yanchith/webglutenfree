@@ -8,17 +8,8 @@ export {
     BlendFunc,
     BlendEquation,
 } from "./command";
-export {
-    VertexBuffer,
-    VertexBufferProps,
-    VertexBufferType,
-} from "./vertex-buffer";
-export {
-    ElementBuffer,
-    ElementBufferProps,
-    ElementBufferType,
-    Primitive,
-} from "./element-buffer";
+export { VertexBuffer, VertexBufferType } from "./vertex-buffer";
+export { ElementBuffer, ElementBufferType, Primitive } from "./element-buffer";
 export { VertexArray, VertexArrayProps } from "./vertex-array";
 export {
     Texture,

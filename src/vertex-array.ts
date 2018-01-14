@@ -1,25 +1,21 @@
 import * as assert from "./assert";
 import * as array from "./array";
 import { Device } from "./device";
-import {
-    VertexBuffer,
-    VertexBufferProps,
-    VertexBufferInt8Props,
-    VertexBufferInt16Props,
-    VertexBufferInt32Props,
-    VertexBufferUint8Props,
-    VertexBufferUint16Props,
-    VertexBufferUint32Props,
-} from "./vertex-buffer";
+import { VertexBuffer } from "./vertex-buffer";
 import {
     ElementBuffer,
-    ElementBufferProps,
     ElementBufferType,
+    ElementArray,
     Primitive,
 } from "./element-buffer";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 
+/**
+ * Attribute type for reading vertex buffers. POINTER provides normalization
+ * options for converting integer values to floats. IPOINTER always converts
+ * to data integers types.
+ */
 export enum AttributeType {
     POINTER = "pointer",
     IPOINTER = "ipointer",
@@ -50,7 +46,7 @@ export type AttributeObject =
 
 export interface AttributePointer {
     type: AttributeType.POINTER;
-    value: VertexBuffer | PointerValue;
+    value: VertexBuffer;
     count: number;
     size: number;
     normalized?: boolean;
@@ -59,33 +55,34 @@ export interface AttributePointer {
 
 export interface AttributeIPointer {
     type: AttributeType.IPOINTER;
-    value: VertexBuffer<IPointerValue["type"]> | IPointerValue;
+    // TODO: list every type except float
+    value: VertexBuffer;
     count: number;
     size: number;
     divisor?: number;
 }
-
-export type PointerValue = VertexBufferProps;
-
-export type IPointerValue =
-    | VertexBufferInt8Props
-    | VertexBufferInt16Props
-    | VertexBufferInt32Props
-    | VertexBufferUint8Props
-    | VertexBufferUint16Props
-    | VertexBufferUint32Props
-    ;
 
 export interface VertexArrayProps {
     attributes: {
         [name: string]: Attribute;
         [location: number]: Attribute;
     };
-    elements?: ElementBuffer | ElementBufferProps;
+    elements?: ElementArray | ElementBuffer;
 }
 
+/**
+ * Vertex array objects store store vertex buffers, an index buffer,
+ * and attributes with the vertex format for provided vertex buffers.
+ */
 export class VertexArray {
 
+    /**
+     * Create a new vertex array with attribute and element definitions.
+     * `attributes` can either reference an existing vertex buffer, or have
+     * enough information to create a vertex buffer.
+     * `elements` can either reference an existing element buffer, or be the
+     * arguments for `ElementBuffer.create()`
+     */
     static create(
         dev: WebGL2RenderingContext | Device,
         { attributes, elements }: VertexArrayProps,
@@ -100,11 +97,9 @@ export class VertexArray {
                 return AttributeDescriptor.create(gl, location, definition);
             });
 
-        const elementBuffer = elements
-            ? elements instanceof ElementBuffer
-                ? elements
-                : ElementBuffer.create(gl, elements)
-            : undefined;
+        const elementBuffer = elements && (elements instanceof ElementBuffer
+            ? elements
+            : ElementBuffer.fromArray(gl, elements));
 
         const count = elementBuffer
             ? elementBuffer.count
@@ -164,63 +159,68 @@ export class VertexArray {
         return this.elementBuffer && this.elementBuffer.type;
     }
 
+    /**
+     * Force vertex array reinitialization.
+     */
     init(): void {
         const { gl, attributes, elementBuffer } = this;
-        if (!gl.isContextLost()) {
-            const vao = gl.createVertexArray();
+        const vao = gl.createVertexArray();
 
-            gl.bindVertexArray(vao);
-            attributes.forEach(({
+        gl.bindVertexArray(vao);
+        attributes.forEach(({
                 location,
-                type,
-                buffer: { glBuffer, type: glBufferType },
-                size,
-                normalized = false,
-                divisor,
+            type,
+            buffer: { glBuffer, type: glBufferType },
+            size,
+            normalized = false,
+            divisor,
             }) => {
-                // Enable sending attribute arrays for location
-                gl.enableVertexAttribArray(location);
+            // Enable sending attribute arrays for location
+            gl.enableVertexAttribArray(location);
 
-                // Send buffer
-                gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
-                switch (type) {
-                    case AttributeType.POINTER:
-                        gl.vertexAttribPointer(
-                            location,
-                            size,
-                            glBufferType,
-                            normalized,
-                            0,
-                            0,
-                        );
-                        break;
-                    case AttributeType.IPOINTER:
-                        gl.vertexAttribIPointer(
-                            location,
-                            size,
-                            glBufferType,
-                            0,
-                            0,
-                        );
-                        break;
-                    default: assert.never(type);
-                }
-                if (divisor) { gl.vertexAttribDivisor(location, divisor); }
-            });
-
-            if (elementBuffer) {
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
+            // Send buffer
+            gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
+            switch (type) {
+                case AttributeType.POINTER:
+                    gl.vertexAttribPointer(
+                        location,
+                        size,
+                        glBufferType,
+                        normalized,
+                        0,
+                        0,
+                    );
+                    break;
+                case AttributeType.IPOINTER:
+                    gl.vertexAttribIPointer(
+                        location,
+                        size,
+                        glBufferType,
+                        0,
+                        0,
+                    );
+                    break;
+                default: assert.never(type);
             }
+            if (divisor) { gl.vertexAttribDivisor(location, divisor); }
+        });
 
-            gl.bindVertexArray(null);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-            (this as any).glVertexArray = vao;
+        if (elementBuffer) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
         }
+
+        gl.bindVertexArray(null);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+        (this as any).glVertexArray = vao;
     }
 
+    /**
+     * Reinitialize invalid vertex array, eg. after context is lost. Also tries
+     * to reinitialize vertex buffer and element buffer dependencies.
+     */
     restore(): void {
         const { gl, glVertexArray, attributes, elementBuffer } = this;
         if (elementBuffer) { elementBuffer.restore(); }
@@ -263,32 +263,17 @@ class AttributeDescriptor {
             );
         }
 
-        const buffer = props.value instanceof VertexBuffer
-            ? props.value
-            // Typescript is not smart enough here
-            : VertexBuffer.create(gl, props.value as any);
-
-        switch (props.type) {
-            case AttributeType.POINTER: return new AttributeDescriptor(
-                location,
-                props.type,
-                buffer,
-                props.count,
-                props.size,
-                props.normalized || false,
-                props.divisor || 0,
-            );
-            case AttributeType.IPOINTER: return new AttributeDescriptor(
-                location,
-                props.type,
-                buffer,
-                props.count,
-                props.size,
-                false,
-                props.divisor || 0,
-            );
-            default: return assert.never(props);
-        }
+        return new AttributeDescriptor(
+            location,
+            props.type,
+            props.value,
+            props.count,
+            props.size,
+            props.type === AttributeType.POINTER
+                ? (props.normalized || false)
+                : false,
+            props.divisor || 0,
+        );
     }
 
     private constructor(

@@ -2,18 +2,7 @@ import * as assert from "./assert";
 import * as array from "./array";
 import { Device } from "./device";
 
-export type ElementBufferProps =
-    | ElementBufferArrayProps
-    | ElementBufferObjectProps
-    ;
-
-export interface ElementBufferObjectProps {
-    type: ElementBufferType;
-    data: number[] | Uint32Array;
-    primitive: Primitive;
-}
-
-export type ElementBufferArrayProps =
+export type ElementArray =
     | number[] // infers POINTS
     | [number, number][] // infers LINES
     | [number, number, number][] // infers TRIANGLES
@@ -25,6 +14,9 @@ export type ElementBufferArrayProps =
     | number[][]
     ;
 
+/**
+ * Possible data types of element buffers.
+ */
 export enum ElementBufferType {
     // Should we enable this?
     // UNSIGNED_BYTE = 0x1401,
@@ -32,6 +24,9 @@ export enum ElementBufferType {
     UNSIGNED_INT = 0x1405,
 }
 
+/**
+ * WebGL drawing primitives.
+ */
 export enum Primitive {
     POINTS = 0x0000,
     LINES = 0x0001,
@@ -43,21 +38,24 @@ export enum Primitive {
 }
 
 
-export class ElementBuffer {
+/**
+ * Element buffers contain indices for accessing vertex buffer data. They are,
+ * together with vertex buffers part of VertexArray objects.
+ */
+export class ElementBuffer<T extends ElementBufferType = ElementBufferType> {
 
-    static create(
-        dev: WebGL2RenderingContext | Device,
-        props: ElementBufferProps,
-    ): ElementBuffer {
-        return Array.isArray(props)
-            ? ElementBuffer.fromArray(dev, props)
-            : ElementBuffer.fromUint32Array(dev, props.data, props.primitive);
-    }
-
+    /**
+     * Creates a new element buffer from plain javascript array. Tries to infer
+     * Primitive from the array's shape:
+     *   number[] -> POINTS
+     *   [number, number][] -> LINES
+     *   [number, number, number][] -> TRIANGLES
+     * To select other drawing Primitives, use fromTypedArray family of methods.
+     */
     static fromArray(
         dev: WebGL2RenderingContext | Device,
-        data: ElementBufferArrayProps,
-    ) {
+        data: ElementArray,
+    ): ElementBuffer<ElementBufferType.UNSIGNED_INT> {
         if (array.isArray2(data)) {
             const s = array.shape2(data);
             assert.range(s[1], 2, 3, "element tuple length");
@@ -68,11 +66,14 @@ export class ElementBuffer {
         return ElementBuffer.fromUint32Array(dev, data, Primitive.POINTS);
     }
 
+    /**
+     * Create a new element buffer from unsigned short ints.
+     */
     static fromUint16Array(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Uint16Array,
         primitive: Primitive,
-    ): ElementBuffer {
+    ): ElementBuffer<ElementBufferType.UNSIGNED_SHORT> {
         const gl = dev instanceof Device ? dev.gl : dev;
         const arr = Array.isArray(data) ? new Uint16Array(data) : data;
         return new ElementBuffer(
@@ -83,11 +84,14 @@ export class ElementBuffer {
         );
     }
 
+    /**
+     * Create a new element buffer from unsigned ints.
+     */
     static fromUint32Array(
         dev: WebGL2RenderingContext | Device,
         data: number[] | Uint32Array,
         primitive: Primitive,
-    ): ElementBuffer {
+    ): ElementBuffer<ElementBufferType.UNSIGNED_INT> {
         const gl = dev instanceof Device ? dev.gl : dev;
         const arr = Array.isArray(data) ? new Uint32Array(data) : data;
         return new ElementBuffer(
@@ -98,7 +102,7 @@ export class ElementBuffer {
         );
     }
 
-    readonly type: ElementBufferType;
+    readonly type: T;
     readonly primitive: Primitive;
 
     readonly glBuffer: WebGLBuffer | null;
@@ -109,7 +113,7 @@ export class ElementBuffer {
     private constructor(
         gl: WebGL2RenderingContext,
         data: Uint16Array | Uint32Array,
-        type: ElementBufferType,
+        type: T,
         primitive: Primitive,
     ) {
         this.gl = gl;
@@ -125,6 +129,9 @@ export class ElementBuffer {
         return this.data.length;
     }
 
+    /**
+     * Force buffer reinitialization.
+     */
     init(): void {
         const { gl, data } = this;
         const buffer = gl.createBuffer();
@@ -134,6 +141,9 @@ export class ElementBuffer {
         (this as any).glBuffer = buffer;
     }
 
+    /**
+     * Reinitialize invalid buffer, eg. after context is lost.
+     */
     restore(): void {
         const { gl, glBuffer } = this;
         if (!gl.isBuffer(glBuffer)) { this.init(); }
