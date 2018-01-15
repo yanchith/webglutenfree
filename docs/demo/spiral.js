@@ -1,8 +1,4 @@
-import {
-    Device,
-    Command,
-    BlendFunc,
-} from "./lib/glutenfree.production.es.min.js";
+import { Device, Command, BlendFunc } from "./lib/glutenfree.es.js";
 import * as spiral from "./lib/spiral.js"
 
 const dev = Device.mount();

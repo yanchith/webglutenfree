@@ -1,4 +1,4 @@
-import { Device, VertexBuffer } from "./lib/glutenfree.production.es.min.js";
+import { Device, VertexBuffer } from "./lib/glutenfree.es.js";
 
 const canvas = WebGLDebugUtils.makeLostContextSimulatingCanvas(document.createElement("canvas"));
 

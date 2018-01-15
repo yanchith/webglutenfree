@@ -281,7 +281,6 @@ export class Command<P = void> {
     ): Command<P> {
         assert.nonNull(vert, "vert");
         assert.nonNull(frag, "frag");
-        assert.nonNull(data, "data");
         if (depth) {
             assert.nonNull(depth.func, "depth.func");
         }

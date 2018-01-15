@@ -1,8 +1,4 @@
-import {
-    Device,
-    Command,
-    BlendFunc,
-} from "./lib/glutenfree.production.es.min.js";
+import { Device, Command, BlendFunc } from "./lib/glutenfree.es.js";
 import * as bunny from "./lib/bunny.js"
 
 const dev = Device.mount();

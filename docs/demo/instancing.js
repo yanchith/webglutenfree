@@ -1,8 +1,4 @@
-import {
-    Device,
-    Command,
-    VertexBuffer,
-} from "./lib/glutenfree.production.es.min.js";
+import { Device, Command, VertexBuffer } from "./lib/glutenfree.es.js";
 
 const dev = Device.mount();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
