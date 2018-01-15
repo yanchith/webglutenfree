@@ -1,7 +1,7 @@
 import * as assert from "./assert";
 import * as array from "./array";
 import { Device } from "./device";
-import { VertexBuffer } from "./vertex-buffer";
+import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
 import {
     ElementBuffer,
     ElementBufferType,
@@ -44,9 +44,18 @@ export type AttributeObject =
     | AttributeIPointer
     ;
 
+export type VertexBufferIntegerType =
+    | VertexBufferType.BYTE
+    | VertexBufferType.SHORT
+    | VertexBufferType.INT
+    | VertexBufferType.UNSIGNED_BYTE
+    | VertexBufferType.UNSIGNED_SHORT
+    | VertexBufferType.UNSIGNED_INT
+    ;
+
 export interface AttributePointer {
     type: AttributeType.POINTER;
-    value: VertexBuffer;
+    value: VertexBuffer<VertexBufferType>;
     count: number;
     size: number;
     normalized?: boolean;
@@ -56,7 +65,7 @@ export interface AttributePointer {
 export interface AttributeIPointer {
     type: AttributeType.IPOINTER;
     // TODO: list every type except float
-    value: VertexBuffer;
+    value: VertexBuffer<VertexBufferIntegerType>;
     count: number;
     size: number;
     divisor?: number;
@@ -67,7 +76,7 @@ export interface VertexArrayProps {
         [name: string]: Attribute;
         [location: number]: Attribute;
     };
-    elements?: ElementArray | ElementBuffer;
+    elements?: ElementArray | ElementBuffer<ElementBufferType>;
 }
 
 /**
@@ -128,12 +137,12 @@ export class VertexArray {
 
     // The buffers
     private attributes: AttributeDescriptor[];
-    private elementBuffer?: ElementBuffer;
+    private elementBuffer?: ElementBuffer<ElementBufferType>;
 
     private constructor(
         gl: WebGL2RenderingContext,
         attributes: AttributeDescriptor[],
-        elements: ElementBuffer | undefined,
+        elements: ElementBuffer<ElementBufferType> | undefined,
         count: number,
         instanceCount: number,
     ) {
@@ -279,7 +288,7 @@ class AttributeDescriptor {
     private constructor(
         readonly location: number,
         readonly type: AttributeType,
-        readonly buffer: VertexBuffer,
+        readonly buffer: VertexBuffer<VertexBufferType>,
         readonly count: number,
         readonly size: number,
         readonly normalized: boolean,

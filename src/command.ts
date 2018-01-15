@@ -3,7 +3,7 @@ import * as glutil from "./glutil";
 import { Device } from "./device";
 import { VertexArray, VertexArrayProps } from "./vertex-array";
 import { Primitive } from "./element-buffer";
-import { Texture } from "./texture";
+import { Texture, TextureInternalFormat } from "./texture";
 import { Framebuffer, FramebufferProps } from "./framebuffer";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
@@ -200,7 +200,7 @@ export interface UniformMatrix4fv<P> {
 
 export interface UniformTexture<P> {
     type: "texture";
-    value: Access<P, Texture>;
+    value: Access<P, Texture<TextureInternalFormat>>;
 }
 
 export enum DepthFunc {

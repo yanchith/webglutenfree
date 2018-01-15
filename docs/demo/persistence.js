@@ -8,6 +8,7 @@ import {
     Command,
     VertexArray,
     Texture,
+    TextureInternalFormat,
     Framebuffer,
 } from "./lib/glutenfree.production.es.min.js";
 import * as square from "./lib/square.js"
@@ -18,26 +19,14 @@ const PERSISTENCE_FACTOR = 0.8;
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const newFrameTex = Texture.fromRGBA8(dev, null, width, height);
-const newFrameFbo = Framebuffer.create(dev, {
-    width,
-    height,
-    color: newFrameTex,
-});
+const newFrameTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
+const newFrameFbo = Framebuffer.create(dev, { width, height, color: newFrameTex });
 
-const pingTex = Texture.fromRGBA8(dev, null, width, height);
-const pingFbo = Framebuffer.create(dev, {
-    width,
-    height,
-    color: pingTex,
-});
+const pingTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
+const pingFbo = Framebuffer.create(dev, { width, height, color: pingTex });
 
-const pongTex = Texture.fromRGBA8(dev, null, width, height);
-const pongFbo = Framebuffer.create(dev, {
-    width,
-    height,
-    color: pongTex,
-});
+const pongTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
+const pongFbo = Framebuffer.create(dev, { width, height, color: pongTex });
 
 const view = mat4.create();
 

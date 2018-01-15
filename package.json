@@ -38,7 +38,7 @@
     "rollup-plugin-replace": "^2.0.0",
     "rollup-plugin-uglify": "^2.0.1",
     "tslint": "^5.9.1",
-    "typescript": "^2.6.2",
+    "typescript": "2.7.0-dev.20171221",
     "uglify-es": "^3.3.7"
   }
 }

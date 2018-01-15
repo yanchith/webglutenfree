@@ -5,7 +5,6 @@ export interface TextureOptions {
     mag?: TextureMagFilter;
     wrapS?: TextureWrap;
     wrapT?: TextureWrap;
-    mipmap?: boolean;
 }
 
 export enum TextureWrap {
@@ -92,7 +91,7 @@ export enum TextureInternalFormat {
     // ALPHA
 }
 
-export enum TextureFormat {
+export enum TextureDataFormat {
     RED = 0x1903,
     RG = 0x8227,
     RGB = 0x1907,
@@ -111,7 +110,7 @@ export enum TextureFormat {
     // ALPHA
 }
 
-export enum TextureType {
+export enum TextureDataType {
     BYTE = 0x1400,
     UNSIGNED_BYTE = 0x1401,
     SHORT = 0x1402,
@@ -119,10 +118,9 @@ export enum TextureType {
     INT = 0x1404,
     UNSIGNED_INT = 0x1405,
     FLOAT = 0x1406,
+    HALF_FLOAT = 0x140B,
 
     // TODO: support exotic formats
-    // HALF_FLOAT
-
     // UNSIGNED_SHORT_4_4_4_4
     // UNSIGNED_SHORT_5_5_5_1
     // UNSIGNED_SHORT_5_6_5
@@ -135,223 +133,107 @@ export enum TextureType {
     // FLOAT_32_UNSIGNED_INT_24_8_REV
 }
 
-export class Texture {
+export class Texture<F extends TextureInternalFormat> {
 
     static fromImage(
         dev: WebGL2RenderingContext | Device,
         image: ImageData,
+        mipmap: boolean = false,
         options?: TextureOptions,
-    ): Texture {
-        return Texture.fromRGBA8(
+    ): Texture<TextureInternalFormat.RGBA8> {
+        return Texture.create(
             dev,
-            image.data,
             image.width,
             image.height,
-            options,
-        );
-    }
-
-    static fromRGBA8(
-        dev: WebGL2RenderingContext | Device,
-        data: number[] | Uint8Array | Uint8ClampedArray | null,
-        width: number,
-        height: number,
-        options?: TextureOptions,
-    ): Texture {
-        return Texture.fromArrayBufferView(
-            dev,
-            !data || data instanceof Uint8Array
-                ? data
-                // Note: we also have to convert Uint8ClampedArray to Uint8Array
-                // because of webgl bug
-                // https://github.com/KhronosGroup/WebGL/issues/1533
-                : new Uint8Array(data),
-            width,
-            height,
             TextureInternalFormat.RGBA8,
-            TextureFormat.RGBA,
-            TextureType.UNSIGNED_BYTE,
+            image.data,
+            TextureDataFormat.RGBA,
+            TextureDataType.UNSIGNED_BYTE,
+            mipmap,
             options,
         );
     }
 
-    static fromRG16F(
+    static empty<F extends TextureInternalFormat>(
         dev: WebGL2RenderingContext | Device,
-        data: number[] | Float32Array | null,
         width: number,
         height: number,
-        options?: TextureOptions,
-    ): Texture {
-        return Texture.fromArrayBufferView(
-            dev,
-            !data || data instanceof Float32Array
-                ? data
-                : new Float32Array(data),
-            width,
-            height,
-            TextureInternalFormat.RG16F,
-            TextureFormat.RG,
-            TextureType.FLOAT,
-            options,
-        );
-    }
-
-    static fromRGB16F(
-        dev: WebGL2RenderingContext | Device,
-        data: number[] | Float32Array | null,
-        width: number,
-        height: number,
-        options?: TextureOptions,
-    ): Texture {
-        return Texture.fromArrayBufferView(
-            dev,
-            !data || data instanceof Float32Array
-                ? data
-                : new Float32Array(data),
-            width,
-            height,
-            TextureInternalFormat.RGB16F,
-            TextureFormat.RGB,
-            TextureType.FLOAT,
-            options,
-        );
-    }
-
-    static fromRGBA16F(
-        dev: WebGL2RenderingContext | Device,
-        data: number[] | Float32Array | null,
-        width: number,
-        height: number,
-        options?: TextureOptions,
-    ): Texture {
-        return Texture.fromArrayBufferView(
-            dev,
-            !data || data instanceof Float32Array
-                ? data
-                : new Float32Array(data),
-            width,
-            height,
-            TextureInternalFormat.RGBA16F,
-            TextureFormat.RGBA,
-            TextureType.FLOAT,
-            options,
-        );
-    }
-
-    static fromRGB32F(
-        dev: WebGL2RenderingContext | Device,
-        data: number[] | Float32Array | null,
-        width: number,
-        height: number,
-        options?: TextureOptions,
-    ): Texture {
-        return Texture.fromArrayBufferView(
-            dev,
-            !data || data instanceof Float32Array
-                ? data
-                : new Float32Array(data),
-            width,
-            height,
-            TextureInternalFormat.RGB32F,
-            TextureFormat.RGB,
-            TextureType.FLOAT,
-            options,
-        );
-    }
-
-    static fromRGBA32F(
-        dev: WebGL2RenderingContext | Device,
-        data: number[] | Float32Array | null,
-        width: number,
-        height: number,
-        options?: TextureOptions,
-    ): Texture {
-        return Texture.fromArrayBufferView(
-            dev,
-            !data || data instanceof Float32Array
-                ? data
-                : new Float32Array(data),
-            width,
-            height,
-            TextureInternalFormat.RGBA32F,
-            TextureFormat.RGBA,
-            TextureType.FLOAT,
-            options,
-        );
-    }
-
-    static fromArrayBufferView(
-        dev: WebGL2RenderingContext | Device,
-        data: ArrayBufferView | null,
-        width: number,
-        height: number,
-        internalFormat: TextureInternalFormat,
-        format: TextureFormat,
-        type: TextureType,
+        internalFormat: F,
         {
             min = TextureFilter.NEAREST,
             mag = TextureFilter.NEAREST,
             wrapS = TextureWrap.CLAMP_TO_EDGE,
             wrapT = TextureWrap.CLAMP_TO_EDGE,
-            mipmap = false,
         }: TextureOptions = {},
-    ): Texture {
+    ): Texture<F> {
         const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(
             gl,
-            data,
             width, height,
             internalFormat,
-            format,
-            type,
             wrapS, wrapT,
             min, mag,
-            mipmap,
         );
+    }
+
+    static create<F extends TextureInternalFormat>(
+        dev: WebGL2RenderingContext | Device,
+        width: number,
+        height: number,
+        internalFormat: F,
+        data: InternalFormatToTypedArray[F],
+        dataFormat: InternalFormatToDataFormat[F],
+        dataType: InternalFormatToDataType[F],
+        mipmap: boolean,
+        {
+            min = TextureFilter.NEAREST,
+            mag = TextureFilter.NEAREST,
+            wrapS = TextureWrap.CLAMP_TO_EDGE,
+            wrapT = TextureWrap.CLAMP_TO_EDGE,
+        }: TextureOptions = {},
+    ): Texture<F> {
+        const gl = dev instanceof Device ? dev.gl : dev;
+        const tex = new Texture(
+            gl,
+            width, height,
+            internalFormat,
+            wrapS, wrapT,
+            min, mag,
+        );
+        if (data) { tex.store(data, dataFormat, dataType, mipmap); }
+        return tex;
     }
 
     readonly width: number;
     readonly height: number;
-    readonly internalFormat: TextureInternalFormat;
-    readonly format: TextureFormat;
-    readonly type: TextureType;
+    readonly format: F;
     readonly wrapS: TextureWrap;
     readonly wrapT: TextureWrap;
     readonly minFilter: TextureMinFilter;
     readonly magFilter: TextureMagFilter;
-    readonly mipmap: boolean;
 
     readonly glTexture: WebGLTexture | null;
 
     private gl: WebGL2RenderingContext;
-    private data: ArrayBufferView | null;
 
     private constructor(
         gl: WebGL2RenderingContext,
-        data: ArrayBufferView | null,
         width: number,
         height: number,
-        internalFormat: TextureInternalFormat,
-        format: TextureFormat,
-        type: TextureType,
+        format: F,
         wrapS: TextureWrap,
         wrapT: TextureWrap,
         minFilter: TextureMinFilter,
         magFilter: TextureMagFilter,
-        mipmap: boolean,
     ) {
         this.gl = gl;
-        this.data = data;
         this.width = width;
         this.height = height;
-        this.internalFormat = internalFormat;
         this.format = format;
-        this.type = type;
         this.wrapS = wrapS;
         this.wrapT = wrapT;
         this.minFilter = minFilter;
         this.magFilter = magFilter;
-        this.mipmap = mipmap;
         this.glTexture = null;
 
         this.init();
@@ -360,41 +242,24 @@ export class Texture {
     init(): void {
         const {
             gl,
-            data,
             width,
             height,
-            internalFormat,
             format,
-            type,
             wrapS,
             wrapT,
             minFilter,
             magFilter,
-            mipmap,
         } = this;
         const texture = gl.createTexture();
 
         gl.bindTexture(gl.TEXTURE_2D, texture);
 
-        gl.texStorage2D(gl.TEXTURE_2D, 1, internalFormat, width, height);
-        if (data) {
-            gl.texSubImage2D(
-                gl.TEXTURE_2D,
-                0,
-                0, 0,
-                width, height,
-                format,
-                type,
-                data,
-            );
-        }
+        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
 
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
-
-        if (mipmap) { gl.generateMipmap(gl.TEXTURE_2D); }
 
         gl.bindTexture(gl.TEXTURE_2D, null);
 
@@ -405,4 +270,179 @@ export class Texture {
         const { gl, glTexture } = this;
         if (!gl.isTexture(glTexture)) { this.init(); }
     }
+
+    store(
+        data: InternalFormatToTypedArray[F],
+        format: InternalFormatToDataFormat[F],
+        type: InternalFormatToDataType[F],
+        mipmap: boolean = false,
+    ): void {
+        const { gl, glTexture, width, height } = this;
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.texSubImage2D(
+            gl.TEXTURE_2D,
+            0,
+            0, 0,
+            width, height,
+            format,
+            type,
+            data,
+        );
+        if (mipmap) { gl.generateMipmap(gl.TEXTURE_2D); }
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
+    mipmap(): void {
+        const { gl, glTexture } = this;
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+}
+
+export interface InternalFormatToDataFormat {
+    [TextureInternalFormat.R8]: TextureDataFormat.RED;
+    [TextureInternalFormat.R8_SNORM]: TextureDataFormat.RED;
+    [TextureInternalFormat.R8UI]: TextureDataFormat.RED_INTEGER;
+    [TextureInternalFormat.R8I]: TextureDataFormat.RED_INTEGER;
+    [TextureInternalFormat.R16UI]: TextureDataFormat.RED_INTEGER;
+    [TextureInternalFormat.R16I]: TextureDataFormat.RED_INTEGER;
+    [TextureInternalFormat.R32UI]: TextureDataFormat.RED_INTEGER;
+    [TextureInternalFormat.R32I]: TextureDataFormat.RED_INTEGER;
+    [TextureInternalFormat.R16F]: TextureDataFormat.RED;
+    [TextureInternalFormat.R32F]: TextureDataFormat.RED;
+
+    // RG
+    [TextureInternalFormat.RG8]: TextureDataFormat.RG;
+    [TextureInternalFormat.RG8_SNORM]: TextureDataFormat.RG;
+    [TextureInternalFormat.RG8UI]: TextureDataFormat.RG_INTEGER;
+    [TextureInternalFormat.RG8I]: TextureDataFormat.RG_INTEGER;
+    [TextureInternalFormat.RG16UI]: TextureDataFormat.RG_INTEGER;
+    [TextureInternalFormat.RG16I]: TextureDataFormat.RG_INTEGER;
+    [TextureInternalFormat.RG32UI]: TextureDataFormat.RG_INTEGER;
+    [TextureInternalFormat.RG32I]: TextureDataFormat.RG_INTEGER;
+    [TextureInternalFormat.RG16F]: TextureDataFormat.RG;
+    [TextureInternalFormat.RG32F]: TextureDataFormat.RG;
+
+    // RGB
+    [TextureInternalFormat.RGB8]: TextureDataFormat.RGB;
+    [TextureInternalFormat.RGB8_SNORM]: TextureDataFormat.RGB;
+    [TextureInternalFormat.RGB8UI]: TextureDataFormat.RGB_INTEGER;
+    [TextureInternalFormat.RGB8I]: TextureDataFormat.RGB_INTEGER;
+    [TextureInternalFormat.RGB16UI]: TextureDataFormat.RGB_INTEGER;
+    [TextureInternalFormat.RGB16I]: TextureDataFormat.RGB_INTEGER;
+    [TextureInternalFormat.RGB32UI]: TextureDataFormat.RGB_INTEGER;
+    [TextureInternalFormat.RGB32I]: TextureDataFormat.RGB_INTEGER;
+    [TextureInternalFormat.RGB16F]: TextureDataFormat.RGB;
+    [TextureInternalFormat.RGB32F]: TextureDataFormat.RGB;
+
+    // RGBA
+    [TextureInternalFormat.RGBA8]: TextureDataFormat.RGBA;
+    [TextureInternalFormat.RGBA8_SNORM]: TextureDataFormat.RGBA;
+    [TextureInternalFormat.RGBA8UI]: TextureDataFormat.RGBA_INTEGER;
+    [TextureInternalFormat.RGBA8I]: TextureDataFormat.RGBA_INTEGER;
+    [TextureInternalFormat.RGBA16UI]: TextureDataFormat.RGBA_INTEGER;
+    [TextureInternalFormat.RGBA16I]: TextureDataFormat.RGBA_INTEGER;
+    [TextureInternalFormat.RGBA32UI]: TextureDataFormat.RGBA_INTEGER;
+    [TextureInternalFormat.RGBA32I]: TextureDataFormat.RGBA_INTEGER;
+    [TextureInternalFormat.RGBA16F]: TextureDataFormat.RGBA;
+    [TextureInternalFormat.RGBA32F]: TextureDataFormat.RGBA;
+}
+
+export interface InternalFormatToDataType {
+    [TextureInternalFormat.R8]: TextureDataType.UNSIGNED_BYTE;
+    [TextureInternalFormat.R8_SNORM]: TextureDataType.BYTE;
+    [TextureInternalFormat.R8UI]: TextureDataType.UNSIGNED_BYTE;
+    [TextureInternalFormat.R8I]: TextureDataType.BYTE;
+    [TextureInternalFormat.R16UI]: TextureDataType.UNSIGNED_SHORT;
+    [TextureInternalFormat.R16I]: TextureDataType.SHORT;
+    [TextureInternalFormat.R32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureInternalFormat.R32I]: TextureDataType.INT;
+    [TextureInternalFormat.R16F]: TextureDataType.HALF_FLOAT;
+    [TextureInternalFormat.R32F]: TextureDataType.FLOAT;
+
+    // RG
+    [TextureInternalFormat.RG8]: TextureDataType.UNSIGNED_BYTE;
+    [TextureInternalFormat.RG8_SNORM]: TextureDataType.BYTE;
+    [TextureInternalFormat.RG8UI]: TextureDataType.UNSIGNED_BYTE;
+    [TextureInternalFormat.RG8I]: TextureDataType.BYTE;
+    [TextureInternalFormat.RG16UI]: TextureDataType.UNSIGNED_SHORT;
+    [TextureInternalFormat.RG16I]: TextureDataType.SHORT;
+    [TextureInternalFormat.RG32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureInternalFormat.RG32I]: TextureDataType.INT;
+    [TextureInternalFormat.RG16F]: TextureDataType.HALF_FLOAT;
+    [TextureInternalFormat.RG32F]: TextureDataType.FLOAT;
+
+    // RGB
+    [TextureInternalFormat.RGB8]: TextureDataType.UNSIGNED_BYTE;
+    [TextureInternalFormat.RGB8_SNORM]: TextureDataType.BYTE;
+    [TextureInternalFormat.RGB8UI]: TextureDataType.UNSIGNED_BYTE;
+    [TextureInternalFormat.RGB8I]: TextureDataType.BYTE;
+    [TextureInternalFormat.RGB16UI]: TextureDataType.UNSIGNED_SHORT;
+    [TextureInternalFormat.RGB16I]: TextureDataType.SHORT;
+    [TextureInternalFormat.RGB32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureInternalFormat.RGB32I]: TextureDataType.INT;
+    [TextureInternalFormat.RGB16F]: TextureDataType.HALF_FLOAT;
+    [TextureInternalFormat.RGB32F]: TextureDataType.FLOAT;
+
+    // RGBA
+    [TextureInternalFormat.RGBA8]: TextureDataType.UNSIGNED_BYTE;
+    [TextureInternalFormat.RGBA8_SNORM]: TextureDataType.BYTE;
+    [TextureInternalFormat.RGBA8UI]: TextureDataType.UNSIGNED_BYTE;
+    [TextureInternalFormat.RGBA8I]: TextureDataType.BYTE;
+    [TextureInternalFormat.RGBA16UI]: TextureDataType.UNSIGNED_SHORT;
+    [TextureInternalFormat.RGBA16I]: TextureDataType.SHORT;
+    [TextureInternalFormat.RGBA32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureInternalFormat.RGBA32I]: TextureDataType.INT;
+    [TextureInternalFormat.RGBA16F]: TextureDataType.HALF_FLOAT;
+    [TextureInternalFormat.RGBA32F]: TextureDataType.FLOAT;
+}
+
+export interface InternalFormatToTypedArray {
+    [TextureInternalFormat.R8]: Uint8Array | Uint8ClampedArray;
+    [TextureInternalFormat.R8_SNORM]: Int8Array;
+    [TextureInternalFormat.R8UI]: Uint8Array | Uint8ClampedArray;
+    [TextureInternalFormat.R8I]: Int8Array;
+    [TextureInternalFormat.R16UI]: Uint16Array;
+    [TextureInternalFormat.R16I]: Int16Array;
+    [TextureInternalFormat.R32UI]: Uint32Array;
+    [TextureInternalFormat.R32I]: Int32Array;
+    [TextureInternalFormat.R16F]: Float32Array; // Float16Array
+    [TextureInternalFormat.R32F]: Float32Array;
+
+    // RG
+    [TextureInternalFormat.RG8]: Uint8Array | Uint8ClampedArray;
+    [TextureInternalFormat.RG8_SNORM]: Int8Array;
+    [TextureInternalFormat.RG8UI]: Uint8Array | Uint8ClampedArray;
+    [TextureInternalFormat.RG8I]: Int8Array;
+    [TextureInternalFormat.RG16UI]: Uint16Array;
+    [TextureInternalFormat.RG16I]: Int16Array;
+    [TextureInternalFormat.RG32UI]: Uint32Array;
+    [TextureInternalFormat.RG32I]: Int32Array;
+    [TextureInternalFormat.RG16F]: Float32Array; // Float16Array
+    [TextureInternalFormat.RG32F]: Float32Array;
+
+    // RGB
+    [TextureInternalFormat.RGB8]: Uint8Array | Uint8ClampedArray;
+    [TextureInternalFormat.RGB8_SNORM]: Int8Array;
+    [TextureInternalFormat.RGB8UI]: Uint8Array | Uint8ClampedArray;
+    [TextureInternalFormat.RGB8I]: Int8Array;
+    [TextureInternalFormat.RGB16UI]: Uint16Array;
+    [TextureInternalFormat.RGB16I]: Int16Array;
+    [TextureInternalFormat.RGB32UI]: Uint32Array;
+    [TextureInternalFormat.RGB32I]: Int32Array;
+    [TextureInternalFormat.RGB16F]: Float32Array; // Float16Array
+    [TextureInternalFormat.RGB32F]: Float32Array;
+
+    // RGBA
+    [TextureInternalFormat.RGBA8]: Uint8Array | Uint8ClampedArray;
+    [TextureInternalFormat.RGBA8_SNORM]: Int8Array;
+    [TextureInternalFormat.RGBA8UI]: Uint8Array | Uint8ClampedArray;
+    [TextureInternalFormat.RGBA8I]: Int8Array;
+    [TextureInternalFormat.RGBA16UI]: Uint16Array;
+    [TextureInternalFormat.RGBA16I]: Int16Array;
+    [TextureInternalFormat.RGBA32UI]: Uint32Array;
+    [TextureInternalFormat.RGBA32I]: Int32Array;
+    [TextureInternalFormat.RGBA16F]: Float32Array; // Float16Array
+    [TextureInternalFormat.RGBA32F]: Float32Array;
 }

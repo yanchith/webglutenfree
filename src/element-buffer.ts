@@ -42,7 +42,7 @@ export enum Primitive {
  * Element buffers contain indices for accessing vertex buffer data. They are,
  * together with vertex buffers part of VertexArray objects.
  */
-export class ElementBuffer<T extends ElementBufferType = ElementBufferType> {
+export class ElementBuffer<T extends ElementBufferType> {
 
     /**
      * Creates a new element buffer from plain javascript array. Tries to infer

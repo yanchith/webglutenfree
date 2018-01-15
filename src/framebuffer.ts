@@ -1,13 +1,14 @@
 import * as assert from "./assert";
 import { Device } from "./device";
-import { Texture } from "./texture";
+import { Texture, TextureInternalFormat } from "./texture";
 
 export interface FramebufferProps {
     width: number;
     height: number;
-    color: Texture | Texture[];
-    depth?: Texture;
-    stencil?: Texture;
+    // TODO: more concrete generic types
+    color: Texture<TextureInternalFormat> | Texture<TextureInternalFormat>[];
+    depth?: Texture<TextureInternalFormat>;
+    stencil?: Texture<TextureInternalFormat>;
 }
 
 export class Framebuffer {
@@ -49,17 +50,17 @@ export class Framebuffer {
 
     private gl: WebGL2RenderingContext;
 
-    private colorBuffers: Texture[];
-    private depthBuffer?: Texture;
-    private stencilBuffer?: Texture;
+    private colorBuffers: Texture<TextureInternalFormat>[];
+    private depthBuffer?: Texture<TextureInternalFormat>;
+    private stencilBuffer?: Texture<TextureInternalFormat>;
 
     private constructor(
         gl: WebGL2RenderingContext,
         width: number,
         height: number,
-        colorBuffers: Texture[],
-        depthBuffer?: Texture,
-        stencilBuffer?: Texture,
+        colorBuffers: Texture<TextureInternalFormat>[],
+        depthBuffer?: Texture<TextureInternalFormat>,
+        stencilBuffer?: Texture<TextureInternalFormat>,
     ) {
         this.gl = gl;
         this.width = width;

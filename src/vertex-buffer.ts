@@ -26,7 +26,7 @@ export enum VertexBufferType {
  * Vertex buffers contain GPU accessible data. Accessing them is usually done
  * via setting up an attribute that reads the buffer.
  */
-export class VertexBuffer<T extends VertexBufferType = VertexBufferType> {
+export class VertexBuffer<T extends VertexBufferType> {
 
     /**
      * Create a new vertex buffer from bytes.

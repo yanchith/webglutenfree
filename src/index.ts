@@ -14,12 +14,12 @@ export { VertexArray, VertexArrayProps } from "./vertex-array";
 export {
     Texture,
     TextureOptions,
-    TextureType,
     TextureFilter,
     TextureMinFilter,
     TextureMagFilter,
     TextureWrap,
     TextureInternalFormat,
-    TextureFormat,
+    TextureDataFormat,
+    TextureDataType,
 } from "./texture";
 export { Framebuffer } from "./framebuffer";

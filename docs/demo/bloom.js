@@ -3,6 +3,7 @@ import {
     Command,
     VertexArray,
     Texture,
+    TextureInternalFormat,
     Framebuffer,
 } from "./lib/glutenfree.production.es.min.js";
 import * as square from "./lib/square.js"
@@ -25,34 +26,22 @@ const GAUSSIAN = [
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const initialTex = Texture.fromRGBA8(dev, null, width, height);
-const initialFbo = Framebuffer.create(dev, {
-    width,
-    height,
-    color: initialTex,
-});
+const initialTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
+const initialFbo = Framebuffer.create(dev, { width, height, color: initialTex });
 
-const splitColorTex = Texture.fromRGBA8(dev, null, width, height);
-const splitBrightTex = Texture.fromRGBA8(dev, null, width, height);
+const splitColorTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
+const splitBrightTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
 const splitFbo = Framebuffer.create(dev, {
     width,
     height,
     color: [splitColorTex, splitBrightTex],
 });
 
-const bloomPingTex = Texture.fromRGBA8(dev, null, width, height);
-const bloomPingFbo = Framebuffer.create(dev, {
-    width,
-    height,
-    color: bloomPingTex,
-});
+const bloomPingTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
+const bloomPingFbo = Framebuffer.create(dev, { width, height, color: bloomPingTex });
 
-const bloomPongTex = Texture.fromRGBA8(dev, null, width, height);
-const bloomPongFbo = Framebuffer.create(dev, {
-    width,
-    height,
-    color: bloomPongTex,
-});
+const bloomPongTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
+const bloomPongFbo = Framebuffer.create(dev, { width, height, color: bloomPongTex });
 
 const screenspace = VertexArray.create(dev, {
     attributes: {
