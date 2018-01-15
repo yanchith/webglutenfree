@@ -127,7 +127,7 @@ const drawOutlines = Command.create(dev, {
                 view,
                 [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
                 [0, 1, 0],
-                [0, 1, 0],
+            [0, 1, 0],
             ),
         },
         u_projection: {

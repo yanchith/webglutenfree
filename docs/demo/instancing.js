@@ -70,7 +70,7 @@ const cmd = Command.create(dev, {
             ],
             a_offset: {
                 type: "pointer",
-                value: VertexBuffer.fromFloat32Array(dev, [
+                buffer: VertexBuffer.fromFloat32Array(dev, [
                     3, 3,
                     0, 3,
                     3, 0,
@@ -85,7 +85,7 @@ const cmd = Command.create(dev, {
             },
             a_color: {
                 type: "pointer",
-                value: VertexBuffer.fromUint8Array(dev, [
+                buffer: VertexBuffer.fromUint8Array(dev, [
                     255, 0, 0, 255,
                     0, 255, 0, 255,
                     0, 0, 255, 255,

@@ -701,7 +701,7 @@ class AttributeDescriptor {
             }
             return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.fromFloat32Array(gl, props), props.length, 1, false, 0);
         }
-        return new AttributeDescriptor(location, props.type, props.value, props.count, props.size, props.type === AttributeType.POINTER
+        return new AttributeDescriptor(location, props.type, props.buffer, props.count, props.size, props.type === AttributeType.POINTER
             ? (props.normalized || false)
             : false, props.divisor || 0);
     }
@@ -1502,5 +1502,5 @@ class Texture {
     }
 }
 
-export { Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferType, ElementBuffer, ElementBufferType, Primitive, VertexArray, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
+export { Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferType, ElementBuffer, ElementBufferType, Primitive, VertexArray, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
 //# sourceMappingURL=glutenfree.es.js.map

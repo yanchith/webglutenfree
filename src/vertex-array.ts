@@ -55,7 +55,7 @@ export type VertexBufferIntegerType =
 
 export interface AttributePointer {
     type: AttributeType.POINTER;
-    value: VertexBuffer<VertexBufferType>;
+    buffer: VertexBuffer<VertexBufferType>;
     count: number;
     size: number;
     normalized?: boolean;
@@ -64,8 +64,7 @@ export interface AttributePointer {
 
 export interface AttributeIPointer {
     type: AttributeType.IPOINTER;
-    // TODO: list every type except float
-    value: VertexBuffer<VertexBufferIntegerType>;
+    buffer: VertexBuffer<VertexBufferIntegerType>;
     count: number;
     size: number;
     divisor?: number;
@@ -275,7 +274,7 @@ class AttributeDescriptor {
         return new AttributeDescriptor(
             location,
             props.type,
-            props.value,
+            props.buffer,
             props.count,
             props.size,
             props.type === AttributeType.POINTER
