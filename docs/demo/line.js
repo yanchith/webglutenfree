@@ -1,4 +1,4 @@
-import { Device, Command } from "./lib/glutenfree.production.es.min.js";
+import { Device, Command } from "./lib/glutenfree.es.js";
 
 const dev = Device.mount();
 

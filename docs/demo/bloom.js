@@ -5,7 +5,7 @@ import {
     Texture,
     TextureInternalFormat,
     Framebuffer,
-} from "./lib/glutenfree.production.es.min.js";
+} from "./lib/glutenfree.es.js";
 import * as square from "./lib/square.js"
 import * as cube from "./lib/cube.js"
 
