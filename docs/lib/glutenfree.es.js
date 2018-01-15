@@ -1402,34 +1402,34 @@ var TextureInternalFormat;
     // LUMINANCE
     // ALPHA
 })(TextureInternalFormat || (TextureInternalFormat = {}));
-var TextureFormat;
-(function (TextureFormat) {
-    TextureFormat[TextureFormat["RED"] = 6403] = "RED";
-    TextureFormat[TextureFormat["RG"] = 33319] = "RG";
-    TextureFormat[TextureFormat["RGB"] = 6407] = "RGB";
-    TextureFormat[TextureFormat["RGBA"] = 6408] = "RGBA";
-    TextureFormat[TextureFormat["RED_INTEGER"] = 36244] = "RED_INTEGER";
-    TextureFormat[TextureFormat["RG_INTEGER"] = 33320] = "RG_INTEGER";
-    TextureFormat[TextureFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
-    TextureFormat[TextureFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
+var TextureDataFormat;
+(function (TextureDataFormat) {
+    TextureDataFormat[TextureDataFormat["RED"] = 6403] = "RED";
+    TextureDataFormat[TextureDataFormat["RG"] = 33319] = "RG";
+    TextureDataFormat[TextureDataFormat["RGB"] = 6407] = "RGB";
+    TextureDataFormat[TextureDataFormat["RGBA"] = 6408] = "RGBA";
+    TextureDataFormat[TextureDataFormat["RED_INTEGER"] = 36244] = "RED_INTEGER";
+    TextureDataFormat[TextureDataFormat["RG_INTEGER"] = 33320] = "RG_INTEGER";
+    TextureDataFormat[TextureDataFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
+    TextureDataFormat[TextureDataFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
     // TODO: support exotic formats
     // DEPTH_COMPONENT
     // DEPTH_STENCIL
     // LUMINANCE_ALPHA
     // LUMINANCE
     // ALPHA
-})(TextureFormat || (TextureFormat = {}));
-var TextureType;
-(function (TextureType) {
-    TextureType[TextureType["BYTE"] = 5120] = "BYTE";
-    TextureType[TextureType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
-    TextureType[TextureType["SHORT"] = 5122] = "SHORT";
-    TextureType[TextureType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
-    TextureType[TextureType["INT"] = 5124] = "INT";
-    TextureType[TextureType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
-    TextureType[TextureType["FLOAT"] = 5126] = "FLOAT";
+})(TextureDataFormat || (TextureDataFormat = {}));
+var TextureDataType;
+(function (TextureDataType) {
+    TextureDataType[TextureDataType["BYTE"] = 5120] = "BYTE";
+    TextureDataType[TextureDataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
+    TextureDataType[TextureDataType["SHORT"] = 5122] = "SHORT";
+    TextureDataType[TextureDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
+    TextureDataType[TextureDataType["INT"] = 5124] = "INT";
+    TextureDataType[TextureDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
+    TextureDataType[TextureDataType["FLOAT"] = 5126] = "FLOAT";
+    TextureDataType[TextureDataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
     // TODO: support exotic formats
-    // HALF_FLOAT
     // UNSIGNED_SHORT_4_4_4_4
     // UNSIGNED_SHORT_5_5_5_1
     // UNSIGNED_SHORT_5_6_5
@@ -1438,79 +1438,44 @@ var TextureType;
     // UNSIGNED_INT_2_10_10_10_REV
     // UNSIGNED_INT_10F_11F_11F_REV
     // FLOAT_32_UNSIGNED_INT_24_8_REV
-})(TextureType || (TextureType = {}));
+})(TextureDataType || (TextureDataType = {}));
 class Texture {
-    static fromImage(dev, image, options) {
-        return Texture.fromRGBA8(dev, image.data, image.width, image.height, options);
-    }
-    static fromRGBA8(dev, data, width, height, options) {
-        return Texture.fromArrayBufferView(dev, !data || data instanceof Uint8Array
-            ? data
-            // Note: we also have to convert Uint8ClampedArray to Uint8Array
-            // because of webgl bug
-            // https://github.com/KhronosGroup/WebGL/issues/1533
-            : new Uint8Array(data), width, height, TextureInternalFormat.RGBA8, TextureFormat.RGBA, TextureType.UNSIGNED_BYTE, options);
-    }
-    static fromRG16F(dev, data, width, height, options) {
-        return Texture.fromArrayBufferView(dev, !data || data instanceof Float32Array
-            ? data
-            : new Float32Array(data), width, height, TextureInternalFormat.RG16F, TextureFormat.RG, TextureType.FLOAT, options);
-    }
-    static fromRGB16F(dev, data, width, height, options) {
-        return Texture.fromArrayBufferView(dev, !data || data instanceof Float32Array
-            ? data
-            : new Float32Array(data), width, height, TextureInternalFormat.RGB16F, TextureFormat.RGB, TextureType.FLOAT, options);
-    }
-    static fromRGBA16F(dev, data, width, height, options) {
-        return Texture.fromArrayBufferView(dev, !data || data instanceof Float32Array
-            ? data
-            : new Float32Array(data), width, height, TextureInternalFormat.RGBA16F, TextureFormat.RGBA, TextureType.FLOAT, options);
-    }
-    static fromRGB32F(dev, data, width, height, options) {
-        return Texture.fromArrayBufferView(dev, !data || data instanceof Float32Array
-            ? data
-            : new Float32Array(data), width, height, TextureInternalFormat.RGB32F, TextureFormat.RGB, TextureType.FLOAT, options);
-    }
-    static fromRGBA32F(dev, data, width, height, options) {
-        return Texture.fromArrayBufferView(dev, !data || data instanceof Float32Array
-            ? data
-            : new Float32Array(data), width, height, TextureInternalFormat.RGBA32F, TextureFormat.RGBA, TextureType.FLOAT, options);
-    }
-    static fromArrayBufferView(dev, data, width, height, internalFormat, format, type, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, mipmap = false, } = {}) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(gl, data, width, height, internalFormat, format, type, wrapS, wrapT, min, mag, mipmap);
-    }
-    constructor(gl, data, width, height, internalFormat, format, type, wrapS, wrapT, minFilter, magFilter, mipmap) {
+    constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
         this.gl = gl;
-        this.data = data;
         this.width = width;
         this.height = height;
-        this.internalFormat = internalFormat;
         this.format = format;
-        this.type = type;
         this.wrapS = wrapS;
         this.wrapT = wrapT;
         this.minFilter = minFilter;
         this.magFilter = magFilter;
-        this.mipmap = mipmap;
         this.glTexture = null;
         this.init();
     }
+    static fromImage(dev, image, mipmap = false, options) {
+        return Texture.create(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, mipmap, options);
+    }
+    static empty(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
+        const gl = dev instanceof Device ? dev.gl : dev;
+        return new Texture(gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+    }
+    static create(dev, width, height, internalFormat, data, dataFormat, dataType, mipmap, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
+        const gl = dev instanceof Device ? dev.gl : dev;
+        const tex = new Texture(gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+        if (data) {
+            tex.store(data, dataFormat, dataType, mipmap);
+        }
+        return tex;
+    }
     init() {
-        const { gl, data, width, height, internalFormat, format, type, wrapS, wrapT, minFilter, magFilter, mipmap, } = this;
+        const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
         const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texStorage2D(gl.TEXTURE_2D, 1, internalFormat, width, height);
-        if (data) {
-            gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, format, type, data);
-        }
+        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
-        if (mipmap) {
-            gl.generateMipmap(gl.TEXTURE_2D);
-        }
         gl.bindTexture(gl.TEXTURE_2D, null);
         this.glTexture = texture;
     }
@@ -1520,7 +1485,22 @@ class Texture {
             this.init();
         }
     }
+    store(data, format, type, mipmap = false) {
+        const { gl, glTexture, width, height } = this;
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, format, type, data);
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_2D);
+        }
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+    mipmap() {
+        const { gl, glTexture } = this;
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
 }
 
-export { Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferType, ElementBuffer, ElementBufferType, Primitive, VertexArray, Texture, TextureType, TextureFilter, TextureWrap, TextureInternalFormat, TextureFormat, Framebuffer };
+export { Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferType, ElementBuffer, ElementBufferType, Primitive, VertexArray, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
 //# sourceMappingURL=glutenfree.es.js.map
