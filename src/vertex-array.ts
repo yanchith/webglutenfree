@@ -11,6 +11,7 @@ import {
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 
+
 /**
  * Attribute type for reading vertex buffers. POINTER provides normalization
  * options for converting integer values to floats. IPOINTER always converts
@@ -19,6 +20,11 @@ const INT_PATTERN = /^0|[1-9]\d*$/;
 export enum AttributeType {
     POINTER = "pointer",
     IPOINTER = "ipointer",
+}
+
+export interface Attributes {
+    [name: string]: Attribute;
+    [location: number]: Attribute;
 }
 
 export type Attribute =
@@ -71,10 +77,8 @@ export interface AttributeIPointer {
 }
 
 export interface VertexArrayProps {
-    attributes: {
-        [name: string]: Attribute;
-        [location: number]: Attribute;
-    };
+    primitive: Primitive;
+    attributes: Attributes;
     elements?: ElementArray | ElementBuffer<ElementBufferType>;
 }
 
@@ -92,8 +96,40 @@ export class VertexArray {
      * arguments for `ElementBuffer.create()`
      */
     static create(
-        dev: WebGL2RenderingContext | Device,
-        { attributes, elements }: VertexArrayProps,
+        dev: Device,
+        primitive: Primitive,
+        attributes: Attributes,
+    ): VertexArray {
+        const gl = dev.gl;
+        const attrs = Object.entries(attributes)
+            .map(([locationStr, definition]) => {
+                if (!INT_PATTERN.test(locationStr)) {
+                    throw new Error("Location not a number. Use Command#locate");
+                }
+                const location = parseInt(locationStr, 10);
+                return AttributeDescriptor.create(gl, location, definition);
+            });
+
+        const count = attrs.length
+            ? attrs
+                .map(attr => attr.count)
+                .reduce((min, curr) => Math.min(min, curr))
+            : 0;
+
+        const instAttrs = attrs.filter(attr => !!attr.divisor);
+        const instanceCount = instAttrs.length
+            ? instAttrs
+                .map(attr => attr.count * attr.divisor)
+                .reduce((min, curr) => Math.min(min, curr))
+            : 0;
+
+        return new VertexArray(gl, primitive, attrs, count, instanceCount);
+    }
+
+    static createIndexed(
+        dev: Device,
+        elements: ElementArray | ElementBuffer<ElementBufferType>,
+        attributes: Attributes,
     ): VertexArray {
         const gl = dev instanceof Device ? dev.gl : dev;
         const attrs = Object.entries(attributes)
@@ -124,10 +160,19 @@ export class VertexArray {
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
 
-        return new VertexArray(gl, attrs, elementBuffer, count, instanceCount);
+        return new VertexArray(
+            gl,
+            elementBuffer.primitive,
+            attrs,
+            count,
+            instanceCount,
+            elementBuffer,
+        );
     }
 
+    readonly primitive: Primitive;
     readonly count: number;
+    readonly elementCount: number;
     readonly instanceCount: number;
 
     readonly glVertexArray: WebGLVertexArrayObject | null;
@@ -140,27 +185,26 @@ export class VertexArray {
 
     private constructor(
         gl: WebGL2RenderingContext,
+        primitive: Primitive,
         attributes: AttributeDescriptor[],
-        elements: ElementBuffer<ElementBufferType> | undefined,
         count: number,
         instanceCount: number,
+        elements?: ElementBuffer<ElementBufferType> | undefined,
     ) {
         this.gl = gl;
+        this.primitive = primitive;
         this.elementBuffer = elements;
         this.attributes = attributes;
         this.count = count;
+        this.elementCount = elements ? elements.count : 0;
         this.instanceCount = instanceCount;
         this.glVertexArray = null;
 
         this.init();
     }
 
-    get hasElements(): boolean {
+    get elements(): boolean {
         return !!this.elementBuffer;
-    }
-
-    get elementPrimitive(): Primitive | undefined {
-        return this.elementBuffer && this.elementBuffer.primitive;
     }
 
     get elementType(): ElementBufferType | undefined {
@@ -220,7 +264,9 @@ export class VertexArray {
         gl.bindVertexArray(null);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        if (elementBuffer) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        }
 
         (this as any).glVertexArray = vao;
     }

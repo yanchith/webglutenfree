@@ -106,7 +106,6 @@ const scene = Command.create(dev, {
         attributes: { a_position: cube.positions },
         elements: cube.elements,
     },
-    framebuffer: ({ target }) => target,
 });
 
 const split = Command.create(dev, {
@@ -151,7 +150,6 @@ const split = Command.create(dev, {
         },
     },
     data: screenspace,
-    framebuffer: ({ target }) => target,
 });
 
 const bloom = Command.create(dev, {
@@ -212,7 +210,6 @@ const bloom = Command.create(dev, {
         },
     },
     data: screenspace,
-    framebuffer: ({ target }) => target,
 });
 
 const tonemap = Command.create(dev, {
@@ -281,36 +278,32 @@ const loop = time => {
     dev.clearColorAndDepth(0, 0, 0, 1, 1, initialFbo);
 
     // Render geometry into texture
-    scene.execute({ time, target: initialFbo });
+    scene.execute({ time }, { framebuffer: initialFbo });
 
     // Split color and brightness to 2 render targets (splitColor, splitBright)
-    split.execute({ target: splitFbo });
+    split.execute(void 0, { framebuffer: splitFbo });
 
     if (nBloomPasses) {
         // Do first 2 bloom passes: splitBright -> bloomWrite -> bloomRead
         bloom.execute({
             source: splitBrightTex,
             direction: HORIZONTAL,
-            target: bloomPongFbo,
-        });
+        }, { framebuffer: bloomPongFbo });
         bloom.execute({
             source: bloomPongTex,
             direction: VERTICAL,
-            target: bloomPingFbo,
-        });
+        }, { framebuffer: bloomPingFbo });
 
         // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
         for (let i = 1; i < nBloomPasses; i++) {
             bloom.execute({
                 source: bloomPingTex,
                 direction: HORIZONTAL,
-                target: bloomPongFbo,
-            });
+            }, { framebuffer: bloomPongFbo });
             bloom.execute({
                 source: bloomPongTex,
                 direction: VERTICAL,
-                target: bloomPingFbo,
-            });
+            }, { framebuffer: bloomPingFbo });
         }
     }
 

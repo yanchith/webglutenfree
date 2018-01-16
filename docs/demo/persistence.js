@@ -30,12 +30,9 @@ const pongFbo = Framebuffer.create(dev, { width, height, color: pongTex });
 
 const view = mat4.create();
 
-const screenspace = VertexArray.create(dev, {
-    attributes: {
-        0: square.positions,
-        1: square.texCoords,
-    },
-    elements: square.elements,
+const screenspaceGeometry = VertexArray.createIndexed(dev, square.elements, {
+    0: square.positions,
+    1: square.texCoords,
 });
 
 const draw = Command.create(dev, {
@@ -87,12 +84,11 @@ const draw = Command.create(dev, {
             ),
         },
     },
-    data: {
-        attributes: { a_position: bunny.positions },
-        elements: bunny.elements,
-    },
-    framebuffer: ({ target }) => target,
 });
+
+const bunnyGeometry = VertexArray.createIndexed(dev, bunny.elements, draw.locate({
+    a_position: bunny.positions,
+}));
 
 const blend = Command.create(dev, {
     vert: `#version 300 es
@@ -128,7 +124,6 @@ const blend = Command.create(dev, {
             f_color = blend_alpha(c2, c1, u_blend_factor);
         }
     `,
-    data: screenspace,
     uniforms: {
         u_new_frame: {
             type: "texture",
@@ -143,7 +138,6 @@ const blend = Command.create(dev, {
             value: PERSISTENCE_FACTOR,
         }
     },
-    framebuffer: ({ pong }) => pong,
 });
 
 const copyToCanvas = Command.create(dev, {
@@ -173,7 +167,6 @@ const copyToCanvas = Command.create(dev, {
             f_color = texture(u_source, v_tex_coord);
         }
     `,
-    data: screenspace,
     uniforms: {
         u_source: {
             type: "texture",
@@ -181,7 +174,6 @@ const copyToCanvas = Command.create(dev, {
         }
     },
 })
-
 
 
 let ping = {
@@ -206,13 +198,19 @@ const loop = time => {
     */
 
     // We first draw the scene to a "newFrame" fbo
-    draw.execute({ time, target: newFrameFbo });
+    draw.target(target => {
+        target.draw(bunnyGeometry, { time });
+    }, newFrameFbo);
 
     // Then blend newFrame and ping to pong proportionate to PERSISTENCE_FACTOR
-    blend.execute({ newFrame: newFrameTex, ping: ping.tex, pong: pong.fbo });
+    blend.target(target => {
+        target.draw(screenspaceGeometry, { newFrame: newFrameTex, ping: ping.tex });
+    }, pong.fbo);
 
     // Lastly copy the contents of pong to canvas
-    copyToCanvas.execute({ source: pong.tex })
+    copyToCanvas.target(target => {
+        target.draw(screenspaceGeometry, { source: pong.tex });
+    });
 
     // ... and swap the fbos
     const tmp = ping;

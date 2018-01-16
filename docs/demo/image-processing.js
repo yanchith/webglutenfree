@@ -1,4 +1,4 @@
-import { Device, Command, Texture } from "./lib/glutenfree.es.js";
+import { Device, Command, VertexArray, Texture } from "./lib/glutenfree.es.js";
 import * as square from "./lib/square.js"
 import { loadImage } from "./lib/load-image.js";
 
@@ -124,16 +124,14 @@ async function run() {
                 value: imageTexture,
             },
         },
-        data: {
-            attributes: {
-                a_position: square.positions,
-                a_tex_coord: square.texCoords,
-            },
-            elements: square.elements,
-        },
     });
 
-    cmd.execute();
+    const geometry = VertexArray.createIndexed(dev, square.elements, cmd.locate({
+        a_position: square.positions,
+        a_tex_coord: square.texCoords,
+    }))
+
+    cmd.draw(geometry);
 }
 
 run();

@@ -73,7 +73,6 @@ const drawObjects = Command.create(dev, {
             value: projection,
         },
     },
-    data: ({ geometry }) => geometry,
     depth: { func: DepthFunc.LESS },
     stencil: {
         func: {
@@ -135,7 +134,6 @@ const drawOutlines = Command.create(dev, {
             value: projection,
         },
     },
-    data: ({ geometry }) => geometry,
     stencil: {
         func: {
             func: StencilFunc.NOTEQUAL,
@@ -146,14 +144,12 @@ const drawOutlines = Command.create(dev, {
     },
 });
 
-const cubeMesh = VertexArray.create(dev, drawObjects.locate({
-    attributes: { a_position: cube.positions },
-    elements: cube.elements
+const cubeGeometry = VertexArray.createIndexed(dev, cube.elements, drawObjects.locate({
+    a_position: cube.positions,
 }));
 
-const bunnyMesh = VertexArray.create(dev, drawObjects.locate({
-    attributes: { a_position: bunny.positions },
-    elements: bunny.elements,
+const bunnyGeometry = VertexArray.createIndexed(dev, bunny.elements, drawObjects.locate({
+    a_position: bunny.positions,
 }));
 
 const cubeModel = mat4.fromScaling(mat4.create(), [0.5, 0.5, 0.5]);
@@ -169,14 +165,14 @@ const bunnyOutlnModel = mat4.scale(mat4.create(), bunnyModel, [1.04, 1.04, 1.04]
 
 const loop = time => {
     dev.clear(0, 0, 0, 1, 1, 0);
-    drawObjects.execute([
-        { time, geometry: cubeMesh, model: cubeModel },
-        { time, geometry: bunnyMesh, model: bunnyModel },
-    ]);
-    drawOutlines.execute([
-        { time, geometry: cubeMesh, model: cubeOutlnModel },
-        { time, geometry: bunnyMesh, model: bunnyOutlnModel },
-    ]);
+    drawObjects.target(target => {
+        target.draw(cubeGeometry, { time, model: cubeModel });
+        target.draw(bunnyGeometry, { time, model: bunnyModel });
+    });
+    drawOutlines.target(target => {
+        target.draw(cubeGeometry, { time, model: cubeOutlnModel });
+        target.draw(bunnyGeometry, { time, model: bunnyOutlnModel });
+    });
     window.requestAnimationFrame(loop);
 }
 

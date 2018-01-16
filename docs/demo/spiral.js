@@ -1,4 +1,10 @@
-import { Device, Command, BlendFunc } from "./lib/glutenfree.es.js";
+import {
+    Device,
+    Command,
+    BlendFunc,
+    VertexArray,
+    Primitive,
+} from "./lib/glutenfree.es.js";
 import * as spiral from "./lib/spiral.js"
 
 const dev = Device.mount();
@@ -61,12 +67,6 @@ const cmd = Command.create(dev, {
             ),
         },
     },
-    data: {
-        attributes: {
-            a_position: spiral.positions,
-            a_normal: spiral.normals,
-        },
-    },
     blend: {
         func: {
             src: BlendFunc.CONSTANT_ALPHA,
@@ -76,9 +76,14 @@ const cmd = Command.create(dev, {
     },
 });
 
+const geometry = VertexArray.create(dev, Primitive.TRIANGLES, cmd.locate({
+    a_position: spiral.positions,
+    a_normal: spiral.normals,
+}));
+
 const loop = time => {
     dev.clearColorAndDepth(0, 0, 0, 1, 1);
-    cmd.execute(time);
+    cmd.draw(geometry, time);
     window.requestAnimationFrame(loop);
 }
 

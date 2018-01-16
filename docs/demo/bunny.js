@@ -1,4 +1,10 @@
-import { Device, Command, BlendFunc } from "./lib/glutenfree.es.js";
+import {
+    Device,
+    Command,
+    BlendFunc,
+    VertexArray,
+    Primitive,
+} from "./lib/glutenfree.es.js";
 import * as bunny from "./lib/bunny.js"
 
 const dev = Device.mount();
@@ -55,10 +61,6 @@ const cmd = Command.create(dev, {
             ),
         },
     },
-    data: {
-        attributes: { a_position: bunny.positions },
-        elements: bunny.elements,
-    },
     blend: {
         func: {
             src: BlendFunc.CONSTANT_ALPHA,
@@ -68,9 +70,13 @@ const cmd = Command.create(dev, {
     },
 });
 
+const geometry = VertexArray.createIndexed(dev, bunny.elements, cmd.locate({
+    a_position: bunny.positions,
+}));
+
 const loop = time => {
     dev.clearColorAndDepth(0, 0, 0, 1, 1);
-    cmd.execute(time);
+    cmd.draw(geometry, time);
     window.requestAnimationFrame(loop);
 }
 

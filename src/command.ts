@@ -1,10 +1,10 @@
 import * as assert from "./assert";
 import * as glutil from "./glutil";
 import { Device } from "./device";
-import { VertexArray, VertexArrayProps } from "./vertex-array";
+import { VertexArray, Attributes } from "./vertex-array";
 import { Primitive } from "./element-buffer";
 import { Texture, TextureInternalFormat } from "./texture";
-import { Framebuffer, FramebufferProps } from "./framebuffer";
+import { Framebuffer } from "./framebuffer";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
@@ -13,15 +13,15 @@ export type Access<P, R> = R | ((props: P, index: number) => R);
 export type StencilOrSeparate<T> = T | { front: T, back: T };
 export type BlendOrSeparate<T> = T | { rgb: T, alpha: T };
 
+export interface DrawTarget<P> {
+    draw(vao: VertexArray, props: P): void;
+    execute(primitive: Primitive, count: number, props: P): void;
+}
+
 export interface CommandProps<P> {
     vert: string;
     frag: string;
     uniforms?: { [key: string]: Uniform<P> };
-    data?: VertexArrayProps | Access<P, VertexArray>;
-    framebuffer?: FramebufferProps | Access<P, Framebuffer>;
-    count?: number;
-    offset?: number;
-    primitive?: Primitive;
     depth?: {
         func: DepthFunc;
         mask?: boolean;
@@ -261,7 +261,16 @@ export enum BlendEquation {
     MAX = 0x8008,
 }
 
-export class Command<P = void> {
+export interface ExecuteOptions<P> {
+    props: P;
+    data?: VertexArray;
+    framebuffer?: Framebuffer;
+    primitive?: Primitive;
+    count?: number;
+    offset?: number;
+}
+
+export class Command<P = void> implements DrawTarget<P> {
 
     static create<P = void>(
         dev: WebGL2RenderingContext | Device,
@@ -269,11 +278,6 @@ export class Command<P = void> {
             vert,
             frag,
             uniforms = {},
-            data,
-            framebuffer,
-            count = 0,
-            offset = 0,
-            primitive,
             depth,
             stencil,
             blend,
@@ -331,19 +335,6 @@ export class Command<P = void> {
                 return new UniformDescriptor(ident, loc, uniform);
             });
 
-        const vertexArrayAcc = data
-            ? typeof data === "function" || data instanceof VertexArray
-                ? data
-                : VertexArray.create(dev, locate(gl, prog, data))
-            : undefined;
-
-
-        const framebufferAcc = framebuffer
-            ? typeof framebuffer === "function" || framebuffer instanceof Framebuffer
-                ? framebuffer
-                : Framebuffer.create(gl, framebuffer)
-            : undefined;
-
         const depthDescr = parseDepth(depth);
         const stencilDescr = parseStencil(stencil);
         const blendDescr = parseBlend(blend);
@@ -352,74 +343,40 @@ export class Command<P = void> {
             gl,
             prog,
             uniformDescrs,
-            count,
-            offset,
-            primitive,
-            vertexArrayAcc,
-            framebufferAcc,
             depthDescr,
             stencilDescr,
             blendDescr,
         );
     }
 
-    readonly count: number;
-    readonly offset: number;
-
     // CONFIG
     private gl: WebGL2RenderingContext;
 
     private glProgram: WebGLProgram;
 
-    private primitive?: number;
     private uniformDescrs: UniformDescriptor<P>[];
-    private vertexArrayAcc?: Access<P, VertexArray>;
-    private framebufferAcc?: Access<P, Framebuffer>;
     private depthDescr?: DepthDescriptor;
     private stencilDescr?: StencilDescriptor;
     private blendDescr?: BlendDescriptor;
-
-    // STATE
-    private currVao: WebGLVertexArrayObject | null;
-    private currFbo: WebGLFramebuffer | null;
 
     private constructor(
         gl: WebGL2RenderingContext,
         glProgram: WebGLProgram,
         uniformDescrs: UniformDescriptor<P>[],
-        count: number,
-        offset: number,
-        primitive?: Primitive,
-        vertexArrayAcc?: Access<P, VertexArray>,
-        framebufferAcc?: Access<P, Framebuffer>,
         depthDescr?: DepthDescriptor,
         stencilDescr?: StencilDescriptor,
         blendDescr?: BlendDescriptor,
     ) {
         this.gl = gl;
         this.glProgram = glProgram;
-        this.primitive = typeof primitive === "number" ? primitive : undefined;
         this.uniformDescrs = uniformDescrs;
-        this.count = count;
-        this.offset = offset;
-        this.vertexArrayAcc = vertexArrayAcc;
-        this.framebufferAcc = framebufferAcc;
         this.depthDescr = depthDescr;
         this.stencilDescr = stencilDescr;
         this.blendDescr = blendDescr;
-
-        this.currVao = null;
-        this.currFbo = null;
     }
 
-    execute(props: P | P[]): void {
+    draw(vao: VertexArray, props: P): void {
         const { gl, glProgram } = this;
-
-        /*
-        When batching (passing in an array of props), the price for
-        gl.useProgram, enabling depth/stencil tests and blending is paid only
-        once for all draw calls.
-        */
 
         gl.useProgram(glProgram);
 
@@ -427,15 +384,29 @@ export class Command<P = void> {
         this.beginStencil();
         this.beginBlend();
 
-        if (Array.isArray(props)) {
-            props.forEach((p, i) => this.executeInner(p, i));
+        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+        gl.bindVertexArray(vao.glVertexArray);
+
+        this.updateUniforms(props, 0);
+        if (vao.elements) {
+            this.execElements(
+                vao.primitive,
+                vao.elementCount,
+                vao.elementType!,
+                0, // offset
+                vao.instanceCount,
+            );
         } else {
-            this.executeInner(props, 0);
+            this.execArrays(
+                vao.primitive,
+                vao.count,
+                0, // offset
+                vao.instanceCount,
+            );
         }
 
-        // FBOs and VAOs are bound without unbinding in the inner loop
-        this.unbindFbo();
-        this.unbindVao();
+        gl.bindVertexArray(null);
 
         this.endBlend();
         this.endStencil();
@@ -444,90 +415,147 @@ export class Command<P = void> {
         gl.useProgram(null);
     }
 
-    locate(vertexArrayProps: VertexArrayProps): VertexArrayProps {
-        return locate(this.gl, this.glProgram, vertexArrayProps);
+    execute(primitive: Primitive, count: number, props: P): void {
+        const { gl, glProgram } = this;
+
+        gl.useProgram(glProgram);
+
+        this.beginDepth();
+        this.beginStencil();
+        this.beginBlend();
+
+        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+        this.updateUniforms(props, 0);
+        gl.drawArrays(primitive, 0, count);
+
+        this.endBlend();
+        this.endStencil();
+        this.endDepth();
+
+        gl.useProgram(null);
     }
 
-    private executeInner(props: P, index: number): void {
-        const {
-            gl,
-            primitive,
-            count,
-            offset,
-            vertexArrayAcc,
-            framebufferAcc,
-        } = this;
+    target(cb: (t: DrawTarget<P>) => void, framebuffer?: Framebuffer): void {
+        const { gl, glProgram } = this;
 
-        /*
-        Enabling multiple FBOs and VAOs per draw batch is a nice feature. We
-        cache currently bound FBO/VAO to prevent needless rebinding.
-        */
+        // When batching (passing in an array of props), the price for
+        // gl.useProgram, binding framebuffers, enabling depth/stencil tests and
+        // blending is paid only once for all draw calls.
 
-        let bufferWidth = gl.drawingBufferWidth;
-        let bufferHeight = gl.drawingBufferHeight;
+        gl.useProgram(glProgram);
 
-        const fbo = framebufferAcc && access(props, index, framebufferAcc);
-        if (fbo) {
-            this.bindFbo(fbo);
-            bufferWidth = fbo.width;
-            bufferHeight = fbo.height;
+        this.beginDepth();
+        this.beginStencil();
+        this.beginBlend();
+
+        let width = gl.drawingBufferWidth;
+        let height = gl.drawingBufferHeight;
+        if (framebuffer) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glFramebuffer);
+            gl.drawBuffers(framebuffer.glColorAttachments);
+            width = framebuffer.width;
+            height = framebuffer.height;
         }
 
-        gl.viewport(0, 0, bufferWidth, bufferHeight);
+        gl.viewport(0, 0, width, height);
 
-        this.updateUniforms(props, index);
+        let iter = 0;
+        let currVao: VertexArray | null = null;
+        cb({
+            draw: (vao: VertexArray, props: P) => {
+                if (vao !== currVao) {
+                    gl.bindVertexArray(vao.glVertexArray);
+                    currVao = vao;
+                }
+                this.updateUniforms(props, iter++);
 
-        const vao = vertexArrayAcc && access(props, index, vertexArrayAcc);
-        if (vao) {
-            this.bindVao(vao);
-            const prim = typeof primitive === "undefined"
-                ? typeof vao.elementPrimitive === "undefined"
-                    ? gl.TRIANGLES
-                    : vao.elementPrimitive
-                : primitive;
-            const cnt = count ? Math.min(count, vao.count) : vao.count;
-            if (vao.hasElements) {
-                const ty = vao.elementType!;
-                this.drawElements(prim, cnt, ty, offset, vao.instanceCount);
-            } else {
-                this.drawArrays(prim, cnt, offset, vao.instanceCount);
-            }
-        } else {
-            this.drawArrays(
-                typeof primitive === "undefined" ? gl.TRIANGLES : primitive,
-                count,
+                if (vao.elements) {
+                    this.execElements(
+                        vao.primitive,
+                        vao.elementCount,
+                        vao.elementType!,
+                        0, // offset
+                        vao.instanceCount,
+                    );
+                } else {
+                    this.execArrays(
+                        vao.primitive,
+                        vao.count,
+                        0, // offset
+                        vao.instanceCount,
+                    );
+                }
+            },
+            execute: (primitive: Primitive, count: number, props: P) => {
+                this.updateUniforms(props, iter++);
+                gl.drawArrays(primitive, 0, count);
+            },
+        });
+
+        // If some vaos were bound
+        if (currVao) {
+            gl.bindVertexArray(null);
+        }
+
+        if (framebuffer) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
+
+        this.endBlend();
+        this.endStencil();
+        this.endDepth();
+
+        gl.useProgram(null);
+    }
+
+    locate(attributes: Attributes): Attributes {
+        return locate(this.gl, this.glProgram, attributes);
+    }
+
+    private execArrays(
+        primitive: Primitive,
+        count: number,
+        offset: number,
+        instanceCount: number,
+    ): void {
+        if (instanceCount) {
+            this.gl.drawArraysInstanced(
+                primitive,
                 offset,
-                0,
+                count,
+                instanceCount,
+            );
+        } else {
+            this.gl.drawArrays(primitive, offset, count);
+        }
+    }
+
+    private execElements(
+        primitive: Primitive,
+        count: number,
+        type: number,
+        offset: number,
+        instCount: number,
+    ): void {
+        if (instCount) {
+            this.gl.drawElementsInstanced(
+                primitive,
+                count,
+                type,
+                offset,
+                instCount,
+            );
+        } else {
+            this.gl.drawElements(
+                primitive,
+                count,
+                type,
+                offset,
             );
         }
     }
 
-    private bindVao(vao: VertexArray): void {
-        if (vao !== this.currVao) {
-            this.currVao = vao;
-            this.gl.bindVertexArray(vao.glVertexArray);
-        }
-    }
-
-    private unbindVao(): void {
-        this.gl.bindVertexArray(null);
-        this.currVao = null;
-    }
-
-    private bindFbo(fbo: Framebuffer): void {
-        const gl = this.gl;
-        if (fbo !== this.currFbo) {
-            this.currFbo = fbo;
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer);
-            gl.drawBuffers(fbo.glColorAttachments);
-        }
-    }
-
-    private unbindFbo(): void {
-        const gl = this.gl;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        this.currFbo = null;
-    }
 
     private beginDepth(): void {
         const { gl, depthDescr } = this;
@@ -604,44 +632,6 @@ export class Command<P = void> {
         if (blendDescr) { gl.disable(gl.BLEND); }
     }
 
-    private drawArrays(
-        primitive: number,
-        count: number,
-        offset: number,
-        instCount: number,
-    ): void {
-        if (instCount) {
-            this.gl.drawArraysInstanced(primitive, offset, count, instCount);
-        } else {
-            this.gl.drawArrays(primitive, offset, count);
-        }
-    }
-
-    private drawElements(
-        primitive: number,
-        count: number,
-        type: number,
-        offset: number,
-        instCount: number,
-    ): void {
-        const gl = this.gl;
-        if (instCount) {
-            gl.drawElementsInstanced(
-                primitive,
-                count,
-                type,
-                offset,
-                instCount,
-            );
-        } else {
-            gl.drawElements(
-                primitive,
-                count,
-                type,
-                offset,
-            );
-        }
-    }
 
     private updateUniforms(props: P, index: number): void {
         const gl = this.gl;
@@ -784,10 +774,9 @@ export class Command<P = void> {
 function locate(
     gl: WebGL2RenderingContext,
     glProgram: WebGLProgram,
-    { attributes, elements }: VertexArrayProps,
-): VertexArrayProps {
-    type Attributes = VertexArrayProps["attributes"];
-    const locatedAttributes = Object.entries(attributes)
+    attributes: Attributes,
+): Attributes {
+    return Object.entries(attributes)
         .reduce<Attributes>((accum, [identifier, definition]) => {
             if (INT_PATTERN.test(identifier)) {
                 accum[identifier] = definition;
@@ -800,7 +789,6 @@ function locate(
             }
             return accum;
         }, {});
-    return { attributes: locatedAttributes, elements };
 }
 
 function access<P, R>(

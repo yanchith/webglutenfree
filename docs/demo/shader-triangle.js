@@ -1,4 +1,4 @@
-import { Device, Command } from "./lib/glutenfree.es.js";
+import { Device, Command, Primitive } from "./lib/glutenfree.es.js";
 
 const dev = Device.mount();
 
@@ -33,7 +33,6 @@ const cmd = Command.create(dev, {
             f_color = v_color;
         }
     `,
-    count: 150,
 });
 
-cmd.execute();
+cmd.execute(Primitive.TRIANGLES, 150, 0);

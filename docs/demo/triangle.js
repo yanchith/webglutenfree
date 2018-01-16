@@ -1,4 +1,4 @@
-import { Device, Command } from "./lib/glutenfree.es.js";
+import { Device, Command, VertexArray, Primitive } from "./lib/glutenfree.es.js";
 
 const dev = Device.mount();
 
@@ -27,20 +27,19 @@ const cmd = Command.create(dev, {
             f_color = v_color;
         }
     `,
-    data: {
-        attributes: {
-            a_position: [
-                [-0.3, -0.5],
-                [0.3, -0.5],
-                [0, 0.5],
-            ],
-            a_color: [
-                [1, 0, 0, 1],
-                [0, 1, 0, 1],
-                [0, 0, 1, 1],
-            ],
-        },
-    },
 });
 
-cmd.execute();
+const data = VertexArray.create(dev, Primitive.TRIANGLES, cmd.locate({
+    a_position: [
+        [-0.3, -0.5],
+        [0.3, -0.5],
+        [0, 0.5],
+    ],
+    a_color: [
+        [1, 0, 0, 1],
+        [0, 1, 0, 1],
+        [0, 0, 1, 1],
+    ],
+}));
+
+cmd.draw(data);

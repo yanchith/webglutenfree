@@ -57,13 +57,15 @@ export class ElementBuffer<T extends ElementBufferType> {
         data: ElementArray,
     ): ElementBuffer<ElementBufferType.UNSIGNED_INT> {
         if (array.isArray2(data)) {
-            const s = array.shape2(data);
-            assert.range(s[1], 2, 3, "element tuple length");
-            const r = array.ravel2(data, s);
-            const prim = s[1] === 3 ? Primitive.TRIANGLES : Primitive.LINES;
-            return ElementBuffer.fromUint32Array(dev, r, prim);
+            const shape = array.shape2(data);
+            assert.range(shape[1], 2, 3, "element tuple length");
+            const ravel = array.ravel2(data, shape);
+            const primitive = shape[1] === 3
+                ? Primitive.TRIANGLES
+                : Primitive.LINES;
+            return ElementBuffer.fromUint32Array(dev, primitive, ravel);
         }
-        return ElementBuffer.fromUint32Array(dev, data, Primitive.POINTS);
+        return ElementBuffer.fromUint32Array(dev, Primitive.POINTS, data);
     }
 
     /**
@@ -71,8 +73,8 @@ export class ElementBuffer<T extends ElementBufferType> {
      */
     static fromUint16Array(
         dev: WebGL2RenderingContext | Device,
-        data: number[] | Uint16Array,
         primitive: Primitive,
+        data: number[] | Uint16Array,
     ): ElementBuffer<ElementBufferType.UNSIGNED_SHORT> {
         const gl = dev instanceof Device ? dev.gl : dev;
         const arr = Array.isArray(data) ? new Uint16Array(data) : data;
@@ -89,8 +91,8 @@ export class ElementBuffer<T extends ElementBufferType> {
      */
     static fromUint32Array(
         dev: WebGL2RenderingContext | Device,
-        data: number[] | Uint32Array,
         primitive: Primitive,
+        data: number[] | Uint32Array,
     ): ElementBuffer<ElementBufferType.UNSIGNED_INT> {
         const gl = dev instanceof Device ? dev.gl : dev;
         const arr = Array.isArray(data) ? new Uint32Array(data) : data;

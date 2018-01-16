@@ -1,4 +1,9 @@
-import { Device, Command, VertexBuffer } from "./lib/glutenfree.es.js";
+import {
+    Device,
+    Command,
+    VertexArray,
+    VertexBuffer,
+} from "./lib/glutenfree.es.js";
 
 const dev = Device.mount();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
@@ -60,56 +65,54 @@ const cmd = Command.create(dev, {
             value: () => mat4.rotateZ(view, view, 0.01),
         },
     },
-    data: {
-        attributes: {
-            a_position: [
-                [1, 1],
-                [-1, 1],
-                [1, -1],
-                [-1, -1],
-            ],
-            a_offset: {
-                type: "pointer",
-                buffer: VertexBuffer.fromFloat32Array(dev, [
-                    3, 3,
-                    0, 3,
-                    3, 0,
-                    -3, -3,
-                    0, -3,
-                    -3, 0,
-                    0, 0,
-                ]),
-                count: 7,
-                size: 2,
-                divisor: 1,
-            },
-            a_color: {
-                type: "pointer",
-                buffer: VertexBuffer.fromUint8Array(dev, [
-                    255, 0, 0, 255,
-                    0, 255, 0, 255,
-                    0, 0, 255, 255,
-                    0, 255, 255, 255,
-                    255, 0, 255, 255,
-                    255, 255, 0, 255,
-                    255, 255, 255, 255,
-                ]),
-                count: 7,
-                size: 4,
-                normalized: true,
-                divisor: 1,
-            },
-        },
-        elements: [
-            [0, 3, 2],
-            [1, 3, 0],
-        ],
-    },
 });
 
-const loop = time => {
+const geometry = VertexArray.createIndexed(dev, [
+    [0, 3, 2],
+    [1, 3, 0],
+], cmd.locate({
+    a_position: [
+        [1, 1],
+        [-1, 1],
+        [1, -1],
+        [-1, -1],
+    ],
+    a_offset: {
+        type: "pointer",
+        buffer: VertexBuffer.fromFloat32Array(dev, [
+            3, 3,
+            0, 3,
+            3, 0,
+            -3, -3,
+            0, -3,
+            -3, 0,
+            0, 0,
+        ]),
+        count: 7,
+        size: 2,
+        divisor: 1,
+    },
+    a_color: {
+        type: "pointer",
+        buffer: VertexBuffer.fromUint8Array(dev, [
+            255, 0, 0, 255,
+            0, 255, 0, 255,
+            0, 0, 255, 255,
+            0, 255, 255, 255,
+            255, 0, 255, 255,
+            255, 255, 0, 255,
+            255, 255, 255, 255,
+        ]),
+        count: 7,
+        size: 4,
+        normalized: true,
+        divisor: 1,
+    },
+}))
+
+const loop = () => {
     dev.clearColor(0, 0, 0, 1);
-    cmd.execute();
+    cmd.draw(geometry);
     window.requestAnimationFrame(loop);
 }
 
