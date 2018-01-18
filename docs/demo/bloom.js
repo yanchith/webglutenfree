@@ -43,14 +43,6 @@ const bloomPingFbo = Framebuffer.create(dev, { width, height, color: bloomPingTe
 const bloomPongTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
 const bloomPongFbo = Framebuffer.create(dev, { width, height, color: bloomPongTex });
 
-const screenspaceGeometry = VertexArray.indexed(dev, square.elements, {
-    0: square.positions,
-    1: square.texCoords,
-});
-
-const cubeGeometry = VertexArray.indexed(dev, cube.elements, {
-    0: cube.positions,
-});
 
 const view = mat4.create();
 
@@ -259,6 +251,23 @@ const tonemap = Command.create(dev, {
         },
     },
 });
+
+
+const screenspaceGeometry = VertexArray.indexed(
+    dev,
+    square.elements,
+    {
+        0: square.positions,
+        1: square.texCoords,
+    },
+);
+
+const cubeGeometry = VertexArray.indexed(
+    dev,
+    cube.elements,
+    { 0: cube.positions },
+);
+
 
 const nBloomPasses = Math.max(0, N_BLOOM_PASSES);
 

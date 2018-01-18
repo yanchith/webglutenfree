@@ -144,13 +144,17 @@ const drawOutlines = Command.create(dev, {
     },
 });
 
-const cubeGeometry = VertexArray.indexed(dev, cube.elements, drawObjects.locate({
-    a_position: cube.positions,
-}));
+const cubeGeometry = VertexArray.indexed(
+    dev,
+    cube.elements,
+    drawObjects.locate({ a_position: cube.positions }),
+);
 
-const bunnyGeometry = VertexArray.indexed(dev, bunny.elements, drawObjects.locate({
-    a_position: bunny.positions,
-}));
+const bunnyGeometry = VertexArray.indexed(
+    dev,
+    bunny.elements,
+    drawObjects.locate({ a_position: bunny.positions }),
+);
 
 const cubeModel = mat4.fromScaling(mat4.create(), [0.5, 0.5, 0.5]);
 const bunnyModel = mat4.fromRotationTranslationScale(

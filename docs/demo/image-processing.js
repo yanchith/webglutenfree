@@ -126,12 +126,16 @@ async function run() {
         },
     });
 
-    const geometry = VertexArray.indexed(dev, square.elements, cmd.locate({
-        a_position: square.positions,
-        a_tex_coord: square.texCoords,
-    }))
+    const screenspaceGeometry = VertexArray.indexed(
+        dev,
+        square.elements,
+        cmd.locate({
+            a_position: square.positions,
+            a_tex_coord: square.texCoords,
+        }),
+    );
 
-    cmd.execute(geometry);
+    cmd.execute(screenspaceGeometry);
 }
 
 run();

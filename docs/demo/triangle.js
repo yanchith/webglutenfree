@@ -29,17 +29,21 @@ const cmd = Command.create(dev, {
     `,
 });
 
-const data = VertexArray.create(dev, Primitive.TRIANGLES, cmd.locate({
-    a_position: [
-        [-0.3, -0.5],
-        [0.3, -0.5],
-        [0, 0.5],
-    ],
-    a_color: [
-        [1, 0, 0, 1],
-        [0, 1, 0, 1],
-        [0, 0, 1, 1],
-    ],
-}));
+const geometry = VertexArray.create(
+    dev,
+    Primitive.TRIANGLES,
+    cmd.locate({
+        a_position: [
+            [-0.3, -0.5],
+            [0.3, -0.5],
+            [0, 0.5],
+        ],
+        a_color: [
+            [1, 0, 0, 1],
+            [0, 1, 0, 1],
+            [0, 0, 1, 1],
+        ],
+    }),
+);
 
-cmd.execute(data);
+cmd.execute(geometry);

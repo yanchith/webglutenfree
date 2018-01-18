@@ -67,48 +67,52 @@ const cmd = Command.create(dev, {
     },
 });
 
-const geometry = VertexArray.indexed(dev, [
-    [0, 3, 2],
-    [1, 3, 0],
-], cmd.locate({
-    a_position: [
-        [1, 1],
-        [-1, 1],
-        [1, -1],
-        [-1, -1],
+const geometry = VertexArray.indexed(
+    dev,
+    [
+        [0, 3, 2],
+        [1, 3, 0],
     ],
-    a_offset: {
-        type: "pointer",
-        buffer: VertexBuffer.fromFloat32Array(dev, [
-            3, 3,
-            0, 3,
-            3, 0,
-            -3, -3,
-            0, -3,
-            -3, 0,
-            0, 0,
-        ]),
-        count: 7,
-        size: 2,
-        divisor: 1,
-    },
-    a_color: {
-        type: "pointer",
-        buffer: VertexBuffer.fromUint8Array(dev, [
-            255, 0, 0, 255,
-            0, 255, 0, 255,
-            0, 0, 255, 255,
-            0, 255, 255, 255,
-            255, 0, 255, 255,
-            255, 255, 0, 255,
-            255, 255, 255, 255,
-        ]),
-        count: 7,
-        size: 4,
-        normalized: true,
-        divisor: 1,
-    },
-}))
+    cmd.locate({
+        a_position: [
+            [1, 1],
+            [-1, 1],
+            [1, -1],
+            [-1, -1],
+        ],
+        a_offset: {
+            type: "pointer",
+            buffer: VertexBuffer.fromFloat32Array(dev, [
+                3, 3,
+                0, 3,
+                3, 0,
+                -3, -3,
+                0, -3,
+                -3, 0,
+                0, 0,
+            ]),
+            count: 7,
+            size: 2,
+            divisor: 1,
+        },
+        a_color: {
+            type: "pointer",
+            buffer: VertexBuffer.fromUint8Array(dev, [
+                255, 0, 0, 255,
+                0, 255, 0, 255,
+                0, 0, 255, 255,
+                0, 255, 255, 255,
+                255, 0, 255, 255,
+                255, 255, 0, 255,
+                255, 255, 255, 255,
+            ]),
+            count: 7,
+            size: 4,
+            normalized: true,
+            divisor: 1,
+        },
+    }),
+);
 
 const loop = () => {
     dev.clearColor(0, 0, 0, 1);

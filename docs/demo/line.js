@@ -29,21 +29,25 @@ const cmd = Command.create(dev, {
     `,
 });
 
-const geometry = VertexArray.indexed(dev, [
-    [0, 1],
-    [1, 2],
-    [2, 0],
-], cmd.locate({
-    a_position: [
-        [-0.3, -0.5],
-        [0.3, -0.5],
-        [0, 0.5],
+const geometry = VertexArray.indexed(
+    dev,
+    [
+        [0, 1],
+        [1, 2],
+        [2, 0],
     ],
-    a_color: [
-        [1, 0, 0, 1],
-        [0, 1, 0, 1],
-        [0, 0, 1, 1],
-    ],
-}));
+    cmd.locate({
+        a_position: [
+            [-0.3, -0.5],
+            [0.3, -0.5],
+            [0, 0.5],
+        ],
+        a_color: [
+            [1, 0, 0, 1],
+            [0, 1, 0, 1],
+            [0, 0, 1, 1],
+        ],
+    }),
+);
 
 cmd.execute(geometry);

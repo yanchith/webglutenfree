@@ -58,13 +58,17 @@ const cmd = Command.create(dev, {
     },
 });
 
-const cubeGeometry = VertexArray.indexed(dev, cube.elements, cmd.locate({
-    a_position: cube.positions,
-}));
+const cubeGeometry = VertexArray.indexed(
+    dev,
+    cube.elements,
+    cmd.locate({ a_position: cube.positions }),
+);
 
-const bunnyGeometry = VertexArray.indexed(dev, bunny.elements, cmd.locate({
-    a_position: bunny.positions,
-}));
+const bunnyGeometry = VertexArray.indexed(
+    dev,
+    bunny.elements,
+    cmd.locate({ a_position: bunny.positions }),
+);
 
 const cubeModelMatrix = mat4.fromScaling(mat4.create(), [0.5, 0.5, 0.5]);
 const bunnyModelMatrix = mat4.fromRotationTranslationScale(

@@ -30,11 +30,6 @@ const pongFbo = Framebuffer.create(dev, { width, height, color: pongTex });
 
 const view = mat4.create();
 
-const screenspaceGeometry = VertexArray.indexed(dev, square.elements, {
-    0: square.positions,
-    1: square.texCoords,
-});
-
 const draw = Command.create(dev, {
     vert: `#version 300 es
         precision mediump float;
@@ -85,10 +80,6 @@ const draw = Command.create(dev, {
         },
     },
 });
-
-const bunnyGeometry = VertexArray.indexed(dev, bunny.elements, draw.locate({
-    a_position: bunny.positions,
-}));
 
 const blend = Command.create(dev, {
     vert: `#version 300 es
@@ -174,6 +165,23 @@ const copyToCanvas = Command.create(dev, {
         }
     },
 })
+
+
+const screenspaceGeometry = VertexArray.indexed(
+    dev,
+    square.elements,
+    {
+        0: square.positions,
+        1: square.texCoords,
+    },
+);
+
+
+const bunnyGeometry = VertexArray.indexed(
+    dev,
+    bunny.elements,
+    draw.locate({ a_position: bunny.positions }),
+);
 
 
 let ping = {

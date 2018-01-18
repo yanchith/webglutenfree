@@ -70,9 +70,11 @@ const cmd = Command.create(dev, {
     },
 });
 
-const geometry = VertexArray.indexed(dev, bunny.elements, cmd.locate({
-    a_position: bunny.positions,
-}));
+const geometry = VertexArray.indexed(
+    dev,
+    bunny.elements,
+    cmd.locate({ a_position: bunny.positions }),
+);
 
 const loop = time => {
     dev.clearColorAndDepth(0, 0, 0, 1, 1);

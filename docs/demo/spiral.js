@@ -76,10 +76,14 @@ const cmd = Command.create(dev, {
     },
 });
 
-const geometry = VertexArray.create(dev, Primitive.TRIANGLES, cmd.locate({
-    a_position: spiral.positions,
-    a_normal: spiral.normals,
-}));
+const geometry = VertexArray.create(
+    dev,
+    Primitive.TRIANGLES,
+    cmd.locate({
+        a_position: spiral.positions,
+        a_normal: spiral.normals,
+    }),
+);
 
 const loop = time => {
     dev.clearColorAndDepth(0, 0, 0, 1, 1);
