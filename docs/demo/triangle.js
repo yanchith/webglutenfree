@@ -42,4 +42,4 @@ const data = VertexArray.create(dev, Primitive.TRIANGLES, cmd.locate({
     ],
 }));
 
-cmd.draw(data);
+cmd.execute(data);

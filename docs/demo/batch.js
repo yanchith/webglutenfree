@@ -58,11 +58,11 @@ const cmd = Command.create(dev, {
     },
 });
 
-const cubeGeometry = VertexArray.createIndexed(dev, cube.elements, cmd.locate({
+const cubeGeometry = VertexArray.indexed(dev, cube.elements, cmd.locate({
     a_position: cube.positions,
 }));
 
-const bunnyGeometry = VertexArray.createIndexed(dev, bunny.elements, cmd.locate({
+const bunnyGeometry = VertexArray.indexed(dev, bunny.elements, cmd.locate({
     a_position: bunny.positions,
 }));
 
@@ -75,7 +75,7 @@ const bunnyModelMatrix = mat4.fromRotationTranslationScale(
 );
 
 dev.clearColor(0, 0, 0, 1);
-cmd.target(target => {
-    target.draw(cubeGeometry, { modelMatrix: cubeModelMatrix });
-    target.draw(bunnyGeometry, { modelMatrix: bunnyModelMatrix });
+cmd.batch(execute => {
+    execute(cubeGeometry, { modelMatrix: cubeModelMatrix });
+    execute(bunnyGeometry, { modelMatrix: bunnyModelMatrix });
 })

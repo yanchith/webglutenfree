@@ -67,7 +67,7 @@ const cmd = Command.create(dev, {
     },
 });
 
-const geometry = VertexArray.createIndexed(dev, [
+const geometry = VertexArray.indexed(dev, [
     [0, 3, 2],
     [1, 3, 0],
 ], cmd.locate({
@@ -112,7 +112,7 @@ const geometry = VertexArray.createIndexed(dev, [
 
 const loop = () => {
     dev.clearColor(0, 0, 0, 1);
-    cmd.draw(geometry);
+    cmd.execute(geometry);
     window.requestAnimationFrame(loop);
 }
 

@@ -30,7 +30,7 @@ const pongFbo = Framebuffer.create(dev, { width, height, color: pongTex });
 
 const view = mat4.create();
 
-const screenspaceGeometry = VertexArray.createIndexed(dev, square.elements, {
+const screenspaceGeometry = VertexArray.indexed(dev, square.elements, {
     0: square.positions,
     1: square.texCoords,
 });
@@ -86,7 +86,7 @@ const draw = Command.create(dev, {
     },
 });
 
-const bunnyGeometry = VertexArray.createIndexed(dev, bunny.elements, draw.locate({
+const bunnyGeometry = VertexArray.indexed(dev, bunny.elements, draw.locate({
     a_position: bunny.positions,
 }));
 
@@ -198,18 +198,18 @@ const loop = time => {
     */
 
     // We first draw the scene to a "newFrame" fbo
-    draw.target(target => {
-        target.draw(bunnyGeometry, { time });
+    draw.batch(execute => {
+        execute(bunnyGeometry, { time });
     }, newFrameFbo);
 
     // Then blend newFrame and ping to pong proportionate to PERSISTENCE_FACTOR
-    blend.target(target => {
-        target.draw(screenspaceGeometry, { newFrame: newFrameTex, ping: ping.tex });
+    blend.batch(execute => {
+        execute(screenspaceGeometry, { newFrame: newFrameTex, ping: ping.tex });
     }, pong.fbo);
 
     // Lastly copy the contents of pong to canvas
-    copyToCanvas.target(target => {
-        target.draw(screenspaceGeometry, { source: pong.tex });
+    copyToCanvas.batch(execute => {
+        execute(screenspaceGeometry, { source: pong.tex });
     });
 
     // ... and swap the fbos

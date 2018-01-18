@@ -13,11 +13,6 @@ export type Access<P, R> = R | ((props: P, index: number) => R);
 export type StencilOrSeparate<T> = T | { front: T, back: T };
 export type BlendOrSeparate<T> = T | { rgb: T, alpha: T };
 
-export interface DrawTarget<P> {
-    draw(vao: VertexArray, props: P): void;
-    execute(primitive: Primitive, count: number, props: P): void;
-}
-
 export interface CommandProps<P> {
     vert: string;
     frag: string;
@@ -270,7 +265,7 @@ export interface ExecuteOptions<P> {
     offset?: number;
 }
 
-export class Command<P = void> implements DrawTarget<P> {
+export class Command<P = void> {
 
     static create<P = void>(
         dev: WebGL2RenderingContext | Device,
@@ -375,7 +370,7 @@ export class Command<P = void> implements DrawTarget<P> {
         this.blendDescr = blendDescr;
     }
 
-    draw(vao: VertexArray, props: P): void {
+    execute(vao: VertexArray, props: P): void {
         const { gl, glProgram } = this;
 
         gl.useProgram(glProgram);
@@ -385,28 +380,33 @@ export class Command<P = void> implements DrawTarget<P> {
         this.beginBlend();
 
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-        gl.bindVertexArray(vao.glVertexArray);
-
         this.updateUniforms(props, 0);
-        if (vao.elements) {
-            this.execElements(
-                vao.primitive,
-                vao.elementCount,
-                vao.elementType!,
-                0, // offset
-                vao.instanceCount,
-            );
+
+        if (vao.isEmpty()) {
+            gl.drawArrays(vao.primitive, 0 /* offset */, vao.count);
         } else {
-            this.execArrays(
-                vao.primitive,
-                vao.count,
-                0, // offset
-                vao.instanceCount,
-            );
+            gl.bindVertexArray(vao.glVertexArray);
+
+            if (vao.elements) {
+                this.execElements(
+                    vao.primitive,
+                    vao.elementCount,
+                    vao.elementType!,
+                    0, // offset
+                    vao.instanceCount,
+                );
+            } else {
+                this.execArrays(
+                    vao.primitive,
+                    vao.count,
+                    0, // offset
+                    vao.instanceCount,
+                );
+            }
+
+            gl.bindVertexArray(null);
         }
 
-        gl.bindVertexArray(null);
 
         this.endBlend();
         this.endStencil();
@@ -415,28 +415,10 @@ export class Command<P = void> implements DrawTarget<P> {
         gl.useProgram(null);
     }
 
-    execute(primitive: Primitive, count: number, props: P): void {
-        const { gl, glProgram } = this;
-
-        gl.useProgram(glProgram);
-
-        this.beginDepth();
-        this.beginStencil();
-        this.beginBlend();
-
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-        this.updateUniforms(props, 0);
-        gl.drawArrays(primitive, 0, count);
-
-        this.endBlend();
-        this.endStencil();
-        this.endDepth();
-
-        gl.useProgram(null);
-    }
-
-    target(cb: (t: DrawTarget<P>) => void, framebuffer?: Framebuffer): void {
+    batch(
+        cb: (b: (vao: VertexArray, props: P) => void) => void,
+        framebuffer?: Framebuffer,
+    ): void {
         const { gl, glProgram } = this;
 
         // When batching (passing in an array of props), the price for
@@ -462,13 +444,19 @@ export class Command<P = void> implements DrawTarget<P> {
 
         let iter = 0;
         let currVao: VertexArray | null = null;
-        cb({
-            draw: (vao: VertexArray, props: P) => {
+        cb((vao: VertexArray, props: P) => {
+            this.updateUniforms(props, iter++);
+            if (vao.isEmpty()) {
+                if (currVao) {
+                    gl.bindVertexArray(null);
+                    currVao = null;
+                }
+                gl.drawArrays(vao.primitive, 0 /* offset */, vao.count);
+            } else {
                 if (vao !== currVao) {
                     gl.bindVertexArray(vao.glVertexArray);
                     currVao = vao;
                 }
-                this.updateUniforms(props, iter++);
 
                 if (vao.elements) {
                     this.execElements(
@@ -486,11 +474,7 @@ export class Command<P = void> implements DrawTarget<P> {
                         vao.instanceCount,
                     );
                 }
-            },
-            execute: (primitive: Primitive, count: number, props: P) => {
-                this.updateUniforms(props, iter++);
-                gl.drawArrays(primitive, 0, count);
-            },
+            }
         });
 
         // If some vaos were bound

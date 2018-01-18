@@ -1,4 +1,4 @@
-import { Device, Command, Primitive } from "./lib/glutenfree.es.js";
+import { Device, Command, VertexArray, Primitive } from "./lib/glutenfree.es.js";
 
 const dev = Device.mount();
 
@@ -35,4 +35,6 @@ const cmd = Command.create(dev, {
     `,
 });
 
-cmd.execute(Primitive.TRIANGLES, 150, 0);
+const geometry = VertexArray.empty(dev, Primitive.TRIANGLES, 150);
+
+cmd.execute(geometry);

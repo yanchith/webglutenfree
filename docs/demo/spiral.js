@@ -83,7 +83,7 @@ const geometry = VertexArray.create(dev, Primitive.TRIANGLES, cmd.locate({
 
 const loop = time => {
     dev.clearColorAndDepth(0, 0, 0, 1, 1);
-    cmd.draw(geometry, time);
+    cmd.execute(geometry, time);
     window.requestAnimationFrame(loop);
 }
 

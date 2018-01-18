@@ -43,12 +43,13 @@ const bloomPingFbo = Framebuffer.create(dev, { width, height, color: bloomPingTe
 const bloomPongTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
 const bloomPongFbo = Framebuffer.create(dev, { width, height, color: bloomPongTex });
 
-const screenspace = VertexArray.create(dev, {
-    attributes: {
-        0: square.positions,
-        1: square.texCoords,
-    },
-    elements: square.elements,
+const screenspaceGeometry = VertexArray.indexed(dev, square.elements, {
+    0: square.positions,
+    1: square.texCoords,
+});
+
+const cubeGeometry = VertexArray.indexed(dev, cube.elements, {
+    0: cube.positions,
 });
 
 const view = mat4.create();
@@ -102,10 +103,6 @@ const scene = Command.create(dev, {
             ),
         },
     },
-    data: {
-        attributes: { a_position: cube.positions },
-        elements: cube.elements,
-    },
 });
 
 const split = Command.create(dev, {
@@ -149,7 +146,6 @@ const split = Command.create(dev, {
             value: initialTex,
         },
     },
-    data: screenspace,
 });
 
 const bloom = Command.create(dev, {
@@ -209,7 +205,6 @@ const bloom = Command.create(dev, {
             value: ({ source }) => source,
         },
     },
-    data: screenspace,
 });
 
 const tonemap = Command.create(dev, {
@@ -263,7 +258,6 @@ const tonemap = Command.create(dev, {
             value: bloomPingTex,
         },
     },
-    data: screenspace,
 });
 
 const nBloomPasses = Math.max(0, N_BLOOM_PASSES);
@@ -278,37 +272,49 @@ const loop = time => {
     dev.clearColorAndDepth(0, 0, 0, 1, 1, initialFbo);
 
     // Render geometry into texture
-    scene.execute({ time }, { framebuffer: initialFbo });
+    scene.batch(execute => {
+        execute(cubeGeometry, { time });
+    }, initialFbo);
 
     // Split color and brightness to 2 render targets (splitColor, splitBright)
-    split.execute(void 0, { framebuffer: splitFbo });
+    split.batch(execute => {
+        execute(screenspaceGeometry);
+    }, splitFbo);
 
     if (nBloomPasses) {
         // Do first 2 bloom passes: splitBright -> bloomWrite -> bloomRead
-        bloom.execute({
-            source: splitBrightTex,
-            direction: HORIZONTAL,
-        }, { framebuffer: bloomPongFbo });
-        bloom.execute({
-            source: bloomPongTex,
-            direction: VERTICAL,
-        }, { framebuffer: bloomPingFbo });
+        bloom.batch(execute => {
+            execute(screenspaceGeometry, {
+                source: splitBrightTex,
+                direction: HORIZONTAL,
+            });
+        }, bloomPongFbo);
+        bloom.batch(execute => {
+            execute(screenspaceGeometry, {
+                source: bloomPongTex,
+                direction: VERTICAL,
+            });
+        }, bloomPingFbo);
 
         // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
         for (let i = 1; i < nBloomPasses; i++) {
-            bloom.execute({
-                source: bloomPingTex,
-                direction: HORIZONTAL,
-            }, { framebuffer: bloomPongFbo });
-            bloom.execute({
-                source: bloomPongTex,
-                direction: VERTICAL,
-            }, { framebuffer: bloomPingFbo });
+            bloom.batch(execute => {
+                execute(screenspaceGeometry, {
+                    source: bloomPingTex,
+                    direction: HORIZONTAL,
+                });
+            }, bloomPongFbo);
+            bloom.batch(execute => {
+                execute(screenspaceGeometry, {
+                    source: bloomPongTex,
+                    direction: VERTICAL,
+                });
+            }, bloomPingFbo);
         }
     }
 
     // Blend together blurred highlights with original color and perform tonemapping
-    tonemap.execute();
+    tonemap.execute(screenspaceGeometry);
 
     window.requestAnimationFrame(loop);
 }

@@ -126,12 +126,12 @@ async function run() {
         },
     });
 
-    const geometry = VertexArray.createIndexed(dev, square.elements, cmd.locate({
+    const geometry = VertexArray.indexed(dev, square.elements, cmd.locate({
         a_position: square.positions,
         a_tex_coord: square.texCoords,
     }))
 
-    cmd.draw(geometry);
+    cmd.execute(geometry);
 }
 
 run();

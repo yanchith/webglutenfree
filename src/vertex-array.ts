@@ -126,12 +126,12 @@ export class VertexArray {
         return new VertexArray(gl, primitive, attrs, count, instanceCount);
     }
 
-    static createIndexed(
+    static indexed(
         dev: Device,
         elements: ElementArray | ElementBuffer<ElementBufferType>,
         attributes: Attributes,
     ): VertexArray {
-        const gl = dev instanceof Device ? dev.gl : dev;
+        const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
                 if (!INT_PATTERN.test(locationStr)) {
@@ -168,6 +168,11 @@ export class VertexArray {
             instanceCount,
             elementBuffer,
         );
+    }
+
+    static empty(dev: Device, primitive: Primitive, count: number): VertexArray {
+        const gl = dev.gl;
+        return new VertexArray(gl, primitive, [], count, 0);
     }
 
     readonly primitive: Primitive;
@@ -215,6 +220,9 @@ export class VertexArray {
      * Force vertex array reinitialization.
      */
     init(): void {
+        // Do not create the gl vao if there are no buffers to bind
+        if (this.isEmpty()) { return; }
+
         const { gl, attributes, elementBuffer } = this;
         const vao = gl.createVertexArray();
 
@@ -279,7 +287,17 @@ export class VertexArray {
         const { gl, glVertexArray, attributes, elementBuffer } = this;
         if (elementBuffer) { elementBuffer.restore(); }
         attributes.forEach(attr => attr.buffer.restore());
-        if (!gl.isVertexArray(glVertexArray)) { this.init(); }
+        // If we have no attributes nor elements, there is no need to restore
+        // any GPU state
+        if (!this.isEmpty() && !gl.isVertexArray(glVertexArray)) {
+            this.init();
+        }
+    }
+
+    isEmpty(): boolean {
+        // IF we have either attributes or elements, this geometry can not
+        // longer be considered empty.
+        return !this.elementBuffer && !this.attributes.length;
     }
 }
 

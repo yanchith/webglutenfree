@@ -144,11 +144,11 @@ const drawOutlines = Command.create(dev, {
     },
 });
 
-const cubeGeometry = VertexArray.createIndexed(dev, cube.elements, drawObjects.locate({
+const cubeGeometry = VertexArray.indexed(dev, cube.elements, drawObjects.locate({
     a_position: cube.positions,
 }));
 
-const bunnyGeometry = VertexArray.createIndexed(dev, bunny.elements, drawObjects.locate({
+const bunnyGeometry = VertexArray.indexed(dev, bunny.elements, drawObjects.locate({
     a_position: bunny.positions,
 }));
 
@@ -165,13 +165,13 @@ const bunnyOutlnModel = mat4.scale(mat4.create(), bunnyModel, [1.04, 1.04, 1.04]
 
 const loop = time => {
     dev.clear(0, 0, 0, 1, 1, 0);
-    drawObjects.target(target => {
-        target.draw(cubeGeometry, { time, model: cubeModel });
-        target.draw(bunnyGeometry, { time, model: bunnyModel });
+    drawObjects.batch(execute => {
+        execute(cubeGeometry, { time, model: cubeModel });
+        execute(bunnyGeometry, { time, model: bunnyModel });
     });
-    drawOutlines.target(target => {
-        target.draw(cubeGeometry, { time, model: cubeOutlnModel });
-        target.draw(bunnyGeometry, { time, model: bunnyOutlnModel });
+    drawOutlines.batch(execute => {
+        execute(cubeGeometry, { time, model: cubeOutlnModel });
+        execute(bunnyGeometry, { time, model: bunnyOutlnModel });
     });
     window.requestAnimationFrame(loop);
 }

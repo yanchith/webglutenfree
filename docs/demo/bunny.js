@@ -70,13 +70,13 @@ const cmd = Command.create(dev, {
     },
 });
 
-const geometry = VertexArray.createIndexed(dev, bunny.elements, cmd.locate({
+const geometry = VertexArray.indexed(dev, bunny.elements, cmd.locate({
     a_position: bunny.positions,
 }));
 
 const loop = time => {
     dev.clearColorAndDepth(0, 0, 0, 1, 1);
-    cmd.draw(geometry, time);
+    cmd.execute(geometry, time);
     window.requestAnimationFrame(loop);
 }
 

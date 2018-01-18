@@ -453,44 +453,35 @@ class Command {
         const blendDescr = parseBlend(blend);
         return new Command(gl, prog, uniformDescrs, depthDescr, stencilDescr, blendDescr);
     }
-    draw(vao, props) {
+    execute(vao, props) {
         const { gl, glProgram } = this;
         gl.useProgram(glProgram);
         this.beginDepth();
         this.beginStencil();
         this.beginBlend();
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        gl.bindVertexArray(vao.glVertexArray);
         this.updateUniforms(props, 0);
-        if (vao.elements) {
-            this.execElements(vao.primitive, vao.elementCount, vao.elementType, 0, // offset
-            vao.instanceCount);
+        if (vao.isEmpty()) {
+            gl.drawArrays(vao.primitive, 0 /* offset */, vao.count);
         }
         else {
-            this.execArrays(vao.primitive, vao.count, 0, // offset
-            vao.instanceCount);
+            gl.bindVertexArray(vao.glVertexArray);
+            if (vao.elements) {
+                this.execElements(vao.primitive, vao.elementCount, vao.elementType, 0, // offset
+                vao.instanceCount);
+            }
+            else {
+                this.execArrays(vao.primitive, vao.count, 0, // offset
+                vao.instanceCount);
+            }
+            gl.bindVertexArray(null);
         }
-        gl.bindVertexArray(null);
         this.endBlend();
         this.endStencil();
         this.endDepth();
         gl.useProgram(null);
     }
-    execute(primitive, count, props) {
-        const { gl, glProgram } = this;
-        gl.useProgram(glProgram);
-        this.beginDepth();
-        this.beginStencil();
-        this.beginBlend();
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        this.updateUniforms(props, 0);
-        gl.drawArrays(primitive, 0, count);
-        this.endBlend();
-        this.endStencil();
-        this.endDepth();
-        gl.useProgram(null);
-    }
-    target(cb, framebuffer) {
+    batch(cb, framebuffer) {
         const { gl, glProgram } = this;
         // When batching (passing in an array of props), the price for
         // gl.useProgram, binding framebuffers, enabling depth/stencil tests and
@@ -510,13 +501,20 @@ class Command {
         gl.viewport(0, 0, width, height);
         let iter = 0;
         let currVao = null;
-        cb({
-            draw: (vao, props) => {
+        cb((vao, props) => {
+            this.updateUniforms(props, iter++);
+            if (vao.isEmpty()) {
+                if (currVao) {
+                    gl.bindVertexArray(null);
+                    currVao = null;
+                }
+                gl.drawArrays(vao.primitive, 0 /* offset */, vao.count);
+            }
+            else {
                 if (vao !== currVao) {
                     gl.bindVertexArray(vao.glVertexArray);
                     currVao = vao;
                 }
-                this.updateUniforms(props, iter++);
                 if (vao.elements) {
                     this.execElements(vao.primitive, vao.elementCount, vao.elementType, 0, // offset
                     vao.instanceCount);
@@ -525,11 +523,7 @@ class Command {
                     this.execArrays(vao.primitive, vao.count, 0, // offset
                     vao.instanceCount);
                 }
-            },
-            execute: (primitive, count, props) => {
-                this.updateUniforms(props, iter++);
-                gl.drawArrays(primitive, 0, count);
-            },
+            }
         });
         // If some vaos were bound
         if (currVao) {
@@ -1152,8 +1146,8 @@ class VertexArray {
             : 0;
         return new VertexArray(gl, primitive, attrs, count, instanceCount);
     }
-    static createIndexed(dev, elements, attributes) {
-        const gl = dev instanceof Device ? dev.gl : dev;
+    static indexed(dev, elements, attributes) {
+        const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
             if (!INT_PATTERN$1.test(locationStr)) {
@@ -1180,6 +1174,10 @@ class VertexArray {
             : 0;
         return new VertexArray(gl, elementBuffer.primitive, attrs, count, instanceCount, elementBuffer);
     }
+    static empty(dev, primitive, count) {
+        const gl = dev.gl;
+        return new VertexArray(gl, primitive, [], count, 0);
+    }
     constructor(gl, primitive, attributes, count, instanceCount, elements) {
         this.gl = gl;
         this.primitive = primitive;
@@ -1201,6 +1199,10 @@ class VertexArray {
      * Force vertex array reinitialization.
      */
     init() {
+        // Do not create the gl vao if there are no buffers to bind
+        if (this.isEmpty()) {
+            return;
+        }
         const { gl, attributes, elementBuffer } = this;
         const vao = gl.createVertexArray();
         gl.bindVertexArray(vao);
@@ -1242,9 +1244,16 @@ class VertexArray {
             elementBuffer.restore();
         }
         attributes.forEach(attr => attr.buffer.restore());
-        if (!gl.isVertexArray(glVertexArray)) {
+        // If we have no attributes nor elements, there is no need to restore
+        // any GPU state
+        if (!this.isEmpty() && !gl.isVertexArray(glVertexArray)) {
             this.init();
         }
+    }
+    isEmpty() {
+        // IF we have either attributes or elements, this geometry can not
+        // longer be considered empty.
+        return !this.elementBuffer && !this.attributes.length;
     }
 }
 // TODO: this could use some further refactoring. Currently its just former

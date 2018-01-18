@@ -29,7 +29,7 @@ const cmd = Command.create(dev, {
     `,
 });
 
-const geometry = VertexArray.createIndexed(dev, [
+const geometry = VertexArray.indexed(dev, [
     [0, 1],
     [1, 2],
     [2, 0],
@@ -46,4 +46,4 @@ const geometry = VertexArray.createIndexed(dev, [
     ],
 }));
 
-cmd.draw(geometry);
+cmd.execute(geometry);
