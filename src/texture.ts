@@ -347,6 +347,8 @@ export interface InternalFormatToDataFormat {
     [TextureInternalFormat.RGBA32I]: TextureDataFormat.RGBA_INTEGER;
     [TextureInternalFormat.RGBA16F]: TextureDataFormat.RGBA;
     [TextureInternalFormat.RGBA32F]: TextureDataFormat.RGBA;
+
+    [p: number]: TextureDataFormat;
 }
 
 export interface InternalFormatToDataType {
@@ -396,6 +398,8 @@ export interface InternalFormatToDataType {
     [TextureInternalFormat.RGBA32I]: TextureDataType.INT;
     [TextureInternalFormat.RGBA16F]: TextureDataType.HALF_FLOAT;
     [TextureInternalFormat.RGBA32F]: TextureDataType.FLOAT;
+
+    [p: number]: TextureDataType;
 }
 
 export interface InternalFormatToTypedArray {
@@ -445,4 +449,6 @@ export interface InternalFormatToTypedArray {
     [TextureInternalFormat.RGBA32I]: Int32Array;
     [TextureInternalFormat.RGBA16F]: Float32Array; // Float16Array
     [TextureInternalFormat.RGBA32F]: Float32Array;
+
+    [p: number]: ArrayBufferView;
 }
