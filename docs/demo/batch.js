@@ -78,8 +78,10 @@ const bunnyModelMatrix = mat4.fromRotationTranslationScale(
     [0.2, 0.2, 0.2],
 );
 
-dev.clearColor(0, 0, 0, 1);
-cmd.batch(execute => {
-    execute(cubeGeometry, { modelMatrix: cubeModelMatrix });
-    execute(bunnyGeometry, { modelMatrix: bunnyModelMatrix });
-})
+dev.target(rt => {
+    rt.clearColor(0, 0, 0, 1);
+    rt.batch(cmd, draw => {
+        draw(cubeGeometry, { modelMatrix: cubeModelMatrix });
+        draw(bunnyGeometry, { modelMatrix: bunnyModelMatrix });
+    });
+});

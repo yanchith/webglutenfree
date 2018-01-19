@@ -195,9 +195,6 @@ let pong = {
 }
 
 const loop = time => {
-    dev.clearColorAndDepth(0, 0, 0, 1, 1, newFrameFbo);
-    dev.clearColor(0, 0, 0, 1);
-
     /*
 
     By repeating the following process, we gain a buildup of past frame memory
@@ -206,18 +203,24 @@ const loop = time => {
     */
 
     // We first draw the scene to a "newFrame" fbo
-    draw.batch(execute => {
-        execute(bunnyGeometry, { time });
-    }, newFrameFbo);
+    newFrameFbo.target(rt => {
+        rt.clearColorAndDepth(0, 0, 0, 1, 1);
+        rt.draw(draw, bunnyGeometry, { time });
+    });
 
     // Then blend newFrame and ping to pong proportionate to PERSISTENCE_FACTOR
-    blend.batch(execute => {
-        execute(screenspaceGeometry, { newFrame: newFrameTex, ping: ping.tex });
-    }, pong.fbo);
+    pong.fbo.target(rt => {
+        rt.draw(
+            blend,
+            screenspaceGeometry,
+            { newFrame: newFrameTex, ping: ping.tex },
+        );
+    });
 
     // Lastly copy the contents of pong to canvas
-    copyToCanvas.batch(execute => {
-        execute(screenspaceGeometry, { source: pong.tex });
+    dev.target(rt => {
+        rt.clearColor(0, 0, 0, 1);
+        rt.draw(copyToCanvas, screenspaceGeometry, { source: pong.tex });
     });
 
     // ... and swap the fbos

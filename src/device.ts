@@ -1,4 +1,4 @@
-import { Framebuffer } from "./framebuffer";
+import { Target } from "./target";
 
 export interface DeviceOptions {
     pixelRatio?: number;
@@ -94,12 +94,26 @@ export class Device {
         return dev;
     }
 
+    readonly gl: WebGL2RenderingContext;
+    readonly canvas: HTMLCanvasElement;
+
+    private explicitPixelRatio?: number;
+    private explicitViewport?: [number, number];
+
+    private backbufferTarget: Target;
+
     private constructor(
-        readonly gl: WebGL2RenderingContext,
-        readonly canvas: HTMLCanvasElement,
-        private explicitPixelRatio?: number,
-        private explicitViewport?: [number, number],
-    ) { }
+        gl: WebGL2RenderingContext,
+        canvas: HTMLCanvasElement,
+        explicitPixelRatio?: number,
+        explicitViewport?: [number, number],
+    ) {
+        this.gl = gl;
+        this.canvas = canvas;
+        this.explicitPixelRatio = explicitPixelRatio;
+        this.explicitViewport = explicitViewport;
+        this.backbufferTarget = new Target(gl, [gl.BACK]);
+    }
 
     /**
      * Return width of the gl drawing buffer.
@@ -169,142 +183,7 @@ export class Device {
         if (height !== canvas.height) { canvas.height = height; }
     }
 
-    /**
-     * Clear the color buffer to provided color. Optionally, clear color buffers
-     * attached to a framebuffer instead.
-     */
-    clearColor(
-        r: number,
-        g: number,
-        b: number,
-        a: number,
-        fbo?: Framebuffer,
-    ): void {
-        const gl = this.gl;
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
-        gl.clearColor(r, g, b, a);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
-    }
-
-    /**
-     * Clear the depth buffer to provided depth. Optionally, clear depth buffer
-     * attached to a framebuffer instead.
-     */
-    clearDepth(depth: number, fbo?: Framebuffer): void {
-        const gl = this.gl;
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
-        gl.clearDepth(depth);
-        gl.clear(gl.DEPTH_BUFFER_BIT);
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
-    }
-
-    /**
-     * Clear the stencil buffer to provided stencil. Optionally, clear stencil
-     * buffer attached to a framebuffer instead.
-     */
-    clearStencil(stencil: number, fbo?: Framebuffer): void {
-        const gl = this.gl;
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
-        gl.clearStencil(stencil);
-        gl.clear(gl.STENCIL_BUFFER_BIT);
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
-    }
-
-    /**
-     * Clear the color buffers and depth buffer to provided color and depth.
-     * Optionally, clear buffers attached to a framebuffer instead.
-     *
-     * This is equivalent to but more efficient than:
-     *   device.clearColor()
-     *   device.clearDepth()
-     */
-    clearColorAndDepth(
-        r: number,
-        g: number,
-        b: number,
-        a: number,
-        depth: number,
-        fbo?: Framebuffer,
-    ): void {
-        const gl = this.gl;
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
-        gl.clearColor(r, g, b, a);
-        gl.clearDepth(depth);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
-    }
-
-    /**
-     * Clear the depth buffer and stencil buffer to provided depth and stencil.
-     * Optionally, clear buffers attached to a framebuffer instead.
-     *
-     * This is equivalent to but more efficient than:
-     *   device.clearDepth()
-     *   device.clearStencil()
-     */
-    clearDepthAndStencil(
-        depth: number,
-        stencil: number,
-        fbo?: Framebuffer,
-    ): void {
-        const gl = this.gl;
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
-        gl.clearDepth(depth);
-        gl.clearStencil(stencil);
-        gl.clear(gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
-    }
-
-    /**
-     * Clear the color buffers and stencil buffer to provided color and stencil.
-     * Optionally, clear buffers attached to a framebuffer instead.
-     *
-     * This is equivalent to but more efficient than:
-     *   device.clearColor()
-     *   device.clearStencil()
-     */
-    clearColorAndStencil(
-        r: number,
-        g: number,
-        b: number,
-        a: number,
-        stencil: number,
-        fbo?: Framebuffer,
-    ): void {
-        const gl = this.gl;
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
-        gl.clearColor(r, g, b, a);
-        gl.clearStencil(stencil);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
-    }
-
-    /**
-     * Clear the color buffers, depth buffer and stencil buffer to provided
-     * color, depth and stencil.
-     * Optionally, clear buffers attached to a framebuffer instead.
-     *
-     * This is equivalent to but more efficient than:
-     *   device.clearColor()
-     *   device.clearDepth()
-     *   device.clearStencil()
-     */
-    clear(
-        r: number,
-        g: number,
-        b: number,
-        a: number,
-        depth: number,
-        stencil: number,
-        fbo?: Framebuffer,
-    ): void {
-        const gl = this.gl;
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.glFramebuffer); }
-        gl.clearColor(r, g, b, a);
-        gl.clearDepth(depth);
-        gl.clearStencil(stencil);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-        if (fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
+    target(cb: (rt: Target) => void): void {
+        this.backbufferTarget.with(cb);
     }
 }

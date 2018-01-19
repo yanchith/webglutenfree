@@ -50,4 +50,7 @@ const geometry = VertexArray.indexed(
     }),
 );
 
-cmd.execute(geometry);
+dev.target(rt => {
+    rt.clearColor(0, 0, 0, 1);
+    rt.draw(cmd, geometry);
+});

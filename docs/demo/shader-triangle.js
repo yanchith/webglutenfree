@@ -37,4 +37,7 @@ const cmd = Command.create(dev, {
 
 const geometry = VertexArray.empty(dev, Primitive.TRIANGLES, 150);
 
-cmd.execute(geometry);
+dev.target(rt => {
+    rt.clearColor(0, 0, 0, 1);
+    rt.draw(cmd, geometry);
+});

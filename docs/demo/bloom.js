@@ -275,55 +275,52 @@ const HORIZONTAL = vec2.fromValues(1, 0);
 const VERTICAL = vec2.fromValues(0, 1);
 
 const loop = time => {
-    // We only need to clear the initial fbo and the BACK buffer, as we always
-    // overwrite the others completely
-    dev.clearColor(0, 0, 0, 1);
-    dev.clearColorAndDepth(0, 0, 0, 1, 1, initialFbo);
-
     // Render geometry into texture
-    scene.batch(execute => {
-        execute(cubeGeometry, { time });
-    }, initialFbo);
+    initialFbo.target(rt => {
+        rt.clearColorAndDepth(0, 0, 0, 1, 1);
+        rt.draw(scene, cubeGeometry, { time });
+    });
 
     // Split color and brightness to 2 render targets (splitColor, splitBright)
-    split.batch(execute => {
-        execute(screenspaceGeometry);
-    }, splitFbo);
+    splitFbo.target(rt => rt.draw(split, screenspaceGeometry));
 
     if (nBloomPasses) {
         // Do first 2 bloom passes: splitBright -> bloomWrite -> bloomRead
-        bloom.batch(execute => {
-            execute(screenspaceGeometry, {
+        bloomPongFbo.target(rt => {
+            rt.draw(bloom, screenspaceGeometry, {
                 source: splitBrightTex,
                 direction: HORIZONTAL,
             });
-        }, bloomPongFbo);
-        bloom.batch(execute => {
-            execute(screenspaceGeometry, {
+        });
+        bloomPingFbo.target(rt => {
+            rt.draw(bloom, screenspaceGeometry, {
                 source: bloomPongTex,
                 direction: VERTICAL,
             });
-        }, bloomPingFbo);
+        });
 
         // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
         for (let i = 1; i < nBloomPasses; i++) {
-            bloom.batch(execute => {
-                execute(screenspaceGeometry, {
+            bloomPongFbo.target(rt => {
+                rt.draw(bloom, screenspaceGeometry, {
                     source: bloomPingTex,
                     direction: HORIZONTAL,
                 });
-            }, bloomPongFbo);
-            bloom.batch(execute => {
-                execute(screenspaceGeometry, {
+            });
+            bloomPingFbo.target(rt => {
+                rt.draw(bloom, screenspaceGeometry, {
                     source: bloomPongTex,
                     direction: VERTICAL,
                 });
-            }, bloomPingFbo);
+            });
         }
     }
 
-    // Blend together blurred highlights with original color and perform tonemapping
-    tonemap.execute(screenspaceGeometry);
+    // Blend together blurred highlights with original color, perform tonemapping
+    dev.target(rt => {
+        rt.clearColor(0, 0, 0, 1);
+        rt.draw(tonemap, screenspaceGeometry);
+    });
 
     window.requestAnimationFrame(loop);
 }

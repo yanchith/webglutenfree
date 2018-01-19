@@ -1,10 +1,8 @@
 import * as assert from "./assert";
 import * as glutil from "./glutil";
 import { Device } from "./device";
-import { VertexArray, Attributes } from "./vertex-array";
-import { Primitive } from "./element-buffer";
+import { Attributes } from "./vertex-array";
 import { Texture, TextureInternalFormat } from "./texture";
-import { Framebuffer } from "./framebuffer";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
@@ -256,15 +254,6 @@ export enum BlendEquation {
     MAX = 0x8008,
 }
 
-export interface ExecuteOptions<P> {
-    props: P;
-    data?: VertexArray;
-    framebuffer?: Framebuffer;
-    primitive?: Primitive;
-    count?: number;
-    offset?: number;
-}
-
 export class Command<P = void> {
 
     static create<P = void>(
@@ -344,15 +333,13 @@ export class Command<P = void> {
         );
     }
 
-    // CONFIG
+    readonly glProgram: WebGLProgram;
+    readonly depthDescr?: DepthDescriptor;
+    readonly stencilDescr?: StencilDescriptor;
+    readonly blendDescr?: BlendDescriptor;
+    readonly uniformDescrs: UniformDescriptor<P>[];
+
     private gl: WebGL2RenderingContext;
-
-    private glProgram: WebGLProgram;
-
-    private uniformDescrs: UniformDescriptor<P>[];
-    private depthDescr?: DepthDescriptor;
-    private stencilDescr?: StencilDescriptor;
-    private blendDescr?: BlendDescriptor;
 
     private constructor(
         gl: WebGL2RenderingContext,
@@ -370,388 +357,8 @@ export class Command<P = void> {
         this.blendDescr = blendDescr;
     }
 
-    execute(vao: VertexArray, props: P): void {
-        const { gl, glProgram } = this;
-
-        gl.useProgram(glProgram);
-
-        this.beginDepth();
-        this.beginStencil();
-        this.beginBlend();
-
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        this.updateUniforms(props, 0);
-
-        if (vao.isEmpty()) {
-            gl.drawArrays(vao.primitive, 0 /* offset */, vao.count);
-        } else {
-            gl.bindVertexArray(vao.glVertexArray);
-
-            if (vao.elements) {
-                this.execElements(
-                    vao.primitive,
-                    vao.elementCount,
-                    vao.elementType!,
-                    0, // offset
-                    vao.instanceCount,
-                );
-            } else {
-                this.execArrays(
-                    vao.primitive,
-                    vao.count,
-                    0, // offset
-                    vao.instanceCount,
-                );
-            }
-
-            gl.bindVertexArray(null);
-        }
-
-
-        this.endBlend();
-        this.endStencil();
-        this.endDepth();
-
-        gl.useProgram(null);
-    }
-
-    batch(
-        cb: (b: (vao: VertexArray, props: P) => void) => void,
-        framebuffer?: Framebuffer,
-    ): void {
-        const { gl, glProgram } = this;
-
-        // When batching (passing in an array of props), the price for
-        // gl.useProgram, binding framebuffers, enabling depth/stencil tests and
-        // blending is paid only once for all draw calls.
-
-        gl.useProgram(glProgram);
-
-        this.beginDepth();
-        this.beginStencil();
-        this.beginBlend();
-
-        let width = gl.drawingBufferWidth;
-        let height = gl.drawingBufferHeight;
-        if (framebuffer) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.glFramebuffer);
-            gl.drawBuffers(framebuffer.glColorAttachments);
-            width = framebuffer.width;
-            height = framebuffer.height;
-        }
-
-        gl.viewport(0, 0, width, height);
-
-        let iter = 0;
-        let currVao: VertexArray | null = null;
-        cb((vao: VertexArray, props: P) => {
-            this.updateUniforms(props, iter++);
-            if (vao.isEmpty()) {
-                if (currVao) {
-                    gl.bindVertexArray(null);
-                    currVao = null;
-                }
-                gl.drawArrays(vao.primitive, 0 /* offset */, vao.count);
-            } else {
-                if (vao !== currVao) {
-                    gl.bindVertexArray(vao.glVertexArray);
-                    currVao = vao;
-                }
-
-                if (vao.elements) {
-                    this.execElements(
-                        vao.primitive,
-                        vao.elementCount,
-                        vao.elementType!,
-                        0, // offset
-                        vao.instanceCount,
-                    );
-                } else {
-                    this.execArrays(
-                        vao.primitive,
-                        vao.count,
-                        0, // offset
-                        vao.instanceCount,
-                    );
-                }
-            }
-        });
-
-        // If some vaos were bound
-        if (currVao) {
-            gl.bindVertexArray(null);
-        }
-
-        if (framebuffer) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        }
-
-        this.endBlend();
-        this.endStencil();
-        this.endDepth();
-
-        gl.useProgram(null);
-    }
-
     locate(attributes: Attributes): Attributes {
         return locate(this.gl, this.glProgram, attributes);
-    }
-
-    private execArrays(
-        primitive: Primitive,
-        count: number,
-        offset: number,
-        instanceCount: number,
-    ): void {
-        if (instanceCount) {
-            this.gl.drawArraysInstanced(
-                primitive,
-                offset,
-                count,
-                instanceCount,
-            );
-        } else {
-            this.gl.drawArrays(primitive, offset, count);
-        }
-    }
-
-    private execElements(
-        primitive: Primitive,
-        count: number,
-        type: number,
-        offset: number,
-        instCount: number,
-    ): void {
-        if (instCount) {
-            this.gl.drawElementsInstanced(
-                primitive,
-                count,
-                type,
-                offset,
-                instCount,
-            );
-        } else {
-            this.gl.drawElements(
-                primitive,
-                count,
-                type,
-                offset,
-            );
-        }
-    }
-
-
-    private beginDepth(): void {
-        const { gl, depthDescr } = this;
-        if (depthDescr) {
-            gl.enable(gl.DEPTH_TEST);
-            gl.depthFunc(depthDescr.func);
-            gl.depthMask(depthDescr.mask);
-            gl.depthRange(depthDescr.rangeStart, depthDescr.rangeEnd);
-        }
-    }
-
-    private endDepth(): void {
-        const { gl, depthDescr } = this;
-        if (depthDescr) { gl.disable(gl.DEPTH_TEST); }
-    }
-
-    private beginStencil(): void {
-        const { gl, stencilDescr } = this;
-        if (stencilDescr) {
-            const {
-                fFunc,
-                bFunc,
-                fFuncRef,
-                bfuncRef,
-                fFuncMask,
-                bFuncMask,
-                fMask,
-                bMask,
-                fOpFail,
-                bOpFail,
-                fOpZFail,
-                bOpZFail,
-                fOpZPass,
-                bOpZPass,
-            } = stencilDescr;
-            gl.enable(gl.STENCIL_TEST);
-            gl.stencilFuncSeparate(gl.FRONT, fFunc, fFuncRef, fFuncMask);
-            gl.stencilFuncSeparate(gl.BACK, bFunc, bfuncRef, bFuncMask);
-            gl.stencilMaskSeparate(gl.FRONT, fMask);
-            gl.stencilMaskSeparate(gl.BACK, bMask);
-            gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
-            gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
-        }
-    }
-
-    private endStencil(): void {
-        const { gl, stencilDescr } = this;
-        if (stencilDescr) { gl.disable(gl.STENCIL_TEST); }
-    }
-
-    private beginBlend(): void {
-        const { gl, blendDescr } = this;
-        if (blendDescr) {
-            gl.enable(gl.BLEND);
-            gl.blendFuncSeparate(
-                blendDescr.srcRGB,
-                blendDescr.dstRGB,
-                blendDescr.srcAlpha,
-                blendDescr.dstAlpha,
-            );
-            gl.blendEquationSeparate(
-                blendDescr.equationRGB,
-                blendDescr.equationAlpha,
-            );
-            if (blendDescr.color) {
-                const [r, g, b, a] = blendDescr.color;
-                gl.blendColor(r, g, b, a);
-            }
-        }
-    }
-
-    private endBlend(): void {
-        const { gl, blendDescr } = this;
-        if (blendDescr) { gl.disable(gl.BLEND); }
-    }
-
-
-    private updateUniforms(props: P, index: number): void {
-        const gl = this.gl;
-
-        let textureUnitOffset = 0;
-
-        this.uniformDescrs.forEach(({
-            identifier: ident,
-            location: loc,
-            definition: def,
-        }) => {
-            switch (def.type) {
-                case "1f":
-                    gl.uniform1f(loc, access(props, index, def.value));
-                    break;
-                case "1fv":
-                    gl.uniform1fv(loc, access(props, index, def.value));
-                    break;
-                case "1i":
-                    gl.uniform1i(loc, access(props, index, def.value));
-                    break;
-                case "1iv":
-                    gl.uniform1iv(loc, access(props, index, def.value));
-                    break;
-                case "1ui":
-                    gl.uniform1ui(loc, access(props, index, def.value));
-                    break;
-                case "1uiv":
-                    gl.uniform1uiv(loc, access(props, index, def.value));
-                    break;
-                case "2f": {
-                    const [x, y] = access(props, index, def.value);
-                    gl.uniform2f(loc, x, y);
-                    break;
-                }
-                case "2fv":
-                    gl.uniform2fv(loc, access(props, index, def.value));
-                    break;
-                case "2i": {
-                    const [x, y] = access(props, index, def.value);
-                    gl.uniform2i(loc, x, y);
-                    break;
-                }
-                case "2iv":
-                    gl.uniform2iv(loc, access(props, index, def.value));
-                    break;
-                case "2ui": {
-                    const [x, y] = access(props, index, def.value);
-                    gl.uniform2ui(loc, x, y);
-                    break;
-                }
-                case "2uiv":
-                    gl.uniform2uiv(loc, access(props, index, def.value));
-                    break;
-                case "3f": {
-                    const [x, y, z] = access(props, index, def.value);
-                    gl.uniform3f(loc, x, y, z);
-                    break;
-                }
-                case "3fv":
-                    gl.uniform3fv(loc, access(props, index, def.value));
-                    break;
-                case "3i": {
-                    const [x, y, z] = access(props, index, def.value);
-                    gl.uniform3i(loc, x, y, z);
-                    break;
-                }
-                case "3iv":
-                    gl.uniform3iv(loc, access(props, index, def.value));
-                    break;
-                case "3ui": {
-                    const [x, y, z] = access(props, index, def.value);
-                    gl.uniform3ui(loc, x, y, z);
-                    break;
-                }
-                case "3uiv":
-                    gl.uniform3uiv(loc, access(props, index, def.value));
-                    break;
-                case "4f": {
-                    const [x, y, z, w] = access(props, index, def.value);
-                    gl.uniform4f(loc, x, y, z, w);
-                    break;
-                }
-                case "4fv":
-                    gl.uniform4fv(loc, access(props, index, def.value));
-                    break;
-                case "4i": {
-                    const [x, y, z, w] = access(props, index, def.value);
-                    gl.uniform4i(loc, x, y, z, w);
-                    break;
-                }
-                case "4iv":
-                    gl.uniform4iv(loc, access(props, index, def.value));
-                    break;
-                case "4ui": {
-                    const [x, y, z, w] = access(props, index, def.value);
-                    gl.uniform4ui(loc, x, y, z, w);
-                    break;
-                }
-                case "4uiv":
-                    gl.uniform4uiv(loc, access(props, index, def.value));
-                    break;
-                case "matrix2fv":
-                    gl.uniformMatrix2fv(
-                        loc,
-                        false,
-                        access(props, index, def.value),
-                    );
-                    break;
-                case "matrix3fv":
-                    gl.uniformMatrix3fv(
-                        loc,
-                        false,
-                        access(props, index, def.value),
-                    );
-                    break;
-                case "matrix4fv":
-                    gl.uniformMatrix4fv(
-                        loc,
-                        false,
-                        access(props, index, def.value),
-                    );
-                    break;
-                case "texture":
-                    // TODO: is this the best way? (is it fast? can we cache?)
-                    const texture = access(props, index, def.value);
-                    const currentTexture = textureUnitOffset++;
-                    gl.activeTexture(gl.TEXTURE0 + currentTexture);
-                    gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
-                    gl.uniform1i(loc, currentTexture);
-                    break;
-                default:
-                    assert.never(def, `Unknown uniform type: (${ident})`);
-                    break;
-            }
-        });
     }
 }
 
@@ -775,15 +382,8 @@ function locate(
         }, {});
 }
 
-function access<P, R>(
-    props: P,
-    index: number,
-    value: ((props: P, index: number) => R) | R,
-): R {
-    return typeof value === "function" ? value(props, index) : value;
-}
 
-class DepthDescriptor {
+export class DepthDescriptor {
     constructor(
         readonly func: number,
         readonly mask: boolean,
@@ -792,7 +392,7 @@ class DepthDescriptor {
     ) { }
 }
 
-class StencilDescriptor {
+export class StencilDescriptor {
     constructor(
         readonly fFunc: number,
         readonly bFunc: number,
@@ -811,7 +411,7 @@ class StencilDescriptor {
     ) { }
 }
 
-class BlendDescriptor {
+export class BlendDescriptor {
     constructor(
         readonly srcRGB: number,
         readonly srcAlpha: number,
@@ -823,7 +423,7 @@ class BlendDescriptor {
     ) { }
 }
 
-class UniformDescriptor<P> {
+export class UniformDescriptor<P> {
     constructor(
         readonly identifier: string,
         readonly location: WebGLUniformLocation,

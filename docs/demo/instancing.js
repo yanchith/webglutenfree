@@ -115,8 +115,10 @@ const geometry = VertexArray.indexed(
 );
 
 const loop = () => {
-    dev.clearColor(0, 0, 0, 1);
-    cmd.execute(geometry);
+    dev.target(rt => {
+        rt.clearColor(0, 0, 0, 1);
+        rt.draw(cmd, geometry);
+    });
     window.requestAnimationFrame(loop);
 }
 

@@ -86,8 +86,10 @@ const geometry = VertexArray.create(
 );
 
 const loop = time => {
-    dev.clearColorAndDepth(0, 0, 0, 1, 1);
-    cmd.execute(geometry, time);
+    dev.target(rt => {
+        rt.clearColorAndDepth(0, 0, 0, 1, 1);
+        rt.draw(cmd, geometry, time);
+    });
     window.requestAnimationFrame(loop);
 }
 

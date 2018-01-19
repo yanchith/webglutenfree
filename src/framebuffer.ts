@@ -1,6 +1,7 @@
 import * as assert from "./assert";
 import { Device } from "./device";
 import { Texture, TextureInternalFormat } from "./texture";
+import { Target } from "./target";
 
 export interface FramebufferProps {
     width: number;
@@ -45,10 +46,11 @@ export class Framebuffer {
     readonly width: number;
     readonly height: number;
 
-    readonly glFramebuffer: WebGLFramebuffer | null;
-    readonly glColorAttachments: number[];
-
     private gl: WebGL2RenderingContext;
+    private glFramebuffer: WebGLFramebuffer | null;
+    private glColorAttachments: number[];
+
+    private framebufferTarget: Target | null;
 
     private colorBuffers: Texture<TextureInternalFormat>[];
     private depthBuffer?: Texture<TextureInternalFormat>;
@@ -71,12 +73,21 @@ export class Framebuffer {
         this.glColorAttachments = colorBuffers
             .map((_, i) => gl.COLOR_ATTACHMENT0 + i);
         this.glFramebuffer = null;
+        this.framebufferTarget = null;
 
         this.init();
     }
 
     init(): void {
-        const { gl, colorBuffers, depthBuffer, stencilBuffer } = this;
+        const {
+            width,
+            height,
+            gl,
+            glColorAttachments,
+            colorBuffers,
+            depthBuffer,
+            stencilBuffer,
+        } = this;
 
         const fbo = gl.createFramebuffer();
 
@@ -120,6 +131,16 @@ export class Framebuffer {
         }
 
         (this as any).glFramebuffer = fbo;
+
+        if (fbo) {
+            this.framebufferTarget = new Target(
+                gl,
+                glColorAttachments,
+                fbo,
+                width,
+                height,
+            );
+        }
     }
 
     restore(): void {
@@ -134,5 +155,9 @@ export class Framebuffer {
         if (depthBuffer) { depthBuffer.restore(); }
         if (stencilBuffer) { stencilBuffer.restore(); }
         if (!gl.isFramebuffer(glFramebuffer)) { this.init(); }
+    }
+
+    target(cb: (rt: Target) => void): void {
+        if (this.framebufferTarget) { this.framebufferTarget.with(cb); }
     }
 }

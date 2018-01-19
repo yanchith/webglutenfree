@@ -168,14 +168,16 @@ const cubeOutlnModel = mat4.scale(mat4.create(), cubeModel, [1.04, 1.04, 1.04]);
 const bunnyOutlnModel = mat4.scale(mat4.create(), bunnyModel, [1.04, 1.04, 1.04]);
 
 const loop = time => {
-    dev.clear(0, 0, 0, 1, 1, 0);
-    drawObjects.batch(execute => {
-        execute(cubeGeometry, { time, model: cubeModel });
-        execute(bunnyGeometry, { time, model: bunnyModel });
-    });
-    drawOutlines.batch(execute => {
-        execute(cubeGeometry, { time, model: cubeOutlnModel });
-        execute(bunnyGeometry, { time, model: bunnyOutlnModel });
+    dev.target(rt => {
+        rt.clear(0, 0, 0, 1, 1, 0);
+        rt.batch(drawObjects, draw => {
+            draw(cubeGeometry, { time, model: cubeModel });
+            draw(bunnyGeometry, { time, model: bunnyModel });
+        });
+        rt.batch(drawOutlines, draw => {
+            draw(cubeGeometry, { time, model: cubeOutlnModel });
+            draw(bunnyGeometry, { time, model: bunnyOutlnModel });
+        });
     });
     window.requestAnimationFrame(loop);
 }
