@@ -298,7 +298,7 @@ export class Target {
 
     private bind(): void {
         const { gl, glFramebuffer, glDrawBuffers, width, height } = this;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, glFramebuffer || null);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer || null);
         gl.drawBuffers(glDrawBuffers);
         gl.viewport(
             0,

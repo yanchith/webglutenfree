@@ -76,12 +76,6 @@ export interface AttributeIPointer {
     divisor?: number;
 }
 
-export interface VertexArrayProps {
-    primitive: Primitive;
-    attributes: Attributes;
-    elements?: ElementArray | ElementBuffer<ElementBufferType>;
-}
-
 /**
  * Vertex array objects store store vertex buffers, an index buffer,
  * and attributes with the vertex format for provided vertex buffers.

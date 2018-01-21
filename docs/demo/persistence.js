@@ -20,13 +20,13 @@ const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const newFrameTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const newFrameFbo = Framebuffer.create(dev, { width, height, color: newFrameTex });
+const newFrameFbo = Framebuffer.fromColor(dev, width, height, newFrameTex);
 
 const pingTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const pingFbo = Framebuffer.create(dev, { width, height, color: pingTex });
+const pingFbo = Framebuffer.fromColor(dev, width, height, pingTex);
 
 const pongTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const pongFbo = Framebuffer.create(dev, { width, height, color: pongTex });
+const pongFbo = Framebuffer.fromColor(dev, width, height, pongTex);
 
 const view = mat4.create();
 

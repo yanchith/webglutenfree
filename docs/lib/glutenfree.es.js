@@ -23,7 +23,13 @@ function nonNull(p, name, msg) {
         }
     }
 }
-
+function nonEmpty(p, name, msg) {
+    if (process.env.NODE_ENV !== "production") {
+        if (!p || !p.length) {
+            throw new Error(msg || fmt(`array ${name || ""} empty`));
+        }
+    }
+}
 function equal(p, val, name, msg) {
     if (process.env.NODE_ENV !== "production") {
         if (p !== val) {
@@ -50,6 +56,12 @@ function fmt(msg) {
 // This stores a render target stack for each WebGL context. WeakMap is used
 // to prevent memory leaks
 const CONTEXT_TARGETS = new WeakMap();
+/**
+ * Target represents a drawable surface. Get hold of targets with
+ * `device.target()` or `framebuffer.target()`.
+ *
+ * Targets provide methods for drawing to a surface, or clearing its values.
+ */
 class Target {
     constructor(gl, glDrawBuffers, glFramebuffer, width, height) {
         this.gl = gl;
@@ -58,6 +70,10 @@ class Target {
         this.width = width;
         this.height = height;
     }
+    /**
+     * Run the callback with the target bound. This is called automatically,
+     * when obtaining a target via `device.target()` or `framebuffer.target()`.
+     */
     with(cb) {
         // Get our stack, or create it if needed
         let stack = CONTEXT_TARGETS.get(this.gl);
@@ -82,8 +98,7 @@ class Target {
         }
     }
     /**
-     * Clear the color buffer to provided color. Optionally, clear color buffers
-     * attached to a framebuffer instead.
+     * Clear the color buffer to provided color.
      */
     clearColor(r, g, b, a) {
         const gl = this.gl;
@@ -91,8 +106,7 @@ class Target {
         gl.clear(gl.COLOR_BUFFER_BIT);
     }
     /**
-     * Clear the depth buffer to provided depth. Optionally, clear depth buffer
-     * attached to a framebuffer instead.
+     * Clear the depth buffer to provided depth.
      */
     clearDepth(depth) {
         const gl = this.gl;
@@ -100,8 +114,7 @@ class Target {
         gl.clear(gl.DEPTH_BUFFER_BIT);
     }
     /**
-     * Clear the stencil buffer to provided stencil. Optionally, clear stencil
-     * buffer attached to a framebuffer instead.
+     * Clear the stencil buffer to provided stencil.
      */
     clearStencil(stencil) {
         const gl = this.gl;
@@ -110,7 +123,6 @@ class Target {
     }
     /**
      * Clear the color buffers and depth buffer to provided color and depth.
-     * Optionally, clear buffers attached to a framebuffer instead.
      *
      * This is equivalent to but more efficient than:
      *   device.clearColor()
@@ -124,7 +136,6 @@ class Target {
     }
     /**
      * Clear the depth buffer and stencil buffer to provided depth and stencil.
-     * Optionally, clear buffers attached to a framebuffer instead.
      *
      * This is equivalent to but more efficient than:
      *   device.clearDepth()
@@ -138,7 +149,6 @@ class Target {
     }
     /**
      * Clear the color buffers and stencil buffer to provided color and stencil.
-     * Optionally, clear buffers attached to a framebuffer instead.
      *
      * This is equivalent to but more efficient than:
      *   device.clearColor()
@@ -153,7 +163,6 @@ class Target {
     /**
      * Clear the color buffers, depth buffer and stencil buffer to provided
      * color, depth and stencil.
-     * Optionally, clear buffers attached to a framebuffer instead.
      *
      * This is equivalent to but more efficient than:
      *   device.clearColor()
@@ -165,8 +174,13 @@ class Target {
         gl.clearColor(r, g, b, a);
         gl.clearDepth(depth);
         gl.clearStencil(stencil);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT
+            | gl.DEPTH_BUFFER_BIT
+            | gl.STENCIL_BUFFER_BIT);
     }
+    /**
+     * Draw to the target with a command, geometry, and command properties.
+     */
     draw(cmd, geometry, props) {
         const gl = this.gl;
         const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
@@ -195,6 +209,10 @@ class Target {
         this.endDepth(depthDescr);
         gl.useProgram(null);
     }
+    /**
+     * Perform multiple draws to the target with the same command, but multiple
+     * geometries and command properties.
+     */
     batch(cmd, cb) {
         const gl = this.gl;
         const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
@@ -242,7 +260,7 @@ class Target {
     }
     bind() {
         const { gl, glFramebuffer, glDrawBuffers, width, height } = this;
-        gl.bindFramebuffer(gl.FRAMEBUFFER, glFramebuffer || null);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer || null);
         gl.drawBuffers(glDrawBuffers);
         gl.viewport(0, 0, width || gl.drawingBufferWidth, height || gl.drawingBufferHeight);
     }
@@ -1293,7 +1311,7 @@ var TextureFilter;
 })(TextureFilter || (TextureFilter = {}));
 var TextureInternalFormat;
 (function (TextureInternalFormat) {
-    // R
+    // RED
     TextureInternalFormat[TextureInternalFormat["R8"] = 33321] = "R8";
     TextureInternalFormat[TextureInternalFormat["R8_SNORM"] = 36756] = "R8_SNORM";
     TextureInternalFormat[TextureInternalFormat["R8UI"] = 33330] = "R8UI";
@@ -1338,13 +1356,13 @@ var TextureInternalFormat;
     TextureInternalFormat[TextureInternalFormat["RGBA16F"] = 34842] = "RGBA16F";
     TextureInternalFormat[TextureInternalFormat["RGBA32F"] = 34836] = "RGBA32F";
     // TODO: support exotic formats
-    // ~DEPTH
-    // DEPTH_COMPONENT16
-    // DEPTH_COMPONENT24
-    // DEPTH_COMPONENT32F
-    // ~DEPTH STENCIL
-    // DEPTH24_STENCIL8
-    // DEPTH32F_STENCIL8
+    // DEPTH
+    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT16"] = 33189] = "DEPTH_COMPONENT16";
+    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT24"] = 33190] = "DEPTH_COMPONENT24";
+    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT32F"] = 36012] = "DEPTH_COMPONENT32F";
+    // DEPTH STENCIL
+    TextureInternalFormat[TextureInternalFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
+    TextureInternalFormat[TextureInternalFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
     // ~LUMINANCE ALPHA
     // LUMINANCE_ALPHA
     // LUMINANCE
@@ -1361,8 +1379,8 @@ var TextureDataFormat;
     TextureDataFormat[TextureDataFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
     TextureDataFormat[TextureDataFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
     // TODO: support exotic formats
-    // DEPTH_COMPONENT
-    // DEPTH_STENCIL
+    TextureDataFormat[TextureDataFormat["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
+    TextureDataFormat[TextureDataFormat["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
     // LUMINANCE_ALPHA
     // LUMINANCE
     // ALPHA
@@ -1381,11 +1399,11 @@ var TextureDataType;
     // UNSIGNED_SHORT_4_4_4_4
     // UNSIGNED_SHORT_5_5_5_1
     // UNSIGNED_SHORT_5_6_5
-    // UNSIGNED_INT_24_8
+    TextureDataType[TextureDataType["UNSIGNED_INT_24_8"] = 34042] = "UNSIGNED_INT_24_8";
     // UNSIGNED_INT_5_9_9_9_REV
     // UNSIGNED_INT_2_10_10_10_REV
     // UNSIGNED_INT_10F_11F_11F_REV
-    // FLOAT_32_UNSIGNED_INT_24_8_REV
+    TextureDataType[TextureDataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
 })(TextureDataType || (TextureDataType = {}));
 class Texture {
     constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
@@ -1451,48 +1469,74 @@ class Texture {
 }
 
 class Framebuffer {
-    static create(dev, { width, height, color, depth, stencil }) {
+    static fromColor(dev, width, height, color) {
+        const gl = dev instanceof Device ? dev.gl : dev;
+        const colors = Array.isArray(color) ? color : [color];
+        nonEmpty(colors, "color");
+        colors.forEach(buffer => {
+            equal(width, buffer.width, "width");
+            equal(height, buffer.height, "height");
+        });
+        return new Framebuffer(gl, width, height, colors);
+    }
+    static fromDepth(dev, width, height, depth) {
+        const gl = dev instanceof Device ? dev.gl : dev;
+        equal(width, depth.width, "width");
+        equal(height, depth.height, "height");
+        return new Framebuffer(gl, width, height, [], depth, true);
+    }
+    static fromDepthStencil(dev, width, height, depthStencil) {
+        const gl = dev instanceof Device ? dev.gl : dev;
+        equal(width, depthStencil.width, "width");
+        equal(height, depthStencil.height, "height");
+        return new Framebuffer(gl, width, height, [], depthStencil, false);
+    }
+    static fromColorDepth(dev, width, height, color, depth) {
         const gl = dev instanceof Device ? dev.gl : dev;
         const colorBuffers = Array.isArray(color) ? color : [color];
+        nonEmpty(colorBuffers, "color");
         colorBuffers.forEach(buffer => {
             equal(width, buffer.width, "width");
             equal(height, buffer.height, "height");
         });
-        if (depth) {
-            equal(width, depth.width, "width");
-            equal(height, depth.height, "height");
-        }
-        if (stencil) {
-            equal(width, stencil.width, "width");
-            equal(height, stencil.height, "height");
-        }
-        return new Framebuffer(gl, width, height, colorBuffers, depth, stencil);
+        equal(width, depth.width, "width");
+        equal(height, depth.height, "height");
+        return new Framebuffer(gl, width, height, colorBuffers, depth, true);
     }
-    constructor(gl, width, height, colorBuffers, depthBuffer, stencilBuffer) {
+    static fromColorDepthStencil(dev, width, height, color, depthStencil) {
+        const gl = dev instanceof Device ? dev.gl : dev;
+        const colors = Array.isArray(color) ? color : [color];
+        nonEmpty(colors, "color");
+        colors.forEach(buffer => {
+            equal(width, buffer.width, "width");
+            equal(height, buffer.height, "height");
+        });
+        equal(width, depthStencil.width, "width");
+        equal(height, depthStencil.height, "height");
+        return new Framebuffer(gl, width, height, colors, depthStencil, false);
+    }
+    constructor(gl, width, height, colors, depthStencil, depthOnly = true) {
         this.gl = gl;
         this.width = width;
         this.height = height;
-        this.colorBuffers = colorBuffers;
-        this.depthBuffer = depthBuffer;
-        this.stencilBuffer = stencilBuffer;
-        this.glColorAttachments = colorBuffers
+        this.colors = colors;
+        this.depthStencil = depthStencil;
+        this.depthOnly = depthOnly;
+        this.glColorAttachments = colors
             .map((_, i) => gl.COLOR_ATTACHMENT0 + i);
         this.glFramebuffer = null;
         this.framebufferTarget = null;
         this.init();
     }
     init() {
-        const { width, height, gl, glColorAttachments, colorBuffers, depthBuffer, stencilBuffer, } = this;
+        const { width, height, gl, glColorAttachments, colors, depthStencil, depthOnly, } = this;
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-        colorBuffers.forEach((buffer, i) => {
+        colors.forEach((buffer, i) => {
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
         });
-        if (depthBuffer) {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthBuffer, 0);
-        }
-        if (stencilBuffer) {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.TEXTURE_2D, stencilBuffer, 0);
+        if (depthStencil) {
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil, 0);
         }
         const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1506,13 +1550,10 @@ class Framebuffer {
         }
     }
     restore() {
-        const { gl, glFramebuffer, colorBuffers, depthBuffer, stencilBuffer, } = this;
-        colorBuffers.forEach(buffer => buffer.restore());
-        if (depthBuffer) {
-            depthBuffer.restore();
-        }
-        if (stencilBuffer) {
-            stencilBuffer.restore();
+        const { gl, glFramebuffer, colors, depthStencil, } = this;
+        colors.forEach(buffer => buffer.restore());
+        if (depthStencil) {
+            depthStencil.restore();
         }
         if (!gl.isFramebuffer(glFramebuffer)) {
             this.init();

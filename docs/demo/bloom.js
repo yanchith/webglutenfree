@@ -27,21 +27,20 @@ const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const initialTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const initialFbo = Framebuffer.create(dev, { width, height, color: initialTex });
+const initialFbo = Framebuffer.fromColor(dev, width, height, initialTex);
 
 const splitColorTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
 const splitBrightTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const splitFbo = Framebuffer.create(dev, {
-    width,
-    height,
-    color: [splitColorTex, splitBrightTex],
-});
+const splitFbo = Framebuffer.fromColor(dev, width, height, [
+    splitColorTex,
+    splitBrightTex,
+]);
 
 const bloomPingTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const bloomPingFbo = Framebuffer.create(dev, { width, height, color: bloomPingTex });
+const bloomPingFbo = Framebuffer.fromColor(dev, width, height, bloomPingTex);
 
 const bloomPongTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const bloomPongFbo = Framebuffer.create(dev, { width, height, color: bloomPongTex });
+const bloomPongFbo = Framebuffer.fromColor(dev, width, height, bloomPongTex);
 
 
 const view = mat4.create();

@@ -26,7 +26,8 @@ export type TextureMinFilter = TextureFilter;
 export type TextureMagFilter = TextureFilter.NEAREST | TextureFilter.LINEAR;
 
 export enum TextureInternalFormat {
-    // R
+
+    // RED
     R8 = 0x8229,
     R8_SNORM = 0x8F94,
     R8UI = 0x8232,
@@ -76,20 +77,82 @@ export enum TextureInternalFormat {
 
     // TODO: support exotic formats
 
-    // ~DEPTH
-    // DEPTH_COMPONENT16
-    // DEPTH_COMPONENT24
-    // DEPTH_COMPONENT32F
+    // DEPTH
+    DEPTH_COMPONENT16 = 0x81A5,
+    DEPTH_COMPONENT24 = 0x81A6,
+    DEPTH_COMPONENT32F = 0x8CAC,
 
-    // ~DEPTH STENCIL
-    // DEPTH24_STENCIL8
-    // DEPTH32F_STENCIL8
+    // DEPTH STENCIL
+    DEPTH24_STENCIL8 = 0x88F0,
+    DEPTH32F_STENCIL8 = 0x8CAD,
 
     // ~LUMINANCE ALPHA
     // LUMINANCE_ALPHA
     // LUMINANCE
     // ALPHA
 }
+
+export type TextureColorInternalFormat =
+
+    // RED
+    | TextureInternalFormat.R8
+    | TextureInternalFormat.R8_SNORM
+    | TextureInternalFormat.R8UI
+    | TextureInternalFormat.R8I
+    | TextureInternalFormat.R16UI
+    | TextureInternalFormat.R16I
+    | TextureInternalFormat.R32UI
+    | TextureInternalFormat.R32I
+    | TextureInternalFormat.R16F
+    | TextureInternalFormat.R32F
+
+    // RG
+    | TextureInternalFormat.RG8
+    | TextureInternalFormat.RG8_SNORM
+    | TextureInternalFormat.RG8UI
+    | TextureInternalFormat.RG8I
+    | TextureInternalFormat.RG16UI
+    | TextureInternalFormat.RG16I
+    | TextureInternalFormat.RG32UI
+    | TextureInternalFormat.RG32I
+    | TextureInternalFormat.RG16F
+    | TextureInternalFormat.RG32F
+
+    // RGB
+    | TextureInternalFormat.RGB8
+    | TextureInternalFormat.RGB8_SNORM
+    | TextureInternalFormat.RGB8UI
+    | TextureInternalFormat.RGB8I
+    | TextureInternalFormat.RGB16UI
+    | TextureInternalFormat.RGB16I
+    | TextureInternalFormat.RGB32UI
+    | TextureInternalFormat.RGB32I
+    | TextureInternalFormat.RGB16F
+    | TextureInternalFormat.RGB32F
+
+    // RGBA
+    | TextureInternalFormat.RGBA8
+    | TextureInternalFormat.RGBA8_SNORM
+    | TextureInternalFormat.RGBA8UI
+    | TextureInternalFormat.RGBA8I
+    | TextureInternalFormat.RGBA16UI
+    | TextureInternalFormat.RGBA16I
+    | TextureInternalFormat.RGBA32UI
+    | TextureInternalFormat.RGBA32I
+    | TextureInternalFormat.RGBA16F
+    | TextureInternalFormat.RGBA32F
+    ;
+
+export type TextureDepthInternalFormat =
+    | TextureInternalFormat.DEPTH_COMPONENT16
+    | TextureInternalFormat.DEPTH_COMPONENT24
+    | TextureInternalFormat.DEPTH_COMPONENT32F
+    ;
+
+export type TextureDepthStencilInternalFormat =
+    | TextureInternalFormat.DEPTH24_STENCIL8
+    | TextureInternalFormat.DEPTH32F_STENCIL8
+    ;
 
 export enum TextureDataFormat {
     RED = 0x1903,
@@ -103,8 +166,8 @@ export enum TextureDataFormat {
 
     // TODO: support exotic formats
 
-    // DEPTH_COMPONENT
-    // DEPTH_STENCIL
+    DEPTH_COMPONENT = 0x1902,
+    DEPTH_STENCIL = 0x84F9,
     // LUMINANCE_ALPHA
     // LUMINANCE
     // ALPHA
@@ -125,12 +188,12 @@ export enum TextureDataType {
     // UNSIGNED_SHORT_5_5_5_1
     // UNSIGNED_SHORT_5_6_5
 
-    // UNSIGNED_INT_24_8
+    UNSIGNED_INT_24_8 = 0x84FA,
     // UNSIGNED_INT_5_9_9_9_REV
     // UNSIGNED_INT_2_10_10_10_REV
     // UNSIGNED_INT_10F_11F_11F_REV
 
-    // FLOAT_32_UNSIGNED_INT_24_8_REV
+    FLOAT_32_UNSIGNED_INT_24_8_REV = 0x8DAD,
 }
 
 export class Texture<F extends TextureInternalFormat> {
@@ -301,6 +364,8 @@ export class Texture<F extends TextureInternalFormat> {
 }
 
 export interface InternalFormatToDataFormat {
+
+    // RED
     [TextureInternalFormat.R8]: TextureDataFormat.RED;
     [TextureInternalFormat.R8_SNORM]: TextureDataFormat.RED;
     [TextureInternalFormat.R8UI]: TextureDataFormat.RED_INTEGER;
@@ -348,10 +413,21 @@ export interface InternalFormatToDataFormat {
     [TextureInternalFormat.RGBA16F]: TextureDataFormat.RGBA;
     [TextureInternalFormat.RGBA32F]: TextureDataFormat.RGBA;
 
+    // DEPTH
+    [TextureInternalFormat.DEPTH_COMPONENT16]: TextureDataFormat.DEPTH_COMPONENT;
+    [TextureInternalFormat.DEPTH_COMPONENT24]: TextureDataFormat.DEPTH_COMPONENT;
+    [TextureInternalFormat.DEPTH_COMPONENT32F]: TextureDataFormat.DEPTH_COMPONENT;
+
+    // DEPTH STENCIL
+    [TextureInternalFormat.DEPTH24_STENCIL8]: TextureDataFormat.DEPTH_STENCIL;
+    [TextureInternalFormat.DEPTH32F_STENCIL8]: TextureDataFormat.DEPTH_STENCIL;
+
     [p: number]: TextureDataFormat;
 }
 
 export interface InternalFormatToDataType {
+
+    // RED
     [TextureInternalFormat.R8]: TextureDataType.UNSIGNED_BYTE;
     [TextureInternalFormat.R8_SNORM]: TextureDataType.BYTE;
     [TextureInternalFormat.R8UI]: TextureDataType.UNSIGNED_BYTE;
@@ -360,7 +436,7 @@ export interface InternalFormatToDataType {
     [TextureInternalFormat.R16I]: TextureDataType.SHORT;
     [TextureInternalFormat.R32UI]: TextureDataType.UNSIGNED_INT;
     [TextureInternalFormat.R32I]: TextureDataType.INT;
-    [TextureInternalFormat.R16F]: TextureDataType.HALF_FLOAT;
+    [TextureInternalFormat.R16F]: TextureDataType.HALF_FLOAT | TextureDataType.FLOAT;
     [TextureInternalFormat.R32F]: TextureDataType.FLOAT;
 
     // RG
@@ -372,7 +448,7 @@ export interface InternalFormatToDataType {
     [TextureInternalFormat.RG16I]: TextureDataType.SHORT;
     [TextureInternalFormat.RG32UI]: TextureDataType.UNSIGNED_INT;
     [TextureInternalFormat.RG32I]: TextureDataType.INT;
-    [TextureInternalFormat.RG16F]: TextureDataType.HALF_FLOAT;
+    [TextureInternalFormat.RG16F]: TextureDataType.HALF_FLOAT | TextureDataType.FLOAT;
     [TextureInternalFormat.RG32F]: TextureDataType.FLOAT;
 
     // RGB
@@ -384,7 +460,7 @@ export interface InternalFormatToDataType {
     [TextureInternalFormat.RGB16I]: TextureDataType.SHORT;
     [TextureInternalFormat.RGB32UI]: TextureDataType.UNSIGNED_INT;
     [TextureInternalFormat.RGB32I]: TextureDataType.INT;
-    [TextureInternalFormat.RGB16F]: TextureDataType.HALF_FLOAT;
+    [TextureInternalFormat.RGB16F]: TextureDataType.HALF_FLOAT | TextureDataType.FLOAT;
     [TextureInternalFormat.RGB32F]: TextureDataType.FLOAT;
 
     // RGBA
@@ -396,13 +472,24 @@ export interface InternalFormatToDataType {
     [TextureInternalFormat.RGBA16I]: TextureDataType.SHORT;
     [TextureInternalFormat.RGBA32UI]: TextureDataType.UNSIGNED_INT;
     [TextureInternalFormat.RGBA32I]: TextureDataType.INT;
-    [TextureInternalFormat.RGBA16F]: TextureDataType.HALF_FLOAT;
+    [TextureInternalFormat.RGBA16F]: TextureDataType.HALF_FLOAT | TextureDataType.FLOAT;
     [TextureInternalFormat.RGBA32F]: TextureDataType.FLOAT;
+
+    // DEPTH
+    [TextureInternalFormat.DEPTH_COMPONENT16]: TextureDataType.UNSIGNED_SHORT | TextureDataType.UNSIGNED_INT;
+    [TextureInternalFormat.DEPTH_COMPONENT24]: TextureDataType.UNSIGNED_INT;
+    [TextureInternalFormat.DEPTH_COMPONENT32F]: TextureDataType.FLOAT;
+
+    // DEPTH STENCIL
+    [TextureInternalFormat.DEPTH24_STENCIL8]: TextureDataType.UNSIGNED_INT_24_8;
+    [TextureInternalFormat.DEPTH32F_STENCIL8]: TextureDataType.FLOAT_32_UNSIGNED_INT_24_8_REV;
 
     [p: number]: TextureDataType;
 }
 
 export interface InternalFormatToTypedArray {
+
+    // RED
     [TextureInternalFormat.R8]: Uint8Array | Uint8ClampedArray;
     [TextureInternalFormat.R8_SNORM]: Int8Array;
     [TextureInternalFormat.R8UI]: Uint8Array | Uint8ClampedArray;
@@ -449,6 +536,15 @@ export interface InternalFormatToTypedArray {
     [TextureInternalFormat.RGBA32I]: Int32Array;
     [TextureInternalFormat.RGBA16F]: Float32Array; // Float16Array
     [TextureInternalFormat.RGBA32F]: Float32Array;
+
+    // DEPTH
+    [TextureInternalFormat.DEPTH_COMPONENT16]: Uint16Array | Uint32Array;
+    [TextureInternalFormat.DEPTH_COMPONENT24]: Uint32Array;
+    [TextureInternalFormat.DEPTH_COMPONENT32F]: Float32Array;
+
+    // DEPTH STENCIL
+    [TextureInternalFormat.DEPTH24_STENCIL8]: Uint32Array;
+    [TextureInternalFormat.DEPTH32F_STENCIL8]: never; // yay!
 
     [p: number]: ArrayBufferView;
 }
