@@ -11,9 +11,7 @@ export type Access<P, R> = R | ((props: P, index: number) => R);
 export type StencilOrSeparate<T> = T | { front: T, back: T };
 export type BlendOrSeparate<T> = T | { rgb: T, alpha: T };
 
-export interface CommandProps<P> {
-    vert: string;
-    frag: string;
+export interface CommandOptions<P> {
     uniforms?: { [key: string]: Uniform<P> };
     depth?: {
         func: DepthFunc;
@@ -254,18 +252,18 @@ export enum BlendEquation {
     MAX = 0x8008,
 }
 
-export class Command<P = void> {
+export class Command<P> {
 
-    static create<P = void>(
+    static create<P>(
         dev: WebGL2RenderingContext | Device,
+        vert: string,
+        frag: string,
         {
-            vert,
-            frag,
             uniforms = {},
             depth,
             stencil,
             blend,
-        }: CommandProps<P>,
+        }: CommandOptions<P> = {},
     ): Command<P> {
         assert.nonNull(vert, "vert");
         assert.nonNull(frag, "frag");
@@ -432,7 +430,7 @@ export class UniformDescriptor<P> {
 }
 
 function parseDepth(
-    depth: CommandProps<void>["depth"],
+    depth: CommandOptions<void>["depth"],
 ): DepthDescriptor | undefined {
     if (!depth) { return undefined; }
     return new DepthDescriptor(
@@ -444,7 +442,7 @@ function parseDepth(
 }
 
 function parseStencil(
-    stencil: CommandProps<void>["stencil"],
+    stencil: CommandOptions<void>["stencil"],
 ): StencilDescriptor | undefined {
     if (!stencil) { return undefined; }
     return new StencilDescriptor(
@@ -518,7 +516,7 @@ function parseStencil(
 }
 
 function parseBlend(
-    blend: CommandProps<void>["blend"],
+    blend: CommandOptions<void>["blend"],
 ): BlendDescriptor | undefined {
     if (!blend) { return undefined; }
     return new BlendDescriptor(

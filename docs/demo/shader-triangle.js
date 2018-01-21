@@ -2,8 +2,9 @@ import { Device, Command, VertexArray, Primitive } from "./lib/glutenfree.es.js"
 
 const dev = Device.mount();
 
-const cmd = Command.create(dev, {
-    vert: `#version 300 es
+const cmd = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         out vec4 v_color;
@@ -22,7 +23,7 @@ const cmd = Command.create(dev, {
             gl_Position = 0.1 * float(gl_VertexID / 3) + VERTICES[vid];
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         in vec4 v_color;
@@ -33,7 +34,7 @@ const cmd = Command.create(dev, {
             f_color = v_color;
         }
     `,
-});
+);
 
 const geometry = VertexArray.empty(dev, Primitive.TRIANGLES, 150);
 

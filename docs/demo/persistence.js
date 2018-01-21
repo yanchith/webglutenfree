@@ -30,8 +30,9 @@ const pongFbo = Framebuffer.fromColor(dev, width, height, pongTex);
 
 const view = mat4.create();
 
-const draw = Command.create(dev, {
-    vert: `#version 300 es
+const draw = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         uniform mat4 u_projection, u_model, u_view;
@@ -45,7 +46,7 @@ const draw = Command.create(dev, {
                 * vec4(a_position, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         out vec4 f_color;
@@ -54,35 +55,38 @@ const draw = Command.create(dev, {
             f_color = vec4(0.8, 0.3, 0.7, 1.0);
         }
     `,
-    uniforms: {
-        u_projection: {
-            type: "matrix4fv",
-            value: mat4.perspective(
-                mat4.create(),
-                Math.PI / 4,
-                width / height,
-                0.1,
-                1000.0,
-            ),
-        },
-        u_model: {
-            type: "matrix4fv",
-            value: mat4.identity(mat4.create()),
-        },
-        u_view: {
-            type: "matrix4fv",
-            value: ({ time }) => mat4.lookAt(
-                view,
-                [30 * Math.cos(time / 1000), 2.5, 30 * Math.sin(time / 1000)],
-                [0, 2.5, 0],
-                [0, 1, 0]
-            ),
+    {
+        uniforms: {
+            u_projection: {
+                type: "matrix4fv",
+                value: mat4.perspective(
+                    mat4.create(),
+                    Math.PI / 4,
+                    width / height,
+                    0.1,
+                    1000.0,
+                ),
+            },
+            u_model: {
+                type: "matrix4fv",
+                value: mat4.identity(mat4.create()),
+            },
+            u_view: {
+                type: "matrix4fv",
+                value: ({ time }) => mat4.lookAt(
+                    view,
+                    [30 * Math.cos(time / 1000), 2.5, 30 * Math.sin(time / 1000)],
+                    [0, 2.5, 0],
+                    [0, 1, 0]
+                ),
+            },
         },
     },
-});
+);
 
-const blend = Command.create(dev, {
-    vert: `#version 300 es
+const blend = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         layout (location = 0) in vec2 a_position;
@@ -95,7 +99,7 @@ const blend = Command.create(dev, {
             gl_Position = vec4(a_position, 0.0, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         uniform sampler2D u_new_frame, u_ping;
@@ -115,24 +119,27 @@ const blend = Command.create(dev, {
             f_color = blend_alpha(c2, c1, u_blend_factor);
         }
     `,
-    uniforms: {
-        u_new_frame: {
-            type: "texture",
-            value: ({ newFrame }) => newFrame,
+    {
+        uniforms: {
+            u_new_frame: {
+                type: "texture",
+                value: ({ newFrame }) => newFrame,
+            },
+            u_ping: {
+                type: "texture",
+                value: ({ ping }) => ping,
+            },
+            u_blend_factor: {
+                type: "1f",
+                value: PERSISTENCE_FACTOR,
+            }
         },
-        u_ping: {
-            type: "texture",
-            value: ({ ping }) => ping,
-        },
-        u_blend_factor: {
-            type: "1f",
-            value: PERSISTENCE_FACTOR,
-        }
     },
-});
+);
 
-const copyToCanvas = Command.create(dev, {
-    vert: `#version 300 es
+const copyToCanvas = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         layout (location = 0) in vec2 a_position;
@@ -145,7 +152,7 @@ const copyToCanvas = Command.create(dev, {
             gl_Position = vec4(a_position, 0.0, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         uniform sampler2D u_source;
@@ -158,13 +165,15 @@ const copyToCanvas = Command.create(dev, {
             f_color = texture(u_source, v_tex_coord);
         }
     `,
-    uniforms: {
-        u_source: {
-            type: "texture",
-            value: ({ source }) => source,
-        }
+    {
+        uniforms: {
+            u_source: {
+                type: "texture",
+                value: ({ source }) => source,
+            }
+        },
     },
-})
+);
 
 
 const screenspaceGeometry = VertexArray.indexed(

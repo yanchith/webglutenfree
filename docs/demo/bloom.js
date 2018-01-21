@@ -45,8 +45,9 @@ const bloomPongFbo = Framebuffer.fromColor(dev, width, height, bloomPongTex);
 
 const view = mat4.create();
 
-const scene = Command.create(dev, {
-    vert: `#version 300 es
+const scene = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         uniform mat4 u_projection, u_view, u_model;
@@ -60,7 +61,7 @@ const scene = Command.create(dev, {
                 * vec4(a_position, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         out vec4 f_color;
@@ -69,35 +70,38 @@ const scene = Command.create(dev, {
             f_color = vec4(0.9, 0.8, 0.9, 0.5);
         }
     `,
-    uniforms: {
-        u_model: {
-            type: "matrix4fv",
-            value: mat4.fromScaling(mat4.create(), [2, 2, 2]),
-        },
-        u_view: {
-            type: "matrix4fv",
-            value: ({ time }) => mat4.lookAt(
-                view,
-                [30 * Math.cos(time / 1000), 5, 30 * Math.sin(time / 1000)],
-                [0, 0, 0],
-                [0, 1, 0]
-            ),
-        },
-        u_projection: {
-            type: "matrix4fv",
-            value: mat4.perspective(
-                mat4.create(),
-                Math.PI / 4,
-                width / height,
-                0.1,
-                1000.0,
-            ),
+    {
+        uniforms: {
+            u_model: {
+                type: "matrix4fv",
+                value: mat4.fromScaling(mat4.create(), [2, 2, 2]),
+            },
+            u_view: {
+                type: "matrix4fv",
+                value: ({ time }) => mat4.lookAt(
+                    view,
+                    [30 * Math.cos(time / 1000), 5, 30 * Math.sin(time / 1000)],
+                    [0, 0, 0],
+                    [0, 1, 0]
+                ),
+            },
+            u_projection: {
+                type: "matrix4fv",
+                value: mat4.perspective(
+                    mat4.create(),
+                    Math.PI / 4,
+                    width / height,
+                    0.1,
+                    1000.0,
+                ),
+            },
         },
     },
-});
+);
 
-const split = Command.create(dev, {
-    vert: `#version 300 es
+const split = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         layout (location = 0) in vec2 a_position;
@@ -110,7 +114,7 @@ const split = Command.create(dev, {
             gl_Position = vec4(a_position, 0.0, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         uniform sampler2D u_image;
@@ -131,16 +135,19 @@ const split = Command.create(dev, {
             f_bright = brightness > 0.7 ? color : vec4(0.0, 0.0, 0.0, 1.0);
         }
     `,
-    uniforms: {
-        u_image: {
-            type: "texture",
-            value: initialTex,
+    {
+        uniforms: {
+            u_image: {
+                type: "texture",
+                value: initialTex,
+            },
         },
     },
-});
+);
 
-const bloom = Command.create(dev, {
-    vert: `#version 300 es
+const bloom = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         layout (location = 0) in vec2 a_position;
@@ -153,7 +160,7 @@ const bloom = Command.create(dev, {
             gl_Position = vec4(a_position, 0.0, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         #define KERNEL_LENGTH ${GAUSSIAN.length}
@@ -182,24 +189,27 @@ const bloom = Command.create(dev, {
             color = vec4(color_sum.rgb, 1.0);
         }
     `,
-    uniforms: {
-        u_kernel: {
-            type: "1fv",
-            value: GAUSSIAN,
-        },
-        u_blur_direction: {
-            type: "2f",
-            value: ({ direction }) => direction,
-        },
-        u_image: {
-            type: "texture",
-            value: ({ source }) => source,
+    {
+        uniforms: {
+            u_kernel: {
+                type: "1fv",
+                value: GAUSSIAN,
+            },
+            u_blur_direction: {
+                type: "2f",
+                value: ({ direction }) => direction,
+            },
+            u_image: {
+                type: "texture",
+                value: ({ source }) => source,
+            },
         },
     },
-});
+);
 
-const tonemap = Command.create(dev, {
-    vert: `#version 300 es
+const tonemap = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         layout (location = 0) in vec2 a_position;
@@ -212,7 +222,7 @@ const tonemap = Command.create(dev, {
             gl_Position = vec4(a_position, 0.0, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         uniform sampler2D u_image_color;
@@ -239,17 +249,19 @@ const tonemap = Command.create(dev, {
             f_color = vec4(mapped, 1.0);
         }
     `,
-    uniforms: {
-        u_image_color: {
-            type: "texture",
-            value: splitColorTex,
-        },
-        u_image_bloom: {
-            type: "texture",
-            value: bloomPingTex,
+    {
+        uniforms: {
+            u_image_color: {
+                type: "texture",
+                value: splitColorTex,
+            },
+            u_image_bloom: {
+                type: "texture",
+                value: bloomPingTex,
+            },
         },
     },
-});
+);
 
 
 const screenspaceGeometry = VertexArray.indexed(

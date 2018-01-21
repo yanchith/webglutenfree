@@ -695,7 +695,7 @@ class Command {
         this.stencilDescr = stencilDescr;
         this.blendDescr = blendDescr;
     }
-    static create(dev, { vert, frag, uniforms = {}, depth, stencil, blend, }) {
+    static create(dev, vert, frag, { uniforms = {}, depth, stencil, blend, } = {}) {
         nonNull(vert, "vert");
         nonNull(frag, "frag");
         if (depth) {

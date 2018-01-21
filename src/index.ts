@@ -1,7 +1,7 @@
 export { Device, Extension } from "./device";
 export {
     Command,
-    CommandProps,
+    CommandOptions,
     DepthFunc,
     StencilFunc,
     StencilOp,

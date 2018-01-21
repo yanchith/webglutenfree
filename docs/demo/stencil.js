@@ -22,8 +22,9 @@ const projection = mat4.perspective(
 
 const view = mat4.create();
 
-const drawObjects = Command.create(dev, {
-    vert: `#version 300 es
+const drawObjects = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         uniform mat4 u_projection, u_model, u_view;
@@ -39,7 +40,7 @@ const drawObjects = Command.create(dev, {
                 * vec4(a_position, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         out vec4 f_color;
@@ -54,43 +55,46 @@ const drawObjects = Command.create(dev, {
             );
         }
     `,
-    uniforms: {
-        u_model: {
-            type: "matrix4fv",
-            value: ({ model }) => model,
+    {
+        uniforms: {
+            u_model: {
+                type: "matrix4fv",
+                value: ({ model }) => model,
+            },
+            u_view: {
+                type: "matrix4fv",
+                value: ({ time }) => mat4.lookAt(
+                    view,
+                    [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
+                    [0, 1, 0],
+                    [0, 1, 0],
+                ),
+            },
+            u_projection: {
+                type: "matrix4fv",
+                value: projection,
+            },
         },
-        u_view: {
-            type: "matrix4fv",
-            value: ({ time }) => mat4.lookAt(
-                view,
-                [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
-                [0, 1, 0],
-                [0, 1, 0],
-            ),
-        },
-        u_projection: {
-            type: "matrix4fv",
-            value: projection,
-        },
-    },
-    depth: { func: DepthFunc.LESS },
-    stencil: {
-        func: {
-            func: StencilFunc.ALWAYS,
-            ref: 1,
+        depth: { func: DepthFunc.LESS },
+        stencil: {
+            func: {
+                func: StencilFunc.ALWAYS,
+                ref: 1,
+                mask: 0xFF,
+            },
             mask: 0xFF,
-        },
-        mask: 0xFF,
-        op: {
-            fail: StencilOp.KEEP,
-            zfail: StencilOp.KEEP,
-            zpass: StencilOp.REPLACE,
+            op: {
+                fail: StencilOp.KEEP,
+                zfail: StencilOp.KEEP,
+                zpass: StencilOp.REPLACE,
+            },
         },
     },
-});
+);
 
-const drawOutlines = Command.create(dev, {
-    vert: `#version 300 es
+const drawOutlines = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         uniform mat4 u_projection, u_model, u_view;
@@ -106,7 +110,7 @@ const drawOutlines = Command.create(dev, {
                 * vec4(a_position, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         out vec4 f_color;
@@ -115,34 +119,36 @@ const drawOutlines = Command.create(dev, {
             f_color = vec4(0.0, 1.0, 0.0, 1.0);
         }
     `,
-    uniforms: {
-        u_model: {
-            type: "matrix4fv",
-            value: ({ model }) => model,
+    {
+        uniforms: {
+            u_model: {
+                type: "matrix4fv",
+                value: ({ model }) => model,
+            },
+            u_view: {
+                type: "matrix4fv",
+                value: ({ time }) => mat4.lookAt(
+                    view,
+                    [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
+                    [0, 1, 0],
+                    [0, 1, 0],
+                ),
+            },
+            u_projection: {
+                type: "matrix4fv",
+                value: projection,
+            },
         },
-        u_view: {
-            type: "matrix4fv",
-            value: ({ time }) => mat4.lookAt(
-                view,
-                [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
-                [0, 1, 0],
-            [0, 1, 0],
-            ),
-        },
-        u_projection: {
-            type: "matrix4fv",
-            value: projection,
+        stencil: {
+            func: {
+                func: StencilFunc.NOTEQUAL,
+                ref: 1,
+                mask: 0xFF,
+            },
+            mask: 0x00,
         },
     },
-    stencil: {
-        func: {
-            func: StencilFunc.NOTEQUAL,
-            ref: 1,
-            mask: 0xFF,
-        },
-        mask: 0x00,
-    },
-});
+);
 
 const cubeGeometry = VertexArray.indexed(
     dev,

@@ -44,8 +44,9 @@ async function run() {
     const imageData = await loadImage("img/lenna.png", true);
     const imageTexture = Texture.fromImage(dev, imageData);
 
-    const cmd = Command.create(dev, {
-        vert: `#version 300 es
+    const cmd = Command.create(
+        dev,
+        `#version 300 es
             precision mediump float;
 
             uniform mat4 u_projection, u_model, u_view;
@@ -63,7 +64,7 @@ async function run() {
                     * vec4(a_position, 0.0, 1.0);
             }
         `,
-        frag: `#version 300 es
+        `#version 300 es
             precision mediump float;
 
             uniform sampler2D u_image;
@@ -90,41 +91,43 @@ async function run() {
                 f_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
             }
         `,
-        uniforms: {
-            u_model: {
-                type: "matrix4fv",
-                value: mat4.fromScaling(mat4.create(), [400, 400, 1]),
-            },
-            u_view: {
-                type: "matrix4fv",
-                value: mat4.identity(mat4.create()),
-            },
-            u_projection: {
-                type: "matrix4fv",
-                value: mat4.ortho(
-                    mat4.create(),
-                    -width / 2,
-                    width / 2,
-                    -height / 2,
-                    height / 2,
-                    -0.1,
-                    1000.0,
-                ),
-            },
-            u_kernel: {
-                type: "1fv",
-                value: KERNEL,
-            },
-            u_kernel_weight: {
-                type: "1f",
-                value: computeKernelWeight(KERNEL),
-            },
-            u_image: {
-                type: "texture",
-                value: imageTexture,
+        {
+            uniforms: {
+                u_model: {
+                    type: "matrix4fv",
+                    value: mat4.fromScaling(mat4.create(), [400, 400, 1]),
+                },
+                u_view: {
+                    type: "matrix4fv",
+                    value: mat4.identity(mat4.create()),
+                },
+                u_projection: {
+                    type: "matrix4fv",
+                    value: mat4.ortho(
+                        mat4.create(),
+                        -width / 2,
+                        width / 2,
+                        -height / 2,
+                        height / 2,
+                        -0.1,
+                        1000.0,
+                    ),
+                },
+                u_kernel: {
+                    type: "1fv",
+                    value: KERNEL,
+                },
+                u_kernel_weight: {
+                    type: "1f",
+                    value: computeKernelWeight(KERNEL),
+                },
+                u_image: {
+                    type: "texture",
+                    value: imageTexture,
+                },
             },
         },
-    });
+    );
 
     const screenspaceGeometry = VertexArray.indexed(
         dev,

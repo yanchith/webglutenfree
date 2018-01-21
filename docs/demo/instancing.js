@@ -10,8 +10,9 @@ const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
 const view = mat4.identity(mat4.create());
 
-const cmd = Command.create(dev, {
-    vert: `#version 300 es
+const cmd = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         uniform mat4 u_projection;
@@ -32,7 +33,7 @@ const cmd = Command.create(dev, {
                 * vec4(a_position + a_offset, 0.0, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         in vec4 v_vertex_color;
@@ -43,29 +44,31 @@ const cmd = Command.create(dev, {
             f_color = v_vertex_color;
         }
     `,
-    uniforms: {
-        u_projection: {
-            type: "matrix4fv",
-            value: mat4.ortho(
-                mat4.create(),
-                -width / 2,
-                width / 2,
-                -height / 2,
-                height / 2,
-                -0.1,
-                1000.0,
-            ),
-        },
-        u_model: {
-            type: "matrix4fv",
-            value: mat4.fromScaling(mat4.create(), [50, 50, 100]),
-        },
-        u_view: {
-            type: "matrix4fv",
-            value: () => mat4.rotateZ(view, view, 0.01),
+    {
+        uniforms: {
+            u_projection: {
+                type: "matrix4fv",
+                value: mat4.ortho(
+                    mat4.create(),
+                    -width / 2,
+                    width / 2,
+                    -height / 2,
+                    height / 2,
+                    -0.1,
+                    1000.0,
+                ),
+            },
+            u_model: {
+                type: "matrix4fv",
+                value: mat4.fromScaling(mat4.create(), [50, 50, 100]),
+            },
+            u_view: {
+                type: "matrix4fv",
+                value: () => mat4.rotateZ(view, view, 0.01),
+            },
         },
     },
-});
+);
 
 const geometry = VertexArray.indexed(
     dev,

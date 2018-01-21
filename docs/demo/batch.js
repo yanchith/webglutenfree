@@ -5,8 +5,9 @@ import * as bunny from "./lib/bunny.js"
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const cmd = Command.create(dev, {
-    vert: `#version 300 es
+const cmd = Command.create(
+    dev,
+    `#version 300 es
         precision mediump float;
 
         uniform mat4 u_projection, u_model, u_view;
@@ -22,7 +23,7 @@ const cmd = Command.create(dev, {
                 * vec4(a_position, 1.0);
         }
     `,
-    frag: `#version 300 es
+    `#version 300 es
         precision mediump float;
 
         out vec4 f_color;
@@ -31,32 +32,34 @@ const cmd = Command.create(dev, {
             f_color = vec4(1.0);
         }
     `,
-    uniforms: {
-        u_model: {
-            type: "matrix4fv",
-            value: ({ modelMatrix }) => modelMatrix,
-        },
-        u_view: {
-            type: "matrix4fv",
-            value: mat4.lookAt(
-                mat4.create(),
-                [3, 5, 10],
-                [0, 1, 0],
-                [0, 1, 0],
-            ),
-        },
-        u_projection: {
-            type: "matrix4fv",
-            value: mat4.perspective(
-                mat4.create(),
-                Math.PI / 4,
-                width / height,
-                0.1,
-                1000,
-            ),
+    {
+        uniforms: {
+            u_model: {
+                type: "matrix4fv",
+                value: ({ modelMatrix }) => modelMatrix,
+            },
+            u_view: {
+                type: "matrix4fv",
+                value: mat4.lookAt(
+                    mat4.create(),
+                    [3, 5, 10],
+                    [0, 1, 0],
+                    [0, 1, 0],
+                ),
+            },
+            u_projection: {
+                type: "matrix4fv",
+                value: mat4.perspective(
+                    mat4.create(),
+                    Math.PI / 4,
+                    width / height,
+                    0.1,
+                    1000,
+                ),
+            },
         },
     },
-});
+);
 
 const cubeGeometry = VertexArray.indexed(
     dev,
