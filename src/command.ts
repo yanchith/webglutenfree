@@ -1,7 +1,7 @@
 import * as assert from "./assert";
 import * as glutil from "./glutil";
 import { Device } from "./device";
-import { Attributes } from "./vertex-array";
+import { Attributes } from "./attribute-data";
 import { Texture, TextureInternalFormat } from "./texture";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;

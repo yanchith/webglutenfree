@@ -80,7 +80,7 @@ export interface AttributeIPointer {
  * Vertex array objects store store vertex buffers, an index buffer,
  * and attributes with the vertex format for provided vertex buffers.
  */
-export class VertexArray {
+export class AttributeData {
 
     /**
      * Create a new vertex array with attribute and element definitions.
@@ -93,7 +93,7 @@ export class VertexArray {
         dev: Device,
         primitive: Primitive,
         attributes: Attributes,
-    ): VertexArray {
+    ): AttributeData {
         const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
@@ -117,14 +117,14 @@ export class VertexArray {
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
 
-        return new VertexArray(gl, primitive, attrs, count, instanceCount);
+        return new AttributeData(gl, primitive, attrs, count, instanceCount);
     }
 
-    static indexed(
+    static fromElements(
         dev: Device,
         elements: ElementArray | ElementBuffer<ElementBufferType>,
         attributes: Attributes,
-    ): VertexArray {
+    ): AttributeData {
         const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
@@ -154,7 +154,7 @@ export class VertexArray {
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
 
-        return new VertexArray(
+        return new AttributeData(
             gl,
             elementBuffer.primitive,
             attrs,
@@ -164,9 +164,13 @@ export class VertexArray {
         );
     }
 
-    static empty(dev: Device, primitive: Primitive, count: number): VertexArray {
+    static empty(
+        dev: Device,
+        primitive: Primitive,
+        count: number,
+    ): AttributeData {
         const gl = dev.gl;
-        return new VertexArray(gl, primitive, [], count, 0);
+        return new AttributeData(gl, primitive, [], count, 0);
     }
 
     readonly primitive: Primitive;
@@ -222,13 +226,13 @@ export class VertexArray {
 
         gl.bindVertexArray(vao);
         attributes.forEach(({
-                location,
+            location,
             type,
             buffer: { glBuffer, type: glBufferType },
             size,
             normalized = false,
             divisor,
-            }) => {
+        }) => {
             // Enable sending attribute arrays for location
             gl.enableVertexAttribArray(location);
 

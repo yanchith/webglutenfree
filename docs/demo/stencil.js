@@ -1,7 +1,7 @@
 import {
     Device,
     Command,
-    VertexArray,
+    AttributeData,
     DepthFunc,
     StencilFunc,
     StencilOp,
@@ -150,13 +150,13 @@ const drawOutlines = Command.create(
     },
 );
 
-const cubeGeometry = VertexArray.indexed(
+const cubeGeometry = AttributeData.fromElements(
     dev,
     cube.elements,
     drawObjects.locate({ a_position: cube.positions }),
 );
 
-const bunnyGeometry = VertexArray.indexed(
+const bunnyGeometry = AttributeData.fromElements(
     dev,
     bunny.elements,
     drawObjects.locate({ a_position: bunny.positions }),

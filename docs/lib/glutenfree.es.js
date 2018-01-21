@@ -1126,7 +1126,7 @@ var AttributeType;
  * Vertex array objects store store vertex buffers, an index buffer,
  * and attributes with the vertex format for provided vertex buffers.
  */
-class VertexArray {
+class AttributeData {
     /**
      * Create a new vertex array with attribute and element definitions.
      * `attributes` can either reference an existing vertex buffer, or have
@@ -1155,9 +1155,9 @@ class VertexArray {
                 .map(attr => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
-        return new VertexArray(gl, primitive, attrs, count, instanceCount);
+        return new AttributeData(gl, primitive, attrs, count, instanceCount);
     }
-    static indexed(dev, elements, attributes) {
+    static fromElements(dev, elements, attributes) {
         const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
@@ -1183,11 +1183,11 @@ class VertexArray {
                 .map(attr => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
-        return new VertexArray(gl, elementBuffer.primitive, attrs, count, instanceCount, elementBuffer);
+        return new AttributeData(gl, elementBuffer.primitive, attrs, count, instanceCount, elementBuffer);
     }
     static empty(dev, primitive, count) {
         const gl = dev.gl;
-        return new VertexArray(gl, primitive, [], count, 0);
+        return new AttributeData(gl, primitive, [], count, 0);
     }
     constructor(gl, primitive, attributes, count, instanceCount, elements) {
         this.gl = gl;
@@ -1566,5 +1566,5 @@ class Framebuffer {
     }
 }
 
-export { Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferType, ElementBuffer, ElementBufferType, Primitive, VertexArray, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
+export { Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferType, ElementBuffer, ElementBufferType, Primitive, AttributeData, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
 //# sourceMappingURL=glutenfree.es.js.map

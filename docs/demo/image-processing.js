@@ -1,4 +1,4 @@
-import { Device, Command, VertexArray, Texture } from "./lib/glutenfree.es.js";
+import { Device, Command, AttributeData, Texture } from "./lib/glutenfree.es.js";
 import * as square from "./lib/square.js"
 import { loadImage } from "./lib/load-image.js";
 
@@ -129,7 +129,7 @@ async function run() {
         },
     );
 
-    const screenspaceGeometry = VertexArray.indexed(
+    const screenspaceGeometry = AttributeData.fromElements(
         dev,
         square.elements,
         cmd.locate({

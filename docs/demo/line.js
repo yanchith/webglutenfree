@@ -1,4 +1,4 @@
-import { Device, Command, VertexArray, Primitive } from "./lib/glutenfree.es.js";
+import { Device, Command, AttributeData, Primitive } from "./lib/glutenfree.es.js";
 
 const dev = Device.mount();
 
@@ -30,7 +30,7 @@ const cmd = Command.create(
     `,
 );
 
-const geometry = VertexArray.indexed(
+const geometry = AttributeData.fromElements(
     dev,
     [
         [0, 1],

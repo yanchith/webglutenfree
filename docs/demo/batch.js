@@ -1,4 +1,4 @@
-import { Device, Command, VertexArray } from "./lib/glutenfree.es.js";
+import { Device, Command, AttributeData } from "./lib/glutenfree.es.js";
 import * as cube from "./lib/cube.js"
 import * as bunny from "./lib/bunny.js"
 
@@ -61,13 +61,13 @@ const cmd = Command.create(
     },
 );
 
-const cubeGeometry = VertexArray.indexed(
+const cubeGeometry = AttributeData.fromElements(
     dev,
     cube.elements,
     cmd.locate({ a_position: cube.positions }),
 );
 
-const bunnyGeometry = VertexArray.indexed(
+const bunnyGeometry = AttributeData.fromElements(
     dev,
     bunny.elements,
     cmd.locate({ a_position: bunny.positions }),

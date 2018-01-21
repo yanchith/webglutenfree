@@ -2,7 +2,7 @@ import {
     Device,
     Command,
     BlendFunc,
-    VertexArray,
+    AttributeData,
     Primitive,
 } from "./lib/glutenfree.es.js";
 import * as bunny from "./lib/bunny.js"
@@ -73,7 +73,7 @@ const cmd = Command.create(
     },
 );
 
-const geometry = VertexArray.indexed(
+const geometry = AttributeData.fromElements(
     dev,
     bunny.elements,
     cmd.locate({ a_position: bunny.positions }),

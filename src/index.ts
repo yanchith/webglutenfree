@@ -10,7 +10,7 @@ export {
 } from "./command";
 export { VertexBuffer, VertexBufferType } from "./vertex-buffer";
 export { ElementBuffer, ElementBufferType, Primitive } from "./element-buffer";
-export { VertexArray, AttributeType } from "./vertex-array";
+export { AttributeData, AttributeType } from "./attribute-data";
 export {
     Texture,
     TextureOptions,

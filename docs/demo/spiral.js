@@ -2,7 +2,7 @@ import {
     Device,
     Command,
     BlendFunc,
-    VertexArray,
+    AttributeData,
     Primitive,
 } from "./lib/glutenfree.es.js";
 import * as spiral from "./lib/spiral.js"
@@ -79,7 +79,7 @@ const cmd = Command.create(
     },
 );
 
-const geometry = VertexArray.create(
+const geometry = AttributeData.create(
     dev,
     Primitive.TRIANGLES,
     cmd.locate({

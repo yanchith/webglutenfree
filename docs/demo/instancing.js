@@ -1,7 +1,7 @@
 import {
     Device,
     Command,
-    VertexArray,
+    AttributeData,
     VertexBuffer,
 } from "./lib/glutenfree.es.js";
 
@@ -70,7 +70,7 @@ const cmd = Command.create(
     },
 );
 
-const geometry = VertexArray.indexed(
+const geometry = AttributeData.fromElements(
     dev,
     [
         [0, 3, 2],

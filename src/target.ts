@@ -6,7 +6,7 @@ import {
     BlendDescriptor,
     UniformDescriptor,
 } from "./command";
-import { VertexArray } from "./vertex-array";
+import { AttributeData } from "./attribute-data";
 import { Primitive } from "./element-buffer";
 
 // This stores a render target stack for each WebGL context. WeakMap is used
@@ -167,7 +167,7 @@ export class Target {
     /**
      * Draw to the target with a command, geometry, and command properties.
      */
-    draw<P>(cmd: Command<P>, geometry: VertexArray, props: P): void {
+    draw<P>(cmd: Command<P>, geometry: AttributeData, props: P): void {
         const gl = this.gl;
         const {
             glProgram,
@@ -224,7 +224,7 @@ export class Target {
      */
     batch<P>(
         cmd: Command<P>,
-        cb: (draw: (geometry: VertexArray, props: P) => void) => void,
+        cb: (draw: (geometry: AttributeData, props: P) => void) => void,
     ): void {
         const gl = this.gl;
         const {
@@ -246,8 +246,8 @@ export class Target {
         this.beginBlend(blendDescr);
 
         let iter = 0;
-        let currVao: VertexArray | null = null;
-        cb((geometry: VertexArray, props: P) => {
+        let currVao: AttributeData | null = null;
+        cb((geometry: AttributeData, props: P) => {
             this.updateUniforms(uniformDescrs, props, iter++);
             if (geometry.isEmpty()) {
                 if (currVao) {

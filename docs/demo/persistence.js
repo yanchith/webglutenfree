@@ -6,7 +6,7 @@
 import {
     Device,
     Command,
-    VertexArray,
+    AttributeData,
     Texture,
     TextureInternalFormat,
     Framebuffer,
@@ -176,7 +176,7 @@ const copyToCanvas = Command.create(
 );
 
 
-const screenspaceGeometry = VertexArray.indexed(
+const screenspaceGeometry = AttributeData.fromElements(
     dev,
     square.elements,
     {
@@ -186,7 +186,7 @@ const screenspaceGeometry = VertexArray.indexed(
 );
 
 
-const bunnyGeometry = VertexArray.indexed(
+const bunnyGeometry = AttributeData.fromElements(
     dev,
     bunny.elements,
     draw.locate({ a_position: bunny.positions }),

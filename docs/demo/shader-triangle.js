@@ -1,4 +1,4 @@
-import { Device, Command, VertexArray, Primitive } from "./lib/glutenfree.es.js";
+import { Device, Command, AttributeData, Primitive } from "./lib/glutenfree.es.js";
 
 const dev = Device.mount();
 
@@ -36,7 +36,7 @@ const cmd = Command.create(
     `,
 );
 
-const geometry = VertexArray.empty(dev, Primitive.TRIANGLES, 150);
+const geometry = AttributeData.empty(dev, Primitive.TRIANGLES, 150);
 
 dev.target(rt => {
     rt.clearColor(0, 0, 0, 1);

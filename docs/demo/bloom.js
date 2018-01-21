@@ -1,7 +1,7 @@
 import {
     Device,
     Command,
-    VertexArray,
+    AttributeData,
     Texture,
     TextureInternalFormat,
     Framebuffer,
@@ -264,7 +264,7 @@ const tonemap = Command.create(
 );
 
 
-const screenspaceGeometry = VertexArray.indexed(
+const screenspaceGeometry = AttributeData.fromElements(
     dev,
     square.elements,
     {
@@ -273,7 +273,7 @@ const screenspaceGeometry = VertexArray.indexed(
     },
 );
 
-const cubeGeometry = VertexArray.indexed(
+const cubeGeometry = AttributeData.fromElements(
     dev,
     cube.elements,
     { 0: cube.positions },
