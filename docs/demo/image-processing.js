@@ -129,7 +129,7 @@ async function run() {
         },
     );
 
-    const screenspaceGeometry = AttributeData.fromElements(
+    const attrs = AttributeData.fromElements(
         dev,
         square.elements,
         cmd.locate({
@@ -140,7 +140,7 @@ async function run() {
 
     dev.target(rt => {
         rt.clearColor(0, 0, 0, 1);
-        rt.draw(cmd, screenspaceGeometry);
+        rt.draw(cmd, attrs);
     })
 }
 

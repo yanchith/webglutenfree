@@ -30,7 +30,7 @@ const cmd = Command.create(
     `,
 );
 
-const geometry = AttributeData.create(
+const attrs = AttributeData.create(
     dev,
     Primitive.TRIANGLES,
     cmd.locate({
@@ -49,5 +49,5 @@ const geometry = AttributeData.create(
 
 dev.target(rt => {
     rt.clearColor(0, 0, 0, 1);
-    rt.draw(cmd, geometry);
+    rt.draw(cmd, attrs);
 });

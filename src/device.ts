@@ -330,9 +330,9 @@ export class Target {
     }
 
     /**
-     * Draw to the target with a command, geometry, and command properties.
+     * Draw to the target with a command, attributes, and command properties.
      */
-    draw<P>(cmd: Command<P>, geometry: AttributeData, props: P): void {
+    draw<P>(cmd: Command<P>, attrs: AttributeData, props: P): void {
         const gl = this.gl;
         const {
             glProgram,
@@ -350,29 +350,29 @@ export class Target {
 
         this.updateUniforms(uniformDescrs, props, 0);
 
-        if (geometry.isEmpty()) {
+        if (attrs.isEmpty()) {
             gl.drawArrays(
-                geometry.primitive,
+                attrs.primitive,
                 0 /* offset */,
-                geometry.count,
+                attrs.count,
             );
         } else {
-            gl.bindVertexArray(geometry.glVertexArray);
+            gl.bindVertexArray(attrs.glVertexArray);
 
-            if (geometry.elements) {
+            if (attrs.elements) {
                 this.drawElements(
-                    geometry.primitive,
-                    geometry.elementCount,
-                    geometry.elementType!,
+                    attrs.primitive,
+                    attrs.elementCount,
+                    attrs.elementType!,
                     0, // offset
-                    geometry.instanceCount,
+                    attrs.instanceCount,
                 );
             } else {
                 this.drawArrays(
-                    geometry.primitive,
-                    geometry.count,
+                    attrs.primitive,
+                    attrs.count,
                     0, // offset
-                    geometry.instanceCount,
+                    attrs.instanceCount,
                 );
             }
 
@@ -393,7 +393,7 @@ export class Target {
      */
     batch<P>(
         cmd: Command<P>,
-        cb: (draw: (geometry: AttributeData, props: P) => void) => void,
+        cb: (draw: (attrs: AttributeData, props: P) => void) => void,
     ): void {
         const gl = this.gl;
         const {
@@ -416,38 +416,38 @@ export class Target {
 
         let iter = 0;
         let currVao: AttributeData | null = null;
-        cb((geometry: AttributeData, props: P) => {
+        cb((attrs: AttributeData, props: P) => {
             this.updateUniforms(uniformDescrs, props, iter++);
-            if (geometry.isEmpty()) {
+            if (attrs.isEmpty()) {
                 if (currVao) {
                     gl.bindVertexArray(null);
                     currVao = null;
                 }
                 gl.drawArrays(
-                    geometry.primitive,
+                    attrs.primitive,
                     0 /* offset */,
-                    geometry.count,
+                    attrs.count,
                 );
             } else {
-                if (geometry !== currVao) {
-                    gl.bindVertexArray(geometry.glVertexArray);
-                    currVao = geometry;
+                if (attrs !== currVao) {
+                    gl.bindVertexArray(attrs.glVertexArray);
+                    currVao = attrs;
                 }
 
-                if (geometry.elements) {
+                if (attrs.elements) {
                     this.drawElements(
-                        geometry.primitive,
-                        geometry.elementCount,
-                        geometry.elementType!,
+                        attrs.primitive,
+                        attrs.elementCount,
+                        attrs.elementType!,
                         0, // offset
-                        geometry.instanceCount,
+                        attrs.instanceCount,
                     );
                 } else {
                     this.drawArrays(
-                        geometry.primitive,
-                        geometry.count,
+                        attrs.primitive,
+                        attrs.count,
                         0, // offset
-                        geometry.instanceCount,
+                        attrs.instanceCount,
                     );
                 }
             }

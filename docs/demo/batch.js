@@ -61,13 +61,13 @@ const cmd = Command.create(
     },
 );
 
-const cubeGeometry = AttributeData.fromElements(
+const cubeAttrs = AttributeData.fromElements(
     dev,
     cube.elements,
     cmd.locate({ a_position: cube.positions }),
 );
 
-const bunnyGeometry = AttributeData.fromElements(
+const bunnyAttrs = AttributeData.fromElements(
     dev,
     bunny.elements,
     cmd.locate({ a_position: bunny.positions }),
@@ -84,7 +84,7 @@ const bunnyModelMatrix = mat4.fromRotationTranslationScale(
 dev.target(rt => {
     rt.clearColor(0, 0, 0, 1);
     rt.batch(cmd, draw => {
-        draw(cubeGeometry, { modelMatrix: cubeModelMatrix });
-        draw(bunnyGeometry, { modelMatrix: bunnyModelMatrix });
+        draw(cubeAttrs, { modelMatrix: cubeModelMatrix });
+        draw(bunnyAttrs, { modelMatrix: bunnyModelMatrix });
     });
 });

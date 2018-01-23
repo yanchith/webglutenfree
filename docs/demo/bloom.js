@@ -2,11 +2,11 @@ import {
     Device,
     Command,
     AttributeData,
+    Primitive,
     Texture,
     TextureInternalFormat,
     Framebuffer,
 } from "./lib/glutenfree.es.js";
-import * as square from "./lib/square.js"
 import * as cube from "./lib/cube.js"
 
 const N_BLOOM_PASSES = 3;
@@ -42,8 +42,30 @@ const bloomPingFbo = Framebuffer.fromColor(dev, width, height, bloomPingTex);
 const bloomPongTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
 const bloomPongFbo = Framebuffer.fromColor(dev, width, height, bloomPongTex);
 
-
 const view = mat4.create();
+
+const screenspaceVS = `#version 300 es
+precision mediump float;
+
+out vec2 v_tex_coord;
+
+void main() {
+    switch (gl_VertexID % 3) {
+        case 0:
+            gl_Position = vec4(-1, 3, 0, 1);
+            v_tex_coord = vec2(0, 2);
+            break;
+        case 1:
+            gl_Position = vec4(-1, -1, 0, 1);
+            v_tex_coord = vec2(0, 0);
+            break;
+        case 2:
+            gl_Position = vec4(3, -1, 0, 1);
+            v_tex_coord = vec2(2, 0);
+            break;
+    }
+}
+`;
 
 const scene = Command.create(
     dev,
@@ -101,19 +123,7 @@ const scene = Command.create(
 
 const split = Command.create(
     dev,
-    `#version 300 es
-        precision mediump float;
-
-        layout (location = 0) in vec2 a_position;
-        layout (location = 1) in vec2 a_tex_coord;
-
-        out vec2 v_tex_coord;
-
-        void main() {
-            v_tex_coord = a_tex_coord;
-            gl_Position = vec4(a_position, 0.0, 1.0);
-        }
-    `,
+    screenspaceVS,
     `#version 300 es
         precision mediump float;
 
@@ -147,19 +157,7 @@ const split = Command.create(
 
 const bloom = Command.create(
     dev,
-    `#version 300 es
-        precision mediump float;
-
-        layout (location = 0) in vec2 a_position;
-        layout (location = 1) in vec2 a_tex_coord;
-
-        out vec2 v_tex_coord;
-
-        void main() {
-            v_tex_coord = a_tex_coord;
-            gl_Position = vec4(a_position, 0.0, 1.0);
-        }
-    `,
+    screenspaceVS,
     `#version 300 es
         precision mediump float;
 
@@ -209,19 +207,7 @@ const bloom = Command.create(
 
 const tonemap = Command.create(
     dev,
-    `#version 300 es
-        precision mediump float;
-
-        layout (location = 0) in vec2 a_position;
-        layout (location = 1) in vec2 a_tex_coord;
-
-        out vec2 v_tex_coord;
-
-        void main() {
-            v_tex_coord = a_tex_coord;
-            gl_Position = vec4(a_position, 0.0, 1.0);
-        }
-    `,
+    screenspaceVS,
     `#version 300 es
         precision mediump float;
 
@@ -264,16 +250,8 @@ const tonemap = Command.create(
 );
 
 
-const screenspaceGeometry = AttributeData.fromElements(
-    dev,
-    square.elements,
-    {
-        0: square.positions,
-        1: square.texCoords,
-    },
-);
-
-const cubeGeometry = AttributeData.fromElements(
+const screenspaceAttrs = AttributeData.empty(dev, Primitive.TRIANGLES, 3);
+const cubeAttrs = AttributeData.fromElements(
     dev,
     cube.elements,
     { 0: cube.positions },
@@ -289,22 +267,22 @@ const loop = time => {
     // Render geometry into texture
     initialFbo.target(rt => {
         rt.clearColorAndDepth(0, 0, 0, 1, 1);
-        rt.draw(scene, cubeGeometry, { time });
+        rt.draw(scene, cubeAttrs, { time });
     });
 
     // Split color and brightness to 2 render targets (splitColor, splitBright)
-    splitFbo.target(rt => rt.draw(split, screenspaceGeometry));
+    splitFbo.target(rt => rt.draw(split, screenspaceAttrs));
 
     if (nBloomPasses) {
         // Do first 2 bloom passes: splitBright -> bloomWrite -> bloomRead
         bloomPongFbo.target(rt => {
-            rt.draw(bloom, screenspaceGeometry, {
+            rt.draw(bloom, screenspaceAttrs, {
                 source: splitBrightTex,
                 direction: HORIZONTAL,
             });
         });
         bloomPingFbo.target(rt => {
-            rt.draw(bloom, screenspaceGeometry, {
+            rt.draw(bloom, screenspaceAttrs, {
                 source: bloomPongTex,
                 direction: VERTICAL,
             });
@@ -313,13 +291,13 @@ const loop = time => {
         // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
         for (let i = 1; i < nBloomPasses; i++) {
             bloomPongFbo.target(rt => {
-                rt.draw(bloom, screenspaceGeometry, {
+                rt.draw(bloom, screenspaceAttrs, {
                     source: bloomPingTex,
                     direction: HORIZONTAL,
                 });
             });
             bloomPingFbo.target(rt => {
-                rt.draw(bloom, screenspaceGeometry, {
+                rt.draw(bloom, screenspaceAttrs, {
                     source: bloomPongTex,
                     direction: VERTICAL,
                 });
@@ -330,7 +308,7 @@ const loop = time => {
     // Blend together blurred highlights with original color, perform tonemapping
     dev.target(rt => {
         rt.clearColor(0, 0, 0, 1);
-        rt.draw(tonemap, screenspaceGeometry);
+        rt.draw(tonemap, screenspaceAttrs);
     });
 
     window.requestAnimationFrame(loop);

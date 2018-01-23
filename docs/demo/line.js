@@ -30,7 +30,7 @@ const cmd = Command.create(
     `,
 );
 
-const geometry = AttributeData.fromElements(
+const attrs = AttributeData.fromElements(
     dev,
     [
         [0, 1],
@@ -53,5 +53,5 @@ const geometry = AttributeData.fromElements(
 
 dev.target(rt => {
     rt.clearColor(0, 0, 0, 1);
-    rt.draw(cmd, geometry);
+    rt.draw(cmd, attrs);
 });

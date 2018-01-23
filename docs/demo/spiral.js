@@ -79,7 +79,7 @@ const cmd = Command.create(
     },
 );
 
-const geometry = AttributeData.create(
+const attrs = AttributeData.create(
     dev,
     Primitive.TRIANGLES,
     cmd.locate({
@@ -91,7 +91,7 @@ const geometry = AttributeData.create(
 const loop = time => {
     dev.target(rt => {
         rt.clearColorAndDepth(0, 0, 0, 1, 1);
-        rt.draw(cmd, geometry, time);
+        rt.draw(cmd, attrs, time);
     });
     window.requestAnimationFrame(loop);
 }

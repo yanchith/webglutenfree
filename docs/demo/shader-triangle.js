@@ -36,9 +36,9 @@ const cmd = Command.create(
     `,
 );
 
-const geometry = AttributeData.empty(dev, Primitive.TRIANGLES, 150);
+const attrs = AttributeData.empty(dev, Primitive.TRIANGLES, 150);
 
 dev.target(rt => {
     rt.clearColor(0, 0, 0, 1);
-    rt.draw(cmd, geometry);
+    rt.draw(cmd, attrs);
 });

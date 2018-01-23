@@ -7,11 +7,11 @@ import {
     Device,
     Command,
     AttributeData,
+    Primitive,
     Texture,
     TextureInternalFormat,
     Framebuffer,
 } from "./lib/glutenfree.es.js";
-import * as square from "./lib/square.js"
 import * as bunny from "./lib/bunny.js"
 
 const PERSISTENCE_FACTOR = 0.8;
@@ -29,6 +29,29 @@ const pongTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
 const pongFbo = Framebuffer.fromColor(dev, width, height, pongTex);
 
 const view = mat4.create();
+
+const screenspaceVS = `#version 300 es
+precision mediump float;
+
+out vec2 v_tex_coord;
+
+void main() {
+    switch (gl_VertexID % 3) {
+        case 0:
+            gl_Position = vec4(-1, 3, 0, 1);
+            v_tex_coord = vec2(0, 2);
+            break;
+        case 1:
+            gl_Position = vec4(-1, -1, 0, 1);
+            v_tex_coord = vec2(0, 0);
+            break;
+        case 2:
+            gl_Position = vec4(3, -1, 0, 1);
+            v_tex_coord = vec2(2, 0);
+            break;
+    }
+}
+`;
 
 const draw = Command.create(
     dev,
@@ -86,19 +109,7 @@ const draw = Command.create(
 
 const blend = Command.create(
     dev,
-    `#version 300 es
-        precision mediump float;
-
-        layout (location = 0) in vec2 a_position;
-        layout (location = 1) in vec2 a_tex_coord;
-
-        out vec2 v_tex_coord;
-
-        void main() {
-            v_tex_coord = a_tex_coord;
-            gl_Position = vec4(a_position, 0.0, 1.0);
-        }
-    `,
+    screenspaceVS,
     `#version 300 es
         precision mediump float;
 
@@ -139,19 +150,7 @@ const blend = Command.create(
 
 const copyToCanvas = Command.create(
     dev,
-    `#version 300 es
-        precision mediump float;
-
-        layout (location = 0) in vec2 a_position;
-        layout (location = 1) in vec2 a_tex_coord;
-
-        out vec2 v_tex_coord;
-
-        void main() {
-            v_tex_coord = a_tex_coord;
-            gl_Position = vec4(a_position, 0.0, 1.0);
-        }
-    `,
+    screenspaceVS,
     `#version 300 es
         precision mediump float;
 
@@ -176,17 +175,8 @@ const copyToCanvas = Command.create(
 );
 
 
-const screenspaceGeometry = AttributeData.fromElements(
-    dev,
-    square.elements,
-    {
-        0: square.positions,
-        1: square.texCoords,
-    },
-);
-
-
-const bunnyGeometry = AttributeData.fromElements(
+const screenspaceAttrs = AttributeData.empty(dev, Primitive.TRIANGLES, 3);
+const bunnyAttrs = AttributeData.fromElements(
     dev,
     bunny.elements,
     draw.locate({ a_position: bunny.positions }),
@@ -214,14 +204,14 @@ const loop = time => {
     // We first draw the scene to a "newFrame" fbo
     newFrameFbo.target(rt => {
         rt.clearColorAndDepth(0, 0, 0, 1, 1);
-        rt.draw(draw, bunnyGeometry, { time });
+        rt.draw(draw, bunnyAttrs, { time });
     });
 
     // Then blend newFrame and ping to pong proportionate to PERSISTENCE_FACTOR
     pong.fbo.target(rt => {
         rt.draw(
             blend,
-            screenspaceGeometry,
+            screenspaceAttrs,
             { newFrame: newFrameTex, ping: ping.tex },
         );
     });
@@ -229,7 +219,7 @@ const loop = time => {
     // Lastly copy the contents of pong to canvas
     dev.target(rt => {
         rt.clearColor(0, 0, 0, 1);
-        rt.draw(copyToCanvas, screenspaceGeometry, { source: pong.tex });
+        rt.draw(copyToCanvas, screenspaceAttrs, { source: pong.tex });
     });
 
     // ... and swap the fbos

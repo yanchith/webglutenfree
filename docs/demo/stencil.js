@@ -150,13 +150,13 @@ const drawOutlines = Command.create(
     },
 );
 
-const cubeGeometry = AttributeData.fromElements(
+const cubeAttrs = AttributeData.fromElements(
     dev,
     cube.elements,
     drawObjects.locate({ a_position: cube.positions }),
 );
 
-const bunnyGeometry = AttributeData.fromElements(
+const bunnyAttrs = AttributeData.fromElements(
     dev,
     bunny.elements,
     drawObjects.locate({ a_position: bunny.positions }),
@@ -177,12 +177,12 @@ const loop = time => {
     dev.target(rt => {
         rt.clear(0, 0, 0, 1, 1, 0);
         rt.batch(drawObjects, draw => {
-            draw(cubeGeometry, { time, model: cubeModel });
-            draw(bunnyGeometry, { time, model: bunnyModel });
+            draw(cubeAttrs, { time, model: cubeModel });
+            draw(bunnyAttrs, { time, model: bunnyModel });
         });
         rt.batch(drawOutlines, draw => {
-            draw(cubeGeometry, { time, model: cubeOutlnModel });
-            draw(bunnyGeometry, { time, model: bunnyOutlnModel });
+            draw(cubeAttrs, { time, model: cubeOutlnModel });
+            draw(bunnyAttrs, { time, model: bunnyOutlnModel });
         });
     });
     window.requestAnimationFrame(loop);

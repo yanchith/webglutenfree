@@ -285,9 +285,9 @@ class Target {
             | gl.STENCIL_BUFFER_BIT);
     }
     /**
-     * Draw to the target with a command, geometry, and command properties.
+     * Draw to the target with a command, attributes, and command properties.
      */
-    draw(cmd, geometry, props) {
+    draw(cmd, attrs, props) {
         const gl = this.gl;
         const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
         gl.useProgram(glProgram);
@@ -295,18 +295,18 @@ class Target {
         this.beginStencil(stencilDescr);
         this.beginBlend(blendDescr);
         this.updateUniforms(uniformDescrs, props, 0);
-        if (geometry.isEmpty()) {
-            gl.drawArrays(geometry.primitive, 0 /* offset */, geometry.count);
+        if (attrs.isEmpty()) {
+            gl.drawArrays(attrs.primitive, 0 /* offset */, attrs.count);
         }
         else {
-            gl.bindVertexArray(geometry.glVertexArray);
-            if (geometry.elements) {
-                this.drawElements(geometry.primitive, geometry.elementCount, geometry.elementType, 0, // offset
-                geometry.instanceCount);
+            gl.bindVertexArray(attrs.glVertexArray);
+            if (attrs.elements) {
+                this.drawElements(attrs.primitive, attrs.elementCount, attrs.elementType, 0, // offset
+                attrs.instanceCount);
             }
             else {
-                this.drawArrays(geometry.primitive, geometry.count, 0, // offset
-                geometry.instanceCount);
+                this.drawArrays(attrs.primitive, attrs.count, 0, // offset
+                attrs.instanceCount);
             }
             gl.bindVertexArray(null);
         }
@@ -331,27 +331,27 @@ class Target {
         this.beginBlend(blendDescr);
         let iter = 0;
         let currVao = null;
-        cb((geometry, props) => {
+        cb((attrs, props) => {
             this.updateUniforms(uniformDescrs, props, iter++);
-            if (geometry.isEmpty()) {
+            if (attrs.isEmpty()) {
                 if (currVao) {
                     gl.bindVertexArray(null);
                     currVao = null;
                 }
-                gl.drawArrays(geometry.primitive, 0 /* offset */, geometry.count);
+                gl.drawArrays(attrs.primitive, 0 /* offset */, attrs.count);
             }
             else {
-                if (geometry !== currVao) {
-                    gl.bindVertexArray(geometry.glVertexArray);
-                    currVao = geometry;
+                if (attrs !== currVao) {
+                    gl.bindVertexArray(attrs.glVertexArray);
+                    currVao = attrs;
                 }
-                if (geometry.elements) {
-                    this.drawElements(geometry.primitive, geometry.elementCount, geometry.elementType, 0, // offset
-                    geometry.instanceCount);
+                if (attrs.elements) {
+                    this.drawElements(attrs.primitive, attrs.elementCount, attrs.elementType, 0, // offset
+                    attrs.instanceCount);
                 }
                 else {
-                    this.drawArrays(geometry.primitive, geometry.count, 0, // offset
-                    geometry.instanceCount);
+                    this.drawArrays(attrs.primitive, attrs.count, 0, // offset
+                    attrs.instanceCount);
                 }
             }
         });
