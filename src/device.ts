@@ -9,10 +9,6 @@ import {
 import { AttributeData } from "./attribute-data";
 import { Primitive } from "./element-buffer";
 
-// This stores a render target stack for each WebGL context. WeakMap is used
-// to prevent memory leaks
-const CONTEXT_TARGETS = new WeakMap<WebGL2RenderingContext, Target[]>();
-
 export interface DeviceOptions {
     pixelRatio?: number;
     viewport?: [number, number];
@@ -126,7 +122,6 @@ export class Device {
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewport = explicitViewport;
         this.backbufferTarget = new Target(gl, [gl.BACK]);
-        CONTEXT_TARGETS.set(gl, []);
     }
 
     /**
@@ -223,40 +218,35 @@ export class Target {
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
      */
     with(cb: (rt: Target) => void): void {
-        this.stacked(() => cb(this));
+        this.bind();
+        cb(this);
     }
 
     /**
      * Clear the color buffer to provided color.
      */
     clearColor(r: number, g: number, b: number, a: number): void {
-        this.stacked(() => {
-            const gl = this.gl;
-            gl.clearColor(r, g, b, a);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        });
+        const gl = this.gl;
+        gl.clearColor(r, g, b, a);
+        gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
     /**
      * Clear the depth buffer to provided depth.
      */
     clearDepth(depth: number): void {
-        this.stacked(() => {
-            const gl = this.gl;
-            gl.clearDepth(depth);
-            gl.clear(gl.DEPTH_BUFFER_BIT);
-        });
+        const gl = this.gl;
+        gl.clearDepth(depth);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
     }
 
     /**
      * Clear the stencil buffer to provided stencil.
      */
     clearStencil(stencil: number): void {
-        this.stacked(() => {
-            const gl = this.gl;
-            gl.clearStencil(stencil);
-            gl.clear(gl.STENCIL_BUFFER_BIT);
-        });
+        const gl = this.gl;
+        gl.clearStencil(stencil);
+        gl.clear(gl.STENCIL_BUFFER_BIT);
     }
 
     /**
@@ -273,12 +263,10 @@ export class Target {
         a: number,
         depth: number,
     ): void {
-        this.stacked(() => {
-            const gl = this.gl;
-            gl.clearColor(r, g, b, a);
-            gl.clearDepth(depth);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        });
+        const gl = this.gl;
+        gl.clearColor(r, g, b, a);
+        gl.clearDepth(depth);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
 
     /**
@@ -289,12 +277,10 @@ export class Target {
      *   device.clearStencil()
      */
     clearDepthAndStencil(depth: number, stencil: number): void {
-        this.stacked(() => {
-            const gl = this.gl;
-            gl.clearDepth(depth);
-            gl.clearStencil(stencil);
-            gl.clear(gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-        });
+        const gl = this.gl;
+        gl.clearDepth(depth);
+        gl.clearStencil(stencil);
+        gl.clear(gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
     }
 
     /**
@@ -311,12 +297,10 @@ export class Target {
         a: number,
         stencil: number,
     ): void {
-        this.stacked(() => {
-            const gl = this.gl;
-            gl.clearColor(r, g, b, a);
-            gl.clearStencil(stencil);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-        });
+        const gl = this.gl;
+        gl.clearColor(r, g, b, a);
+        gl.clearStencil(stencil);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
     }
 
     /**
@@ -336,47 +320,119 @@ export class Target {
         depth: number,
         stencil: number,
     ): void {
-        this.stacked(() => {
-            const gl = this.gl;
-            gl.clearColor(r, g, b, a);
-            gl.clearDepth(depth);
-            gl.clearStencil(stencil);
-            gl.clear(gl.COLOR_BUFFER_BIT
-                | gl.DEPTH_BUFFER_BIT
-                | gl.STENCIL_BUFFER_BIT);
-        });
+        const gl = this.gl;
+        gl.clearColor(r, g, b, a);
+        gl.clearDepth(depth);
+        gl.clearStencil(stencil);
+        gl.clear(gl.COLOR_BUFFER_BIT
+            | gl.DEPTH_BUFFER_BIT
+            | gl.STENCIL_BUFFER_BIT);
     }
 
     /**
      * Draw to the target with a command, geometry, and command properties.
      */
     draw<P>(cmd: Command<P>, geometry: AttributeData, props: P): void {
-        this.stacked(() => {
-            const gl = this.gl;
-            const {
-                glProgram,
-                depthDescr,
-                stencilDescr,
-                blendDescr,
-                uniformDescrs,
-            } = cmd;
+        const gl = this.gl;
+        const {
+            glProgram,
+            depthDescr,
+            stencilDescr,
+            blendDescr,
+            uniformDescrs,
+        } = cmd;
 
-            gl.useProgram(glProgram);
+        gl.useProgram(glProgram);
 
-            this.beginDepth(depthDescr);
-            this.beginStencil(stencilDescr);
-            this.beginBlend(blendDescr);
+        this.beginDepth(depthDescr);
+        this.beginStencil(stencilDescr);
+        this.beginBlend(blendDescr);
 
-            this.updateUniforms(uniformDescrs, props, 0);
+        this.updateUniforms(uniformDescrs, props, 0);
 
+        if (geometry.isEmpty()) {
+            gl.drawArrays(
+                geometry.primitive,
+                0 /* offset */,
+                geometry.count,
+            );
+        } else {
+            gl.bindVertexArray(geometry.glVertexArray);
+
+            if (geometry.elements) {
+                this.drawElements(
+                    geometry.primitive,
+                    geometry.elementCount,
+                    geometry.elementType!,
+                    0, // offset
+                    geometry.instanceCount,
+                );
+            } else {
+                this.drawArrays(
+                    geometry.primitive,
+                    geometry.count,
+                    0, // offset
+                    geometry.instanceCount,
+                );
+            }
+
+            gl.bindVertexArray(null);
+        }
+
+
+        this.endBlend(blendDescr);
+        this.endStencil(stencilDescr);
+        this.endDepth(depthDescr);
+
+        gl.useProgram(null);
+    }
+
+    /**
+     * Perform multiple draws to the target with the same command, but multiple
+     * geometries and command properties.
+     */
+    batch<P>(
+        cmd: Command<P>,
+        cb: (draw: (geometry: AttributeData, props: P) => void) => void,
+    ): void {
+        const gl = this.gl;
+        const {
+            glProgram,
+            depthDescr,
+            stencilDescr,
+            blendDescr,
+            uniformDescrs,
+        } = cmd;
+
+        // When batching (passing in an array of props), the price for
+        // gl.useProgram, binding framebuffers, enabling depth/stencil tests and
+        // blending is paid only once for all draw calls.
+
+        gl.useProgram(glProgram);
+
+        this.beginDepth(depthDescr);
+        this.beginStencil(stencilDescr);
+        this.beginBlend(blendDescr);
+
+        let iter = 0;
+        let currVao: AttributeData | null = null;
+        cb((geometry: AttributeData, props: P) => {
+            this.updateUniforms(uniformDescrs, props, iter++);
             if (geometry.isEmpty()) {
+                if (currVao) {
+                    gl.bindVertexArray(null);
+                    currVao = null;
+                }
                 gl.drawArrays(
                     geometry.primitive,
                     0 /* offset */,
                     geometry.count,
                 );
             } else {
-                gl.bindVertexArray(geometry.glVertexArray);
+                if (geometry !== currVao) {
+                    gl.bindVertexArray(geometry.glVertexArray);
+                    currVao = geometry;
+                }
 
                 if (geometry.elements) {
                     this.drawElements(
@@ -394,126 +450,19 @@ export class Target {
                         geometry.instanceCount,
                     );
                 }
-
-                gl.bindVertexArray(null);
             }
-
-
-            this.endBlend(blendDescr);
-            this.endStencil(stencilDescr);
-            this.endDepth(depthDescr);
-
-            gl.useProgram(null);
         });
-    }
 
-    /**
-     * Perform multiple draws to the target with the same command, but multiple
-     * geometries and command properties.
-     */
-    batch<P>(
-        cmd: Command<P>,
-        cb: (draw: (geometry: AttributeData, props: P) => void) => void,
-    ): void {
-        this.stacked(() => {
-            const gl = this.gl;
-            const {
-                glProgram,
-                depthDescr,
-                stencilDescr,
-                blendDescr,
-                uniformDescrs,
-            } = cmd;
-
-            // When batching (passing in an array of props), the price for
-            // gl.useProgram, binding framebuffers, enabling depth/stencil tests and
-            // blending is paid only once for all draw calls.
-
-            gl.useProgram(glProgram);
-
-            this.beginDepth(depthDescr);
-            this.beginStencil(stencilDescr);
-            this.beginBlend(blendDescr);
-
-            let iter = 0;
-            let currVao: AttributeData | null = null;
-            cb((geometry: AttributeData, props: P) => {
-                this.updateUniforms(uniformDescrs, props, iter++);
-                if (geometry.isEmpty()) {
-                    if (currVao) {
-                        gl.bindVertexArray(null);
-                        currVao = null;
-                    }
-                    gl.drawArrays(
-                        geometry.primitive,
-                        0 /* offset */,
-                        geometry.count,
-                    );
-                } else {
-                    if (geometry !== currVao) {
-                        gl.bindVertexArray(geometry.glVertexArray);
-                        currVao = geometry;
-                    }
-
-                    if (geometry.elements) {
-                        this.drawElements(
-                            geometry.primitive,
-                            geometry.elementCount,
-                            geometry.elementType!,
-                            0, // offset
-                            geometry.instanceCount,
-                        );
-                    } else {
-                        this.drawArrays(
-                            geometry.primitive,
-                            geometry.count,
-                            0, // offset
-                            geometry.instanceCount,
-                        );
-                    }
-                }
-            });
-
-            // If some vaos were bound
-            if (currVao) {
-                gl.bindVertexArray(null);
-            }
-
-            this.endBlend(blendDescr);
-            this.endStencil(stencilDescr);
-            this.endDepth(depthDescr);
-
-            gl.useProgram(null);
-        });
-    }
-
-    private stacked(cb: () => void): void {
-        // When reference to a target is leaked, this ensures correct behaviour
-        // at the cost of additional render target rebinding.
-        // The added cost for correct API usage are two function calls and a
-        // weakmap lookup.
-
-        // Get our stack, it was created by our device
-        const stack = CONTEXT_TARGETS.get(this.gl)!;
-        const stacklen = stack.length;
-
-        // Fast path: no need to grow the stack and do rebinding if just this
-        // target is nested (this is when target is used in a with() call)
-        if (stacklen && stack[stacklen - 1] === this) {
-            cb();
-            // Slow path: When target is leaked and used outside of with() call,
-            // or in the actual with() call we bind the render target around the
-            // provided callback.
-        } else {
-            this.bind();
-            stack.push(this);
-            cb();
-            stack.pop();
-            if (stacklen) {
-                // If there is no target, there is no need to bind it
-                stack[stacklen - 1].bind();
-            }
+        // If some vaos were bound
+        if (currVao) {
+            gl.bindVertexArray(null);
         }
+
+        this.endBlend(blendDescr);
+        this.endStencil(stencilDescr);
+        this.endDepth(depthDescr);
+
+        gl.useProgram(null);
     }
 
     private bind(): void {
