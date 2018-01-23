@@ -1,13 +1,11 @@
 import * as assert from "./assert";
-import { Device } from "./device";
+import { Device, Target } from "./device";
 import {
     Texture,
     TextureColorInternalFormat as ColorFormat,
     TextureDepthInternalFormat as DepthFormat,
     TextureDepthStencilInternalFormat as DepthStencilFormat,
 } from "./texture";
-import { Target } from "./target";
-
 
 export class Framebuffer {
 

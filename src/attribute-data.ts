@@ -101,7 +101,7 @@ export class AttributeData {
                     throw new Error("Location not a number. Use Command#locate");
                 }
                 const location = parseInt(locationStr, 10);
-                return AttributeDescriptor.create(gl, location, definition);
+                return AttributeDescriptor.create(dev, location, definition);
             });
 
         const count = attrs.length
@@ -132,12 +132,12 @@ export class AttributeData {
                     throw new Error("Location not a number. Use Command#locate");
                 }
                 const location = parseInt(locationStr, 10);
-                return AttributeDescriptor.create(gl, location, definition);
+                return AttributeDescriptor.create(dev, location, definition);
             });
 
         const elementBuffer = elements && (elements instanceof ElementBuffer
             ? elements
-            : ElementBuffer.fromArray(gl, elements));
+            : ElementBuffer.fromArray(dev, elements));
 
         const count = elementBuffer
             ? elementBuffer.count
@@ -304,7 +304,7 @@ export class AttributeData {
 class AttributeDescriptor {
 
     static create(
-        gl: WebGL2RenderingContext,
+        dev: Device,
         location: number,
         props: Attribute,
     ): AttributeDescriptor {
@@ -315,7 +315,7 @@ class AttributeDescriptor {
                 return new AttributeDescriptor(
                     location,
                     AttributeType.POINTER,
-                    VertexBuffer.fromFloat32Array(gl, r),
+                    VertexBuffer.fromFloat32Array(dev, r),
                     s[0],
                     s[1],
                     false,
@@ -325,7 +325,7 @@ class AttributeDescriptor {
             return new AttributeDescriptor(
                 location,
                 AttributeType.POINTER,
-                VertexBuffer.fromFloat32Array(gl, props),
+                VertexBuffer.fromFloat32Array(dev, props),
                 props.length,
                 1,
                 false,

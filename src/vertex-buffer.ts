@@ -32,12 +32,11 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Create a new vertex buffer from bytes.
      */
     static fromInt8Array(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         data: number[] | Int8Array,
     ): VertexBuffer<VertexBufferType.BYTE> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
-            gl,
+            dev.gl,
             VertexBufferType.BYTE,
             data instanceof Int8Array ? data : new Int8Array(data),
         );
@@ -47,12 +46,11 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Create a new vertex buffer from short ints.
      */
     static fromInt16Array(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         data: number[] | Int16Array,
     ): VertexBuffer<VertexBufferType.SHORT> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
-            gl,
+            dev.gl,
             VertexBufferType.SHORT,
             data instanceof Int16Array ? data : new Int16Array(data),
         );
@@ -62,12 +60,11 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Create a new vertex buffer from ints.
      */
     static fromInt32Array(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         data: number[] | Int32Array,
     ): VertexBuffer<VertexBufferType.INT> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
-            gl,
+            dev.gl,
             VertexBufferType.INT,
             data instanceof Int32Array ? data : new Int32Array(data),
         );
@@ -77,12 +74,11 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Create a new vertex buffer from unsigned bytes.
      */
     static fromUint8Array(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         data: number[] | Uint8Array | Uint8ClampedArray,
     ): VertexBuffer<VertexBufferType.UNSIGNED_BYTE> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
-            gl,
+            dev.gl,
             VertexBufferType.UNSIGNED_BYTE,
             // Note: we also have to convert Uint8ClampedArray to Uint8Array
             // because of webgl bug
@@ -95,12 +91,11 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Create a new vertex buffer from unsigned short ints.
      */
     static fromUint16Array(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         data: number[] | Uint16Array,
     ): VertexBuffer<VertexBufferType.UNSIGNED_SHORT> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
-            gl,
+            dev.gl,
             VertexBufferType.UNSIGNED_SHORT,
             data instanceof Uint16Array ? data : new Uint16Array(data),
         );
@@ -110,12 +105,11 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Create a new vertex buffer from unsigned ints.
      */
     static fromUint32Array(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         data: number[] | Uint32Array,
     ): VertexBuffer<VertexBufferType.UNSIGNED_INT> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
-            gl,
+            dev.gl,
             VertexBufferType.UNSIGNED_INT,
             data instanceof Uint32Array ? data : new Uint32Array(data),
         );
@@ -125,12 +119,11 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Create a new vertex buffer from floats.
      */
     static fromFloat32Array(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         data: number[] | Float32Array,
     ): VertexBuffer<VertexBufferType.FLOAT> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         return new VertexBuffer(
-            gl,
+            dev.gl,
             VertexBufferType.FLOAT,
             data instanceof Float32Array ? data : new Float32Array(data),
         );
@@ -154,10 +147,6 @@ export class VertexBuffer<T extends VertexBufferType> {
         this.glBuffer = null;
 
         this.init();
-    }
-
-    get count(): number {
-        return this.data.length;
     }
 
     /**

@@ -199,7 +199,7 @@ export enum TextureDataType {
 export class Texture<F extends TextureInternalFormat> {
 
     static fromImage(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         image: ImageData,
         mipmap: boolean = false,
         options?: TextureOptions,
@@ -218,7 +218,7 @@ export class Texture<F extends TextureInternalFormat> {
     }
 
     static empty<F extends TextureInternalFormat>(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         width: number,
         height: number,
         internalFormat: F,
@@ -229,9 +229,8 @@ export class Texture<F extends TextureInternalFormat> {
             wrapT = TextureWrap.CLAMP_TO_EDGE,
         }: TextureOptions = {},
     ): Texture<F> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         return new Texture(
-            gl,
+            dev.gl,
             width, height,
             internalFormat,
             wrapS, wrapT,
@@ -240,7 +239,7 @@ export class Texture<F extends TextureInternalFormat> {
     }
 
     static create<F extends TextureInternalFormat>(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         width: number,
         height: number,
         internalFormat: F,
@@ -255,9 +254,8 @@ export class Texture<F extends TextureInternalFormat> {
             wrapT = TextureWrap.CLAMP_TO_EDGE,
         }: TextureOptions = {},
     ): Texture<F> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const tex = new Texture(
-            gl,
+            dev.gl,
             width, height,
             internalFormat,
             wrapS, wrapT,

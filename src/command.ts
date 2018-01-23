@@ -1,5 +1,4 @@
 import * as assert from "./assert";
-import * as glutil from "./glutil";
 import { Device } from "./device";
 import { Attributes } from "./attribute-data";
 import { Texture, TextureInternalFormat } from "./texture";
@@ -12,7 +11,7 @@ export type StencilOrSeparate<T> = T | { front: T, back: T };
 export type BlendOrSeparate<T> = T | { rgb: T, alpha: T };
 
 export interface CommandOptions<P> {
-    uniforms?: { [key: string]: Uniform<P> };
+    uniforms?: Uniforms<P>;
     depth?: {
         func: DepthFunc;
         mask?: boolean;
@@ -40,6 +39,8 @@ export interface CommandOptions<P> {
         color?: [number, number, number, number];
     };
 }
+
+export interface Uniforms<P> { [name: string]: Uniform<P>; }
 
 export type Uniform<P> =
     | Uniform1f<P> | Uniform1fv<P>
@@ -255,7 +256,7 @@ export enum BlendEquation {
 export class Command<P> {
 
     static create<P>(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         vert: string,
         frag: string,
         {
@@ -300,15 +301,66 @@ export class Command<P> {
             // TODO: complete stencil validation... validation framework?
         }
 
-        const gl = dev instanceof Device ? dev.gl : dev;
-        const vs = glutil.createShader(gl, gl.VERTEX_SHADER, vert);
-        const fs = glutil.createShader(gl, gl.FRAGMENT_SHADER, frag);
-        const prog = glutil.createProgram(gl, vs, fs);
+        const depthDescr = parseDepth(depth);
+        const stencilDescr = parseStencil(stencil);
+        const blendDescr = parseBlend(blend);
+
+        return new Command(
+            dev.gl,
+            vert,
+            frag,
+            uniforms,
+            depthDescr,
+            stencilDescr,
+            blendDescr,
+        );
+    }
+
+    readonly glProgram: WebGLProgram | null;
+    readonly depthDescr?: DepthDescriptor;
+    readonly stencilDescr?: StencilDescriptor;
+    readonly blendDescr?: BlendDescriptor;
+    readonly uniformDescrs: UniformDescriptor<P>[];
+
+    private gl: WebGL2RenderingContext;
+    private vsSource: string;
+    private fsSource: string;
+    private uniforms: Uniforms<P>;
+
+    private constructor(
+        gl: WebGL2RenderingContext,
+        vsSource: string,
+        fsSource: string,
+        uniforms: Uniforms<P>,
+        depthDescr?: DepthDescriptor,
+        stencilDescr?: StencilDescriptor,
+        blendDescr?: BlendDescriptor,
+    ) {
+        this.gl = gl;
+        this.vsSource = vsSource;
+        this.fsSource = fsSource;
+        this.uniforms = uniforms;
+        this.depthDescr = depthDescr;
+        this.stencilDescr = stencilDescr;
+        this.blendDescr = blendDescr;
+        this.glProgram = null;
+        this.uniformDescrs = [];
+
+        this.init();
+    }
+
+    init(): void {
+        const { gl, vsSource, fsSource, uniforms } = this;
+
+        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+        const prog = createProgram(gl, vs, fs);
 
         gl.deleteShader(vs);
         gl.deleteShader(fs);
 
-        const uniformDescrs = Object.entries(uniforms)
+        (this as any).glProgram = prog;
+        (this as any).uniformDescrs = Object.entries(uniforms)
             .map(([ident, uniform]) => {
                 const loc = gl.getUniformLocation(prog, ident);
                 if (!loc) {
@@ -316,70 +368,30 @@ export class Command<P> {
                 }
                 return new UniformDescriptor(ident, loc, uniform);
             });
-
-        const depthDescr = parseDepth(depth);
-        const stencilDescr = parseStencil(stencil);
-        const blendDescr = parseBlend(blend);
-
-        return new Command(
-            gl,
-            prog,
-            uniformDescrs,
-            depthDescr,
-            stencilDescr,
-            blendDescr,
-        );
     }
 
-    readonly glProgram: WebGLProgram;
-    readonly depthDescr?: DepthDescriptor;
-    readonly stencilDescr?: StencilDescriptor;
-    readonly blendDescr?: BlendDescriptor;
-    readonly uniformDescrs: UniformDescriptor<P>[];
-
-    private gl: WebGL2RenderingContext;
-
-    private constructor(
-        gl: WebGL2RenderingContext,
-        glProgram: WebGLProgram,
-        uniformDescrs: UniformDescriptor<P>[],
-        depthDescr?: DepthDescriptor,
-        stencilDescr?: StencilDescriptor,
-        blendDescr?: BlendDescriptor,
-    ) {
-        this.gl = gl;
-        this.glProgram = glProgram;
-        this.uniformDescrs = uniformDescrs;
-        this.depthDescr = depthDescr;
-        this.stencilDescr = stencilDescr;
-        this.blendDescr = blendDescr;
+    restore(): void {
+        const { gl, glProgram } = this;
+        if (!gl.isProgram(glProgram)) { this.init(); }
     }
 
     locate(attributes: Attributes): Attributes {
-        return locate(this.gl, this.glProgram, attributes);
+        const { gl, glProgram } = this;
+        return Object.entries(attributes)
+            .reduce<Attributes>((accum, [identifier, definition]) => {
+                if (INT_PATTERN.test(identifier)) {
+                    accum[identifier] = definition;
+                } else {
+                    const location = gl.getAttribLocation(glProgram, identifier);
+                    if (location === UNKNOWN_ATTRIB_LOCATION) {
+                        throw new Error(`No location for attrib: ${identifier}`);
+                    }
+                    accum[location] = definition;
+                }
+                return accum;
+            }, {});
     }
 }
-
-function locate(
-    gl: WebGL2RenderingContext,
-    glProgram: WebGLProgram,
-    attributes: Attributes,
-): Attributes {
-    return Object.entries(attributes)
-        .reduce<Attributes>((accum, [identifier, definition]) => {
-            if (INT_PATTERN.test(identifier)) {
-                accum[identifier] = definition;
-            } else {
-                const location = gl.getAttribLocation(glProgram, identifier);
-                if (location === UNKNOWN_ATTRIB_LOCATION) {
-                    throw new Error(`No location for attrib: ${identifier}`);
-                }
-                accum[location] = definition;
-            }
-            return accum;
-        }, {});
-}
-
 
 export class DepthDescriptor {
     constructor(
@@ -544,4 +556,47 @@ function parseBlend(
             : BlendEquation.FUNC_ADD,
         blend.color,
     );
+}
+
+function createProgram(
+    gl: WebGL2RenderingContext,
+    vertex: WebGLShader,
+    fragment: WebGLShader,
+): WebGLProgram | null {
+    const program = gl.createProgram();
+
+    gl.attachShader(program, vertex);
+    gl.attachShader(program, fragment);
+
+    gl.linkProgram(program);
+
+    const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (gl.isContextLost() || linked) { return program; }
+
+    const msg = gl.getProgramInfoLog(program);
+    gl.deleteProgram(program);
+    throw new Error(`Could not link shader program: ${msg}`);
+}
+
+function createShader(
+    gl: WebGL2RenderingContext,
+    type: number,
+    source: string,
+): WebGLShader {
+    const shader = gl.createShader(type);
+    if (!shader) { throw new Error("Could not create Shader"); }
+
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+
+    const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    if (gl.isContextLost() || compiled) { return shader; }
+
+    const msg = gl.getShaderInfoLog(shader);
+    gl.deleteShader(shader);
+    const prettySource = source
+        .split("\n")
+        .map((l, i) => `${i + 1}: ${l}`)
+        .join("\n");
+    throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
 }

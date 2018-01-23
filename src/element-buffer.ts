@@ -53,7 +53,7 @@ export class ElementBuffer<T extends ElementBufferType> {
      * To select other drawing Primitives, use fromTypedArray family of methods.
      */
     static fromArray(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         data: ElementArray,
     ): ElementBuffer<ElementBufferType.UNSIGNED_INT> {
         if (array.isArray2(data)) {
@@ -72,14 +72,13 @@ export class ElementBuffer<T extends ElementBufferType> {
      * Create a new element buffer from unsigned short ints.
      */
     static fromUint16Array(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         primitive: Primitive,
         data: number[] | Uint16Array,
     ): ElementBuffer<ElementBufferType.UNSIGNED_SHORT> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const arr = Array.isArray(data) ? new Uint16Array(data) : data;
         return new ElementBuffer(
-            gl,
+            dev.gl,
             arr,
             ElementBufferType.UNSIGNED_SHORT,
             primitive,
@@ -90,14 +89,13 @@ export class ElementBuffer<T extends ElementBufferType> {
      * Create a new element buffer from unsigned ints.
      */
     static fromUint32Array(
-        dev: WebGL2RenderingContext | Device,
+        dev: Device,
         primitive: Primitive,
         data: number[] | Uint32Array,
     ): ElementBuffer<ElementBufferType.UNSIGNED_INT> {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const arr = Array.isArray(data) ? new Uint32Array(data) : data;
         return new ElementBuffer(
-            gl,
+            dev.gl,
             arr,
             ElementBufferType.UNSIGNED_INT,
             primitive,

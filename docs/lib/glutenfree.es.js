@@ -57,6 +57,135 @@ function fmt(msg) {
 // to prevent memory leaks
 const CONTEXT_TARGETS = new WeakMap();
 /**
+ * Available extensions.
+ */
+var Extension;
+(function (Extension) {
+    Extension["EXTColorBufferFloat"] = "EXT_color_buffer_float";
+    Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
+})(Extension || (Extension = {}));
+class Device {
+    /**
+     * Create a new canvas and device (containing a gl context). Mount it on
+     * `element` parameter (default is `document.body`).
+     */
+    static mount(element = document.body, options) {
+        if (element instanceof HTMLCanvasElement) {
+            return Device.fromCanvas(element, options);
+        }
+        const canvas = document.createElement("canvas");
+        element.appendChild(canvas);
+        return Device.fromCanvas(canvas, options);
+    }
+    /**
+     * Create a new device (containing a gl context) from existing canvas.
+     */
+    static fromCanvas(canvas, options = {}) {
+        const { antialias = true, alpha = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options.context || {};
+        const gl = canvas.getContext("webgl2", {
+            antialias,
+            alpha,
+            depth,
+            stencil,
+            preserveDrawingBuffer,
+        });
+        if (!gl) {
+            throw new Error("Could not get webgl2 context");
+        }
+        return Device.fromContext(gl, options);
+    }
+    /**
+     * Create a new device from existing gl context.
+     */
+    static fromContext(gl, { pixelRatio, viewport, extensions, } = {}) {
+        if (extensions) {
+            extensions.forEach(ext => {
+                if (!gl.getExtension(ext)) {
+                    throw new Error(`Could not get extension ${ext}`);
+                }
+            });
+        }
+        const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
+        dev.update();
+        return dev;
+    }
+    constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
+        this.gl = gl;
+        this.canvas = canvas;
+        this.explicitPixelRatio = explicitPixelRatio;
+        this.explicitViewport = explicitViewport;
+        this.backbufferTarget = new Target(gl, [gl.BACK]);
+        CONTEXT_TARGETS.set(gl, []);
+    }
+    /**
+     * Return width of the gl drawing buffer.
+     */
+    get bufferWidth() {
+        return this.gl.drawingBufferWidth;
+    }
+    /**
+     * Return height of the gl drawing buffer.
+     */
+    get bufferHeight() {
+        return this.gl.drawingBufferHeight;
+    }
+    /**
+     * Return width of the canvas. This will usually be the same as:
+     *   device.bufferWidth
+     */
+    get canvasWidth() {
+        return this.canvas.width;
+    }
+    /**
+     * Return height of the canvas. This will usually be the same as:
+     *   device.bufferHeight
+     */
+    get canvasHeight() {
+        return this.canvas.height;
+    }
+    /**
+     * Return width of canvas in CSS pixels (before applying device pixel ratio)
+     */
+    get canvasCSSWidth() {
+        return this.canvas.clientWidth;
+    }
+    /**
+     * Return height of canvas in CSS pixels (before applying device pixel ratio)
+     */
+    get canvasCSSHeight() {
+        return this.canvas.clientHeight;
+    }
+    /**
+     * Return the device pixel ratio for this device
+     */
+    get pixelRatio() {
+        return this.explicitPixelRatio || window.devicePixelRatio;
+    }
+    /**
+     * Notify the device to check whether updates are needed. This resizes the
+     * canvas, if the device pixel ratio or css canvas width/height changed.
+     */
+    update() {
+        const dpr = this.pixelRatio;
+        const canvas = this.canvas;
+        const width = this.explicitViewport
+            && this.explicitViewport[0]
+            || canvas.clientWidth * dpr;
+        const height = this.explicitViewport
+            && this.explicitViewport[1]
+            || canvas.clientHeight * dpr;
+        if (width !== canvas.width) {
+            canvas.width = width;
+        }
+        if (height !== canvas.height) {
+            canvas.height = height;
+        }
+    }
+    target(cb) {
+        this.backbufferTarget.with(cb);
+    }
+}
+/**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
  *
@@ -75,51 +204,37 @@ class Target {
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
      */
     with(cb) {
-        // Get our stack, or create it if needed
-        let stack = CONTEXT_TARGETS.get(this.gl);
-        if (typeof stack === "undefined") {
-            stack = [];
-            CONTEXT_TARGETS.set(this.gl, stack);
-        }
-        if (stack.length && stack[stack.length - 1] === this) {
-            // No need to grow the stack and do rebinding if just this target
-            // is nested
-            cb(this);
-        }
-        else {
-            this.bind();
-            stack.push(this);
-            cb(this);
-            stack.pop();
-            if (stack.length) {
-                // If there is no target, there is no need to bind it
-                stack[length - 1].bind();
-            }
-        }
+        this.stacked(() => cb(this));
     }
     /**
      * Clear the color buffer to provided color.
      */
     clearColor(r, g, b, a) {
-        const gl = this.gl;
-        gl.clearColor(r, g, b, a);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+        this.stacked(() => {
+            const gl = this.gl;
+            gl.clearColor(r, g, b, a);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        });
     }
     /**
      * Clear the depth buffer to provided depth.
      */
     clearDepth(depth) {
-        const gl = this.gl;
-        gl.clearDepth(depth);
-        gl.clear(gl.DEPTH_BUFFER_BIT);
+        this.stacked(() => {
+            const gl = this.gl;
+            gl.clearDepth(depth);
+            gl.clear(gl.DEPTH_BUFFER_BIT);
+        });
     }
     /**
      * Clear the stencil buffer to provided stencil.
      */
     clearStencil(stencil) {
-        const gl = this.gl;
-        gl.clearStencil(stencil);
-        gl.clear(gl.STENCIL_BUFFER_BIT);
+        this.stacked(() => {
+            const gl = this.gl;
+            gl.clearStencil(stencil);
+            gl.clear(gl.STENCIL_BUFFER_BIT);
+        });
     }
     /**
      * Clear the color buffers and depth buffer to provided color and depth.
@@ -129,10 +244,12 @@ class Target {
      *   device.clearDepth()
      */
     clearColorAndDepth(r, g, b, a, depth) {
-        const gl = this.gl;
-        gl.clearColor(r, g, b, a);
-        gl.clearDepth(depth);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        this.stacked(() => {
+            const gl = this.gl;
+            gl.clearColor(r, g, b, a);
+            gl.clearDepth(depth);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        });
     }
     /**
      * Clear the depth buffer and stencil buffer to provided depth and stencil.
@@ -142,10 +259,12 @@ class Target {
      *   device.clearStencil()
      */
     clearDepthAndStencil(depth, stencil) {
-        const gl = this.gl;
-        gl.clearDepth(depth);
-        gl.clearStencil(stencil);
-        gl.clear(gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        this.stacked(() => {
+            const gl = this.gl;
+            gl.clearDepth(depth);
+            gl.clearStencil(stencil);
+            gl.clear(gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        });
     }
     /**
      * Clear the color buffers and stencil buffer to provided color and stencil.
@@ -155,10 +274,12 @@ class Target {
      *   device.clearStencil()
      */
     clearColorAndStencil(r, g, b, a, stencil) {
-        const gl = this.gl;
-        gl.clearColor(r, g, b, a);
-        gl.clearStencil(stencil);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        this.stacked(() => {
+            const gl = this.gl;
+            gl.clearColor(r, g, b, a);
+            gl.clearStencil(stencil);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+        });
     }
     /**
      * Clear the color buffers, depth buffer and stencil buffer to provided
@@ -170,75 +291,33 @@ class Target {
      *   device.clearStencil()
      */
     clear(r, g, b, a, depth, stencil) {
-        const gl = this.gl;
-        gl.clearColor(r, g, b, a);
-        gl.clearDepth(depth);
-        gl.clearStencil(stencil);
-        gl.clear(gl.COLOR_BUFFER_BIT
-            | gl.DEPTH_BUFFER_BIT
-            | gl.STENCIL_BUFFER_BIT);
+        this.stacked(() => {
+            const gl = this.gl;
+            gl.clearColor(r, g, b, a);
+            gl.clearDepth(depth);
+            gl.clearStencil(stencil);
+            gl.clear(gl.COLOR_BUFFER_BIT
+                | gl.DEPTH_BUFFER_BIT
+                | gl.STENCIL_BUFFER_BIT);
+        });
     }
     /**
      * Draw to the target with a command, geometry, and command properties.
      */
     draw(cmd, geometry, props) {
-        const gl = this.gl;
-        const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
-        gl.useProgram(glProgram);
-        this.beginDepth(depthDescr);
-        this.beginStencil(stencilDescr);
-        this.beginBlend(blendDescr);
-        this.updateUniforms(uniformDescrs, props, 0);
-        if (geometry.isEmpty()) {
-            gl.drawArrays(geometry.primitive, 0 /* offset */, geometry.count);
-        }
-        else {
-            gl.bindVertexArray(geometry.glVertexArray);
-            if (geometry.elements) {
-                this.drawElements(geometry.primitive, geometry.elementCount, geometry.elementType, 0, // offset
-                geometry.instanceCount);
-            }
-            else {
-                this.drawArrays(geometry.primitive, geometry.count, 0, // offset
-                geometry.instanceCount);
-            }
-            gl.bindVertexArray(null);
-        }
-        this.endBlend(blendDescr);
-        this.endStencil(stencilDescr);
-        this.endDepth(depthDescr);
-        gl.useProgram(null);
-    }
-    /**
-     * Perform multiple draws to the target with the same command, but multiple
-     * geometries and command properties.
-     */
-    batch(cmd, cb) {
-        const gl = this.gl;
-        const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
-        // When batching (passing in an array of props), the price for
-        // gl.useProgram, binding framebuffers, enabling depth/stencil tests and
-        // blending is paid only once for all draw calls.
-        gl.useProgram(glProgram);
-        this.beginDepth(depthDescr);
-        this.beginStencil(stencilDescr);
-        this.beginBlend(blendDescr);
-        let iter = 0;
-        let currVao = null;
-        cb((geometry, props) => {
-            this.updateUniforms(uniformDescrs, props, iter++);
+        this.stacked(() => {
+            const gl = this.gl;
+            const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
+            gl.useProgram(glProgram);
+            this.beginDepth(depthDescr);
+            this.beginStencil(stencilDescr);
+            this.beginBlend(blendDescr);
+            this.updateUniforms(uniformDescrs, props, 0);
             if (geometry.isEmpty()) {
-                if (currVao) {
-                    gl.bindVertexArray(null);
-                    currVao = null;
-                }
                 gl.drawArrays(geometry.primitive, 0 /* offset */, geometry.count);
             }
             else {
-                if (geometry !== currVao) {
-                    gl.bindVertexArray(geometry.glVertexArray);
-                    currVao = geometry;
-                }
+                gl.bindVertexArray(geometry.glVertexArray);
                 if (geometry.elements) {
                     this.drawElements(geometry.primitive, geometry.elementCount, geometry.elementType, 0, // offset
                     geometry.instanceCount);
@@ -247,16 +326,91 @@ class Target {
                     this.drawArrays(geometry.primitive, geometry.count, 0, // offset
                     geometry.instanceCount);
                 }
+                gl.bindVertexArray(null);
             }
+            this.endBlend(blendDescr);
+            this.endStencil(stencilDescr);
+            this.endDepth(depthDescr);
+            gl.useProgram(null);
         });
-        // If some vaos were bound
-        if (currVao) {
-            gl.bindVertexArray(null);
+    }
+    /**
+     * Perform multiple draws to the target with the same command, but multiple
+     * geometries and command properties.
+     */
+    batch(cmd, cb) {
+        this.stacked(() => {
+            const gl = this.gl;
+            const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
+            // When batching (passing in an array of props), the price for
+            // gl.useProgram, binding framebuffers, enabling depth/stencil tests and
+            // blending is paid only once for all draw calls.
+            gl.useProgram(glProgram);
+            this.beginDepth(depthDescr);
+            this.beginStencil(stencilDescr);
+            this.beginBlend(blendDescr);
+            let iter = 0;
+            let currVao = null;
+            cb((geometry, props) => {
+                this.updateUniforms(uniformDescrs, props, iter++);
+                if (geometry.isEmpty()) {
+                    if (currVao) {
+                        gl.bindVertexArray(null);
+                        currVao = null;
+                    }
+                    gl.drawArrays(geometry.primitive, 0 /* offset */, geometry.count);
+                }
+                else {
+                    if (geometry !== currVao) {
+                        gl.bindVertexArray(geometry.glVertexArray);
+                        currVao = geometry;
+                    }
+                    if (geometry.elements) {
+                        this.drawElements(geometry.primitive, geometry.elementCount, geometry.elementType, 0, // offset
+                        geometry.instanceCount);
+                    }
+                    else {
+                        this.drawArrays(geometry.primitive, geometry.count, 0, // offset
+                        geometry.instanceCount);
+                    }
+                }
+            });
+            // If some vaos were bound
+            if (currVao) {
+                gl.bindVertexArray(null);
+            }
+            this.endBlend(blendDescr);
+            this.endStencil(stencilDescr);
+            this.endDepth(depthDescr);
+            gl.useProgram(null);
+        });
+    }
+    stacked(cb) {
+        // When reference to a target is leaked, this ensures correct behaviour
+        // at the cost of additional render target rebinding.
+        // The added cost for correct API usage are two function calls and a
+        // weakmap lookup.
+        // Get our stack, it was created by our device
+        const stack = CONTEXT_TARGETS.get(this.gl);
+        const stacklen = stack.length;
+        // Fast path: no need to grow the stack and do rebinding if just this
+        // target is nested (this is when target is used in a with() call)
+        if (stacklen && stack[stacklen - 1] === this) {
+            cb();
+            // Slow path: When target is leaked and used outside of with() call,
+            // or in the actual with() call we bind the render target around the
+            // provided callback.
         }
-        this.endBlend(blendDescr);
-        this.endStencil(stencilDescr);
-        this.endDepth(depthDescr);
-        gl.useProgram(null);
+        else {
+            this.bind();
+            stack.push(this);
+            cb();
+            stack.pop();
+            if (stacklen) {
+                // If there is no target, there is no need to bind it
+                stack[stacklen - 1].bind();
+            }
+        }
     }
     bind() {
         const { gl, glFramebuffer, glDrawBuffers, width, height } = this;
@@ -451,180 +605,7 @@ class Target {
         });
     }
 }
-function access(props, index, value) {
-    return typeof value === "function" ? value(props, index) : value;
-}
-
-/**
- * Available extensions.
- */
-var Extension;
-(function (Extension) {
-    Extension["EXTColorBufferFloat"] = "EXT_color_buffer_float";
-    Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
-})(Extension || (Extension = {}));
-class Device {
-    /**
-     * Create a new canvas and device (containing a gl context). Mount it on
-     * `element` parameter (default is `document.body`).
-     */
-    static mount(element = document.body, options) {
-        if (element instanceof HTMLCanvasElement) {
-            return Device.fromCanvas(element, options);
-        }
-        const canvas = document.createElement("canvas");
-        element.appendChild(canvas);
-        return Device.fromCanvas(canvas, options);
-    }
-    /**
-     * Create a new device (containing a gl context) from existing canvas.
-     */
-    static fromCanvas(canvas, options = {}) {
-        const { antialias = true, alpha = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options.context || {};
-        const gl = canvas.getContext("webgl2", {
-            antialias,
-            alpha,
-            depth,
-            stencil,
-            preserveDrawingBuffer,
-        });
-        if (!gl) {
-            throw new Error("Could not get webgl2 context");
-        }
-        return Device.fromContext(gl, options);
-    }
-    /**
-     * Create a new device from existing gl context.
-     */
-    static fromContext(gl, { pixelRatio, viewport, extensions, } = {}) {
-        if (extensions) {
-            extensions.forEach(ext => {
-                if (!gl.getExtension(ext)) {
-                    throw new Error(`Could not get extension ${ext}`);
-                }
-            });
-        }
-        const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
-        dev.update();
-        return dev;
-    }
-    constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
-        this.gl = gl;
-        this.canvas = canvas;
-        this.explicitPixelRatio = explicitPixelRatio;
-        this.explicitViewport = explicitViewport;
-        this.backbufferTarget = new Target(gl, [gl.BACK]);
-    }
-    /**
-     * Return width of the gl drawing buffer.
-     */
-    get bufferWidth() {
-        return this.gl.drawingBufferWidth;
-    }
-    /**
-     * Return height of the gl drawing buffer.
-     */
-    get bufferHeight() {
-        return this.gl.drawingBufferHeight;
-    }
-    /**
-     * Return width of the canvas. This will usually be the same as:
-     *   device.bufferWidth
-     */
-    get canvasWidth() {
-        return this.canvas.width;
-    }
-    /**
-     * Return height of the canvas. This will usually be the same as:
-     *   device.bufferHeight
-     */
-    get canvasHeight() {
-        return this.canvas.height;
-    }
-    /**
-     * Return width of canvas in CSS pixels (before applying device pixel ratio)
-     */
-    get canvasCSSWidth() {
-        return this.canvas.clientWidth;
-    }
-    /**
-     * Return height of canvas in CSS pixels (before applying device pixel ratio)
-     */
-    get canvasCSSHeight() {
-        return this.canvas.clientHeight;
-    }
-    /**
-     * Return the device pixel ratio for this device
-     */
-    get pixelRatio() {
-        return this.explicitPixelRatio || window.devicePixelRatio;
-    }
-    /**
-     * Notify the device to check whether updates are needed. This resizes the
-     * canvas, if the device pixel ratio or css canvas width/height changed.
-     */
-    update() {
-        const dpr = this.pixelRatio;
-        const canvas = this.canvas;
-        const width = this.explicitViewport
-            && this.explicitViewport[0]
-            || canvas.clientWidth * dpr;
-        const height = this.explicitViewport
-            && this.explicitViewport[1]
-            || canvas.clientHeight * dpr;
-        if (width !== canvas.width) {
-            canvas.width = width;
-        }
-        if (height !== canvas.height) {
-            canvas.height = height;
-        }
-    }
-    target(cb) {
-        this.backbufferTarget.with(cb);
-    }
-}
-
-/*
-███████╗██╗  ██╗ █████╗ ██████╗ ███████╗██████╗
-██╔════╝██║  ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗
-███████╗███████║███████║██║  ██║█████╗  ██████╔╝
-╚════██║██╔══██║██╔══██║██║  ██║██╔══╝  ██╔══██╗
-███████║██║  ██║██║  ██║██████╔╝███████╗██║  ██║
-╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝
-*/
-function createProgram(gl, vertex, fragment) {
-    const program = gl.createProgram();
-    if (!program) {
-        throw new Error("Could not create Program");
-    }
-    gl.attachShader(program, vertex);
-    gl.attachShader(program, fragment);
-    gl.linkProgram(program);
-    if (gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        return program;
-    }
-    const msg = gl.getProgramInfoLog(program);
-    gl.deleteProgram(program);
-    throw new Error(`Could not link shader program: ${msg}`);
-}
-function createShader(gl, type, source) {
-    const shader = gl.createShader(type);
-    if (!shader) {
-        throw new Error("Could not create Shader");
-    }
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        return shader;
-    }
-    const msg = gl.getShaderInfoLog(shader);
-    gl.deleteShader(shader);
-    const prettySource = source
-        .split("\n")
-        .map((l, i) => `${i + 1}: ${l}`)
-        .join("\n");
-    throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
-}
+function access(props, index, value) { return typeof value === "function" ? value(props, index) : value; }
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
@@ -687,13 +668,17 @@ var BlendEquation;
     BlendEquation[BlendEquation["MAX"] = 32776] = "MAX";
 })(BlendEquation || (BlendEquation = {}));
 class Command {
-    constructor(gl, glProgram, uniformDescrs, depthDescr, stencilDescr, blendDescr) {
+    constructor(gl, vsSource, fsSource, uniforms, depthDescr, stencilDescr, blendDescr) {
         this.gl = gl;
-        this.glProgram = glProgram;
-        this.uniformDescrs = uniformDescrs;
+        this.vsSource = vsSource;
+        this.fsSource = fsSource;
+        this.uniforms = uniforms;
         this.depthDescr = depthDescr;
         this.stencilDescr = stencilDescr;
         this.blendDescr = blendDescr;
+        this.glProgram = null;
+        this.uniformDescrs = [];
+        this.init();
     }
     static create(dev, vert, frag, { uniforms = {}, depth, stencil, blend, } = {}) {
         nonNull(vert, "vert");
@@ -718,13 +703,20 @@ class Command {
             nonNull(stencil.func, "stencil.func");
             // TODO: complete stencil validation... validation framework?
         }
-        const gl = dev instanceof Device ? dev.gl : dev;
-        const vs = createShader(gl, gl.VERTEX_SHADER, vert);
-        const fs = createShader(gl, gl.FRAGMENT_SHADER, frag);
+        const depthDescr = parseDepth(depth);
+        const stencilDescr = parseStencil(stencil);
+        const blendDescr = parseBlend(blend);
+        return new Command(dev.gl, vert, frag, uniforms, depthDescr, stencilDescr, blendDescr);
+    }
+    init() {
+        const { gl, vsSource, fsSource, uniforms } = this;
+        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
         const prog = createProgram(gl, vs, fs);
         gl.deleteShader(vs);
         gl.deleteShader(fs);
-        const uniformDescrs = Object.entries(uniforms)
+        this.glProgram = prog;
+        this.uniformDescrs = Object.entries(uniforms)
             .map(([ident, uniform]) => {
             const loc = gl.getUniformLocation(prog, ident);
             if (!loc) {
@@ -732,30 +724,30 @@ class Command {
             }
             return new UniformDescriptor(ident, loc, uniform);
         });
-        const depthDescr = parseDepth(depth);
-        const stencilDescr = parseStencil(stencil);
-        const blendDescr = parseBlend(blend);
-        return new Command(gl, prog, uniformDescrs, depthDescr, stencilDescr, blendDescr);
+    }
+    restore() {
+        const { gl, glProgram } = this;
+        if (!gl.isProgram(glProgram)) {
+            this.init();
+        }
     }
     locate(attributes) {
-        return locate(this.gl, this.glProgram, attributes);
-    }
-}
-function locate(gl, glProgram, attributes) {
-    return Object.entries(attributes)
-        .reduce((accum, [identifier, definition]) => {
-        if (INT_PATTERN.test(identifier)) {
-            accum[identifier] = definition;
-        }
-        else {
-            const location = gl.getAttribLocation(glProgram, identifier);
-            if (location === UNKNOWN_ATTRIB_LOCATION) {
-                throw new Error(`No location for attrib: ${identifier}`);
+        const { gl, glProgram } = this;
+        return Object.entries(attributes)
+            .reduce((accum, [identifier, definition]) => {
+            if (INT_PATTERN.test(identifier)) {
+                accum[identifier] = definition;
             }
-            accum[location] = definition;
-        }
-        return accum;
-    }, {});
+            else {
+                const location = gl.getAttribLocation(glProgram, identifier);
+                if (location === UNKNOWN_ATTRIB_LOCATION) {
+                    throw new Error(`No location for attrib: ${identifier}`);
+                }
+                accum[location] = definition;
+            }
+            return accum;
+        }, {});
+    }
 }
 class DepthDescriptor {
     constructor(func, mask, rangeStart, rangeEnd) {
@@ -887,6 +879,38 @@ function parseBlend(blend) {
             : blend.equation
         : BlendEquation.FUNC_ADD, blend.color);
 }
+function createProgram(gl, vertex, fragment) {
+    const program = gl.createProgram();
+    gl.attachShader(program, vertex);
+    gl.attachShader(program, fragment);
+    gl.linkProgram(program);
+    const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (gl.isContextLost() || linked) {
+        return program;
+    }
+    const msg = gl.getProgramInfoLog(program);
+    gl.deleteProgram(program);
+    throw new Error(`Could not link shader program: ${msg}`);
+}
+function createShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    if (!shader) {
+        throw new Error("Could not create Shader");
+    }
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    if (gl.isContextLost() || compiled) {
+        return shader;
+    }
+    const msg = gl.getShaderInfoLog(shader);
+    gl.deleteShader(shader);
+    const prettySource = source
+        .split("\n")
+        .map((l, i) => `${i + 1}: ${l}`)
+        .join("\n");
+    throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
+}
 
 /**
  * Possible data types of vertex buffers.
@@ -917,29 +941,25 @@ class VertexBuffer {
      * Create a new vertex buffer from bytes.
      */
     static fromInt8Array(dev, data) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new VertexBuffer(gl, VertexBufferType.BYTE, data instanceof Int8Array ? data : new Int8Array(data));
+        return new VertexBuffer(dev.gl, VertexBufferType.BYTE, data instanceof Int8Array ? data : new Int8Array(data));
     }
     /**
      * Create a new vertex buffer from short ints.
      */
     static fromInt16Array(dev, data) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new VertexBuffer(gl, VertexBufferType.SHORT, data instanceof Int16Array ? data : new Int16Array(data));
+        return new VertexBuffer(dev.gl, VertexBufferType.SHORT, data instanceof Int16Array ? data : new Int16Array(data));
     }
     /**
      * Create a new vertex buffer from ints.
      */
     static fromInt32Array(dev, data) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new VertexBuffer(gl, VertexBufferType.INT, data instanceof Int32Array ? data : new Int32Array(data));
+        return new VertexBuffer(dev.gl, VertexBufferType.INT, data instanceof Int32Array ? data : new Int32Array(data));
     }
     /**
      * Create a new vertex buffer from unsigned bytes.
      */
     static fromUint8Array(dev, data) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new VertexBuffer(gl, VertexBufferType.UNSIGNED_BYTE, 
+        return new VertexBuffer(dev.gl, VertexBufferType.UNSIGNED_BYTE, 
         // Note: we also have to convert Uint8ClampedArray to Uint8Array
         // because of webgl bug
         // https://github.com/KhronosGroup/WebGL/issues/1533
@@ -949,25 +969,19 @@ class VertexBuffer {
      * Create a new vertex buffer from unsigned short ints.
      */
     static fromUint16Array(dev, data) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new VertexBuffer(gl, VertexBufferType.UNSIGNED_SHORT, data instanceof Uint16Array ? data : new Uint16Array(data));
+        return new VertexBuffer(dev.gl, VertexBufferType.UNSIGNED_SHORT, data instanceof Uint16Array ? data : new Uint16Array(data));
     }
     /**
      * Create a new vertex buffer from unsigned ints.
      */
     static fromUint32Array(dev, data) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new VertexBuffer(gl, VertexBufferType.UNSIGNED_INT, data instanceof Uint32Array ? data : new Uint32Array(data));
+        return new VertexBuffer(dev.gl, VertexBufferType.UNSIGNED_INT, data instanceof Uint32Array ? data : new Uint32Array(data));
     }
     /**
      * Create a new vertex buffer from floats.
      */
     static fromFloat32Array(dev, data) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new VertexBuffer(gl, VertexBufferType.FLOAT, data instanceof Float32Array ? data : new Float32Array(data));
-    }
-    get count() {
-        return this.data.length;
+        return new VertexBuffer(dev.gl, VertexBufferType.FLOAT, data instanceof Float32Array ? data : new Float32Array(data));
     }
     /**
      * Force buffer reinitialization.
@@ -1074,17 +1088,15 @@ class ElementBuffer {
      * Create a new element buffer from unsigned short ints.
      */
     static fromUint16Array(dev, primitive, data) {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const arr = Array.isArray(data) ? new Uint16Array(data) : data;
-        return new ElementBuffer(gl, arr, ElementBufferType.UNSIGNED_SHORT, primitive);
+        return new ElementBuffer(dev.gl, arr, ElementBufferType.UNSIGNED_SHORT, primitive);
     }
     /**
      * Create a new element buffer from unsigned ints.
      */
     static fromUint32Array(dev, primitive, data) {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const arr = Array.isArray(data) ? new Uint32Array(data) : data;
-        return new ElementBuffer(gl, arr, ElementBufferType.UNSIGNED_INT, primitive);
+        return new ElementBuffer(dev.gl, arr, ElementBufferType.UNSIGNED_INT, primitive);
     }
     get count() {
         return this.data.length;
@@ -1142,7 +1154,7 @@ class AttributeData {
                 throw new Error("Location not a number. Use Command#locate");
             }
             const location = parseInt(locationStr, 10);
-            return AttributeDescriptor.create(gl, location, definition);
+            return AttributeDescriptor.create(dev, location, definition);
         });
         const count = attrs.length
             ? attrs
@@ -1165,11 +1177,11 @@ class AttributeData {
                 throw new Error("Location not a number. Use Command#locate");
             }
             const location = parseInt(locationStr, 10);
-            return AttributeDescriptor.create(gl, location, definition);
+            return AttributeDescriptor.create(dev, location, definition);
         });
         const elementBuffer = elements && (elements instanceof ElementBuffer
             ? elements
-            : ElementBuffer.fromArray(gl, elements));
+            : ElementBuffer.fromArray(dev, elements));
         const count = elementBuffer
             ? elementBuffer.count
             : attrs.length
@@ -1279,14 +1291,14 @@ class AttributeDescriptor {
         this.normalized = normalized;
         this.divisor = divisor;
     }
-    static create(gl, location, props) {
+    static create(dev, location, props) {
         if (Array.isArray(props)) {
             if (isArray2(props)) {
                 const s = shape2(props);
                 const r = ravel2(props, s);
-                return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.fromFloat32Array(gl, r), s[0], s[1], false, 0);
+                return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.fromFloat32Array(dev, r), s[0], s[1], false, 0);
             }
-            return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.fromFloat32Array(gl, props), props.length, 1, false, 0);
+            return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.fromFloat32Array(dev, props), props.length, 1, false, 0);
         }
         return new AttributeDescriptor(location, props.type, props.buffer, props.count, props.size, props.type === AttributeType.POINTER
             ? (props.normalized || false)
@@ -1422,12 +1434,10 @@ class Texture {
         return Texture.create(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, mipmap, options);
     }
     static empty(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        return new Texture(gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+        return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
     }
     static create(dev, width, height, internalFormat, data, dataFormat, dataType, mipmap, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
-        const gl = dev instanceof Device ? dev.gl : dev;
-        const tex = new Texture(gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+        const tex = new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
         if (data) {
             tex.store(data, dataFormat, dataType, mipmap);
         }
