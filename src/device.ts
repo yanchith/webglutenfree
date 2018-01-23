@@ -344,13 +344,14 @@ export class Target {
 
         gl.useProgram(glProgram);
 
-        this.beginDepth(depthDescr);
-        this.beginStencil(stencilDescr);
-        this.beginBlend(blendDescr);
+        this.depth(depthDescr);
+        this.stencil(stencilDescr);
+        this.blend(blendDescr);
 
         this.updateUniforms(uniformDescrs, props, 0);
 
         if (attrs.isEmpty()) {
+            gl.bindVertexArray(null);
             gl.drawArrays(
                 attrs.primitive,
                 0 /* offset */,
@@ -358,7 +359,6 @@ export class Target {
             );
         } else {
             gl.bindVertexArray(attrs.glVertexArray);
-
             if (attrs.elements) {
                 this.drawElements(
                     attrs.primitive,
@@ -375,16 +375,7 @@ export class Target {
                     attrs.instanceCount,
                 );
             }
-
-            gl.bindVertexArray(null);
         }
-
-
-        this.endBlend(blendDescr);
-        this.endStencil(stencilDescr);
-        this.endDepth(depthDescr);
-
-        gl.useProgram(null);
     }
 
     /**
@@ -410,12 +401,17 @@ export class Target {
 
         gl.useProgram(glProgram);
 
-        this.beginDepth(depthDescr);
-        this.beginStencil(stencilDescr);
-        this.beginBlend(blendDescr);
+        this.depth(depthDescr);
+        this.stencil(stencilDescr);
+        this.blend(blendDescr);
 
         let iter = 0;
         let currVao: AttributeData | null = null;
+
+        // Since we are not cleaning after ourselves, and we check for vao
+        // change in each iteration, we need to initialize the first value
+        gl.bindVertexArray(null);
+
         cb((attrs: AttributeData, props: P) => {
             this.updateUniforms(uniformDescrs, props, iter++);
             if (attrs.isEmpty()) {
@@ -452,17 +448,6 @@ export class Target {
                 }
             }
         });
-
-        // If some vaos were bound
-        if (currVao) {
-            gl.bindVertexArray(null);
-        }
-
-        this.endBlend(blendDescr);
-        this.endStencil(stencilDescr);
-        this.endDepth(depthDescr);
-
-        gl.useProgram(null);
     }
 
     private bind(): void {
@@ -520,22 +505,17 @@ export class Target {
         }
     }
 
-    private beginDepth(depthDescr?: DepthDescriptor): void {
+    private depth(depthDescr?: DepthDescriptor): void {
         const gl = this.gl;
         if (depthDescr) {
             gl.enable(gl.DEPTH_TEST);
             gl.depthFunc(depthDescr.func);
             gl.depthMask(depthDescr.mask);
             gl.depthRange(depthDescr.rangeStart, depthDescr.rangeEnd);
-        }
+        } else { gl.disable(gl.DEPTH_TEST); }
     }
 
-    private endDepth(depthDescr?: DepthDescriptor): void {
-        const gl = this.gl;
-        if (depthDescr) { gl.disable(gl.DEPTH_TEST); }
-    }
-
-    private beginStencil(stencilDescr?: StencilDescriptor): void {
+    private stencil(stencilDescr?: StencilDescriptor): void {
         const gl = this.gl;
         if (stencilDescr) {
             const {
@@ -561,15 +541,10 @@ export class Target {
             gl.stencilMaskSeparate(gl.BACK, bMask);
             gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
             gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
-        }
+        } else { gl.disable(gl.STENCIL_TEST); }
     }
 
-    private endStencil(stencilDescr?: StencilDescriptor): void {
-        const gl = this.gl;
-        if (stencilDescr) { gl.disable(gl.STENCIL_TEST); }
-    }
-
-    private beginBlend(blendDescr?: BlendDescriptor): void {
+    private blend(blendDescr?: BlendDescriptor): void {
         const gl = this.gl;
         if (blendDescr) {
             gl.enable(gl.BLEND);
@@ -587,12 +562,7 @@ export class Target {
                 const [r, g, b, a] = blendDescr.color;
                 gl.blendColor(r, g, b, a);
             }
-        }
-    }
-
-    private endBlend(blendDescr?: BlendDescriptor): void {
-        const gl = this.gl;
-        if (blendDescr) { gl.disable(gl.BLEND); }
+        } else { gl.disable(gl.BLEND); }
     }
 
     private updateUniforms<P>(

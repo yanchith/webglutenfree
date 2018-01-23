@@ -291,11 +291,12 @@ class Target {
         const gl = this.gl;
         const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
         gl.useProgram(glProgram);
-        this.beginDepth(depthDescr);
-        this.beginStencil(stencilDescr);
-        this.beginBlend(blendDescr);
+        this.depth(depthDescr);
+        this.stencil(stencilDescr);
+        this.blend(blendDescr);
         this.updateUniforms(uniformDescrs, props, 0);
         if (attrs.isEmpty()) {
+            gl.bindVertexArray(null);
             gl.drawArrays(attrs.primitive, 0 /* offset */, attrs.count);
         }
         else {
@@ -308,12 +309,7 @@ class Target {
                 this.drawArrays(attrs.primitive, attrs.count, 0, // offset
                 attrs.instanceCount);
             }
-            gl.bindVertexArray(null);
         }
-        this.endBlend(blendDescr);
-        this.endStencil(stencilDescr);
-        this.endDepth(depthDescr);
-        gl.useProgram(null);
     }
     /**
      * Perform multiple draws to the target with the same command, but multiple
@@ -326,11 +322,14 @@ class Target {
         // gl.useProgram, binding framebuffers, enabling depth/stencil tests and
         // blending is paid only once for all draw calls.
         gl.useProgram(glProgram);
-        this.beginDepth(depthDescr);
-        this.beginStencil(stencilDescr);
-        this.beginBlend(blendDescr);
+        this.depth(depthDescr);
+        this.stencil(stencilDescr);
+        this.blend(blendDescr);
         let iter = 0;
         let currVao = null;
+        // Since we are not cleaning after ourselves, and we check for vao
+        // change in each iteration, we need to initialize the first value
+        gl.bindVertexArray(null);
         cb((attrs, props) => {
             this.updateUniforms(uniformDescrs, props, iter++);
             if (attrs.isEmpty()) {
@@ -355,14 +354,6 @@ class Target {
                 }
             }
         });
-        // If some vaos were bound
-        if (currVao) {
-            gl.bindVertexArray(null);
-        }
-        this.endBlend(blendDescr);
-        this.endStencil(stencilDescr);
-        this.endDepth(depthDescr);
-        gl.useProgram(null);
     }
     bind() {
         const { gl, glFramebuffer, glDrawBuffers, width, height } = this;
@@ -386,7 +377,7 @@ class Target {
             this.gl.drawElements(primitive, count, type, offset);
         }
     }
-    beginDepth(depthDescr) {
+    depth(depthDescr) {
         const gl = this.gl;
         if (depthDescr) {
             gl.enable(gl.DEPTH_TEST);
@@ -394,14 +385,11 @@ class Target {
             gl.depthMask(depthDescr.mask);
             gl.depthRange(depthDescr.rangeStart, depthDescr.rangeEnd);
         }
-    }
-    endDepth(depthDescr) {
-        const gl = this.gl;
-        if (depthDescr) {
+        else {
             gl.disable(gl.DEPTH_TEST);
         }
     }
-    beginStencil(stencilDescr) {
+    stencil(stencilDescr) {
         const gl = this.gl;
         if (stencilDescr) {
             const { fFunc, bFunc, fFuncRef, bfuncRef, fFuncMask, bFuncMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = stencilDescr;
@@ -413,14 +401,11 @@ class Target {
             gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
             gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
         }
-    }
-    endStencil(stencilDescr) {
-        const gl = this.gl;
-        if (stencilDescr) {
+        else {
             gl.disable(gl.STENCIL_TEST);
         }
     }
-    beginBlend(blendDescr) {
+    blend(blendDescr) {
         const gl = this.gl;
         if (blendDescr) {
             gl.enable(gl.BLEND);
@@ -431,10 +416,7 @@ class Target {
                 gl.blendColor(r, g, b, a);
             }
         }
-    }
-    endBlend(blendDescr) {
-        const gl = this.gl;
-        if (blendDescr) {
+        else {
             gl.disable(gl.BLEND);
         }
     }
