@@ -16,6 +16,8 @@
     "tslint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
     "predist": "rimraf dist",
     "dist": "yarn dist:es && yarn dist:umd && yarn dist:es:prod && yarn dist:umd:prod && yarn dist:es:prod:min && yarn dist:umd:prod:min && yarn dist:dts",
+    "predist:watch": "rimraf dist",
+    "dist:watch": "cross-env FMT=es rollup --config --watch",
     "dist:es": "cross-env FMT=es rollup --config",
     "dist:umd": "cross-env FMT=umd rollup --config",
     "dist:es:prod": "cross-env FMT=es PROD=true rollup --config",
