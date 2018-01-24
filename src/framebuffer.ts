@@ -9,6 +9,10 @@ import {
 
 export class Framebuffer {
 
+    /**
+     * Create a framebuffer containg one or more color buffers with given
+     * width and height.
+     */
     static fromColor(
         dev: Device,
         width: number,
@@ -26,6 +30,9 @@ export class Framebuffer {
         return new Framebuffer(gl, width, height, colors);
     }
 
+    /**
+     * Create a framebuffer containg a depth buffer with given width and height.
+     */
     static fromDepth(
         dev: Device,
         width: number,
@@ -38,6 +45,10 @@ export class Framebuffer {
         return new Framebuffer(gl, width, height, [], depth, true);
     }
 
+    /**
+     * Create a framebuffer containg a depth-stencil buffer with given
+     * width and height.
+     */
     static fromDepthStencil(
         dev: Device,
         width: number,
@@ -50,6 +61,10 @@ export class Framebuffer {
         return new Framebuffer(gl, width, height, [], depthStencil, false);
     }
 
+    /**
+     * Create a framebuffer containg one or more color buffers and a depth
+     * buffer with given width and height.
+     */
     static fromColorDepth(
         dev: Device,
         width: number,
@@ -70,6 +85,10 @@ export class Framebuffer {
         return new Framebuffer(gl, width, height, colorBuffers, depth, true);
     }
 
+    /**
+     * Create a framebuffer containg one or more color buffers and a
+     * depth-stencil buffer with given width and height.
+     */
     static fromColorDepthStencil(
         dev: Device,
         width: number,
@@ -126,6 +145,9 @@ export class Framebuffer {
         this.init();
     }
 
+    /**
+     * Force framebuffer reinitialization.
+     */
     init(): void {
         const {
             width,
@@ -182,6 +204,9 @@ export class Framebuffer {
         }
     }
 
+    /**
+     * Reinitialize invalid framebuffer, eg. after context is lost.
+     */
     restore(): void {
         const {
             gl,
@@ -194,6 +219,15 @@ export class Framebuffer {
         if (!gl.isFramebuffer(glFramebuffer)) { this.init(); }
     }
 
+    /**
+     * Request a render target from this framebuffer to draw into. The target
+     * will contain all attached color buffers.
+     *
+     * Drawing should be done within the callback by
+     * calling `ratget.clear()` or `target.draw()` family of methods.
+     *
+     * Also see `device.target()`.
+     */
     target(cb: (rt: Target) => void): void {
         if (this.framebufferTarget) { this.framebufferTarget.with(cb); }
     }

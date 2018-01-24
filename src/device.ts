@@ -213,7 +213,9 @@ export class Device {
 
     /**
      * Request a render target from the device to draw into. This gives you the
-     * gl.BACK target. Drawing itself should be done within the callback by
+     * gl.BACK target.
+     *
+     * Drawing should be done within the callback by
      * calling `ratget.clear()` or `target.draw()` family of methods.
      *
      * Also see `framebuffer.target()`.
