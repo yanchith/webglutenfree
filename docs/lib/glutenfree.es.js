@@ -66,7 +66,8 @@ class Device {
      * Create a new canvas and device (containing a gl context). Mount it on
      * `element` parameter (default is `document.body`).
      */
-    static mount(element = document.body, options) {
+    static mount(options = {}) {
+        const { element = document.body } = options;
         if (element instanceof HTMLCanvasElement) {
             return Device.fromCanvas(element, options);
         }
@@ -94,9 +95,10 @@ class Device {
     /**
      * Create a new device from existing gl context.
      */
-    static fromContext(gl, { pixelRatio, viewport, extensions, } = {}) {
+    static fromContext(gl, { pixelRatio, viewport, extensions } = {}) {
         if (extensions) {
             extensions.forEach(ext => {
+                // We currently do not have extensions with callable API
                 if (!gl.getExtension(ext)) {
                     throw new Error(`Could not get extension ${ext}`);
                 }
@@ -177,6 +179,13 @@ class Device {
             canvas.height = height;
         }
     }
+    /**
+     * Request a render target from the device to draw into. This gives you the
+     * gl.BACK target. Drawing itself should be done within the callback by
+     * calling `ratget.clear()` or `target.draw()` family of methods.
+     *
+     * Also see `framebuffer.target()`.
+     */
     target(cb) {
         this.backbufferTarget.with(cb);
     }
@@ -185,7 +194,7 @@ class Device {
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
  *
- * Targets provide methods for drawing to a surface, or clearing its values.
+ * Targets provide methods for drawing to a surface and clearing its values.
  */
 class Target {
     constructor(gl, glDrawBuffers, glFramebuffer, width, height) {
@@ -198,6 +207,9 @@ class Target {
     /**
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
+     *
+     * All drawing to the target should be done within the callback. Otherwise
+     * the behavior is undefined.
      */
     with(cb) {
         this.bind();
@@ -230,9 +242,9 @@ class Target {
     /**
      * Clear the color buffers and depth buffer to provided color and depth.
      *
-     * This is equivalent to but more efficient than:
-     *   device.clearColor()
-     *   device.clearDepth()
+     * This is equivalent to but faster than:
+     *   target.clearColor()
+     *   target.clearDepth()
      */
     clearColorAndDepth(r, g, b, a, depth) {
         const gl = this.gl;
@@ -243,9 +255,9 @@ class Target {
     /**
      * Clear the depth buffer and stencil buffer to provided depth and stencil.
      *
-     * This is equivalent to but more efficient than:
-     *   device.clearDepth()
-     *   device.clearStencil()
+     * This is equivalent to but faster than:
+     *   target.clearDepth()
+     *   target.clearStencil()
      */
     clearDepthAndStencil(depth, stencil) {
         const gl = this.gl;
@@ -256,9 +268,9 @@ class Target {
     /**
      * Clear the color buffers and stencil buffer to provided color and stencil.
      *
-     * This is equivalent to but more efficient than:
-     *   device.clearColor()
-     *   device.clearStencil()
+     * This is equivalent to but faster than:
+     *   target.clearColor()
+     *   target.clearStencil()
      */
     clearColorAndStencil(r, g, b, a, stencil) {
         const gl = this.gl;
@@ -270,10 +282,10 @@ class Target {
      * Clear the color buffers, depth buffer and stencil buffer to provided
      * color, depth and stencil.
      *
-     * This is equivalent to but more efficient than:
-     *   device.clearColor()
-     *   device.clearDepth()
-     *   device.clearStencil()
+     * This is equivalent to but faster than:
+     *   target.clearColor()
+     *   target.clearDepth()
+     *   target.clearStencil()
      */
     clear(r, g, b, a, depth, stencil) {
         const gl = this.gl;
@@ -286,6 +298,7 @@ class Target {
     }
     /**
      * Draw to the target with a command, attributes, and command properties.
+     * The properties are passed to the command's uniform callbacks, if used.
      */
     draw(cmd, attrs, props) {
         const gl = this.gl;
@@ -295,32 +308,28 @@ class Target {
         this.stencil(stencilDescr);
         this.blend(blendDescr);
         this.updateUniforms(uniformDescrs, props, 0);
-        if (attrs.isEmpty()) {
-            gl.bindVertexArray(null);
-            gl.drawArrays(attrs.primitive, 0 /* offset */, attrs.count);
+        // Note that attrs.glVertexArray may be null for empty attrs and that
+        // is ok
+        gl.bindVertexArray(attrs.glVertexArray);
+        if (attrs.indexed) {
+            this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
+            attrs.instanceCount);
         }
         else {
-            gl.bindVertexArray(attrs.glVertexArray);
-            if (attrs.elements) {
-                this.drawElements(attrs.primitive, attrs.elementCount, attrs.elementType, 0, // offset
-                attrs.instanceCount);
-            }
-            else {
-                this.drawArrays(attrs.primitive, attrs.count, 0, // offset
-                attrs.instanceCount);
-            }
+            this.drawArrays(attrs.primitive, attrs.count, 0, // offset
+            attrs.instanceCount);
         }
     }
     /**
      * Perform multiple draws to the target with the same command, but multiple
-     * geometries and command properties.
+     * attributes and command properties. The properties are passed to the
+     * command's uniform callbacks, if used.
      */
     batch(cmd, cb) {
         const gl = this.gl;
         const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
-        // When batching (passing in an array of props), the price for
-        // gl.useProgram, binding framebuffers, enabling depth/stencil tests and
-        // blending is paid only once for all draw calls.
+        // The price for gl.useProgram, enabling depth/stencil tests and
+        // blending is paid only once for all draw calls in batch.
         gl.useProgram(glProgram);
         this.depth(depthDescr);
         this.stencil(stencilDescr);
@@ -332,34 +341,27 @@ class Target {
         gl.bindVertexArray(null);
         cb((attrs, props) => {
             this.updateUniforms(uniformDescrs, props, iter++);
-            if (attrs.isEmpty()) {
-                if (currVao) {
-                    gl.bindVertexArray(null);
-                    currVao = null;
-                }
-                gl.drawArrays(attrs.primitive, 0 /* offset */, attrs.count);
+            const vao = attrs.glVertexArray;
+            if (vao !== currVao) {
+                gl.bindVertexArray(vao);
+                currVao = vao;
+            }
+            if (attrs.indexed) {
+                this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
+                attrs.instanceCount);
             }
             else {
-                if (attrs !== currVao) {
-                    gl.bindVertexArray(attrs.glVertexArray);
-                    currVao = attrs;
-                }
-                if (attrs.elements) {
-                    this.drawElements(attrs.primitive, attrs.elementCount, attrs.elementType, 0, // offset
-                    attrs.instanceCount);
-                }
-                else {
-                    this.drawArrays(attrs.primitive, attrs.count, 0, // offset
-                    attrs.instanceCount);
-                }
+                this.drawArrays(attrs.primitive, attrs.count, 0, // offset
+                attrs.instanceCount);
             }
         });
     }
     bind() {
-        const { gl, glFramebuffer, glDrawBuffers, width, height } = this;
+        const { gl, glFramebuffer, glDrawBuffers } = this;
+        const { width = gl.drawingBufferWidth, height = gl.drawingBufferHeight, } = this;
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer || null);
         gl.drawBuffers(glDrawBuffers);
-        gl.viewport(0, 0, width || gl.drawingBufferWidth, height || gl.drawingBufferHeight);
+        gl.viewport(0, 0, width, height);
     }
     drawArrays(primitive, count, offset, instanceCount) {
         if (instanceCount) {
@@ -642,6 +644,9 @@ class Command {
         const blendDescr = parseBlend(blend);
         return new Command(dev.gl, vert, frag, uniforms, depthDescr, stencilDescr, blendDescr);
     }
+    /**
+     * Force command reinitialization.
+     */
     init() {
         const { gl, vsSource, fsSource, uniforms } = this;
         const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
@@ -659,12 +664,19 @@ class Command {
             return new UniformDescriptor(ident, loc, uniform);
         });
     }
+    /**
+     * Reinitialize invalid buffer, eg. after context is lost.
+     */
     restore() {
         const { gl, glProgram } = this;
         if (!gl.isProgram(glProgram)) {
             this.init();
         }
     }
+    /**
+     * Transforms names found in the attributes object to numbers representing
+     * actual attribute locations for the program in this command.
+     */
     locate(attributes) {
         const { gl, glProgram } = this;
         return Object.entries(attributes)
@@ -1060,8 +1072,8 @@ class ElementBuffer {
 const INT_PATTERN$1 = /^0|[1-9]\d*$/;
 /**
  * Attribute type for reading vertex buffers. POINTER provides normalization
- * options for converting integer values to floats. IPOINTER always converts
- * to data integers types.
+ * options for converting integer values to floats. IPOINTER always retains
+ * integers types.
  */
 var AttributeType;
 (function (AttributeType) {
@@ -1074,11 +1086,9 @@ var AttributeType;
  */
 class AttributeData {
     /**
-     * Create a new vertex array with attribute and element definitions.
-     * `attributes` can either reference an existing vertex buffer, or have
-     * enough information to create a vertex buffer.
-     * `elements` can either reference an existing element buffer, or be the
-     * arguments for `ElementBuffer.create()`
+     * Create new attributes with primitive and attribute definitions.
+     * Attribute definitions can either reference an existing vertex buffer,
+     * or have enough information to create a vertex buffer.
      */
     static create(dev, primitive, attributes) {
         const gl = dev.gl;
@@ -1103,7 +1113,14 @@ class AttributeData {
             : 0;
         return new AttributeData(gl, primitive, attrs, count, instanceCount);
     }
-    static fromElements(dev, elements, attributes) {
+    /**
+     * Create new attributes with element and attribute definitions.
+     * Attribute definitions can either reference an existing vertex buffer,
+     * or have enough information to create a vertex buffer.
+     * Element definitions can either reference an existing element buffer,
+     * or have enough information to create an element buffer.
+     */
+    static indexed(dev, elements, attributes) {
         const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
@@ -1131,6 +1148,10 @@ class AttributeData {
             : 0;
         return new AttributeData(gl, elementBuffer.primitive, attrs, count, instanceCount, elementBuffer);
     }
+    /**
+     * Create empty attributes of a given primitive. This actually performs no
+     * gl calls, only remembers the count for `gl.drawArrays()`
+     */
     static empty(dev, primitive, count) {
         const gl = dev.gl;
         return new AttributeData(gl, primitive, [], count, 0);
@@ -1146,10 +1167,10 @@ class AttributeData {
         this.glVertexArray = null;
         this.init();
     }
-    get elements() {
+    get indexed() {
         return !!this.elementBuffer;
     }
-    get elementType() {
+    get indexType() {
         return this.elementBuffer && this.elementBuffer.type;
     }
     /**
@@ -1234,7 +1255,9 @@ class AttributeDescriptor {
             }
             return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.fromFloat32Array(dev, props), props.length, 1, false, 0);
         }
-        return new AttributeDescriptor(location, props.type, props.buffer, props.count, props.size, props.type === AttributeType.POINTER
+        return new AttributeDescriptor(location, props.type, Array.isArray(props.buffer)
+            ? VertexBuffer.fromFloat32Array(dev, props.buffer)
+            : props.buffer, props.count, props.size, props.type === AttributeType.POINTER
             ? (props.normalized || false)
             : false, props.divisor || 0);
     }

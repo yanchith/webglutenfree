@@ -9,9 +9,39 @@ import {
 import { AttributeData } from "./attribute-data";
 import { Primitive } from "./element-buffer";
 
-export interface DeviceOptions {
+export type DeviceMountOptions =
+    & MountOpts
+    & FromCanvasOpts
+    & FromContextOpts
+    & DeviceOpts
+    ;
+
+export type DeviceFromCanvasOptions =
+    & FromCanvasOpts
+    & FromContextOpts
+    & DeviceOpts
+    ;
+
+export type DeviceFromContextOptions =
+    & FromContextOpts
+    & DeviceOpts
+    ;
+
+
+export interface DeviceOpts {
     pixelRatio?: number;
     viewport?: [number, number];
+}
+
+export interface FromContextOpts {
+    extensions?: Extension[];
+}
+
+export interface MountOpts {
+    element?: HTMLElement;
+}
+
+export interface FromCanvasOpts {
     context?: {
         antialias?: boolean,
         alpha?: boolean;
@@ -19,7 +49,6 @@ export interface DeviceOptions {
         stencil?: boolean;
         preserveDrawingBuffer?: boolean;
     };
-    extensions?: Extension[];
 }
 
 /**
@@ -36,10 +65,8 @@ export class Device {
      * Create a new canvas and device (containing a gl context). Mount it on
      * `element` parameter (default is `document.body`).
      */
-    static mount(
-        element: HTMLElement = document.body,
-        options?: DeviceOptions,
-    ): Device {
+    static mount(options: DeviceMountOptions = {}): Device {
+        const { element = document.body } = options;
         if (element instanceof HTMLCanvasElement) {
             return Device.fromCanvas(element, options);
         }
@@ -54,7 +81,7 @@ export class Device {
      */
     static fromCanvas(
         canvas: HTMLCanvasElement,
-        options: DeviceOptions = {},
+        options: DeviceFromCanvasOptions = {},
     ): Device {
         const {
             antialias = true,
@@ -79,26 +106,18 @@ export class Device {
      */
     static fromContext(
         gl: WebGL2RenderingContext,
-        {
-            pixelRatio,
-            viewport,
-            extensions,
-        }: DeviceOptions = {},
+        { pixelRatio, viewport, extensions }: DeviceFromContextOptions = {},
     ): Device {
         if (extensions) {
             extensions.forEach(ext => {
+                // We currently do not have extensions with callable API
                 if (!gl.getExtension(ext)) {
                     throw new Error(`Could not get extension ${ext}`);
                 }
             });
         }
 
-        const dev = new Device(
-            gl,
-            gl.canvas,
-            pixelRatio,
-            viewport,
-        );
+        const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
         dev.update();
         return dev;
     }
@@ -192,6 +211,13 @@ export class Device {
         if (height !== canvas.height) { canvas.height = height; }
     }
 
+    /**
+     * Request a render target from the device to draw into. This gives you the
+     * gl.BACK target. Drawing itself should be done within the callback by
+     * calling `ratget.clear()` or `target.draw()` family of methods.
+     *
+     * Also see `framebuffer.target()`.
+     */
     target(cb: (rt: Target) => void): void {
         this.backbufferTarget.with(cb);
     }
@@ -201,7 +227,7 @@ export class Device {
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
  *
- * Targets provide methods for drawing to a surface, or clearing its values.
+ * Targets provide methods for drawing to a surface and clearing its values.
  */
 export class Target {
 
@@ -216,6 +242,9 @@ export class Target {
     /**
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
+     *
+     * All drawing to the target should be done within the callback. Otherwise
+     * the behavior is undefined.
      */
     with(cb: (rt: Target) => void): void {
         this.bind();
@@ -252,9 +281,9 @@ export class Target {
     /**
      * Clear the color buffers and depth buffer to provided color and depth.
      *
-     * This is equivalent to but more efficient than:
-     *   device.clearColor()
-     *   device.clearDepth()
+     * This is equivalent to but faster than:
+     *   target.clearColor()
+     *   target.clearDepth()
      */
     clearColorAndDepth(
         r: number,
@@ -272,9 +301,9 @@ export class Target {
     /**
      * Clear the depth buffer and stencil buffer to provided depth and stencil.
      *
-     * This is equivalent to but more efficient than:
-     *   device.clearDepth()
-     *   device.clearStencil()
+     * This is equivalent to but faster than:
+     *   target.clearDepth()
+     *   target.clearStencil()
      */
     clearDepthAndStencil(depth: number, stencil: number): void {
         const gl = this.gl;
@@ -286,9 +315,9 @@ export class Target {
     /**
      * Clear the color buffers and stencil buffer to provided color and stencil.
      *
-     * This is equivalent to but more efficient than:
-     *   device.clearColor()
-     *   device.clearStencil()
+     * This is equivalent to but faster than:
+     *   target.clearColor()
+     *   target.clearStencil()
      */
     clearColorAndStencil(
         r: number,
@@ -307,10 +336,10 @@ export class Target {
      * Clear the color buffers, depth buffer and stencil buffer to provided
      * color, depth and stencil.
      *
-     * This is equivalent to but more efficient than:
-     *   device.clearColor()
-     *   device.clearDepth()
-     *   device.clearStencil()
+     * This is equivalent to but faster than:
+     *   target.clearColor()
+     *   target.clearDepth()
+     *   target.clearStencil()
      */
     clear(
         r: number,
@@ -331,6 +360,7 @@ export class Target {
 
     /**
      * Draw to the target with a command, attributes, and command properties.
+     * The properties are passed to the command's uniform callbacks, if used.
      */
     draw<P>(cmd: Command<P>, attrs: AttributeData, props: P): void {
         const gl = this.gl;
@@ -350,37 +380,31 @@ export class Target {
 
         this.updateUniforms(uniformDescrs, props, 0);
 
-        if (attrs.isEmpty()) {
-            gl.bindVertexArray(null);
-            gl.drawArrays(
+        // Note that attrs.glVertexArray may be null for empty attrs and that
+        // is ok
+        gl.bindVertexArray(attrs.glVertexArray);
+        if (attrs.indexed) {
+            this.drawElements(
                 attrs.primitive,
-                0 /* offset */,
-                attrs.count,
+                attrs.elementCount,
+                attrs.indexType!,
+                0, // offset
+                attrs.instanceCount,
             );
         } else {
-            gl.bindVertexArray(attrs.glVertexArray);
-            if (attrs.elements) {
-                this.drawElements(
-                    attrs.primitive,
-                    attrs.elementCount,
-                    attrs.elementType!,
-                    0, // offset
-                    attrs.instanceCount,
-                );
-            } else {
-                this.drawArrays(
-                    attrs.primitive,
-                    attrs.count,
-                    0, // offset
-                    attrs.instanceCount,
-                );
-            }
+            this.drawArrays(
+                attrs.primitive,
+                attrs.count,
+                0, // offset
+                attrs.instanceCount,
+            );
         }
     }
 
     /**
      * Perform multiple draws to the target with the same command, but multiple
-     * geometries and command properties.
+     * attributes and command properties. The properties are passed to the
+     * command's uniform callbacks, if used.
      */
     batch<P>(
         cmd: Command<P>,
@@ -395,9 +419,8 @@ export class Target {
             uniformDescrs,
         } = cmd;
 
-        // When batching (passing in an array of props), the price for
-        // gl.useProgram, binding framebuffers, enabling depth/stencil tests and
-        // blending is paid only once for all draw calls.
+        // The price for gl.useProgram, enabling depth/stencil tests and
+        // blending is paid only once for all draw calls in batch.
 
         gl.useProgram(glProgram);
 
@@ -406,7 +429,7 @@ export class Target {
         this.blend(blendDescr);
 
         let iter = 0;
-        let currVao: AttributeData | null = null;
+        let currVao: WebGLVertexArrayObject | null = null;
 
         // Since we are not cleaning after ourselves, and we check for vao
         // change in each iteration, we need to initialize the first value
@@ -414,52 +437,40 @@ export class Target {
 
         cb((attrs: AttributeData, props: P) => {
             this.updateUniforms(uniformDescrs, props, iter++);
-            if (attrs.isEmpty()) {
-                if (currVao) {
-                    gl.bindVertexArray(null);
-                    currVao = null;
-                }
-                gl.drawArrays(
+            const vao = attrs.glVertexArray;
+            if (vao !== currVao) {
+                gl.bindVertexArray(vao);
+                currVao = vao;
+            }
+
+            if (attrs.indexed) {
+                this.drawElements(
                     attrs.primitive,
-                    0 /* offset */,
-                    attrs.count,
+                    attrs.elementCount,
+                    attrs.indexType!,
+                    0, // offset
+                    attrs.instanceCount,
                 );
             } else {
-                if (attrs !== currVao) {
-                    gl.bindVertexArray(attrs.glVertexArray);
-                    currVao = attrs;
-                }
-
-                if (attrs.elements) {
-                    this.drawElements(
-                        attrs.primitive,
-                        attrs.elementCount,
-                        attrs.elementType!,
-                        0, // offset
-                        attrs.instanceCount,
-                    );
-                } else {
-                    this.drawArrays(
-                        attrs.primitive,
-                        attrs.count,
-                        0, // offset
-                        attrs.instanceCount,
-                    );
-                }
+                this.drawArrays(
+                    attrs.primitive,
+                    attrs.count,
+                    0, // offset
+                    attrs.instanceCount,
+                );
             }
         });
     }
 
     private bind(): void {
-        const { gl, glFramebuffer, glDrawBuffers, width, height } = this;
+        const { gl, glFramebuffer, glDrawBuffers } = this;
+        const {
+            width = gl.drawingBufferWidth,
+            height = gl.drawingBufferHeight,
+        } = this;
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer || null);
         gl.drawBuffers(glDrawBuffers);
-        gl.viewport(
-            0,
-            0,
-            width || gl.drawingBufferWidth,
-            height || gl.drawingBufferHeight,
-        );
+        gl.viewport(0, 0, width, height);
     }
 
     private drawArrays(

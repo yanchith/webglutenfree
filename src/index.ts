@@ -1,4 +1,10 @@
-export { Device, Extension } from "./device";
+export {
+    Device,
+    Extension,
+    DeviceMountOptions,
+    DeviceFromCanvasOptions,
+    DeviceFromContextOptions,
+} from "./device";
 export {
     Command,
     CommandOptions,

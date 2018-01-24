@@ -61,13 +61,13 @@ const cmd = Command.create(
     },
 );
 
-const cubeAttrs = AttributeData.fromElements(
+const cubeAttrs = AttributeData.indexed(
     dev,
     cube.elements,
     cmd.locate({ a_position: cube.positions }),
 );
 
-const bunnyAttrs = AttributeData.fromElements(
+const bunnyAttrs = AttributeData.indexed(
     dev,
     bunny.elements,
     cmd.locate({ a_position: bunny.positions }),

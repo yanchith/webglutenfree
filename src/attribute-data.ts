@@ -14,8 +14,8 @@ const INT_PATTERN = /^0|[1-9]\d*$/;
 
 /**
  * Attribute type for reading vertex buffers. POINTER provides normalization
- * options for converting integer values to floats. IPOINTER always converts
- * to data integers types.
+ * options for converting integer values to floats. IPOINTER always retains
+ * integers types.
  */
 export enum AttributeType {
     POINTER = "pointer",
@@ -61,7 +61,7 @@ export type VertexBufferIntegerType =
 
 export interface AttributePointer {
     type: AttributeType.POINTER;
-    buffer: VertexBuffer<VertexBufferType>;
+    buffer: VertexBuffer<VertexBufferType> | number[];
     count: number;
     size: number;
     normalized?: boolean;
@@ -83,11 +83,9 @@ export interface AttributeIPointer {
 export class AttributeData {
 
     /**
-     * Create a new vertex array with attribute and element definitions.
-     * `attributes` can either reference an existing vertex buffer, or have
-     * enough information to create a vertex buffer.
-     * `elements` can either reference an existing element buffer, or be the
-     * arguments for `ElementBuffer.create()`
+     * Create new attributes with primitive and attribute definitions.
+     * Attribute definitions can either reference an existing vertex buffer,
+     * or have enough information to create a vertex buffer.
      */
     static create(
         dev: Device,
@@ -120,7 +118,14 @@ export class AttributeData {
         return new AttributeData(gl, primitive, attrs, count, instanceCount);
     }
 
-    static fromElements(
+    /**
+     * Create new attributes with element and attribute definitions.
+     * Attribute definitions can either reference an existing vertex buffer,
+     * or have enough information to create a vertex buffer.
+     * Element definitions can either reference an existing element buffer,
+     * or have enough information to create an element buffer.
+     */
+    static indexed(
         dev: Device,
         elements: ElementArray | ElementBuffer<ElementBufferType>,
         attributes: Attributes,
@@ -164,6 +169,10 @@ export class AttributeData {
         );
     }
 
+    /**
+     * Create empty attributes of a given primitive. This actually performs no
+     * gl calls, only remembers the count for `gl.drawArrays()`
+     */
     static empty(
         dev: Device,
         primitive: Primitive,
@@ -206,11 +215,11 @@ export class AttributeData {
         this.init();
     }
 
-    get elements(): boolean {
+    get indexed(): boolean {
         return !!this.elementBuffer;
     }
 
-    get elementType(): ElementBufferType | undefined {
+    get indexType(): ElementBufferType | undefined {
         return this.elementBuffer && this.elementBuffer.type;
     }
 
@@ -292,7 +301,7 @@ export class AttributeData {
         }
     }
 
-    isEmpty(): boolean {
+    private isEmpty(): boolean {
         // IF we have either attributes or elements, this geometry can not
         // longer be considered empty.
         return !this.elementBuffer && !this.attributes.length;
@@ -336,7 +345,9 @@ class AttributeDescriptor {
         return new AttributeDescriptor(
             location,
             props.type,
-            props.buffer,
+            Array.isArray(props.buffer)
+                ? VertexBuffer.fromFloat32Array(dev, props.buffer)
+                : props.buffer,
             props.count,
             props.size,
             props.type === AttributeType.POINTER

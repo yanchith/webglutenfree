@@ -73,7 +73,7 @@ const cmd = Command.create(
     },
 );
 
-const attrs = AttributeData.fromElements(
+const attrs = AttributeData.indexed(
     dev,
     bunny.elements,
     cmd.locate({ a_position: bunny.positions }),

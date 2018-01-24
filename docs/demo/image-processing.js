@@ -129,7 +129,7 @@ async function run() {
         },
     );
 
-    const attrs = AttributeData.fromElements(
+    const attrs = AttributeData.indexed(
         dev,
         square.elements,
         cmd.locate({

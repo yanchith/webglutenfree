@@ -30,7 +30,7 @@ const cmd = Command.create(
     `,
 );
 
-const attrs = AttributeData.fromElements(
+const attrs = AttributeData.indexed(
     dev,
     [
         [0, 1],

@@ -251,7 +251,7 @@ const tonemap = Command.create(
 
 
 const screenspaceAttrs = AttributeData.empty(dev, Primitive.TRIANGLES, 3);
-const cubeAttrs = AttributeData.fromElements(
+const cubeAttrs = AttributeData.indexed(
     dev,
     cube.elements,
     { 0: cube.positions },

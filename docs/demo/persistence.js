@@ -176,7 +176,7 @@ const copyToCanvas = Command.create(
 
 
 const screenspaceAttrs = AttributeData.empty(dev, Primitive.TRIANGLES, 3);
-const bunnyAttrs = AttributeData.fromElements(
+const bunnyAttrs = AttributeData.indexed(
     dev,
     bunny.elements,
     draw.locate({ a_position: bunny.positions }),

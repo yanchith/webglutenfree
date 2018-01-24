@@ -349,6 +349,9 @@ export class Command<P> {
         this.init();
     }
 
+    /**
+     * Force command reinitialization.
+     */
     init(): void {
         const { gl, vsSource, fsSource, uniforms } = this;
 
@@ -370,11 +373,18 @@ export class Command<P> {
             });
     }
 
+    /**
+     * Reinitialize invalid buffer, eg. after context is lost.
+     */
     restore(): void {
         const { gl, glProgram } = this;
         if (!gl.isProgram(glProgram)) { this.init(); }
     }
 
+    /**
+     * Transforms names found in the attributes object to numbers representing
+     * actual attribute locations for the program in this command.
+     */
     locate(attributes: Attributes): Attributes {
         const { gl, glProgram } = this;
         return Object.entries(attributes)
