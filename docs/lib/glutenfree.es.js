@@ -181,7 +181,9 @@ class Device {
     }
     /**
      * Request a render target from the device to draw into. This gives you the
-     * gl.BACK target. Drawing itself should be done within the callback by
+     * gl.BACK target.
+     *
+     * Drawing should be done within the callback by
      * calling `ratget.clear()` or `target.draw()` family of methods.
      *
      * Also see `framebuffer.target()`.
@@ -1421,7 +1423,9 @@ class Texture {
     store(data, format, type, mipmap = false) {
         const { gl, glTexture, width, height } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, format, type, data);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, format, type, 
+        // Chrome does not handle Uint8ClampedArray well
+        data instanceof Uint8ClampedArray ? new Uint8Array(data) : data);
         if (mipmap) {
             gl.generateMipmap(gl.TEXTURE_2D);
         }
@@ -1436,6 +1440,10 @@ class Texture {
 }
 
 class Framebuffer {
+    /**
+     * Create a framebuffer containg one or more color buffers with given
+     * width and height.
+     */
     static fromColor(dev, width, height, color) {
         const gl = dev instanceof Device ? dev.gl : dev;
         const colors = Array.isArray(color) ? color : [color];
@@ -1446,18 +1454,29 @@ class Framebuffer {
         });
         return new Framebuffer(gl, width, height, colors);
     }
+    /**
+     * Create a framebuffer containg a depth buffer with given width and height.
+     */
     static fromDepth(dev, width, height, depth) {
         const gl = dev instanceof Device ? dev.gl : dev;
         equal(width, depth.width, "width");
         equal(height, depth.height, "height");
         return new Framebuffer(gl, width, height, [], depth, true);
     }
+    /**
+     * Create a framebuffer containg a depth-stencil buffer with given
+     * width and height.
+     */
     static fromDepthStencil(dev, width, height, depthStencil) {
         const gl = dev instanceof Device ? dev.gl : dev;
         equal(width, depthStencil.width, "width");
         equal(height, depthStencil.height, "height");
         return new Framebuffer(gl, width, height, [], depthStencil, false);
     }
+    /**
+     * Create a framebuffer containg one or more color buffers and a depth
+     * buffer with given width and height.
+     */
     static fromColorDepth(dev, width, height, color, depth) {
         const gl = dev instanceof Device ? dev.gl : dev;
         const colorBuffers = Array.isArray(color) ? color : [color];
@@ -1470,6 +1489,10 @@ class Framebuffer {
         equal(height, depth.height, "height");
         return new Framebuffer(gl, width, height, colorBuffers, depth, true);
     }
+    /**
+     * Create a framebuffer containg one or more color buffers and a
+     * depth-stencil buffer with given width and height.
+     */
     static fromColorDepthStencil(dev, width, height, color, depthStencil) {
         const gl = dev instanceof Device ? dev.gl : dev;
         const colors = Array.isArray(color) ? color : [color];
@@ -1495,6 +1518,9 @@ class Framebuffer {
         this.framebufferTarget = null;
         this.init();
     }
+    /**
+     * Force framebuffer reinitialization.
+     */
     init() {
         const { width, height, gl, glColorAttachments, colors, depthStencil, depthOnly, } = this;
         const fbo = gl.createFramebuffer();
@@ -1516,6 +1542,9 @@ class Framebuffer {
             this.framebufferTarget = new Target(gl, glColorAttachments, fbo, width, height);
         }
     }
+    /**
+     * Reinitialize invalid framebuffer, eg. after context is lost.
+     */
     restore() {
         const { gl, glFramebuffer, colors, depthStencil, } = this;
         colors.forEach(buffer => buffer.restore());
@@ -1526,6 +1555,15 @@ class Framebuffer {
             this.init();
         }
     }
+    /**
+     * Request a render target from this framebuffer to draw into. The target
+     * will contain all attached color buffers.
+     *
+     * Drawing should be done within the callback by
+     * calling `ratget.clear()` or `target.draw()` family of methods.
+     *
+     * Also see `device.target()`.
+     */
     target(cb) {
         if (this.framebufferTarget) {
             this.framebufferTarget.with(cb);

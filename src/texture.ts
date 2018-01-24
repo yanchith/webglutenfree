@@ -550,7 +550,8 @@ export class Texture<F extends TextureInternalFormat> {
             width, height,
             format,
             type,
-            data,
+            // Chrome does not handle Uint8ClampedArray well
+            data instanceof Uint8ClampedArray ? new Uint8Array(data) : data,
         );
         if (mipmap) { gl.generateMipmap(gl.TEXTURE_2D); }
         gl.bindTexture(gl.TEXTURE_2D, null);
