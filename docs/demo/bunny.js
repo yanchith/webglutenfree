@@ -3,7 +3,6 @@ import {
     Command,
     BlendFunc,
     AttributeData,
-    Primitive,
 } from "./lib/glutenfree.es.js";
 import * as bunny from "./lib/bunny.js"
 
@@ -81,7 +80,7 @@ const attrs = AttributeData.indexed(
 
 const loop = time => {
     dev.target(rt => {
-        rt.clearColorAndDepth(0, 0, 0, 1, 1);
+        rt.clearColor(0, 0, 0, 1);
         rt.draw(cmd, attrs, time);
     });
     window.requestAnimationFrame(loop);
