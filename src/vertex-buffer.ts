@@ -2,6 +2,21 @@ import * as assert from "./assert";
 import { Device } from "./device";
 
 /**
+ * Possible buffer usage.
+ */
+export enum BufferUsage {
+    STATIC_DRAW = 0x88E4,
+    DYNAMIC_DRAW = 0x88E8,
+    STREAM_DRAW = 0x88E0,
+    STATIC_READ = 0x88E5,
+    DYNAMIC_READ = 0x88E9,
+    STREAM_READ = 0x88E1,
+    STATIC_COPY = 0x88E6,
+    DYNAMIC_COPY = 0x88EA,
+    STREAM_COPY = 0x88E2,
+}
+
+/**
  * Possible data types of vertex buffers.
  */
 export enum VertexBufferType {
@@ -51,6 +66,7 @@ export class VertexBuffer<T extends VertexBufferType> {
         dev: Device,
         type: T,
         data: VertexBufferTypeToTypedArray[T] | number[],
+        usage: BufferUsage = BufferUsage.STATIC_DRAW,
     ): VertexBuffer<T> {
         const buffer = Array.isArray(data)
             ? createBuffer(type, data)
@@ -60,10 +76,11 @@ export class VertexBuffer<T extends VertexBufferType> {
             : data instanceof Uint8ClampedArray
                 ? new Uint8Array(data)
                 : data;
-        return new VertexBuffer(dev.gl, type, buffer);
+        return new VertexBuffer(dev.gl, type, usage, buffer);
     }
 
     readonly type: T;
+    readonly usage: BufferUsage;
 
     readonly glBuffer: WebGLBuffer | null;
 
@@ -73,10 +90,12 @@ export class VertexBuffer<T extends VertexBufferType> {
     private constructor(
         gl: WebGL2RenderingContext,
         type: T,
+        usage: BufferUsage,
         data: VertexBufferTypedArray,
     ) {
         this.gl = gl;
         this.type = type;
+        this.usage = usage;
         this.data = data;
         this.glBuffer = null;
 
@@ -87,10 +106,10 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Force buffer reinitialization.
      */
     init(): void {
-        const { gl, data } = this;
+        const { usage, gl, data } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, data, usage);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         (this as any).glBuffer = buffer;
     }

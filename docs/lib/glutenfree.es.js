@@ -861,6 +861,21 @@ function createShader(gl, type, source) {
 }
 
 /**
+ * Possible buffer usage.
+ */
+var BufferUsage;
+(function (BufferUsage) {
+    BufferUsage[BufferUsage["STATIC_DRAW"] = 35044] = "STATIC_DRAW";
+    BufferUsage[BufferUsage["DYNAMIC_DRAW"] = 35048] = "DYNAMIC_DRAW";
+    BufferUsage[BufferUsage["STREAM_DRAW"] = 35040] = "STREAM_DRAW";
+    BufferUsage[BufferUsage["STATIC_READ"] = 35045] = "STATIC_READ";
+    BufferUsage[BufferUsage["DYNAMIC_READ"] = 35049] = "DYNAMIC_READ";
+    BufferUsage[BufferUsage["STREAM_READ"] = 35041] = "STREAM_READ";
+    BufferUsage[BufferUsage["STATIC_COPY"] = 35046] = "STATIC_COPY";
+    BufferUsage[BufferUsage["DYNAMIC_COPY"] = 35050] = "DYNAMIC_COPY";
+    BufferUsage[BufferUsage["STREAM_COPY"] = 35042] = "STREAM_COPY";
+})(BufferUsage || (BufferUsage = {}));
+/**
  * Possible data types of vertex buffers.
  */
 var VertexBufferType;
@@ -878,9 +893,10 @@ var VertexBufferType;
  * via setting up an attribute that reads the buffer.
  */
 class VertexBuffer {
-    constructor(gl, type, data) {
+    constructor(gl, type, usage, data) {
         this.gl = gl;
         this.type = type;
+        this.usage = usage;
         this.data = data;
         this.glBuffer = null;
         this.init();
@@ -888,7 +904,7 @@ class VertexBuffer {
     /**
      * Create a new vertex buffer of given type with provided data.
      */
-    static create(dev, type, data) {
+    static create(dev, type, data, usage = BufferUsage.STATIC_DRAW) {
         const buffer = Array.isArray(data)
             ? createBuffer(type, data)
             // Note: we have to convert Uint8ClampedArray to Uint8Array
@@ -897,16 +913,16 @@ class VertexBuffer {
             : data instanceof Uint8ClampedArray
                 ? new Uint8Array(data)
                 : data;
-        return new VertexBuffer(dev.gl, type, buffer);
+        return new VertexBuffer(dev.gl, type, usage, buffer);
     }
     /**
      * Force buffer reinitialization.
      */
     init() {
-        const { gl, data } = this;
+        const { usage, gl, data } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, data, usage);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         this.glBuffer = buffer;
     }
@@ -1001,11 +1017,12 @@ var Primitive;
  * together with vertex buffers part of VertexArray objects.
  */
 class ElementBuffer {
-    constructor(gl, type, primitive, data) {
+    constructor(gl, type, primitive, usage, data) {
         this.gl = gl;
         this.data = data;
         this.type = type;
         this.primitive = primitive;
+        this.usage = usage;
         this.glBuffer = null;
         this.init();
     }
@@ -1032,7 +1049,7 @@ class ElementBuffer {
     /**
      * Create a new element buffer from unsigned short ints.
      */
-    static create(dev, type, primitive, data) {
+    static create(dev, type, primitive, data, usage = BufferUsage.STATIC_DRAW) {
         const buffer = Array.isArray(data)
             ? createBuffer$1(type, data)
             // Note: we have to convert Uint8ClampedArray to Uint8Array
@@ -1041,7 +1058,7 @@ class ElementBuffer {
             : data instanceof Uint8ClampedArray
                 ? new Uint8Array(data)
                 : data;
-        return new ElementBuffer(dev.gl, type, primitive, buffer);
+        return new ElementBuffer(dev.gl, type, primitive, usage, buffer);
     }
     get count() {
         return this.data.length;
@@ -1050,10 +1067,10 @@ class ElementBuffer {
      * Force buffer reinitialization.
      */
     init() {
-        const { gl, data } = this;
+        const { usage, gl, data } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, usage);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         this.glBuffer = buffer;
     }
@@ -1600,5 +1617,5 @@ class Framebuffer {
     }
 }
 
-export { Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferType, ElementBuffer, ElementBufferType, Primitive, AttributeData, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
+export { Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferType, BufferUsage, ElementBuffer, ElementBufferType, Primitive, AttributeData, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
 //# sourceMappingURL=glutenfree.es.js.map

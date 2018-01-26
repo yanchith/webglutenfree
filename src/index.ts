@@ -14,7 +14,7 @@ export {
     BlendFunc,
     BlendEquation,
 } from "./command";
-export { VertexBuffer, VertexBufferType } from "./vertex-buffer";
+export { VertexBuffer, VertexBufferType, BufferUsage } from "./vertex-buffer";
 export { ElementBuffer, ElementBufferType, Primitive } from "./element-buffer";
 export { AttributeData, AttributeType } from "./attribute-data";
 export {

@@ -1,6 +1,7 @@
 import * as assert from "./assert";
 import * as array from "./array";
 import { Device } from "./device";
+import { BufferUsage } from "./vertex-buffer";
 
 export type ElementArray =
     | number[] // infers POINTS
@@ -100,6 +101,7 @@ export class ElementBuffer<T extends ElementBufferType> {
         type: T,
         primitive: Primitive,
         data: ElementBufferTypeToTypedArray[T] | number[],
+        usage: BufferUsage = BufferUsage.STATIC_DRAW,
     ): ElementBuffer<T> {
         const buffer = Array.isArray(data)
             ? createBuffer(type, data)
@@ -109,11 +111,12 @@ export class ElementBuffer<T extends ElementBufferType> {
             : data instanceof Uint8ClampedArray
                 ? new Uint8Array(data)
                 : data;
-        return new ElementBuffer(dev.gl, type, primitive, buffer);
+        return new ElementBuffer(dev.gl, type, primitive, usage, buffer);
     }
 
     readonly type: T;
     readonly primitive: Primitive;
+    readonly usage: BufferUsage;
 
     readonly glBuffer: WebGLBuffer | null;
 
@@ -124,12 +127,14 @@ export class ElementBuffer<T extends ElementBufferType> {
         gl: WebGL2RenderingContext,
         type: T,
         primitive: Primitive,
+        usage: BufferUsage,
         data: ElementBufferTypedArray,
     ) {
         this.gl = gl;
         this.data = data;
         this.type = type;
         this.primitive = primitive;
+        this.usage = usage;
         this.glBuffer = null;
 
         this.init();
@@ -143,10 +148,10 @@ export class ElementBuffer<T extends ElementBufferType> {
      * Force buffer reinitialization.
      */
     init(): void {
-        const { gl, data } = this;
+        const { usage, gl, data } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, gl.STATIC_DRAW);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, usage);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         (this as any).glBuffer = buffer;
     }
