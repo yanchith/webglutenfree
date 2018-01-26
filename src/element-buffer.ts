@@ -18,8 +18,7 @@ export type ElementArray =
  * Possible data types of element buffers.
  */
 export enum ElementBufferType {
-    // Should we enable this?
-    // UNSIGNED_BYTE = 0x1401,
+    UNSIGNED_BYTE = 0x1401,
     UNSIGNED_SHORT = 0x1403,
     UNSIGNED_INT = 0x1405,
 }
@@ -35,6 +34,21 @@ export enum Primitive {
     TRIANGLES = 0x0004,
     TRIANGLE_STRIP = 0x0005,
     TRIANGLE_FAN = 0x0006,
+}
+
+export type ElementBufferTypedArray =
+    | Uint8Array
+    | Uint8ClampedArray
+    | Uint16Array
+    | Uint32Array
+    ;
+
+export interface ElementBufferTypeToTypedArray {
+    [ElementBufferType.UNSIGNED_BYTE]: Uint8Array | Uint8ClampedArray;
+    [ElementBufferType.UNSIGNED_SHORT]: Uint16Array;
+    [ElementBufferType.UNSIGNED_INT]: Uint32Array;
+
+    [p: number]: ElementBufferTypedArray;
 }
 
 
@@ -63,43 +77,39 @@ export class ElementBuffer<T extends ElementBufferType> {
             const primitive = shape[1] === 3
                 ? Primitive.TRIANGLES
                 : Primitive.LINES;
-            return ElementBuffer.fromUint32Array(dev, primitive, ravel);
+            return ElementBuffer.create(
+                dev,
+                ElementBufferType.UNSIGNED_INT,
+                primitive,
+                ravel,
+            );
         }
-        return ElementBuffer.fromUint32Array(dev, Primitive.POINTS, data);
+        return ElementBuffer.create(
+            dev,
+            ElementBufferType.UNSIGNED_INT,
+            Primitive.POINTS,
+            data,
+        );
     }
 
     /**
      * Create a new element buffer from unsigned short ints.
      */
-    static fromUint16Array(
+    static create<T extends ElementBufferType>(
         dev: Device,
+        type: T,
         primitive: Primitive,
-        data: number[] | Uint16Array,
-    ): ElementBuffer<ElementBufferType.UNSIGNED_SHORT> {
-        const arr = Array.isArray(data) ? new Uint16Array(data) : data;
-        return new ElementBuffer(
-            dev.gl,
-            arr,
-            ElementBufferType.UNSIGNED_SHORT,
-            primitive,
-        );
-    }
-
-    /**
-     * Create a new element buffer from unsigned ints.
-     */
-    static fromUint32Array(
-        dev: Device,
-        primitive: Primitive,
-        data: number[] | Uint32Array,
-    ): ElementBuffer<ElementBufferType.UNSIGNED_INT> {
-        const arr = Array.isArray(data) ? new Uint32Array(data) : data;
-        return new ElementBuffer(
-            dev.gl,
-            arr,
-            ElementBufferType.UNSIGNED_INT,
-            primitive,
-        );
+        data: ElementBufferTypeToTypedArray[T] | number[],
+    ): ElementBuffer<T> {
+        const buffer = Array.isArray(data)
+            ? createBuffer(type, data)
+            // Note: we have to convert Uint8ClampedArray to Uint8Array
+            // because of webgl bug
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            : data instanceof Uint8ClampedArray
+                ? new Uint8Array(data)
+                : data;
+        return new ElementBuffer(dev.gl, type, primitive, buffer);
     }
 
     readonly type: T;
@@ -108,13 +118,13 @@ export class ElementBuffer<T extends ElementBufferType> {
     readonly glBuffer: WebGLBuffer | null;
 
     private gl: WebGL2RenderingContext;
-    private data: Uint16Array | Uint32Array;
+    private data: ElementBufferTypedArray;
 
     private constructor(
         gl: WebGL2RenderingContext,
-        data: Uint16Array | Uint32Array,
         type: T,
         primitive: Primitive,
+        data: ElementBufferTypedArray,
     ) {
         this.gl = gl;
         this.data = data;
@@ -147,5 +157,39 @@ export class ElementBuffer<T extends ElementBufferType> {
     restore(): void {
         const { gl, glBuffer } = this;
         if (!gl.isBuffer(glBuffer)) { this.init(); }
+    }
+
+    /**
+     * Upload new data to buffer, possibly with offset.
+     */
+    store(
+        data: ElementBufferTypeToTypedArray[T] | number[],
+        offset: number = 0,
+    ): void {
+        const { type, gl, glBuffer } = this;
+        const buffer = Array.isArray(data)
+            ? createBuffer(type, data)
+            // Note: we have to convert Uint8ClampedArray to Uint8Array
+            // because of webgl bug
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            : data instanceof Uint8ClampedArray
+                ? new Uint8Array(data)
+                : data;
+        const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glBuffer);
+        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, byteOffset, buffer);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    }
+}
+
+function createBuffer(
+    type: ElementBufferType,
+    arr: number[],
+): ElementBufferTypedArray {
+    switch (type) {
+        case ElementBufferType.UNSIGNED_BYTE: return new Uint8Array(arr);
+        case ElementBufferType.UNSIGNED_SHORT: return new Uint16Array(arr);
+        case ElementBufferType.UNSIGNED_INT: return new Uint32Array(arr);
+        default: return assert.never(type, `Invalid buffer type: ${type}`);
     }
 }

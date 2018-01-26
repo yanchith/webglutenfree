@@ -886,50 +886,18 @@ class VertexBuffer {
         this.init();
     }
     /**
-     * Create a new vertex buffer from bytes.
+     * Create a new vertex buffer of given type with provided data.
      */
-    static fromInt8Array(dev, data) {
-        return new VertexBuffer(dev.gl, VertexBufferType.BYTE, data instanceof Int8Array ? data : new Int8Array(data));
-    }
-    /**
-     * Create a new vertex buffer from short ints.
-     */
-    static fromInt16Array(dev, data) {
-        return new VertexBuffer(dev.gl, VertexBufferType.SHORT, data instanceof Int16Array ? data : new Int16Array(data));
-    }
-    /**
-     * Create a new vertex buffer from ints.
-     */
-    static fromInt32Array(dev, data) {
-        return new VertexBuffer(dev.gl, VertexBufferType.INT, data instanceof Int32Array ? data : new Int32Array(data));
-    }
-    /**
-     * Create a new vertex buffer from unsigned bytes.
-     */
-    static fromUint8Array(dev, data) {
-        return new VertexBuffer(dev.gl, VertexBufferType.UNSIGNED_BYTE, 
-        // Note: we also have to convert Uint8ClampedArray to Uint8Array
-        // because of webgl bug
-        // https://github.com/KhronosGroup/WebGL/issues/1533
-        data instanceof Uint8Array ? data : new Uint8Array(data));
-    }
-    /**
-     * Create a new vertex buffer from unsigned short ints.
-     */
-    static fromUint16Array(dev, data) {
-        return new VertexBuffer(dev.gl, VertexBufferType.UNSIGNED_SHORT, data instanceof Uint16Array ? data : new Uint16Array(data));
-    }
-    /**
-     * Create a new vertex buffer from unsigned ints.
-     */
-    static fromUint32Array(dev, data) {
-        return new VertexBuffer(dev.gl, VertexBufferType.UNSIGNED_INT, data instanceof Uint32Array ? data : new Uint32Array(data));
-    }
-    /**
-     * Create a new vertex buffer from floats.
-     */
-    static fromFloat32Array(dev, data) {
-        return new VertexBuffer(dev.gl, VertexBufferType.FLOAT, data instanceof Float32Array ? data : new Float32Array(data));
+    static create(dev, type, data) {
+        const buffer = Array.isArray(data)
+            ? createBuffer(type, data)
+            // Note: we have to convert Uint8ClampedArray to Uint8Array
+            // because of webgl bug
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            : data instanceof Uint8ClampedArray
+                ? new Uint8Array(data)
+                : data;
+        return new VertexBuffer(dev.gl, type, buffer);
     }
     /**
      * Force buffer reinitialization.
@@ -950,6 +918,36 @@ class VertexBuffer {
         if (!gl.isBuffer(glBuffer)) {
             this.init();
         }
+    }
+    /**
+     * Upload new data to buffer, possibly with offset.
+     */
+    store(data, offset = 0) {
+        const { type, gl, glBuffer } = this;
+        const buffer = Array.isArray(data)
+            ? createBuffer(type, data)
+            // Note: we have to convert Uint8ClampedArray to Uint8Array
+            // because of webgl bug
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            : data instanceof Uint8ClampedArray
+                ? new Uint8Array(data)
+                : data;
+        const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
+        gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, byteOffset, buffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    }
+}
+function createBuffer(type, arr) {
+    switch (type) {
+        case VertexBufferType.BYTE: return new Int8Array(arr);
+        case VertexBufferType.SHORT: return new Int16Array(arr);
+        case VertexBufferType.INT: return new Int32Array(arr);
+        case VertexBufferType.UNSIGNED_BYTE: return new Uint8Array(arr);
+        case VertexBufferType.UNSIGNED_SHORT: return new Uint16Array(arr);
+        case VertexBufferType.UNSIGNED_INT: return new Uint32Array(arr);
+        case VertexBufferType.FLOAT: return new Float32Array(arr);
+        default: return never(type, `Invalid buffer type: ${type}`);
     }
 }
 
@@ -981,8 +979,7 @@ function ravel2(unraveled, shape) {
  */
 var ElementBufferType;
 (function (ElementBufferType) {
-    // Should we enable this?
-    // UNSIGNED_BYTE = 0x1401,
+    ElementBufferType[ElementBufferType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
     ElementBufferType[ElementBufferType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
     ElementBufferType[ElementBufferType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
 })(ElementBufferType || (ElementBufferType = {}));
@@ -1004,7 +1001,7 @@ var Primitive;
  * together with vertex buffers part of VertexArray objects.
  */
 class ElementBuffer {
-    constructor(gl, data, type, primitive) {
+    constructor(gl, type, primitive, data) {
         this.gl = gl;
         this.data = data;
         this.type = type;
@@ -1028,23 +1025,23 @@ class ElementBuffer {
             const primitive = shape[1] === 3
                 ? Primitive.TRIANGLES
                 : Primitive.LINES;
-            return ElementBuffer.fromUint32Array(dev, primitive, ravel);
+            return ElementBuffer.create(dev, ElementBufferType.UNSIGNED_INT, primitive, ravel);
         }
-        return ElementBuffer.fromUint32Array(dev, Primitive.POINTS, data);
+        return ElementBuffer.create(dev, ElementBufferType.UNSIGNED_INT, Primitive.POINTS, data);
     }
     /**
      * Create a new element buffer from unsigned short ints.
      */
-    static fromUint16Array(dev, primitive, data) {
-        const arr = Array.isArray(data) ? new Uint16Array(data) : data;
-        return new ElementBuffer(dev.gl, arr, ElementBufferType.UNSIGNED_SHORT, primitive);
-    }
-    /**
-     * Create a new element buffer from unsigned ints.
-     */
-    static fromUint32Array(dev, primitive, data) {
-        const arr = Array.isArray(data) ? new Uint32Array(data) : data;
-        return new ElementBuffer(dev.gl, arr, ElementBufferType.UNSIGNED_INT, primitive);
+    static create(dev, type, primitive, data) {
+        const buffer = Array.isArray(data)
+            ? createBuffer$1(type, data)
+            // Note: we have to convert Uint8ClampedArray to Uint8Array
+            // because of webgl bug
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            : data instanceof Uint8ClampedArray
+                ? new Uint8Array(data)
+                : data;
+        return new ElementBuffer(dev.gl, type, primitive, buffer);
     }
     get count() {
         return this.data.length;
@@ -1068,6 +1065,32 @@ class ElementBuffer {
         if (!gl.isBuffer(glBuffer)) {
             this.init();
         }
+    }
+    /**
+     * Upload new data to buffer, possibly with offset.
+     */
+    store(data, offset = 0) {
+        const { type, gl, glBuffer } = this;
+        const buffer = Array.isArray(data)
+            ? createBuffer$1(type, data)
+            // Note: we have to convert Uint8ClampedArray to Uint8Array
+            // because of webgl bug
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            : data instanceof Uint8ClampedArray
+                ? new Uint8Array(data)
+                : data;
+        const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glBuffer);
+        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, byteOffset, buffer);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    }
+}
+function createBuffer$1(type, arr) {
+    switch (type) {
+        case ElementBufferType.UNSIGNED_BYTE: return new Uint8Array(arr);
+        case ElementBufferType.UNSIGNED_SHORT: return new Uint16Array(arr);
+        case ElementBufferType.UNSIGNED_INT: return new Uint32Array(arr);
+        default: return never(type, `Invalid buffer type: ${type}`);
     }
 }
 
@@ -1253,12 +1276,16 @@ class AttributeDescriptor {
             if (isArray2(props)) {
                 const s = shape2(props);
                 const r = ravel2(props, s);
-                return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.fromFloat32Array(dev, r), s[0], s[1], false, 0);
+                return new AttributeDescriptor(location, AttributeType.POINTER, 
+                // ... variance
+                VertexBuffer.create(dev, VertexBufferType.FLOAT, r), s[0], s[1], false, 0);
             }
-            return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.fromFloat32Array(dev, props), props.length, 1, false, 0);
+            return new AttributeDescriptor(location, AttributeType.POINTER, 
+            // ... variance
+            VertexBuffer.create(dev, VertexBufferType.FLOAT, props), props.length, 1, false, 0);
         }
         return new AttributeDescriptor(location, props.type, Array.isArray(props.buffer)
-            ? VertexBuffer.fromFloat32Array(dev, props.buffer)
+            ? VertexBuffer.create(dev, VertexBufferType.FLOAT, props.buffer) // ... variance
             : props.buffer, props.count, props.size, props.type === AttributeType.POINTER
             ? (props.normalized || false)
             : false, props.divisor || 0);
@@ -1389,16 +1416,17 @@ class Texture {
         this.glTexture = null;
         this.init();
     }
-    static fromImage(dev, image, mipmap = false, options) {
-        return Texture.create(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, mipmap, options);
+    static fromImage(dev, image, options) {
+        return Texture.create(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
     }
     static empty(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
         return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
     }
-    static create(dev, width, height, internalFormat, data, dataFormat, dataType, mipmap, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
+    static create(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
+        const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
         const tex = new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
         if (data) {
-            tex.store(data, dataFormat, dataType, mipmap);
+            tex.store(data, dataFormat, dataType, options);
         }
         return tex;
     }
@@ -1420,10 +1448,11 @@ class Texture {
             this.init();
         }
     }
-    store(data, format, type, mipmap = false) {
+    store(data, format, type, { xOffset = 0, yOffset = 0, mipmap = false } = {}) {
         const { gl, glTexture, width, height } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, format, type, 
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, // level
+        xOffset, yOffset, width, height, format, type, 
         // Chrome does not handle Uint8ClampedArray well
         data instanceof Uint8ClampedArray ? new Uint8Array(data) : data);
         if (mipmap) {

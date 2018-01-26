@@ -20,6 +20,7 @@ export { AttributeData, AttributeType } from "./attribute-data";
 export {
     Texture,
     TextureOptions,
+    TextureStoreOptions,
     TextureFilter,
     TextureMinFilter,
     TextureMagFilter,

@@ -3,6 +3,7 @@ import {
     Command,
     AttributeData,
     VertexBuffer,
+    VertexBufferType,
 } from "./lib/glutenfree.es.js";
 
 const dev = Device.mount();
@@ -85,7 +86,7 @@ const attrs = AttributeData.indexed(
         ],
         a_offset: {
             type: "pointer",
-            buffer: VertexBuffer.fromFloat32Array(dev, [
+            buffer: VertexBuffer.create(dev, VertexBufferType.FLOAT, [
                 3, 3,
                 0, 3,
                 3, 0,
@@ -100,7 +101,7 @@ const attrs = AttributeData.indexed(
         },
         a_color: {
             type: "pointer",
-            buffer: VertexBuffer.fromUint8Array(dev, [
+            buffer: VertexBuffer.create(dev, VertexBufferType.UNSIGNED_BYTE, [
                 255, 0, 0, 255,
                 0, 255, 0, 255,
                 0, 0, 255, 255,

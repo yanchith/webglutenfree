@@ -165,7 +165,7 @@ export class AttributeData {
             attrs,
             count,
             instanceCount,
-            elementBuffer,
+            elementBuffer as any,
         );
     }
 
@@ -324,7 +324,8 @@ class AttributeDescriptor {
                 return new AttributeDescriptor(
                     location,
                     AttributeType.POINTER,
-                    VertexBuffer.fromFloat32Array(dev, r),
+                    // ... variance
+                    VertexBuffer.create(dev, VertexBufferType.FLOAT, r) as any,
                     s[0],
                     s[1],
                     false,
@@ -334,7 +335,8 @@ class AttributeDescriptor {
             return new AttributeDescriptor(
                 location,
                 AttributeType.POINTER,
-                VertexBuffer.fromFloat32Array(dev, props),
+                // ... variance
+                VertexBuffer.create(dev, VertexBufferType.FLOAT, props) as any,
                 props.length,
                 1,
                 false,
@@ -346,7 +348,11 @@ class AttributeDescriptor {
             location,
             props.type,
             Array.isArray(props.buffer)
-                ? VertexBuffer.fromFloat32Array(dev, props.buffer)
+                ? VertexBuffer.create(
+                    dev,
+                    VertexBufferType.FLOAT,
+                    props.buffer,
+                ) as any // ... variance
                 : props.buffer,
             props.count,
             props.size,

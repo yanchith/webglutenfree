@@ -1,13 +1,5 @@
+import * as assert from "./assert";
 import { Device } from "./device";
-
-type VertexBufferTypedArray =
-    | Int8Array
-    | Int16Array
-    | Int32Array
-    | Uint8Array
-    | Uint16Array
-    | Uint32Array
-    | Float32Array;
 
 /**
  * Possible data types of vertex buffers.
@@ -22,6 +14,30 @@ export enum VertexBufferType {
     FLOAT = 0x1406,
 }
 
+export type VertexBufferTypedArray =
+    | Uint8Array
+    | Uint8ClampedArray
+    | Uint16Array
+    | Uint32Array
+    | Int8Array
+    | Int16Array
+    | Int32Array
+    | Float32Array
+    ;
+
+export interface VertexBufferTypeToTypedArray {
+    [VertexBufferType.UNSIGNED_BYTE]: Uint8Array | Uint8ClampedArray;
+    [VertexBufferType.BYTE]: Int8Array;
+    [VertexBufferType.UNSIGNED_SHORT]: Uint16Array;
+    [VertexBufferType.SHORT]: Int16Array;
+    [VertexBufferType.UNSIGNED_INT]: Uint32Array;
+    [VertexBufferType.INT]: Int32Array;
+    [VertexBufferType.FLOAT]: Float32Array;
+
+    [p: number]: VertexBufferTypedArray;
+}
+
+
 /**
  * Vertex buffers contain GPU accessible data. Accessing them is usually done
  * via setting up an attribute that reads the buffer.
@@ -29,104 +45,22 @@ export enum VertexBufferType {
 export class VertexBuffer<T extends VertexBufferType> {
 
     /**
-     * Create a new vertex buffer from bytes.
+     * Create a new vertex buffer of given type with provided data.
      */
-    static fromInt8Array(
+    static create<T extends VertexBufferType>(
         dev: Device,
-        data: number[] | Int8Array,
-    ): VertexBuffer<VertexBufferType.BYTE> {
-        return new VertexBuffer(
-            dev.gl,
-            VertexBufferType.BYTE,
-            data instanceof Int8Array ? data : new Int8Array(data),
-        );
-    }
-
-    /**
-     * Create a new vertex buffer from short ints.
-     */
-    static fromInt16Array(
-        dev: Device,
-        data: number[] | Int16Array,
-    ): VertexBuffer<VertexBufferType.SHORT> {
-        return new VertexBuffer(
-            dev.gl,
-            VertexBufferType.SHORT,
-            data instanceof Int16Array ? data : new Int16Array(data),
-        );
-    }
-
-    /**
-     * Create a new vertex buffer from ints.
-     */
-    static fromInt32Array(
-        dev: Device,
-        data: number[] | Int32Array,
-    ): VertexBuffer<VertexBufferType.INT> {
-        return new VertexBuffer(
-            dev.gl,
-            VertexBufferType.INT,
-            data instanceof Int32Array ? data : new Int32Array(data),
-        );
-    }
-
-    /**
-     * Create a new vertex buffer from unsigned bytes.
-     */
-    static fromUint8Array(
-        dev: Device,
-        data: number[] | Uint8Array | Uint8ClampedArray,
-    ): VertexBuffer<VertexBufferType.UNSIGNED_BYTE> {
-        return new VertexBuffer(
-            dev.gl,
-            VertexBufferType.UNSIGNED_BYTE,
-            // Note: we also have to convert Uint8ClampedArray to Uint8Array
+        type: T,
+        data: VertexBufferTypeToTypedArray[T] | number[],
+    ): VertexBuffer<T> {
+        const buffer = Array.isArray(data)
+            ? createBuffer(type, data)
+            // Note: we have to convert Uint8ClampedArray to Uint8Array
             // because of webgl bug
             // https://github.com/KhronosGroup/WebGL/issues/1533
-            data instanceof Uint8Array ? data : new Uint8Array(data),
-        );
-    }
-
-    /**
-     * Create a new vertex buffer from unsigned short ints.
-     */
-    static fromUint16Array(
-        dev: Device,
-        data: number[] | Uint16Array,
-    ): VertexBuffer<VertexBufferType.UNSIGNED_SHORT> {
-        return new VertexBuffer(
-            dev.gl,
-            VertexBufferType.UNSIGNED_SHORT,
-            data instanceof Uint16Array ? data : new Uint16Array(data),
-        );
-    }
-
-    /**
-     * Create a new vertex buffer from unsigned ints.
-     */
-    static fromUint32Array(
-        dev: Device,
-        data: number[] | Uint32Array,
-    ): VertexBuffer<VertexBufferType.UNSIGNED_INT> {
-        return new VertexBuffer(
-            dev.gl,
-            VertexBufferType.UNSIGNED_INT,
-            data instanceof Uint32Array ? data : new Uint32Array(data),
-        );
-    }
-
-    /**
-     * Create a new vertex buffer from floats.
-     */
-    static fromFloat32Array(
-        dev: Device,
-        data: number[] | Float32Array,
-    ): VertexBuffer<VertexBufferType.FLOAT> {
-        return new VertexBuffer(
-            dev.gl,
-            VertexBufferType.FLOAT,
-            data instanceof Float32Array ? data : new Float32Array(data),
-        );
+            : data instanceof Uint8ClampedArray
+                ? new Uint8Array(data)
+                : data;
+        return new VertexBuffer(dev.gl, type, buffer);
     }
 
     readonly type: T;
@@ -167,5 +101,43 @@ export class VertexBuffer<T extends VertexBufferType> {
     restore(): void {
         const { gl, glBuffer } = this;
         if (!gl.isBuffer(glBuffer)) { this.init(); }
+    }
+
+    /**
+     * Upload new data to buffer, possibly with offset.
+     */
+    store(
+        data: VertexBufferTypeToTypedArray[T] | number[],
+        offset: number = 0,
+    ): void {
+        const { type, gl, glBuffer } = this;
+        const buffer = Array.isArray(data)
+            ? createBuffer(type, data)
+            // Note: we have to convert Uint8ClampedArray to Uint8Array
+            // because of webgl bug
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            : data instanceof Uint8ClampedArray
+                ? new Uint8Array(data)
+                : data;
+        const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
+        gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, byteOffset, buffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    }
+}
+
+function createBuffer(
+    type: VertexBufferType,
+    arr: number[],
+): VertexBufferTypedArray {
+    switch (type) {
+        case VertexBufferType.BYTE: return new Int8Array(arr);
+        case VertexBufferType.SHORT: return new Int16Array(arr);
+        case VertexBufferType.INT: return new Int32Array(arr);
+        case VertexBufferType.UNSIGNED_BYTE: return new Uint8Array(arr);
+        case VertexBufferType.UNSIGNED_SHORT: return new Uint16Array(arr);
+        case VertexBufferType.UNSIGNED_INT: return new Uint32Array(arr);
+        case VertexBufferType.FLOAT: return new Float32Array(arr);
+        default: return assert.never(type, `Invalid buffer type: ${type}`);
     }
 }

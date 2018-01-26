@@ -7,6 +7,12 @@ export interface TextureOptions {
     wrapT?: TextureWrap;
 }
 
+export interface TextureStoreOptions {
+    mipmap?: boolean;
+    xOffset?: number;
+    yOffset?: number;
+}
+
 export enum TextureWrap {
     CLAMP_TO_EDGE = 0x812F,
     REPEAT = 0x2901,
@@ -92,6 +98,48 @@ export enum TextureInternalFormat {
     // ALPHA
 }
 
+export enum TextureDataFormat {
+    RED = 0x1903,
+    RG = 0x8227,
+    RGB = 0x1907,
+    RGBA = 0x1908,
+    RED_INTEGER = 0x8D94,
+    RG_INTEGER = 0x8228,
+    RGB_INTEGER = 0x8D98,
+    RGBA_INTEGER = 0x8D99,
+
+    // TODO: support exotic formats
+
+    DEPTH_COMPONENT = 0x1902,
+    DEPTH_STENCIL = 0x84F9,
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+}
+
+export enum TextureDataType {
+    BYTE = 0x1400,
+    UNSIGNED_BYTE = 0x1401,
+    SHORT = 0x1402,
+    UNSIGNED_SHORT = 0x1403,
+    INT = 0x1404,
+    UNSIGNED_INT = 0x1405,
+    FLOAT = 0x1406,
+    HALF_FLOAT = 0x140B,
+
+    // TODO: support exotic formats
+    // UNSIGNED_SHORT_4_4_4_4
+    // UNSIGNED_SHORT_5_5_5_1
+    // UNSIGNED_SHORT_5_6_5
+
+    UNSIGNED_INT_24_8 = 0x84FA,
+    // UNSIGNED_INT_5_9_9_9_REV
+    // UNSIGNED_INT_2_10_10_10_REV
+    // UNSIGNED_INT_10F_11F_11F_REV
+
+    FLOAT_32_UNSIGNED_INT_24_8_REV = 0x8DAD,
+}
+
 export type TextureColorInternalFormat =
 
     // RED
@@ -153,48 +201,6 @@ export type TextureDepthStencilInternalFormat =
     | TextureInternalFormat.DEPTH24_STENCIL8
     | TextureInternalFormat.DEPTH32F_STENCIL8
     ;
-
-export enum TextureDataFormat {
-    RED = 0x1903,
-    RG = 0x8227,
-    RGB = 0x1907,
-    RGBA = 0x1908,
-    RED_INTEGER = 0x8D94,
-    RG_INTEGER = 0x8228,
-    RGB_INTEGER = 0x8D98,
-    RGBA_INTEGER = 0x8D99,
-
-    // TODO: support exotic formats
-
-    DEPTH_COMPONENT = 0x1902,
-    DEPTH_STENCIL = 0x84F9,
-    // LUMINANCE_ALPHA
-    // LUMINANCE
-    // ALPHA
-}
-
-export enum TextureDataType {
-    BYTE = 0x1400,
-    UNSIGNED_BYTE = 0x1401,
-    SHORT = 0x1402,
-    UNSIGNED_SHORT = 0x1403,
-    INT = 0x1404,
-    UNSIGNED_INT = 0x1405,
-    FLOAT = 0x1406,
-    HALF_FLOAT = 0x140B,
-
-    // TODO: support exotic formats
-    // UNSIGNED_SHORT_4_4_4_4
-    // UNSIGNED_SHORT_5_5_5_1
-    // UNSIGNED_SHORT_5_6_5
-
-    UNSIGNED_INT_24_8 = 0x84FA,
-    // UNSIGNED_INT_5_9_9_9_REV
-    // UNSIGNED_INT_2_10_10_10_REV
-    // UNSIGNED_INT_10F_11F_11F_REV
-
-    FLOAT_32_UNSIGNED_INT_24_8_REV = 0x8DAD,
-}
 
 export interface InternalFormatToDataFormat {
 
@@ -404,8 +410,7 @@ export class Texture<F extends TextureInternalFormat> {
     static fromImage(
         dev: Device,
         image: ImageData,
-        mipmap: boolean = false,
-        options?: TextureOptions,
+        options?: TextureOptions & TextureStoreOptions,
     ): Texture<TextureInternalFormat.RGBA8> {
         return Texture.create(
             dev,
@@ -415,7 +420,6 @@ export class Texture<F extends TextureInternalFormat> {
             image.data,
             TextureDataFormat.RGBA,
             TextureDataType.UNSIGNED_BYTE,
-            mipmap,
             options,
         );
     }
@@ -449,14 +453,14 @@ export class Texture<F extends TextureInternalFormat> {
         data: InternalFormatToTypedArray[F],
         dataFormat: InternalFormatToDataFormat[F],
         dataType: InternalFormatToDataType[F],
-        mipmap: boolean,
-        {
+        options: TextureOptions & TextureStoreOptions = {},
+    ): Texture<F> {
+        const {
             min = TextureFilter.NEAREST,
             mag = TextureFilter.NEAREST,
             wrapS = TextureWrap.CLAMP_TO_EDGE,
             wrapT = TextureWrap.CLAMP_TO_EDGE,
-        }: TextureOptions = {},
-    ): Texture<F> {
+        } = options;
         const tex = new Texture(
             dev.gl,
             width, height,
@@ -464,7 +468,7 @@ export class Texture<F extends TextureInternalFormat> {
             wrapS, wrapT,
             min, mag,
         );
-        if (data) { tex.store(data, dataFormat, dataType, mipmap); }
+        if (data) { tex.store(data, dataFormat, dataType, options); }
         return tex;
     }
 
@@ -539,15 +543,17 @@ export class Texture<F extends TextureInternalFormat> {
         data: InternalFormatToTypedArray[F],
         format: InternalFormatToDataFormat[F],
         type: InternalFormatToDataType[F],
-        mipmap: boolean = false,
+        { xOffset = 0, yOffset = 0, mipmap = false }: TextureStoreOptions = {},
     ): void {
         const { gl, glTexture, width, height } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
         gl.texSubImage2D(
             gl.TEXTURE_2D,
-            0,
-            0, 0,
-            width, height,
+            0, // level
+            xOffset,
+            yOffset,
+            width,
+            height,
             format,
             type,
             // Chrome does not handle Uint8ClampedArray well
