@@ -9,7 +9,7 @@ import {
 } from "./lib/glutenfree.es.js";
 
 const N_PARTICLES = 10000;
-const WANDER_FACTOR = 0.01;
+const WANDER_FACTOR = 0.005;
 
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -62,7 +62,7 @@ const cmd = Command.create(
                 type: "matrix4fv",
                 value: time => mat4.lookAt(
                     view,
-                    [4 * Math.cos(time / 1000), 1, 4 * Math.sin(time / 1000)],
+                    [4 * Math.cos(time / 10000), 1, 4 * Math.sin(time / 10000)],
                     [0, 0, 0],
                     [0, 1, 0],
                 ),
