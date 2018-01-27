@@ -142,12 +142,12 @@ const update = () => {
     for (let i = 0; i < particlePositions.length; i++) {
         particlePositions[i] += Math.random() * WANDER_FACTOR - WANDER_FACTOR / 2;
     }
+    buffer.store(particlePositions);
 }
 
 const loop = time => {
     update();
 
-    buffer.store(particlePositions);
     dev.target(rt => {
         rt.clearColorAndDepth(0, 0, 0, 1, 1);
         rt.draw(cmd, attrs, time);
