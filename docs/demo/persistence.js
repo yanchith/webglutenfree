@@ -58,15 +58,12 @@ const draw = Command.create(
     `#version 300 es
         precision mediump float;
 
-        uniform mat4 u_projection, u_model, u_view;
+        uniform mat4 u_projection, u_view;
 
         layout (location = 0) in vec3 a_position;
 
         void main() {
-            gl_Position = u_projection
-                * u_model
-                * u_view
-                * vec4(a_position, 1.0);
+            gl_Position = u_projection * u_view * vec4(a_position, 1.0);
         }
     `,
     `#version 300 es
@@ -89,10 +86,6 @@ const draw = Command.create(
                     0.1,
                     1000.0,
                 ),
-            },
-            u_model: {
-                type: "matrix4fv",
-                value: mat4.identity(mat4.create()),
             },
             u_view: {
                 type: "matrix4fv",

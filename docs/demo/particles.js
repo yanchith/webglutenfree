@@ -24,7 +24,7 @@ const cmd = Command.create(
     `#version 300 es
         precision mediump float;
 
-        uniform mat4 u_projection, u_model, u_view;
+        uniform mat4 u_projection, u_view;
         uniform float u_flip;
 
         layout (location = 0) in vec3 a_position;
@@ -45,10 +45,7 @@ const cmd = Command.create(
                 + right * local.x
                 + up * local.y;
 
-            gl_Position = u_projection
-                * u_view
-                * u_model
-                * vec4(position, 1.0);
+            gl_Position = u_projection * u_view * vec4(position, 1.0);
         }
     `,
     `#version 300 es
@@ -71,10 +68,6 @@ const cmd = Command.create(
                     0.1,
                     1000,
                 ),
-            },
-            u_model: {
-                type: "matrix4fv",
-                value: mat4.identity(mat4.create()),
             },
             u_view: {
                 type: "matrix4fv",
