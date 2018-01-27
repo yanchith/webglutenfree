@@ -21,7 +21,7 @@ We are mostly missing documentation.
 ## Gallery
 
 Try looking at our [gallery](https://yanchith.github.io/glutenfree/)
-(with an ES module capable browser, eg. Firefox >= 59 or Chrome >= 61).
+(Firefox >= 59 with modules enabled or Chrome >= 61).
 
 ## The Mandatory Triangle
 
