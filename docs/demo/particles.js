@@ -10,8 +10,8 @@ import {
 } from "./lib/glutenfree.es.js";
 
 const N_PARTICLES = 10000;
-const WANDER_FACTOR = 0.1;
-const SCALE = 800;
+const WANDER_FACTOR = 1;
+const SCALE = 600;
 
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -32,11 +32,23 @@ const cmd = Command.create(
         layout (location = 2) in vec3 a_local_flip;
 
         void main() {
+            // We need the view matrix right and up vectors to make
+            // the particles face screen
+            vec3 right = vec3(u_view[0][0], u_view[1][0], u_view[2][0]);
+            vec3 up = vec3(u_view[0][1], u_view[1][1], u_view[2][1]);
+
+            // Flip based on u_flip
             vec3 local = a_local_orig + (a_local_flip - a_local_orig) * u_flip;
+
+            // Combine the position with applied right and up
+            vec3 position = a_position
+                + right * local.x
+                + up * local.y;
+
             gl_Position = u_projection
                 * u_view
                 * u_model
-                * vec4(a_position + local, 1.0);
+                * vec4(position, 1.0);
         }
     `,
     `#version 300 es
@@ -45,7 +57,7 @@ const cmd = Command.create(
         out vec4 f_color;
 
         void main() {
-            f_color = vec4(0.9, 0.9, 1.0, 0.5);
+            f_color = vec4(0.9, 0.9, 1.0, 0.8);
         }
     `,
     {
@@ -76,7 +88,7 @@ const cmd = Command.create(
             u_flip: {
                 type: "1f",
                 value: () => flip++ % 2,
-            }
+            },
         },
         blend: {
             func: {
@@ -87,10 +99,10 @@ const cmd = Command.create(
     },
 );
 
-const halfWander = WANDER_FACTOR / 2;
+
 const particlePositions = new Float32Array(N_PARTICLES * 3);
 for (let i = 0; i < particlePositions.length; i++) {
-    particlePositions[i] = Math.random() * SCALE - SCALE / 2;
+    particlePositions[i] = Math.random() * SCALE / 2 - SCALE / 4;
 }
 
 const buffer = VertexBuffer.create(
@@ -126,10 +138,15 @@ const attrs = AttributeData.create(
     }),
 );
 
-const loop = time => {
+const update = () => {
     for (let i = 0; i < particlePositions.length; i++) {
-        particlePositions[i] += Math.random() * WANDER_FACTOR - halfWander;
+        particlePositions[i] += Math.random() * WANDER_FACTOR - WANDER_FACTOR / 2;
     }
+}
+
+const loop = time => {
+    update();
+
     buffer.store(particlePositions);
     dev.target(rt => {
         rt.clearColorAndDepth(0, 0, 0, 1, 1);
