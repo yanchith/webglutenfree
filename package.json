@@ -1,6 +1,6 @@
 {
   "name": "webglutenfree",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "We serve your draw calls type-safe and gluten-free",
   "author": "yanchith",
   "license": "MIT",
@@ -31,7 +31,7 @@
     "clean": "rimraf build && rimraf dist"
   },
   "dependencies": {
-      "@types/webgl2": "^0.0.2"
+    "@types/webgl2": "^0.0.2"
   },
   "devDependencies": {
     "cross-env": "^5.1.3",
