@@ -1568,4 +1568,4 @@ class Framebuffer {
 }
 
 export { Device, Extension, BufferBits, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferType, BufferUsage, ElementBuffer, ElementBufferType, Primitive, AttributeData, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
-//# sourceMappingURL=gluten-free.es.js.map
+//# sourceMappingURL=webglutenfree.es.js.map

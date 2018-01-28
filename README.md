@@ -1,13 +1,13 @@
-# gluten-free
+# webglutenfree
 
-We serve your draw calls type-safe and gluten-free.
+We serve your draw calls type-safe and webglutenfree.
 
-Gluten-free is a lightweight, high-level abstraction layer on top of WebGL2. The
+webglutenfree is a lightweight, high-level abstraction layer on top of WebGL2. The
 library encourages init time creation for all drawing resources
 (`Command`s, `AttributeData`, `Texture`s, `Framebuffer`s, etc.). Afterwards,
 drawing is possible by requesting a `Target` and executing draw commands on it.
 
-Gluten-free tries not only to be safe and simple to use while adding minimal
+webglutenfree tries not only to be safe and simple to use while adding minimal
 overhead, but also guide users down the more performant path.
 
 While it can be consumed directly from JavaScript, using TypeScript adds an
@@ -20,19 +20,19 @@ We are mostly missing documentation.
 
 ## Gallery
 
-Try looking at our [gallery](https://yanchith.github.io/gluten-free/)
+Try looking at our [gallery](https://yanchith.github.io/webglutenfree/)
 (Firefox >= 59 with modules enabled or Chrome >= 61).
 
 ## The Mandatory Triangle
 
-Gluten-free initialization consists acquiring a `Device` (WebGL context),
+webglutenfree initialization consists acquiring a `Device` (WebGL context),
 creating a `Command` (WebGL program), and uploading your data to the GPU.
 
 Afterwards, a render target is obtained from the `Device` (or `Framebuffer`)
 and used to execute draw commands.
 
 ```javascript
-import { Device, Command, AttributeData, Primitive } from "gluten-free";
+import { Device, Command, AttributeData, Primitive } from "webglutenfree";
 
 const dev = Device.mount();
 
@@ -90,7 +90,7 @@ dev.target(rt => {
 
 ## Acknowledgements
 
-Gluten-free is inspired by the [regl](http://regl.party) javascript library, and
+webglutenfree is inspired by the [regl](http://regl.party) javascript library, and
 [glium](https://github.com/glium/glium) rust library. Thank you!
 
 Also, [webgl2fundementals.org](https://webgl2fundamentals.org/) and

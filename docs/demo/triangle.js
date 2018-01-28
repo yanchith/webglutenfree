@@ -3,7 +3,7 @@ import {
     Command,
     AttributeData,
     Primitive,
-} from "./lib/gluten-free.es.js";
+} from "./lib/webglutenfree.es.js";
 
 const dev = Device.mount();
 

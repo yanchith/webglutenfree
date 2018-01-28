@@ -3,7 +3,7 @@ import {
     Command,
     AttributeData,
     Texture,
-} from "./lib/gluten-free.es.js";
+} from "./lib/webglutenfree.es.js";
 import * as square from "./lib/square.js"
 import { loadImage } from "./lib/load-image.js";
 

@@ -5,7 +5,7 @@ import {
     AttributeData,
     VertexBuffer,
     VertexBufferType,
-} from "./lib/gluten-free.es.js";
+} from "./lib/webglutenfree.es.js";
 
 const dev = Device.mount();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];

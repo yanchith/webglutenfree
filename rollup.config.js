@@ -19,9 +19,9 @@ if (MIN) { plugins.push(pluginUglify({}, minify)); }
 export default {
     input: "build/index.js",
     output: {
-        file: `dist/gluten-free${PROD ? ".production" : ""}.${FMT}${MIN ? ".min" : ""}.js`,
+        file: `dist/webglutenfree${PROD ? ".production" : ""}.${FMT}${MIN ? ".min" : ""}.js`,
         format: FMT,
-        name: 'gluten-free',
+        name: 'webglutenfree',
         sourcemap: true,
     },
     plugins,
