@@ -30,8 +30,10 @@
     "demolib:cp": "cp dist/webglutenfree.es.{js,js.map} docs/lib",
     "clean": "rimraf build && rimraf dist"
   },
+  "dependencies": {
+      "@types/webgl2": "^0.0.2"
+  },
   "devDependencies": {
-    "@types/webgl2": "^0.0.2",
     "cross-env": "^5.1.3",
     "http-server": "^0.10.0",
     "rimraf": "^2.6.2",
