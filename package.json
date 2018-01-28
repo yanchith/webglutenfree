@@ -1,7 +1,7 @@
 {
   "name": "webglutenfree",
   "version": "0.0.1",
-  "description": "We serve your draw calls type-safe and webglutenfree",
+  "description": "We serve your draw calls type-safe and gluten-free",
   "author": "yanchith",
   "license": "MIT",
   "main": "dist/webglutenfree.umd.js",
