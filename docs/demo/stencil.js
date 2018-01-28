@@ -6,7 +6,7 @@ import {
     DepthFunc,
     StencilFunc,
     StencilOp,
-} from "./lib/glutenfree.es.js";
+} from "./lib/gluten-free.es.js";
 import * as cube from "./lib/cube.js"
 import * as bunny from "./lib/bunny.js"
 

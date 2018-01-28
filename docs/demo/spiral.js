@@ -5,7 +5,7 @@ import {
     BlendFunc,
     AttributeData,
     Primitive,
-} from "./lib/glutenfree.es.js";
+} from "./lib/gluten-free.es.js";
 import * as spiral from "./lib/spiral.js"
 
 const dev = Device.mount();

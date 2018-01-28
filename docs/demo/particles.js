@@ -8,7 +8,7 @@ import {
     AttributeData,
     Primitive,
     BufferUsage,
-} from "./lib/glutenfree.es.js";
+} from "./lib/gluten-free.es.js";
 
 const N_PARTICLES = 10000;
 const WANDER_FACTOR = 1;

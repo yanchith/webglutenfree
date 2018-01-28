@@ -4,7 +4,7 @@ import {
     Command,
     BlendFunc,
     AttributeData,
-} from "./lib/glutenfree.es.js";
+} from "./lib/gluten-free.es.js";
 import * as bunny from "./lib/bunny.js"
 
 const dev = Device.mount();

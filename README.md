@@ -1,13 +1,13 @@
-# glutenfree
+# gluten-free
 
 We serve your draw calls type-safe and gluten-free.
 
-Glutenfree is a lightweight, high-level abstraction layer on top of WebGL2. The
+Gluten-free is a lightweight, high-level abstraction layer on top of WebGL2. The
 library encourages init time creation for all drawing resources
 (`Command`s, `AttributeData`, `Texture`s, `Framebuffer`s, etc.). Afterwards,
 drawing is possible by requesting a `Target` and executing draw commands on it.
 
-Glutenfree tries not only to be safe and simple to use while adding minimal
+Gluten-free tries not only to be safe and simple to use while adding minimal
 overhead, but also guide users down the more performant path.
 
 While it can be consumed directly from JavaScript, using TypeScript adds an
@@ -20,19 +20,19 @@ We are mostly missing documentation.
 
 ## Gallery
 
-Try looking at our [gallery](https://yanchith.github.io/glutenfree/)
+Try looking at our [gallery](https://yanchith.github.io/gluten-free/)
 (Firefox >= 59 with modules enabled or Chrome >= 61).
 
 ## The Mandatory Triangle
 
-Glutenfree initialization consists acquiring a `Device` (WebGL context),
+Gluten-free initialization consists acquiring a `Device` (WebGL context),
 creating a `Command` (WebGL program), and uploading your data to the GPU.
 
 Afterwards, a render target is obtained from the `Device` (or `Framebuffer`)
 and used to execute draw commands.
 
 ```javascript
-import { Device, Command, AttributeData, Primitive } from "glutenfree";
+import { Device, Command, AttributeData, Primitive } from "gluten-free";
 
 const dev = Device.mount();
 
@@ -90,7 +90,7 @@ dev.target(rt => {
 
 ## Acknowledgements
 
-Glutenfree is inspired by the [regl](http://regl.party) javascript library, and
+Gluten-free is inspired by the [regl](http://regl.party) javascript library, and
 [glium](https://github.com/glium/glium) rust library. Thank you!
 
 Also, [webgl2fundementals.org](https://webgl2fundamentals.org/) and

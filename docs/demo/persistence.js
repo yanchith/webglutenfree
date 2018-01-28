@@ -12,7 +12,7 @@ import {
     Texture,
     TextureInternalFormat,
     Framebuffer,
-} from "./lib/glutenfree.es.js";
+} from "./lib/gluten-free.es.js";
 import * as bunny from "./lib/bunny.js"
 
 const PERSISTENCE_FACTOR = 0.8;

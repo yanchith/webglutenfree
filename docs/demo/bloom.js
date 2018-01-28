@@ -7,7 +7,7 @@ import {
     Texture,
     TextureInternalFormat,
     Framebuffer,
-} from "./lib/glutenfree.es.js";
+} from "./lib/gluten-free.es.js";
 import * as cube from "./lib/cube.js"
 
 const N_BLOOM_PASSES = 3;

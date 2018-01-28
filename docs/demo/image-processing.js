@@ -1,4 +1,9 @@
-import { Device, Command, AttributeData, Texture } from "./lib/glutenfree.es.js";
+import {
+    Device,
+    Command,
+    AttributeData,
+    Texture,
+} from "./lib/gluten-free.es.js";
 import * as square from "./lib/square.js"
 import { loadImage } from "./lib/load-image.js";
 

@@ -1,4 +1,9 @@
-import { Device, Command, AttributeData, Primitive } from "./lib/glutenfree.es.js";
+import {
+    Device,
+    Command,
+    AttributeData,
+    Primitive,
+} from "./lib/gluten-free.es.js";
 
 const dev = Device.mount();
 
