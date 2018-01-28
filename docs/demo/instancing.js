@@ -1,5 +1,6 @@
 import {
     Device,
+    BufferBits,
     Command,
     AttributeData,
     VertexBuffer,
@@ -120,7 +121,7 @@ const attrs = AttributeData.indexed(
 
 const loop = () => {
     dev.target(rt => {
-        rt.clearColor(0, 0, 0, 1);
+        rt.clear(BufferBits.COLOR);
         rt.draw(cmd, attrs);
     });
     window.requestAnimationFrame(loop);

@@ -1,9 +1,11 @@
 export {
     Device,
     Extension,
+    BufferBits,
     DeviceMountOptions,
     DeviceFromCanvasOptions,
     DeviceFromContextOptions,
+    ClearOptions,
 } from "./device";
 export {
     Command,

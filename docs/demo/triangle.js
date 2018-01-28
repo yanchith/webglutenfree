@@ -1,4 +1,9 @@
-import { Device, Command, AttributeData, Primitive } from "./lib/glutenfree.es.js";
+import {
+    Device,
+    Command,
+    AttributeData,
+    Primitive,
+} from "./lib/glutenfree.es.js";
 
 const dev = Device.mount();
 
@@ -48,6 +53,5 @@ const attrs = AttributeData.create(
 );
 
 dev.target(rt => {
-    rt.clearColor(0, 0, 0, 1);
     rt.draw(cmd, attrs);
 });

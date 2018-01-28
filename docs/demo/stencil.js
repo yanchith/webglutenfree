@@ -1,5 +1,6 @@
 import {
     Device,
+    BufferBits,
     Command,
     AttributeData,
     DepthFunc,
@@ -175,7 +176,7 @@ const bunnyOutlnModel = mat4.scale(mat4.create(), bunnyModel, [1.04, 1.04, 1.04]
 
 const loop = time => {
     dev.target(rt => {
-        rt.clear(0, 0, 0, 1, 1, 0);
+        rt.clear(BufferBits.COLOR_DEPTH_STENCIL);
         rt.batch(drawObjects, draw => {
             draw(cubeAttrs, { time, model: cubeModel });
             draw(bunnyAttrs, { time, model: bunnyModel });

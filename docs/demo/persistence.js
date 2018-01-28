@@ -5,6 +5,7 @@
 
 import {
     Device,
+    BufferBits,
     Command,
     AttributeData,
     Primitive,
@@ -16,7 +17,7 @@ import * as bunny from "./lib/bunny.js"
 
 const PERSISTENCE_FACTOR = 0.8;
 
-const dev = Device.mount();
+const dev = Device.mount({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const newFrameTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
@@ -141,33 +142,6 @@ const blend = Command.create(
     },
 );
 
-const copyToCanvas = Command.create(
-    dev,
-    screenspaceVS,
-    `#version 300 es
-        precision mediump float;
-
-        uniform sampler2D u_source;
-
-        in vec2 v_tex_coord;
-
-        out vec4 f_color;
-
-        void main() {
-            f_color = texture(u_source, v_tex_coord);
-        }
-    `,
-    {
-        uniforms: {
-            u_source: {
-                type: "texture",
-                value: ({ source }) => source,
-            }
-        },
-    },
-);
-
-
 const screenspaceAttrs = AttributeData.empty(dev, Primitive.TRIANGLES, 3);
 const bunnyAttrs = AttributeData.indexed(
     dev,
@@ -196,7 +170,7 @@ const loop = time => {
 
     // We first draw the scene to a "newFrame" fbo
     newFrameFbo.target(rt => {
-        rt.clearColorAndDepth(0, 0, 0, 1, 1);
+        rt.clear(BufferBits.COLOR);
         rt.draw(draw, bunnyAttrs, { time });
     });
 
@@ -211,8 +185,7 @@ const loop = time => {
 
     // Lastly copy the contents of pong to canvas
     dev.target(rt => {
-        rt.clearColor(0, 0, 0, 1);
-        rt.draw(copyToCanvas, screenspaceAttrs, { source: pong.tex });
+        rt.blit(pong.fbo, BufferBits.COLOR);
     });
 
     // ... and swap the fbos

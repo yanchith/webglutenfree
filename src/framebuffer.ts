@@ -113,8 +113,9 @@ export class Framebuffer {
     readonly width: number;
     readonly height: number;
 
+    readonly glFramebuffer: WebGLFramebuffer | null;
+
     private gl: WebGL2RenderingContext;
-    private glFramebuffer: WebGLFramebuffer | null;
     private glColorAttachments: number[];
 
     private framebufferTarget: Target | null;

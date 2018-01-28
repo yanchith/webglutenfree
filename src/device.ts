@@ -8,6 +8,7 @@ import {
 } from "./command";
 import { AttributeData } from "./attribute-data";
 import { Primitive } from "./element-buffer";
+import { Framebuffer } from "./framebuffer";
 
 export type DeviceMountOptions =
     & MountOpts
@@ -42,13 +43,20 @@ export interface MountOpts {
 }
 
 export interface FromCanvasOpts {
-    context?: {
-        antialias?: boolean,
-        alpha?: boolean;
-        depth?: boolean;
-        stencil?: boolean;
-        preserveDrawingBuffer?: boolean;
-    };
+    antialias?: boolean;
+    alpha?: boolean;
+    depth?: boolean;
+    stencil?: boolean;
+    preserveDrawingBuffer?: boolean;
+}
+
+export interface ClearOptions {
+    r?: number;
+    g?: number;
+    b?: number;
+    a?: number;
+    depth?: number;
+    stencil?: number;
 }
 
 /**
@@ -57,6 +65,16 @@ export interface FromCanvasOpts {
 export enum Extension {
     EXTColorBufferFloat = "EXT_color_buffer_float",
     OESTextureFloatLinear = "OES_texture_float_linear",
+}
+
+export enum BufferBits {
+    COLOR = 0x00004000,
+    DEPTH = 0x00000100,
+    STENCIL = 0x00000400,
+    COLOR_DEPTH = COLOR | DEPTH,
+    COLOR_STENCUL = COLOR | STENCIL,
+    DEPTH_STENCIL = DEPTH | STENCIL,
+    COLOR_DEPTH_STENCIL = COLOR | DEPTH | STENCIL,
 }
 
 export class Device {
@@ -89,7 +107,7 @@ export class Device {
             depth = true,
             stencil = true,
             preserveDrawingBuffer = false,
-        } = options.context || {};
+        } = options;
         const gl = canvas.getContext("webgl2", {
             antialias,
             alpha,
@@ -253,111 +271,39 @@ export class Target {
         cb(this);
     }
 
-    /**
-     * Clear the color buffer to provided color.
-     */
-    clearColor(r: number, g: number, b: number, a: number): void {
-        const gl = this.gl;
-        gl.clearColor(r, g, b, a);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+    blit(source: Framebuffer, bits: BufferBits): void {
+        const { gl, width, height } = this;
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
+        gl.blitFramebuffer(
+            0, 0,
+            source.width, source.height,
+            0, 0,
+            width || gl.drawingBufferWidth, height || gl.drawingBufferHeight,
+            bits,
+            gl.NEAREST,
+        );
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     }
 
     /**
-     * Clear the depth buffer to provided depth.
-     */
-    clearDepth(depth: number): void {
-        const gl = this.gl;
-        gl.clearDepth(depth);
-        gl.clear(gl.DEPTH_BUFFER_BIT);
-    }
-
-    /**
-     * Clear the stencil buffer to provided stencil.
-     */
-    clearStencil(stencil: number): void {
-        const gl = this.gl;
-        gl.clearStencil(stencil);
-        gl.clear(gl.STENCIL_BUFFER_BIT);
-    }
-
-    /**
-     * Clear the color buffers and depth buffer to provided color and depth.
-     *
-     * This is equivalent to but faster than:
-     *   target.clearColor()
-     *   target.clearDepth()
-     */
-    clearColorAndDepth(
-        r: number,
-        g: number,
-        b: number,
-        a: number,
-        depth: number,
-    ): void {
-        const gl = this.gl;
-        gl.clearColor(r, g, b, a);
-        gl.clearDepth(depth);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    }
-
-    /**
-     * Clear the depth buffer and stencil buffer to provided depth and stencil.
-     *
-     * This is equivalent to but faster than:
-     *   target.clearDepth()
-     *   target.clearStencil()
-     */
-    clearDepthAndStencil(depth: number, stencil: number): void {
-        const gl = this.gl;
-        gl.clearDepth(depth);
-        gl.clearStencil(stencil);
-        gl.clear(gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-    }
-
-    /**
-     * Clear the color buffers and stencil buffer to provided color and stencil.
-     *
-     * This is equivalent to but faster than:
-     *   target.clearColor()
-     *   target.clearStencil()
-     */
-    clearColorAndStencil(
-        r: number,
-        g: number,
-        b: number,
-        a: number,
-        stencil: number,
-    ): void {
-        const gl = this.gl;
-        gl.clearColor(r, g, b, a);
-        gl.clearStencil(stencil);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-    }
-
-    /**
-     * Clear the color buffers, depth buffer and stencil buffer to provided
-     * color, depth and stencil.
-     *
-     * This is equivalent to but faster than:
-     *   target.clearColor()
-     *   target.clearDepth()
-     *   target.clearStencil()
+     * Clear the selected buffers to provided values.
      */
     clear(
-        r: number,
-        g: number,
-        b: number,
-        a: number,
-        depth: number,
-        stencil: number,
+        bits: BufferBits,
+        {
+            r = 0,
+            g = 0,
+            b = 0,
+            a = 1,
+            depth = 1,
+            stencil = 0,
+        }: ClearOptions = {},
     ): void {
         const gl = this.gl;
-        gl.clearColor(r, g, b, a);
-        gl.clearDepth(depth);
-        gl.clearStencil(stencil);
-        gl.clear(gl.COLOR_BUFFER_BIT
-            | gl.DEPTH_BUFFER_BIT
-            | gl.STENCIL_BUFFER_BIT);
+        if (bits & BufferBits.COLOR) { gl.clearColor(r, g, b, a); }
+        if (bits & BufferBits.DEPTH) { gl.clearDepth(depth); }
+        if (bits & BufferBits.STENCIL) { gl.clearStencil(stencil); }
+        gl.clear(bits);
     }
 
     /**
@@ -705,7 +651,6 @@ export class Target {
                     );
                     break;
                 case "texture":
-                    // TODO: is this the best way? (is it fast? can we cache?)
                     const texture = access(props, index, def.value);
                     const currentTexture = textureUnitOffset++;
                     gl.activeTexture(gl.TEXTURE0 + currentTexture);

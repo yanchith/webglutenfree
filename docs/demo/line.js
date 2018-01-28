@@ -52,6 +52,5 @@ const attrs = AttributeData.indexed(
 );
 
 dev.target(rt => {
-    rt.clearColor(0, 0, 0, 1);
     rt.draw(cmd, attrs);
 });

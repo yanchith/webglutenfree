@@ -1,5 +1,6 @@
 import {
     Device,
+    BufferBits,
     Command,
     AttributeData,
     Primitive,
@@ -266,7 +267,7 @@ const VERTICAL = vec2.fromValues(0, 1);
 const loop = time => {
     // Render geometry into texture
     initialFbo.target(rt => {
-        rt.clearColorAndDepth(0, 0, 0, 1, 1);
+        rt.clear(BufferBits.COLOR);
         rt.draw(scene, cubeAttrs, { time });
     });
 
@@ -307,7 +308,6 @@ const loop = time => {
 
     // Blend together blurred highlights with original color, perform tonemapping
     dev.target(rt => {
-        rt.clearColor(0, 0, 0, 1);
         rt.draw(tonemap, screenspaceAttrs);
     });
 

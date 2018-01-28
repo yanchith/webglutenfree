@@ -1,5 +1,6 @@
 import {
     Device,
+    BufferBits,
     Command,
     BlendFunc,
     AttributeData,
@@ -90,7 +91,7 @@ const attrs = AttributeData.create(
 
 const loop = time => {
     dev.target(rt => {
-        rt.clearColorAndDepth(0, 0, 0, 1, 1);
+        rt.clear(BufferBits.COLOR);
         rt.draw(cmd, attrs, time);
     });
     window.requestAnimationFrame(loop);

@@ -139,7 +139,6 @@ async function run() {
     );
 
     dev.target(rt => {
-        rt.clearColor(0, 0, 0, 1);
         rt.draw(cmd, attrs);
     })
 }
