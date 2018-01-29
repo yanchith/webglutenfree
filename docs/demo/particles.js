@@ -28,7 +28,7 @@ const cmd = Command.create(
         precision mediump float;
 
         uniform mat4 u_projection, u_view;
-        // uniform mat3 u_model_local;
+        uniform mat3 u_model_local;
         uniform float u_flip;
 
         layout (location = 0) in vec3 a_position;
@@ -43,12 +43,12 @@ const cmd = Command.create(
 
             // Flip based on u_flip
             vec3 local = a_local_orig + (a_local_flip - a_local_orig) * u_flip;
-            // vec3 local_transformed = u_model_local * local;
+            vec3 local_transformed = u_model_local * local;
 
             // Combine the position with applied right and up
             vec3 position = a_position
-                + right * local.x
-                + up * local.y;
+                + right * local_transformed.x
+                + up * local_transformed.y;
 
             gl_Position = u_projection * u_view * vec4(position, 1.0);
         }
@@ -87,14 +87,14 @@ const cmd = Command.create(
                     [0, 1, 0],
                 ),
             },
-            // u_model_local: {
-            //     type: "matrix3fv",
-            //     value: mat3.fromScaling(mat3.create(), [
-            //         PARTICLE_SCALE,
-            //         PARTICLE_SCALE,
-            //         PARTICLE_SCALE,
-            //     ]),
-            // },
+            u_model_local: {
+                type: "matrix3fv",
+                value: mat3.fromScaling(mat3.create(), [
+                    PARTICLE_SCALE,
+                    PARTICLE_SCALE,
+                    PARTICLE_SCALE,
+                ]),
+            },
             u_flip: {
                 type: "1f",
                 value: () => flip++ % 2,
