@@ -12,7 +12,9 @@ import {
 
 const N_PARTICLES = 10000;
 const WANDER_FACTOR = 1;
-const SCALE = 600;
+const CAMERA_DISTANCE = 600;
+const CUBE_SCALE = 400;
+const PARTICLE_SCALE = 1;
 
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -26,6 +28,7 @@ const cmd = Command.create(
         precision mediump float;
 
         uniform mat4 u_projection, u_view;
+        // uniform mat3 u_model_local;
         uniform float u_flip;
 
         layout (location = 0) in vec3 a_position;
@@ -40,6 +43,7 @@ const cmd = Command.create(
 
             // Flip based on u_flip
             vec3 local = a_local_orig + (a_local_flip - a_local_orig) * u_flip;
+            // vec3 local_transformed = u_model_local * local;
 
             // Combine the position with applied right and up
             vec3 position = a_position
@@ -74,11 +78,23 @@ const cmd = Command.create(
                 type: "matrix4fv",
                 value: time => mat4.lookAt(
                     view,
-                    [SCALE * Math.cos(time / 10000), 1, SCALE * Math.sin(time / 10000)],
+                    [
+                        CAMERA_DISTANCE * Math.cos(time / 10000),
+                        1,
+                        CAMERA_DISTANCE * Math.sin(time / 10000),
+                    ],
                     [0, 0, 0],
                     [0, 1, 0],
                 ),
             },
+            // u_model_local: {
+            //     type: "matrix3fv",
+            //     value: mat3.fromScaling(mat3.create(), [
+            //         PARTICLE_SCALE,
+            //         PARTICLE_SCALE,
+            //         PARTICLE_SCALE,
+            //     ]),
+            // },
             u_flip: {
                 type: "1f",
                 value: () => flip++ % 2,
@@ -96,7 +112,7 @@ const cmd = Command.create(
 
 const particlePositions = new Float32Array(N_PARTICLES * 3);
 for (let i = 0; i < particlePositions.length; i++) {
-    particlePositions[i] = Math.random() * SCALE / 2 - SCALE / 4;
+    particlePositions[i] = Math.random() * CUBE_SCALE / 2 - CUBE_SCALE / 4;
 }
 
 const buffer = VertexBuffer.create(
@@ -128,7 +144,7 @@ const attrs = AttributeData.create(
             [Math.sin(angle * 2), Math.cos(angle * 2), 0],
             [Math.sin(angle), Math.cos(angle), 0],
             [Math.sin(angle * 3), Math.cos(angle * 3), 0],
-        ]
+        ],
     }),
 );
 
