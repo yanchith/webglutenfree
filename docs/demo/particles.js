@@ -10,11 +10,14 @@ import {
     BufferUsage,
 } from "./lib/webglutenfree.es.js";
 
-const N_PARTICLES = 100;
-const WANDER_FACTOR = 1;
-const CAMERA_DISTANCE = 600;
-const SCALE = 400;
-const PARTICLE_SCALE = 1;
+const N_PARTICLES = 5000;
+const WANDER_FACTOR = 0.005;
+const CAMERA_DISTANCE = 10000;
+const SCALE = 1000;
+const PARTICLE_SCALE = 0.015;
+const FOV = Math.PI / 4;
+const Z_NEAR = 0.1;
+const Z_FAR = 1000000;
 
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -27,7 +30,7 @@ const cmd = Command.create(
     `#version 300 es
         precision mediump float;
 
-        uniform mat4 u_projection, u_view;//, u_model;
+        uniform mat4 u_projection, u_view, u_model;
         uniform mat3 u_model_local;
         uniform float u_flip;
 
@@ -50,7 +53,7 @@ const cmd = Command.create(
                 + right * local_transformed.x
                 + up * local_transformed.y;
 
-            gl_Position = u_projection * u_view * /*u_model **/ vec4(position, 1.0);
+            gl_Position = u_projection * u_view * u_model * vec4(position, 1.0);
         }
     `,
     `#version 300 es
@@ -68,10 +71,10 @@ const cmd = Command.create(
                 type: "matrix4fv",
                 value: mat4.perspective(
                     mat4.create(),
-                    Math.PI / 4,
+                    FOV,
                     width / height,
-                    0.1,
-                    1000,
+                    Z_NEAR,
+                    Z_FAR,
                 ),
             },
             u_view: {
@@ -87,10 +90,10 @@ const cmd = Command.create(
                     [0, 1, 0],
                 ),
             },
-            // u_model: {
-            //     type: "matrix4fv",
-            //     value: mat4.fromScaling(mat4.create(), [SCALE, SCALE, SCALE]),
-            // },
+            u_model: {
+                type: "matrix4fv",
+                value: mat4.fromScaling(mat4.create(), [SCALE, SCALE, SCALE]),
+            },
             u_model_local: {
                 type: "matrix3fv",
                 value: mat3.fromScaling(mat3.create(), [
