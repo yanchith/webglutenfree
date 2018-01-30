@@ -362,15 +362,145 @@ export class Command<P> {
         gl.deleteShader(vs);
         gl.deleteShader(fs);
 
-        (this as any).glProgram = prog;
-        (this as any).uniformDescrs = Object.entries(uniforms)
-            .map(([ident, uniform]) => {
-                const loc = gl.getUniformLocation(prog, ident);
-                if (!loc) {
-                    throw new Error(`No location for uniform: ${ident}`);
+
+        // Some uniform declarations can be evaluated right away, so do it at
+        // init-time. Create a descriptor for the rest that is evaluated at
+        // render-time.
+
+        gl.useProgram(prog);
+
+        const uniformDescrs: UniformDescriptor<P>[] = [];
+        Object.entries(uniforms).forEach(([ident, u]) => {
+            const loc = gl.getUniformLocation(prog, ident);
+            if (!loc) {
+                throw new Error(`No location for uniform: ${ident}`);
+            }
+            if (typeof u.value !== "function" && !(u.value instanceof Texture)) {
+                // Eagerly send everything we can process now to GPU
+                switch (u.type) {
+                    case "1f":
+                        gl.uniform1f(loc, u.value);
+                        break;
+                    case "1fv":
+                        gl.uniform1fv(loc, u.value);
+                        break;
+                    case "1i":
+                        gl.uniform1i(loc, u.value);
+                        break;
+                    case "1iv":
+                        gl.uniform1iv(loc, u.value);
+                        break;
+                    case "1ui":
+                        gl.uniform1ui(loc, u.value);
+                        break;
+                    case "1uiv":
+                        gl.uniform1uiv(loc, u.value);
+                        break;
+                    case "2f": {
+                        const [x, y] = u.value;
+                        gl.uniform2f(loc, x, y);
+                        break;
+                    }
+                    case "2fv":
+                        gl.uniform2fv(loc, u.value);
+                        break;
+                    case "2i": {
+                        const [x, y] = u.value;
+                        gl.uniform2i(loc, x, y);
+                        break;
+                    }
+                    case "2iv":
+                        gl.uniform2iv(loc, u.value);
+                        break;
+                    case "2ui": {
+                        const [x, y] = u.value;
+                        gl.uniform2ui(loc, x, y);
+                        break;
+                    }
+                    case "2uiv":
+                        gl.uniform2uiv(loc, u.value);
+                        break;
+                    case "3f": {
+                        const [x, y, z] = u.value;
+                        gl.uniform3f(loc, x, y, z);
+                        break;
+                    }
+                    case "3fv":
+                        gl.uniform3fv(loc, u.value);
+                        break;
+                    case "3i": {
+                        const [x, y, z] = u.value;
+                        gl.uniform3i(loc, x, y, z);
+                        break;
+                    }
+                    case "3iv":
+                        gl.uniform3iv(loc, u.value);
+                        break;
+                    case "3ui": {
+                        const [x, y, z] = u.value;
+                        gl.uniform3ui(loc, x, y, z);
+                        break;
+                    }
+                    case "3uiv":
+                        gl.uniform3uiv(loc, u.value);
+                        break;
+                    case "4f": {
+                        const [x, y, z, w] = u.value;
+                        gl.uniform4f(loc, x, y, z, w);
+                        break;
+                    }
+                    case "4fv":
+                        gl.uniform4fv(loc, u.value);
+                        break;
+                    case "4i": {
+                        const [x, y, z, w] = u.value;
+                        gl.uniform4i(loc, x, y, z, w);
+                        break;
+                    }
+                    case "4iv":
+                        gl.uniform4iv(loc, u.value);
+                        break;
+                    case "4ui": {
+                        const [x, y, z, w] = u.value;
+                        gl.uniform4ui(loc, x, y, z, w);
+                        break;
+                    }
+                    case "4uiv":
+                        gl.uniform4uiv(loc, u.value);
+                        break;
+                    case "matrix2fv":
+                        gl.uniformMatrix2fv(
+                            loc,
+                            false,
+                            u.value,
+                        );
+                        break;
+                    case "matrix3fv":
+                        gl.uniformMatrix3fv(
+                            loc,
+                            false,
+                            u.value,
+                        );
+                        break;
+                    case "matrix4fv":
+                        gl.uniformMatrix4fv(
+                            loc,
+                            false,
+                            u.value,
+                        );
+                        break;
+                    default: assert.never(u.value);
                 }
-                return new UniformDescriptor(ident, loc, uniform);
-            });
+            } else {
+                // Store a descriptor for lazy values and textures for later use
+                uniformDescrs.push(new UniformDescriptor(ident, loc, u));
+            }
+        });
+
+        gl.useProgram(null);
+
+        (this as any).glProgram = prog;
+        (this as any).uniformDescrs = uniformDescrs;
     }
 
     /**

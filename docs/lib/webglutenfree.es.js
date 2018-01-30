@@ -495,6 +495,182 @@ class Target {
 }
 function access(props, index, value) { return typeof value === "function" ? value(props, index) : value; }
 
+var TextureWrap;
+(function (TextureWrap) {
+    TextureWrap[TextureWrap["CLAMP_TO_EDGE"] = 33071] = "CLAMP_TO_EDGE";
+    TextureWrap[TextureWrap["REPEAT"] = 10497] = "REPEAT";
+    TextureWrap[TextureWrap["MIRRORED_REPEAT"] = 33648] = "MIRRORED_REPEAT";
+})(TextureWrap || (TextureWrap = {}));
+var TextureFilter;
+(function (TextureFilter) {
+    TextureFilter[TextureFilter["NEAREST"] = 9728] = "NEAREST";
+    TextureFilter[TextureFilter["LINEAR"] = 9729] = "LINEAR";
+    TextureFilter[TextureFilter["NEAREST_MIPMAP_NEAREST"] = 9984] = "NEAREST_MIPMAP_NEAREST";
+    TextureFilter[TextureFilter["LINEAR_MIPMAP_NEAREST"] = 9985] = "LINEAR_MIPMAP_NEAREST";
+    TextureFilter[TextureFilter["NEAREST_MIPMAP_LINEAR"] = 9986] = "NEAREST_MIPMAP_LINEAR";
+    TextureFilter[TextureFilter["LINEAR_MIPMAP_LINEAR"] = 9987] = "LINEAR_MIPMAP_LINEAR";
+})(TextureFilter || (TextureFilter = {}));
+var TextureInternalFormat;
+(function (TextureInternalFormat) {
+    // RED
+    TextureInternalFormat[TextureInternalFormat["R8"] = 33321] = "R8";
+    TextureInternalFormat[TextureInternalFormat["R8_SNORM"] = 36756] = "R8_SNORM";
+    TextureInternalFormat[TextureInternalFormat["R8UI"] = 33330] = "R8UI";
+    TextureInternalFormat[TextureInternalFormat["R8I"] = 33329] = "R8I";
+    TextureInternalFormat[TextureInternalFormat["R16UI"] = 33332] = "R16UI";
+    TextureInternalFormat[TextureInternalFormat["R16I"] = 33331] = "R16I";
+    TextureInternalFormat[TextureInternalFormat["R32UI"] = 33334] = "R32UI";
+    TextureInternalFormat[TextureInternalFormat["R32I"] = 33333] = "R32I";
+    TextureInternalFormat[TextureInternalFormat["R16F"] = 33325] = "R16F";
+    TextureInternalFormat[TextureInternalFormat["R32F"] = 33326] = "R32F";
+    // RG
+    TextureInternalFormat[TextureInternalFormat["RG8"] = 33323] = "RG8";
+    TextureInternalFormat[TextureInternalFormat["RG8_SNORM"] = 36757] = "RG8_SNORM";
+    TextureInternalFormat[TextureInternalFormat["RG8UI"] = 33336] = "RG8UI";
+    TextureInternalFormat[TextureInternalFormat["RG8I"] = 33335] = "RG8I";
+    TextureInternalFormat[TextureInternalFormat["RG16UI"] = 33338] = "RG16UI";
+    TextureInternalFormat[TextureInternalFormat["RG16I"] = 33337] = "RG16I";
+    TextureInternalFormat[TextureInternalFormat["RG32UI"] = 33340] = "RG32UI";
+    TextureInternalFormat[TextureInternalFormat["RG32I"] = 33339] = "RG32I";
+    TextureInternalFormat[TextureInternalFormat["RG16F"] = 33327] = "RG16F";
+    TextureInternalFormat[TextureInternalFormat["RG32F"] = 33328] = "RG32F";
+    // RGB
+    TextureInternalFormat[TextureInternalFormat["RGB8"] = 32849] = "RGB8";
+    TextureInternalFormat[TextureInternalFormat["RGB8_SNORM"] = 36758] = "RGB8_SNORM";
+    TextureInternalFormat[TextureInternalFormat["RGB8UI"] = 36221] = "RGB8UI";
+    TextureInternalFormat[TextureInternalFormat["RGB8I"] = 36239] = "RGB8I";
+    TextureInternalFormat[TextureInternalFormat["RGB16UI"] = 36215] = "RGB16UI";
+    TextureInternalFormat[TextureInternalFormat["RGB16I"] = 36233] = "RGB16I";
+    TextureInternalFormat[TextureInternalFormat["RGB32UI"] = 36209] = "RGB32UI";
+    TextureInternalFormat[TextureInternalFormat["RGB32I"] = 36227] = "RGB32I";
+    TextureInternalFormat[TextureInternalFormat["RGB16F"] = 34843] = "RGB16F";
+    TextureInternalFormat[TextureInternalFormat["RGB32F"] = 34837] = "RGB32F";
+    // RGBA
+    TextureInternalFormat[TextureInternalFormat["RGBA8"] = 32856] = "RGBA8";
+    TextureInternalFormat[TextureInternalFormat["RGBA8_SNORM"] = 36759] = "RGBA8_SNORM";
+    TextureInternalFormat[TextureInternalFormat["RGBA8UI"] = 36220] = "RGBA8UI";
+    TextureInternalFormat[TextureInternalFormat["RGBA8I"] = 36238] = "RGBA8I";
+    TextureInternalFormat[TextureInternalFormat["RGBA16UI"] = 36214] = "RGBA16UI";
+    TextureInternalFormat[TextureInternalFormat["RGBA16I"] = 36232] = "RGBA16I";
+    TextureInternalFormat[TextureInternalFormat["RGBA32UI"] = 36208] = "RGBA32UI";
+    TextureInternalFormat[TextureInternalFormat["RGBA32I"] = 36226] = "RGBA32I";
+    TextureInternalFormat[TextureInternalFormat["RGBA16F"] = 34842] = "RGBA16F";
+    TextureInternalFormat[TextureInternalFormat["RGBA32F"] = 34836] = "RGBA32F";
+    // TODO: support exotic formats
+    // DEPTH
+    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT16"] = 33189] = "DEPTH_COMPONENT16";
+    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT24"] = 33190] = "DEPTH_COMPONENT24";
+    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT32F"] = 36012] = "DEPTH_COMPONENT32F";
+    // DEPTH STENCIL
+    TextureInternalFormat[TextureInternalFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
+    TextureInternalFormat[TextureInternalFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
+    // ~LUMINANCE ALPHA
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+})(TextureInternalFormat || (TextureInternalFormat = {}));
+var TextureDataFormat;
+(function (TextureDataFormat) {
+    TextureDataFormat[TextureDataFormat["RED"] = 6403] = "RED";
+    TextureDataFormat[TextureDataFormat["RG"] = 33319] = "RG";
+    TextureDataFormat[TextureDataFormat["RGB"] = 6407] = "RGB";
+    TextureDataFormat[TextureDataFormat["RGBA"] = 6408] = "RGBA";
+    TextureDataFormat[TextureDataFormat["RED_INTEGER"] = 36244] = "RED_INTEGER";
+    TextureDataFormat[TextureDataFormat["RG_INTEGER"] = 33320] = "RG_INTEGER";
+    TextureDataFormat[TextureDataFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
+    TextureDataFormat[TextureDataFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
+    // TODO: support exotic formats
+    TextureDataFormat[TextureDataFormat["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
+    TextureDataFormat[TextureDataFormat["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+})(TextureDataFormat || (TextureDataFormat = {}));
+var TextureDataType;
+(function (TextureDataType) {
+    TextureDataType[TextureDataType["BYTE"] = 5120] = "BYTE";
+    TextureDataType[TextureDataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
+    TextureDataType[TextureDataType["SHORT"] = 5122] = "SHORT";
+    TextureDataType[TextureDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
+    TextureDataType[TextureDataType["INT"] = 5124] = "INT";
+    TextureDataType[TextureDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
+    TextureDataType[TextureDataType["FLOAT"] = 5126] = "FLOAT";
+    TextureDataType[TextureDataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
+    // TODO: support exotic formats
+    // UNSIGNED_SHORT_4_4_4_4
+    // UNSIGNED_SHORT_5_5_5_1
+    // UNSIGNED_SHORT_5_6_5
+    TextureDataType[TextureDataType["UNSIGNED_INT_24_8"] = 34042] = "UNSIGNED_INT_24_8";
+    // UNSIGNED_INT_5_9_9_9_REV
+    // UNSIGNED_INT_2_10_10_10_REV
+    // UNSIGNED_INT_10F_11F_11F_REV
+    TextureDataType[TextureDataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
+})(TextureDataType || (TextureDataType = {}));
+class Texture {
+    constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
+        this.gl = gl;
+        this.width = width;
+        this.height = height;
+        this.format = format;
+        this.wrapS = wrapS;
+        this.wrapT = wrapT;
+        this.minFilter = minFilter;
+        this.magFilter = magFilter;
+        this.glTexture = null;
+        this.init();
+    }
+    static fromImage(dev, image, options) {
+        return Texture.create(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
+    }
+    static empty(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
+        return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+    }
+    static create(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
+        const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
+        const tex = new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+        if (data) {
+            tex.store(data, dataFormat, dataType, options);
+        }
+        return tex;
+    }
+    init() {
+        const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        this.glTexture = texture;
+    }
+    restore() {
+        const { gl, glTexture } = this;
+        if (!gl.isTexture(glTexture)) {
+            this.init();
+        }
+    }
+    store(data, format, type, { xOffset = 0, yOffset = 0, mipmap = false } = {}) {
+        const { gl, glTexture, width, height } = this;
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, // level
+        xOffset, yOffset, width, height, format, type, 
+        // Chrome does not handle Uint8ClampedArray well
+        data instanceof Uint8ClampedArray ? new Uint8Array(data) : data);
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_2D);
+        }
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+    mipmap() {
+        const { gl, glTexture } = this;
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+}
+
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 var DepthFunc;
@@ -606,15 +782,129 @@ class Command {
         const prog = createProgram(gl, vs, fs);
         gl.deleteShader(vs);
         gl.deleteShader(fs);
-        this.glProgram = prog;
-        this.uniformDescrs = Object.entries(uniforms)
-            .map(([ident, uniform]) => {
+        // Some uniform declarations can be evaluated right away, so do it at
+        // init-time. Create a descriptor for the rest that is evaluated at
+        // render-time.
+        gl.useProgram(prog);
+        const uniformDescrs = [];
+        Object.entries(uniforms).forEach(([ident, u]) => {
             const loc = gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for uniform: ${ident}`);
             }
-            return new UniformDescriptor(ident, loc, uniform);
+            if (typeof u.value !== "function" && !(u.value instanceof Texture)) {
+                // Eagerly send everything we can process now to GPU
+                switch (u.type) {
+                    case "1f":
+                        gl.uniform1f(loc, u.value);
+                        break;
+                    case "1fv":
+                        gl.uniform1fv(loc, u.value);
+                        break;
+                    case "1i":
+                        gl.uniform1i(loc, u.value);
+                        break;
+                    case "1iv":
+                        gl.uniform1iv(loc, u.value);
+                        break;
+                    case "1ui":
+                        gl.uniform1ui(loc, u.value);
+                        break;
+                    case "1uiv":
+                        gl.uniform1uiv(loc, u.value);
+                        break;
+                    case "2f": {
+                        const [x, y] = u.value;
+                        gl.uniform2f(loc, x, y);
+                        break;
+                    }
+                    case "2fv":
+                        gl.uniform2fv(loc, u.value);
+                        break;
+                    case "2i": {
+                        const [x, y] = u.value;
+                        gl.uniform2i(loc, x, y);
+                        break;
+                    }
+                    case "2iv":
+                        gl.uniform2iv(loc, u.value);
+                        break;
+                    case "2ui": {
+                        const [x, y] = u.value;
+                        gl.uniform2ui(loc, x, y);
+                        break;
+                    }
+                    case "2uiv":
+                        gl.uniform2uiv(loc, u.value);
+                        break;
+                    case "3f": {
+                        const [x, y, z] = u.value;
+                        gl.uniform3f(loc, x, y, z);
+                        break;
+                    }
+                    case "3fv":
+                        gl.uniform3fv(loc, u.value);
+                        break;
+                    case "3i": {
+                        const [x, y, z] = u.value;
+                        gl.uniform3i(loc, x, y, z);
+                        break;
+                    }
+                    case "3iv":
+                        gl.uniform3iv(loc, u.value);
+                        break;
+                    case "3ui": {
+                        const [x, y, z] = u.value;
+                        gl.uniform3ui(loc, x, y, z);
+                        break;
+                    }
+                    case "3uiv":
+                        gl.uniform3uiv(loc, u.value);
+                        break;
+                    case "4f": {
+                        const [x, y, z, w] = u.value;
+                        gl.uniform4f(loc, x, y, z, w);
+                        break;
+                    }
+                    case "4fv":
+                        gl.uniform4fv(loc, u.value);
+                        break;
+                    case "4i": {
+                        const [x, y, z, w] = u.value;
+                        gl.uniform4i(loc, x, y, z, w);
+                        break;
+                    }
+                    case "4iv":
+                        gl.uniform4iv(loc, u.value);
+                        break;
+                    case "4ui": {
+                        const [x, y, z, w] = u.value;
+                        gl.uniform4ui(loc, x, y, z, w);
+                        break;
+                    }
+                    case "4uiv":
+                        gl.uniform4uiv(loc, u.value);
+                        break;
+                    case "matrix2fv":
+                        gl.uniformMatrix2fv(loc, false, u.value);
+                        break;
+                    case "matrix3fv":
+                        gl.uniformMatrix3fv(loc, false, u.value);
+                        break;
+                    case "matrix4fv":
+                        gl.uniformMatrix4fv(loc, false, u.value);
+                        break;
+                    default: never(u.value);
+                }
+            }
+            else {
+                // Store a descriptor for lazy values and textures for later use
+                uniformDescrs.push(new UniformDescriptor(ident, loc, u));
+            }
         });
+        gl.useProgram(null);
+        this.glProgram = prog;
+        this.uniformDescrs = uniformDescrs;
     }
     /**
      * Reinitialize invalid buffer, eg. after context is lost.
@@ -1256,182 +1546,6 @@ class AttributeDescriptor {
             : props.buffer, props.count, props.size, props.type === AttributeType.POINTER
             ? (props.normalized || false)
             : false, props.divisor || 0);
-    }
-}
-
-var TextureWrap;
-(function (TextureWrap) {
-    TextureWrap[TextureWrap["CLAMP_TO_EDGE"] = 33071] = "CLAMP_TO_EDGE";
-    TextureWrap[TextureWrap["REPEAT"] = 10497] = "REPEAT";
-    TextureWrap[TextureWrap["MIRRORED_REPEAT"] = 33648] = "MIRRORED_REPEAT";
-})(TextureWrap || (TextureWrap = {}));
-var TextureFilter;
-(function (TextureFilter) {
-    TextureFilter[TextureFilter["NEAREST"] = 9728] = "NEAREST";
-    TextureFilter[TextureFilter["LINEAR"] = 9729] = "LINEAR";
-    TextureFilter[TextureFilter["NEAREST_MIPMAP_NEAREST"] = 9984] = "NEAREST_MIPMAP_NEAREST";
-    TextureFilter[TextureFilter["LINEAR_MIPMAP_NEAREST"] = 9985] = "LINEAR_MIPMAP_NEAREST";
-    TextureFilter[TextureFilter["NEAREST_MIPMAP_LINEAR"] = 9986] = "NEAREST_MIPMAP_LINEAR";
-    TextureFilter[TextureFilter["LINEAR_MIPMAP_LINEAR"] = 9987] = "LINEAR_MIPMAP_LINEAR";
-})(TextureFilter || (TextureFilter = {}));
-var TextureInternalFormat;
-(function (TextureInternalFormat) {
-    // RED
-    TextureInternalFormat[TextureInternalFormat["R8"] = 33321] = "R8";
-    TextureInternalFormat[TextureInternalFormat["R8_SNORM"] = 36756] = "R8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["R8UI"] = 33330] = "R8UI";
-    TextureInternalFormat[TextureInternalFormat["R8I"] = 33329] = "R8I";
-    TextureInternalFormat[TextureInternalFormat["R16UI"] = 33332] = "R16UI";
-    TextureInternalFormat[TextureInternalFormat["R16I"] = 33331] = "R16I";
-    TextureInternalFormat[TextureInternalFormat["R32UI"] = 33334] = "R32UI";
-    TextureInternalFormat[TextureInternalFormat["R32I"] = 33333] = "R32I";
-    TextureInternalFormat[TextureInternalFormat["R16F"] = 33325] = "R16F";
-    TextureInternalFormat[TextureInternalFormat["R32F"] = 33326] = "R32F";
-    // RG
-    TextureInternalFormat[TextureInternalFormat["RG8"] = 33323] = "RG8";
-    TextureInternalFormat[TextureInternalFormat["RG8_SNORM"] = 36757] = "RG8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["RG8UI"] = 33336] = "RG8UI";
-    TextureInternalFormat[TextureInternalFormat["RG8I"] = 33335] = "RG8I";
-    TextureInternalFormat[TextureInternalFormat["RG16UI"] = 33338] = "RG16UI";
-    TextureInternalFormat[TextureInternalFormat["RG16I"] = 33337] = "RG16I";
-    TextureInternalFormat[TextureInternalFormat["RG32UI"] = 33340] = "RG32UI";
-    TextureInternalFormat[TextureInternalFormat["RG32I"] = 33339] = "RG32I";
-    TextureInternalFormat[TextureInternalFormat["RG16F"] = 33327] = "RG16F";
-    TextureInternalFormat[TextureInternalFormat["RG32F"] = 33328] = "RG32F";
-    // RGB
-    TextureInternalFormat[TextureInternalFormat["RGB8"] = 32849] = "RGB8";
-    TextureInternalFormat[TextureInternalFormat["RGB8_SNORM"] = 36758] = "RGB8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["RGB8UI"] = 36221] = "RGB8UI";
-    TextureInternalFormat[TextureInternalFormat["RGB8I"] = 36239] = "RGB8I";
-    TextureInternalFormat[TextureInternalFormat["RGB16UI"] = 36215] = "RGB16UI";
-    TextureInternalFormat[TextureInternalFormat["RGB16I"] = 36233] = "RGB16I";
-    TextureInternalFormat[TextureInternalFormat["RGB32UI"] = 36209] = "RGB32UI";
-    TextureInternalFormat[TextureInternalFormat["RGB32I"] = 36227] = "RGB32I";
-    TextureInternalFormat[TextureInternalFormat["RGB16F"] = 34843] = "RGB16F";
-    TextureInternalFormat[TextureInternalFormat["RGB32F"] = 34837] = "RGB32F";
-    // RGBA
-    TextureInternalFormat[TextureInternalFormat["RGBA8"] = 32856] = "RGBA8";
-    TextureInternalFormat[TextureInternalFormat["RGBA8_SNORM"] = 36759] = "RGBA8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["RGBA8UI"] = 36220] = "RGBA8UI";
-    TextureInternalFormat[TextureInternalFormat["RGBA8I"] = 36238] = "RGBA8I";
-    TextureInternalFormat[TextureInternalFormat["RGBA16UI"] = 36214] = "RGBA16UI";
-    TextureInternalFormat[TextureInternalFormat["RGBA16I"] = 36232] = "RGBA16I";
-    TextureInternalFormat[TextureInternalFormat["RGBA32UI"] = 36208] = "RGBA32UI";
-    TextureInternalFormat[TextureInternalFormat["RGBA32I"] = 36226] = "RGBA32I";
-    TextureInternalFormat[TextureInternalFormat["RGBA16F"] = 34842] = "RGBA16F";
-    TextureInternalFormat[TextureInternalFormat["RGBA32F"] = 34836] = "RGBA32F";
-    // TODO: support exotic formats
-    // DEPTH
-    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT16"] = 33189] = "DEPTH_COMPONENT16";
-    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT24"] = 33190] = "DEPTH_COMPONENT24";
-    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT32F"] = 36012] = "DEPTH_COMPONENT32F";
-    // DEPTH STENCIL
-    TextureInternalFormat[TextureInternalFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
-    TextureInternalFormat[TextureInternalFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
-    // ~LUMINANCE ALPHA
-    // LUMINANCE_ALPHA
-    // LUMINANCE
-    // ALPHA
-})(TextureInternalFormat || (TextureInternalFormat = {}));
-var TextureDataFormat;
-(function (TextureDataFormat) {
-    TextureDataFormat[TextureDataFormat["RED"] = 6403] = "RED";
-    TextureDataFormat[TextureDataFormat["RG"] = 33319] = "RG";
-    TextureDataFormat[TextureDataFormat["RGB"] = 6407] = "RGB";
-    TextureDataFormat[TextureDataFormat["RGBA"] = 6408] = "RGBA";
-    TextureDataFormat[TextureDataFormat["RED_INTEGER"] = 36244] = "RED_INTEGER";
-    TextureDataFormat[TextureDataFormat["RG_INTEGER"] = 33320] = "RG_INTEGER";
-    TextureDataFormat[TextureDataFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
-    TextureDataFormat[TextureDataFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
-    // TODO: support exotic formats
-    TextureDataFormat[TextureDataFormat["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
-    TextureDataFormat[TextureDataFormat["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
-    // LUMINANCE_ALPHA
-    // LUMINANCE
-    // ALPHA
-})(TextureDataFormat || (TextureDataFormat = {}));
-var TextureDataType;
-(function (TextureDataType) {
-    TextureDataType[TextureDataType["BYTE"] = 5120] = "BYTE";
-    TextureDataType[TextureDataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
-    TextureDataType[TextureDataType["SHORT"] = 5122] = "SHORT";
-    TextureDataType[TextureDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
-    TextureDataType[TextureDataType["INT"] = 5124] = "INT";
-    TextureDataType[TextureDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
-    TextureDataType[TextureDataType["FLOAT"] = 5126] = "FLOAT";
-    TextureDataType[TextureDataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
-    // TODO: support exotic formats
-    // UNSIGNED_SHORT_4_4_4_4
-    // UNSIGNED_SHORT_5_5_5_1
-    // UNSIGNED_SHORT_5_6_5
-    TextureDataType[TextureDataType["UNSIGNED_INT_24_8"] = 34042] = "UNSIGNED_INT_24_8";
-    // UNSIGNED_INT_5_9_9_9_REV
-    // UNSIGNED_INT_2_10_10_10_REV
-    // UNSIGNED_INT_10F_11F_11F_REV
-    TextureDataType[TextureDataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
-})(TextureDataType || (TextureDataType = {}));
-class Texture {
-    constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
-        this.gl = gl;
-        this.width = width;
-        this.height = height;
-        this.format = format;
-        this.wrapS = wrapS;
-        this.wrapT = wrapT;
-        this.minFilter = minFilter;
-        this.magFilter = magFilter;
-        this.glTexture = null;
-        this.init();
-    }
-    static fromImage(dev, image, options) {
-        return Texture.create(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
-    }
-    static empty(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
-        return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
-    }
-    static create(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
-        const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
-        const tex = new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
-        if (data) {
-            tex.store(data, dataFormat, dataType, options);
-        }
-        return tex;
-    }
-    init() {
-        const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
-        const texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        this.glTexture = texture;
-    }
-    restore() {
-        const { gl, glTexture } = this;
-        if (!gl.isTexture(glTexture)) {
-            this.init();
-        }
-    }
-    store(data, format, type, { xOffset = 0, yOffset = 0, mipmap = false } = {}) {
-        const { gl, glTexture, width, height } = this;
-        gl.bindTexture(gl.TEXTURE_2D, glTexture);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, // level
-        xOffset, yOffset, width, height, format, type, 
-        // Chrome does not handle Uint8ClampedArray well
-        data instanceof Uint8ClampedArray ? new Uint8Array(data) : data);
-        if (mipmap) {
-            gl.generateMipmap(gl.TEXTURE_2D);
-        }
-        gl.bindTexture(gl.TEXTURE_2D, null);
-    }
-    mipmap() {
-        const { gl, glTexture } = this;
-        gl.bindTexture(gl.TEXTURE_2D, glTexture);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.bindTexture(gl.TEXTURE_2D, null);
     }
 }
 
