@@ -10,24 +10,24 @@ import {
     BufferUsage,
 } from "./lib/webglutenfree.es.js";
 
-const N_PARTICLES = 10000;
+const N_PARTICLES = 100;
 const WANDER_FACTOR = 1;
 const CAMERA_DISTANCE = 600;
-const CUBE_SCALE = 400;
+const SCALE = 400;
 const PARTICLE_SCALE = 1;
 
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const view = mat4.create();
-let flip = 0;
+const viewBuffer = mat4.create();
+let tick = 0;
 
 const cmd = Command.create(
     dev,
     `#version 300 es
         precision mediump float;
 
-        uniform mat4 u_projection, u_view;
+        uniform mat4 u_projection, u_view;//, u_model;
         uniform mat3 u_model_local;
         uniform float u_flip;
 
@@ -50,7 +50,7 @@ const cmd = Command.create(
                 + right * local_transformed.x
                 + up * local_transformed.y;
 
-            gl_Position = u_projection * u_view * vec4(position, 1.0);
+            gl_Position = u_projection * u_view * /*u_model **/ vec4(position, 1.0);
         }
     `,
     `#version 300 es
@@ -76,8 +76,8 @@ const cmd = Command.create(
             },
             u_view: {
                 type: "matrix4fv",
-                value: time => mat4.lookAt(
-                    view,
+                value: ({ time }) => mat4.lookAt(
+                    viewBuffer,
                     [
                         CAMERA_DISTANCE * Math.cos(time / 10000),
                         1,
@@ -87,6 +87,10 @@ const cmd = Command.create(
                     [0, 1, 0],
                 ),
             },
+            // u_model: {
+            //     type: "matrix4fv",
+            //     value: mat4.fromScaling(mat4.create(), [SCALE, SCALE, SCALE]),
+            // },
             u_model_local: {
                 type: "matrix3fv",
                 value: mat3.fromScaling(mat3.create(), [
@@ -97,7 +101,7 @@ const cmd = Command.create(
             },
             u_flip: {
                 type: "1f",
-                value: () => flip++ % 2,
+                value: ({ tick }) => tick % 2,
             },
         },
         blend: {
@@ -112,7 +116,7 @@ const cmd = Command.create(
 
 const particlePositions = new Float32Array(N_PARTICLES * 3);
 for (let i = 0; i < particlePositions.length; i++) {
-    particlePositions[i] = Math.random() * CUBE_SCALE / 2 - CUBE_SCALE / 4;
+    particlePositions[i] = Math.random() * 2 - 1;
 }
 
 const buffer = VertexBuffer.create(
@@ -148,20 +152,18 @@ const attrs = AttributeData.create(
     }),
 );
 
-const update = () => {
+const loop = time => {
     for (let i = 0; i < particlePositions.length; i++) {
         particlePositions[i] += Math.random() * WANDER_FACTOR - WANDER_FACTOR / 2;
     }
     buffer.store(particlePositions);
-}
-
-const loop = time => {
-    update();
 
     dev.target(rt => {
         rt.clear(BufferBits.COLOR);
-        rt.draw(cmd, attrs, time);
+        rt.draw(cmd, attrs, { time, tick });
     });
+
+    tick++;
     window.requestAnimationFrame(loop);
 }
 
