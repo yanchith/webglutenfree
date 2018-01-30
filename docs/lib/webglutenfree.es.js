@@ -67,7 +67,7 @@ var BufferBits;
     BufferBits[BufferBits["DEPTH"] = 256] = "DEPTH";
     BufferBits[BufferBits["STENCIL"] = 1024] = "STENCIL";
     BufferBits[BufferBits["COLOR_DEPTH"] = 16640] = "COLOR_DEPTH";
-    BufferBits[BufferBits["COLOR_STENCUL"] = 17408] = "COLOR_STENCUL";
+    BufferBits[BufferBits["COLOR_STENCIL"] = 17408] = "COLOR_STENCIL";
     BufferBits[BufferBits["DEPTH_STENCIL"] = 1280] = "DEPTH_STENCIL";
     BufferBits[BufferBits["COLOR_DEPTH_STENCIL"] = 17664] = "COLOR_DEPTH_STENCIL";
 })(BufferBits || (BufferBits = {}));
