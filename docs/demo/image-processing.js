@@ -97,6 +97,7 @@ async function run() {
             }
         `,
         {
+            textures: { u_image: imageTexture },
             uniforms: {
                 u_model: {
                     type: "matrix4fv",
@@ -125,10 +126,6 @@ async function run() {
                 u_kernel_weight: {
                     type: "1f",
                     value: computeKernelWeight(KERNEL),
-                },
-                u_image: {
-                    type: "texture",
-                    value: imageTexture,
                 },
             },
         },

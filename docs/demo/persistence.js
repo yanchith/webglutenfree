@@ -125,15 +125,11 @@ const blend = Command.create(
         }
     `,
     {
+        textures: {
+            u_new_frame: ({ newFrame }) => newFrame,
+            u_ping: ({ ping }) => ping,
+        },
         uniforms: {
-            u_new_frame: {
-                type: "texture",
-                value: ({ newFrame }) => newFrame,
-            },
-            u_ping: {
-                type: "texture",
-                value: ({ ping }) => ping,
-            },
             u_blend_factor: {
                 type: "1f",
                 value: PERSISTENCE_FACTOR,

@@ -147,12 +147,7 @@ const split = Command.create(
         }
     `,
     {
-        uniforms: {
-            u_image: {
-                type: "texture",
-                value: initialTex,
-            },
-        },
+        textures: { u_image: initialTex },
     },
 );
 
@@ -189,6 +184,7 @@ const bloom = Command.create(
         }
     `,
     {
+        textures: { u_image: ({ source }) => source },
         uniforms: {
             u_kernel: {
                 type: "1fv",
@@ -197,10 +193,6 @@ const bloom = Command.create(
             u_blur_direction: {
                 type: "2f",
                 value: ({ direction }) => direction,
-            },
-            u_image: {
-                type: "texture",
-                value: ({ source }) => source,
             },
         },
     },
@@ -237,15 +229,9 @@ const tonemap = Command.create(
         }
     `,
     {
-        uniforms: {
-            u_image_color: {
-                type: "texture",
-                value: splitColorTex,
-            },
-            u_image_bloom: {
-                type: "texture",
-                value: bloomPingTex,
-            },
+        textures: {
+            u_image_color: splitColorTex,
+            u_image_bloom: bloomPingTex,
         },
     },
 );

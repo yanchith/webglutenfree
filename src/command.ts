@@ -11,6 +11,7 @@ export type StencilOrSeparate<T> = T | { front: T, back: T };
 export type BlendOrSeparate<T> = T | { rgb: T, alpha: T };
 
 export interface CommandOptions<P> {
+    textures?: Textures<P>;
     uniforms?: Uniforms<P>;
     depth?: {
         func: DepthFunc;
@@ -40,6 +41,9 @@ export interface CommandOptions<P> {
     };
 }
 
+export interface Textures<P> {
+    [name: string]: Access<P, Texture<TextureInternalFormat>>;
+}
 export interface Uniforms<P> { [name: string]: Uniform<P>; }
 
 export type Uniform<P> =
@@ -52,7 +56,6 @@ export type Uniform<P> =
     | Uniform4f<P> | Uniform4fv<P>
     | Uniform4i<P> | Uniform4iv<P> | Uniform4ui<P> | Uniform4uiv<P>
     | UniformMatrix2fv<P> | UniformMatrix3fv<P> | UniformMatrix4fv<P>
-    | UniformTexture<P>
     ;
 
 export interface Uniform1f<P> {
@@ -190,11 +193,6 @@ export interface UniformMatrix4fv<P> {
     value: Access<P, Float32Array | number[]>;
 }
 
-export interface UniformTexture<P> {
-    type: "texture";
-    value: Access<P, Texture<TextureInternalFormat>>;
-}
-
 export enum DepthFunc {
     ALWAYS = 0x0207,
     NEVER = 0x0200,
@@ -260,6 +258,7 @@ export class Command<P> {
         vert: string,
         frag: string,
         {
+            textures = {},
             uniforms = {},
             depth,
             stencil,
@@ -309,6 +308,7 @@ export class Command<P> {
             dev.gl,
             vert,
             frag,
+            textures,
             uniforms,
             depthDescr,
             stencilDescr,
@@ -320,17 +320,20 @@ export class Command<P> {
     readonly depthDescr?: DepthDescriptor;
     readonly stencilDescr?: StencilDescriptor;
     readonly blendDescr?: BlendDescriptor;
+    readonly textureDescrs: TextureDescriptor<P>[];
     readonly uniformDescrs: UniformDescriptor<P>[];
 
     private gl: WebGL2RenderingContext;
     private vsSource: string;
     private fsSource: string;
+    private textures: Textures<P>;
     private uniforms: Uniforms<P>;
 
     private constructor(
         gl: WebGL2RenderingContext,
         vsSource: string,
         fsSource: string,
+        textures: Textures<P>,
         uniforms: Uniforms<P>,
         depthDescr?: DepthDescriptor,
         stencilDescr?: StencilDescriptor,
@@ -339,11 +342,13 @@ export class Command<P> {
         this.gl = gl;
         this.vsSource = vsSource;
         this.fsSource = fsSource;
+        this.textures = textures;
         this.uniforms = uniforms;
         this.depthDescr = depthDescr;
         this.stencilDescr = stencilDescr;
         this.blendDescr = blendDescr;
         this.glProgram = null;
+        this.textureDescrs = [];
         this.uniformDescrs = [];
 
         this.init();
@@ -353,7 +358,7 @@ export class Command<P> {
      * Force command reinitialization.
      */
     init(): void {
-        const { gl, vsSource, fsSource, uniforms } = this;
+        const { gl, vsSource, fsSource, textures, uniforms } = this;
 
         const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
@@ -369,13 +374,23 @@ export class Command<P> {
 
         gl.useProgram(prog);
 
+        const textureDescrs: TextureDescriptor<P>[] = [];
+        Object.entries(textures).forEach(([ident, t], i) => {
+            const loc = gl.getUniformLocation(prog, ident);
+            if (!loc) {
+                throw new Error(`No location for sampler: ${ident}`);
+            }
+            gl.uniform1i(loc, i);
+            textureDescrs.push(new TextureDescriptor(loc, t));
+        });
+
         const uniformDescrs: UniformDescriptor<P>[] = [];
         Object.entries(uniforms).forEach(([ident, u]) => {
             const loc = gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for uniform: ${ident}`);
             }
-            if (typeof u.value !== "function" && !(u.value instanceof Texture)) {
+            if (typeof u.value !== "function") {
                 // Eagerly send everything we can process now to GPU
                 switch (u.type) {
                     case "1f":
@@ -489,7 +504,7 @@ export class Command<P> {
                             u.value,
                         );
                         break;
-                    default: assert.never(u.value);
+                    default: assert.never(u);
                 }
             } else {
                 // Store a descriptor for lazy values and textures for later use
@@ -570,6 +585,13 @@ export class BlendDescriptor {
         readonly equationRGB: number,
         readonly equationAlpha: number,
         readonly color?: [number, number, number, number],
+    ) { }
+}
+
+export class TextureDescriptor<P> {
+    constructor(
+        readonly location: WebGLUniformLocation,
+        readonly value: Access<P, Texture<TextureInternalFormat>>,
     ) { }
 }
 

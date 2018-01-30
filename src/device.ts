@@ -4,6 +4,7 @@ import {
     DepthDescriptor,
     StencilDescriptor,
     BlendDescriptor,
+    TextureDescriptor,
     UniformDescriptor,
 } from "./command";
 import { AttributeData } from "./attribute-data";
@@ -317,6 +318,7 @@ export class Target {
             depthDescr,
             stencilDescr,
             blendDescr,
+            textureDescrs,
             uniformDescrs,
         } = cmd;
 
@@ -326,7 +328,8 @@ export class Target {
         this.stencil(stencilDescr);
         this.blend(blendDescr);
 
-        this.updateUniforms(uniformDescrs, props, 0);
+        this.textures(textureDescrs, props, 0);
+        this.uniforms(uniformDescrs, props, 0);
 
         // Note that attrs.glVertexArray may be null for empty attrs and that
         // is ok
@@ -364,6 +367,7 @@ export class Target {
             depthDescr,
             stencilDescr,
             blendDescr,
+            textureDescrs,
             uniformDescrs,
         } = cmd;
 
@@ -376,6 +380,7 @@ export class Target {
         this.stencil(stencilDescr);
         this.blend(blendDescr);
 
+
         let iter = 0;
         let currVao: WebGLVertexArrayObject | null = null;
 
@@ -384,7 +389,9 @@ export class Target {
         gl.bindVertexArray(null);
 
         cb((attrs: AttributeData, props: P) => {
-            this.updateUniforms(uniformDescrs, props, iter++);
+            this.textures(textureDescrs, props, iter);
+            this.uniforms(uniformDescrs, props, iter);
+            iter++;
             const vao = attrs.glVertexArray;
             if (vao !== currVao) {
                 gl.bindVertexArray(vao);
@@ -524,14 +531,26 @@ export class Target {
         } else { gl.disable(gl.BLEND); }
     }
 
-    private updateUniforms<P>(
+    private textures<P>(
+        textureDescrs: TextureDescriptor<P>[],
+        props: P,
+        index: number,
+    ): void {
+        const gl = this.gl;
+        textureDescrs.forEach((descr, i) => {
+            const tex = access(props, index, descr.value);
+            gl.activeTexture(gl.TEXTURE0 + i);
+            gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
+            gl.uniform1i(descr.location, i);
+        });
+    }
+
+    private uniforms<P>(
         uniformDescrs: UniformDescriptor<P>[],
         props: P,
         index: number,
     ): void {
         const gl = this.gl;
-
-        let textureUnitOffset = 0;
 
         uniformDescrs.forEach(({
             identifier: ident,
@@ -649,13 +668,6 @@ export class Target {
                         false,
                         access(props, index, def.value),
                     );
-                    break;
-                case "texture":
-                    const texture = access(props, index, def.value);
-                    const currentTexture = textureUnitOffset++;
-                    gl.activeTexture(gl.TEXTURE0 + currentTexture);
-                    gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
-                    gl.uniform1i(loc, currentTexture);
                     break;
                 default:
                     assert.never(def, `Unknown uniform type: (${ident})`);
