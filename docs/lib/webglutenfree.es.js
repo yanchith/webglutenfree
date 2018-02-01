@@ -1533,16 +1533,12 @@ class AttributeDescriptor {
             if (isArray2(props)) {
                 const s = shape2(props);
                 const r = ravel2(props, s);
-                return new AttributeDescriptor(location, AttributeType.POINTER, 
-                // ... variance
-                VertexBuffer.create(dev, VertexBufferType.FLOAT, r), s[0], s[1], false, 0);
+                return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.create(dev, VertexBufferType.FLOAT, r), s[0], s[1], false, 0);
             }
-            return new AttributeDescriptor(location, AttributeType.POINTER, 
-            // ... variance
-            VertexBuffer.create(dev, VertexBufferType.FLOAT, props), props.length, 1, false, 0);
+            return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.create(dev, VertexBufferType.FLOAT, props), props.length, 1, false, 0);
         }
         return new AttributeDescriptor(location, props.type, Array.isArray(props.buffer)
-            ? VertexBuffer.create(dev, VertexBufferType.FLOAT, props.buffer) // ... variance
+            ? VertexBuffer.create(dev, VertexBufferType.FLOAT, props.buffer)
             : props.buffer, props.count, props.size, props.type === AttributeType.POINTER
             ? (props.normalized || false)
             : false, props.divisor || 0);
