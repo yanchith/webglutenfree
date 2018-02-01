@@ -18,7 +18,7 @@ const process = {
     },
 };
 
-export function nonNull(p: any, name?: string, msg?: string): void {
+export function nonNull<T>(p: T, name?: string, msg?: string): void {
     if (process.env.NODE_ENV !== "production") {
         if (typeof p === "undefined" || typeof p === "object" && !p) {
             throw new Error(msg || fmt(`object ${name || ""} ${p}`));
@@ -26,7 +26,7 @@ export function nonNull(p: any, name?: string, msg?: string): void {
     }
 }
 
-export function nonEmpty(p: any[], name?: string, msg?: string): void {
+export function nonEmpty<T>(p: T[], name?: string, msg?: string): void {
     if (process.env.NODE_ENV !== "production") {
         if (!p || !p.length) {
             throw new Error(msg || fmt(`array ${name || ""} empty`));
@@ -34,7 +34,7 @@ export function nonEmpty(p: any[], name?: string, msg?: string): void {
     }
 }
 
-export function equal(p: any, val: any, name?: string, msg?: string): void {
+export function equal<T>(p: T, val: T, name?: string, msg?: string): void {
     if (process.env.NODE_ENV !== "production") {
         if (p !== val) {
             throw new Error(msg || fmt(`${name || ""} values not equal: ${p} ${val}`));
