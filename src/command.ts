@@ -381,7 +381,7 @@ export class Command<P> {
                 throw new Error(`No location for sampler: ${ident}`);
             }
             gl.uniform1i(loc, i);
-            textureDescrs.push(new TextureDescriptor(loc, t));
+            textureDescrs.push(new TextureDescriptor(t));
         });
 
         const uniformDescrs: UniformDescriptor<P>[] = [];
@@ -515,6 +515,7 @@ export class Command<P> {
         gl.useProgram(null);
 
         (this as any).glProgram = prog;
+        (this as any).textureDescrs = textureDescrs;
         (this as any).uniformDescrs = uniformDescrs;
     }
 
@@ -590,7 +591,6 @@ export class BlendDescriptor {
 
 export class TextureDescriptor<P> {
     constructor(
-        readonly location: WebGLUniformLocation,
         readonly value: Access<P, Texture<TextureInternalFormat>>,
     ) { }
 }

@@ -550,7 +550,6 @@ export class Target {
             const tex = access(props, index, descr.value);
             gl.activeTexture(gl.TEXTURE0 + i);
             gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
-            gl.uniform1i(descr.location, i);
         });
     }
 

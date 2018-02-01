@@ -267,12 +267,13 @@ class Target {
      */
     draw(cmd, attrs, props) {
         const gl = this.gl;
-        const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
+        const { glProgram, depthDescr, stencilDescr, blendDescr, textureDescrs, uniformDescrs, } = cmd;
         gl.useProgram(glProgram);
         this.depth(depthDescr);
         this.stencil(stencilDescr);
         this.blend(blendDescr);
-        this.updateUniforms(uniformDescrs, props, 0);
+        this.textures(textureDescrs, props, 0);
+        this.uniforms(uniformDescrs, props, 0);
         // Note that attrs.glVertexArray may be null for empty attrs and that
         // is ok
         gl.bindVertexArray(attrs.glVertexArray);
@@ -292,7 +293,7 @@ class Target {
      */
     batch(cmd, cb) {
         const gl = this.gl;
-        const { glProgram, depthDescr, stencilDescr, blendDescr, uniformDescrs, } = cmd;
+        const { glProgram, depthDescr, stencilDescr, blendDescr, textureDescrs, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch.
         gl.useProgram(glProgram);
@@ -305,7 +306,9 @@ class Target {
         // change in each iteration, we need to initialize the first value
         gl.bindVertexArray(null);
         cb((attrs, props) => {
-            this.updateUniforms(uniformDescrs, props, iter++);
+            this.textures(textureDescrs, props, iter);
+            this.uniforms(uniformDescrs, props, iter);
+            iter++;
             const vao = attrs.glVertexArray;
             if (vao !== currVao) {
                 gl.bindVertexArray(vao);
@@ -387,9 +390,16 @@ class Target {
             gl.disable(gl.BLEND);
         }
     }
-    updateUniforms(uniformDescrs, props, index) {
+    textures(textureDescrs, props, index) {
         const gl = this.gl;
-        let textureUnitOffset = 0;
+        textureDescrs.forEach((descr, i) => {
+            const tex = access(props, index, descr.value);
+            gl.activeTexture(gl.TEXTURE0 + i);
+            gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
+        });
+    }
+    uniforms(uniformDescrs, props, index) {
+        const gl = this.gl;
         uniformDescrs.forEach(({ identifier: ident, location: loc, definition: def, }) => {
             switch (def.type) {
                 case "1f":
@@ -491,13 +501,6 @@ class Target {
                 case "matrix4fv":
                     gl.uniformMatrix4fv(loc, false, access(props, index, def.value));
                     break;
-                case "texture":
-                    const texture = access(props, index, def.value);
-                    const currentTexture = textureUnitOffset++;
-                    gl.activeTexture(gl.TEXTURE0 + currentTexture);
-                    gl.bindTexture(gl.TEXTURE_2D, texture.glTexture);
-                    gl.uniform1i(loc, currentTexture);
-                    break;
                 default:
                     never(def, `Unknown uniform type: (${ident})`);
                     break;
@@ -511,182 +514,6 @@ function createDebugFunc(gl, key) {
         console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
         return gl[key].apply(gl, arguments);
     };
-}
-
-var TextureWrap;
-(function (TextureWrap) {
-    TextureWrap[TextureWrap["CLAMP_TO_EDGE"] = 33071] = "CLAMP_TO_EDGE";
-    TextureWrap[TextureWrap["REPEAT"] = 10497] = "REPEAT";
-    TextureWrap[TextureWrap["MIRRORED_REPEAT"] = 33648] = "MIRRORED_REPEAT";
-})(TextureWrap || (TextureWrap = {}));
-var TextureFilter;
-(function (TextureFilter) {
-    TextureFilter[TextureFilter["NEAREST"] = 9728] = "NEAREST";
-    TextureFilter[TextureFilter["LINEAR"] = 9729] = "LINEAR";
-    TextureFilter[TextureFilter["NEAREST_MIPMAP_NEAREST"] = 9984] = "NEAREST_MIPMAP_NEAREST";
-    TextureFilter[TextureFilter["LINEAR_MIPMAP_NEAREST"] = 9985] = "LINEAR_MIPMAP_NEAREST";
-    TextureFilter[TextureFilter["NEAREST_MIPMAP_LINEAR"] = 9986] = "NEAREST_MIPMAP_LINEAR";
-    TextureFilter[TextureFilter["LINEAR_MIPMAP_LINEAR"] = 9987] = "LINEAR_MIPMAP_LINEAR";
-})(TextureFilter || (TextureFilter = {}));
-var TextureInternalFormat;
-(function (TextureInternalFormat) {
-    // RED
-    TextureInternalFormat[TextureInternalFormat["R8"] = 33321] = "R8";
-    TextureInternalFormat[TextureInternalFormat["R8_SNORM"] = 36756] = "R8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["R8UI"] = 33330] = "R8UI";
-    TextureInternalFormat[TextureInternalFormat["R8I"] = 33329] = "R8I";
-    TextureInternalFormat[TextureInternalFormat["R16UI"] = 33332] = "R16UI";
-    TextureInternalFormat[TextureInternalFormat["R16I"] = 33331] = "R16I";
-    TextureInternalFormat[TextureInternalFormat["R32UI"] = 33334] = "R32UI";
-    TextureInternalFormat[TextureInternalFormat["R32I"] = 33333] = "R32I";
-    TextureInternalFormat[TextureInternalFormat["R16F"] = 33325] = "R16F";
-    TextureInternalFormat[TextureInternalFormat["R32F"] = 33326] = "R32F";
-    // RG
-    TextureInternalFormat[TextureInternalFormat["RG8"] = 33323] = "RG8";
-    TextureInternalFormat[TextureInternalFormat["RG8_SNORM"] = 36757] = "RG8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["RG8UI"] = 33336] = "RG8UI";
-    TextureInternalFormat[TextureInternalFormat["RG8I"] = 33335] = "RG8I";
-    TextureInternalFormat[TextureInternalFormat["RG16UI"] = 33338] = "RG16UI";
-    TextureInternalFormat[TextureInternalFormat["RG16I"] = 33337] = "RG16I";
-    TextureInternalFormat[TextureInternalFormat["RG32UI"] = 33340] = "RG32UI";
-    TextureInternalFormat[TextureInternalFormat["RG32I"] = 33339] = "RG32I";
-    TextureInternalFormat[TextureInternalFormat["RG16F"] = 33327] = "RG16F";
-    TextureInternalFormat[TextureInternalFormat["RG32F"] = 33328] = "RG32F";
-    // RGB
-    TextureInternalFormat[TextureInternalFormat["RGB8"] = 32849] = "RGB8";
-    TextureInternalFormat[TextureInternalFormat["RGB8_SNORM"] = 36758] = "RGB8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["RGB8UI"] = 36221] = "RGB8UI";
-    TextureInternalFormat[TextureInternalFormat["RGB8I"] = 36239] = "RGB8I";
-    TextureInternalFormat[TextureInternalFormat["RGB16UI"] = 36215] = "RGB16UI";
-    TextureInternalFormat[TextureInternalFormat["RGB16I"] = 36233] = "RGB16I";
-    TextureInternalFormat[TextureInternalFormat["RGB32UI"] = 36209] = "RGB32UI";
-    TextureInternalFormat[TextureInternalFormat["RGB32I"] = 36227] = "RGB32I";
-    TextureInternalFormat[TextureInternalFormat["RGB16F"] = 34843] = "RGB16F";
-    TextureInternalFormat[TextureInternalFormat["RGB32F"] = 34837] = "RGB32F";
-    // RGBA
-    TextureInternalFormat[TextureInternalFormat["RGBA8"] = 32856] = "RGBA8";
-    TextureInternalFormat[TextureInternalFormat["RGBA8_SNORM"] = 36759] = "RGBA8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["RGBA8UI"] = 36220] = "RGBA8UI";
-    TextureInternalFormat[TextureInternalFormat["RGBA8I"] = 36238] = "RGBA8I";
-    TextureInternalFormat[TextureInternalFormat["RGBA16UI"] = 36214] = "RGBA16UI";
-    TextureInternalFormat[TextureInternalFormat["RGBA16I"] = 36232] = "RGBA16I";
-    TextureInternalFormat[TextureInternalFormat["RGBA32UI"] = 36208] = "RGBA32UI";
-    TextureInternalFormat[TextureInternalFormat["RGBA32I"] = 36226] = "RGBA32I";
-    TextureInternalFormat[TextureInternalFormat["RGBA16F"] = 34842] = "RGBA16F";
-    TextureInternalFormat[TextureInternalFormat["RGBA32F"] = 34836] = "RGBA32F";
-    // TODO: support exotic formats
-    // DEPTH
-    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT16"] = 33189] = "DEPTH_COMPONENT16";
-    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT24"] = 33190] = "DEPTH_COMPONENT24";
-    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT32F"] = 36012] = "DEPTH_COMPONENT32F";
-    // DEPTH STENCIL
-    TextureInternalFormat[TextureInternalFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
-    TextureInternalFormat[TextureInternalFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
-    // ~LUMINANCE ALPHA
-    // LUMINANCE_ALPHA
-    // LUMINANCE
-    // ALPHA
-})(TextureInternalFormat || (TextureInternalFormat = {}));
-var TextureDataFormat;
-(function (TextureDataFormat) {
-    TextureDataFormat[TextureDataFormat["RED"] = 6403] = "RED";
-    TextureDataFormat[TextureDataFormat["RG"] = 33319] = "RG";
-    TextureDataFormat[TextureDataFormat["RGB"] = 6407] = "RGB";
-    TextureDataFormat[TextureDataFormat["RGBA"] = 6408] = "RGBA";
-    TextureDataFormat[TextureDataFormat["RED_INTEGER"] = 36244] = "RED_INTEGER";
-    TextureDataFormat[TextureDataFormat["RG_INTEGER"] = 33320] = "RG_INTEGER";
-    TextureDataFormat[TextureDataFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
-    TextureDataFormat[TextureDataFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
-    // TODO: support exotic formats
-    TextureDataFormat[TextureDataFormat["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
-    TextureDataFormat[TextureDataFormat["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
-    // LUMINANCE_ALPHA
-    // LUMINANCE
-    // ALPHA
-})(TextureDataFormat || (TextureDataFormat = {}));
-var TextureDataType;
-(function (TextureDataType) {
-    TextureDataType[TextureDataType["BYTE"] = 5120] = "BYTE";
-    TextureDataType[TextureDataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
-    TextureDataType[TextureDataType["SHORT"] = 5122] = "SHORT";
-    TextureDataType[TextureDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
-    TextureDataType[TextureDataType["INT"] = 5124] = "INT";
-    TextureDataType[TextureDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
-    TextureDataType[TextureDataType["FLOAT"] = 5126] = "FLOAT";
-    TextureDataType[TextureDataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
-    // TODO: support exotic formats
-    // UNSIGNED_SHORT_4_4_4_4
-    // UNSIGNED_SHORT_5_5_5_1
-    // UNSIGNED_SHORT_5_6_5
-    TextureDataType[TextureDataType["UNSIGNED_INT_24_8"] = 34042] = "UNSIGNED_INT_24_8";
-    // UNSIGNED_INT_5_9_9_9_REV
-    // UNSIGNED_INT_2_10_10_10_REV
-    // UNSIGNED_INT_10F_11F_11F_REV
-    TextureDataType[TextureDataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
-})(TextureDataType || (TextureDataType = {}));
-class Texture {
-    constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
-        this.gl = gl;
-        this.width = width;
-        this.height = height;
-        this.format = format;
-        this.wrapS = wrapS;
-        this.wrapT = wrapT;
-        this.minFilter = minFilter;
-        this.magFilter = magFilter;
-        this.glTexture = null;
-        this.init();
-    }
-    static fromImage(dev, image, options) {
-        return Texture.create(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
-    }
-    static empty(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
-        return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
-    }
-    static create(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
-        const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
-        const tex = new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
-        if (data) {
-            tex.store(data, dataFormat, dataType, options);
-        }
-        return tex;
-    }
-    init() {
-        const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
-        const texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        this.glTexture = texture;
-    }
-    restore() {
-        const { gl, glTexture } = this;
-        if (!gl.isTexture(glTexture)) {
-            this.init();
-        }
-    }
-    store(data, format, type, { xOffset = 0, yOffset = 0, mipmap = false } = {}) {
-        const { gl, glTexture, width, height } = this;
-        gl.bindTexture(gl.TEXTURE_2D, glTexture);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, // level
-        xOffset, yOffset, width, height, format, type, 
-        // Chrome does not handle Uint8ClampedArray well
-        data instanceof Uint8ClampedArray ? new Uint8Array(data) : data);
-        if (mipmap) {
-            gl.generateMipmap(gl.TEXTURE_2D);
-        }
-        gl.bindTexture(gl.TEXTURE_2D, null);
-    }
-    mipmap() {
-        const { gl, glTexture } = this;
-        gl.bindTexture(gl.TEXTURE_2D, glTexture);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-    }
 }
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
@@ -750,19 +577,21 @@ var BlendEquation;
     BlendEquation[BlendEquation["MAX"] = 32776] = "MAX";
 })(BlendEquation || (BlendEquation = {}));
 class Command {
-    constructor(gl, vsSource, fsSource, uniforms, depthDescr, stencilDescr, blendDescr) {
+    constructor(gl, vsSource, fsSource, textures, uniforms, depthDescr, stencilDescr, blendDescr) {
         this.gl = gl;
         this.vsSource = vsSource;
         this.fsSource = fsSource;
+        this.textures = textures;
         this.uniforms = uniforms;
         this.depthDescr = depthDescr;
         this.stencilDescr = stencilDescr;
         this.blendDescr = blendDescr;
         this.glProgram = null;
+        this.textureDescrs = [];
         this.uniformDescrs = [];
         this.init();
     }
-    static create(dev, vert, frag, { uniforms = {}, depth, stencil, blend, } = {}) {
+    static create(dev, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
         nonNull(vert, "vert");
         nonNull(frag, "frag");
         if (depth) {
@@ -788,13 +617,13 @@ class Command {
         const depthDescr = parseDepth(depth);
         const stencilDescr = parseStencil(stencil);
         const blendDescr = parseBlend(blend);
-        return new Command(dev.gl, vert, frag, uniforms, depthDescr, stencilDescr, blendDescr);
+        return new Command(dev.gl, vert, frag, textures, uniforms, depthDescr, stencilDescr, blendDescr);
     }
     /**
      * Force command reinitialization.
      */
     init() {
-        const { gl, vsSource, fsSource, uniforms } = this;
+        const { gl, vsSource, fsSource, textures, uniforms } = this;
         const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
         const prog = createProgram(gl, vs, fs);
@@ -804,13 +633,22 @@ class Command {
         // init-time. Create a descriptor for the rest that is evaluated at
         // render-time.
         gl.useProgram(prog);
+        const textureDescrs = [];
+        Object.entries(textures).forEach(([ident, t], i) => {
+            const loc = gl.getUniformLocation(prog, ident);
+            if (!loc) {
+                throw new Error(`No location for sampler: ${ident}`);
+            }
+            gl.uniform1i(loc, i);
+            textureDescrs.push(new TextureDescriptor(t));
+        });
         const uniformDescrs = [];
         Object.entries(uniforms).forEach(([ident, u]) => {
             const loc = gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for uniform: ${ident}`);
             }
-            if (typeof u.value !== "function" && !(u.value instanceof Texture)) {
+            if (typeof u.value !== "function") {
                 // Eagerly send everything we can process now to GPU
                 switch (u.type) {
                     case "1f":
@@ -912,7 +750,7 @@ class Command {
                     case "matrix4fv":
                         gl.uniformMatrix4fv(loc, false, u.value);
                         break;
-                    default: never(u.value);
+                    default: never(u);
                 }
             }
             else {
@@ -922,6 +760,7 @@ class Command {
         });
         gl.useProgram(null);
         this.glProgram = prog;
+        this.textureDescrs = textureDescrs;
         this.uniformDescrs = uniformDescrs;
     }
     /**
@@ -990,6 +829,11 @@ class BlendDescriptor {
         this.equationRGB = equationRGB;
         this.equationAlpha = equationAlpha;
         this.color = color;
+    }
+}
+class TextureDescriptor {
+    constructor(value) {
+        this.value = value;
     }
 }
 class UniformDescriptor {
@@ -1557,6 +1401,182 @@ class AttributeDescriptor {
             : props.buffer, props.count, props.size, props.type === AttributeType.POINTER
             ? (props.normalized || false)
             : false, props.divisor || 0);
+    }
+}
+
+var TextureWrap;
+(function (TextureWrap) {
+    TextureWrap[TextureWrap["CLAMP_TO_EDGE"] = 33071] = "CLAMP_TO_EDGE";
+    TextureWrap[TextureWrap["REPEAT"] = 10497] = "REPEAT";
+    TextureWrap[TextureWrap["MIRRORED_REPEAT"] = 33648] = "MIRRORED_REPEAT";
+})(TextureWrap || (TextureWrap = {}));
+var TextureFilter;
+(function (TextureFilter) {
+    TextureFilter[TextureFilter["NEAREST"] = 9728] = "NEAREST";
+    TextureFilter[TextureFilter["LINEAR"] = 9729] = "LINEAR";
+    TextureFilter[TextureFilter["NEAREST_MIPMAP_NEAREST"] = 9984] = "NEAREST_MIPMAP_NEAREST";
+    TextureFilter[TextureFilter["LINEAR_MIPMAP_NEAREST"] = 9985] = "LINEAR_MIPMAP_NEAREST";
+    TextureFilter[TextureFilter["NEAREST_MIPMAP_LINEAR"] = 9986] = "NEAREST_MIPMAP_LINEAR";
+    TextureFilter[TextureFilter["LINEAR_MIPMAP_LINEAR"] = 9987] = "LINEAR_MIPMAP_LINEAR";
+})(TextureFilter || (TextureFilter = {}));
+var TextureInternalFormat;
+(function (TextureInternalFormat) {
+    // RED
+    TextureInternalFormat[TextureInternalFormat["R8"] = 33321] = "R8";
+    TextureInternalFormat[TextureInternalFormat["R8_SNORM"] = 36756] = "R8_SNORM";
+    TextureInternalFormat[TextureInternalFormat["R8UI"] = 33330] = "R8UI";
+    TextureInternalFormat[TextureInternalFormat["R8I"] = 33329] = "R8I";
+    TextureInternalFormat[TextureInternalFormat["R16UI"] = 33332] = "R16UI";
+    TextureInternalFormat[TextureInternalFormat["R16I"] = 33331] = "R16I";
+    TextureInternalFormat[TextureInternalFormat["R32UI"] = 33334] = "R32UI";
+    TextureInternalFormat[TextureInternalFormat["R32I"] = 33333] = "R32I";
+    TextureInternalFormat[TextureInternalFormat["R16F"] = 33325] = "R16F";
+    TextureInternalFormat[TextureInternalFormat["R32F"] = 33326] = "R32F";
+    // RG
+    TextureInternalFormat[TextureInternalFormat["RG8"] = 33323] = "RG8";
+    TextureInternalFormat[TextureInternalFormat["RG8_SNORM"] = 36757] = "RG8_SNORM";
+    TextureInternalFormat[TextureInternalFormat["RG8UI"] = 33336] = "RG8UI";
+    TextureInternalFormat[TextureInternalFormat["RG8I"] = 33335] = "RG8I";
+    TextureInternalFormat[TextureInternalFormat["RG16UI"] = 33338] = "RG16UI";
+    TextureInternalFormat[TextureInternalFormat["RG16I"] = 33337] = "RG16I";
+    TextureInternalFormat[TextureInternalFormat["RG32UI"] = 33340] = "RG32UI";
+    TextureInternalFormat[TextureInternalFormat["RG32I"] = 33339] = "RG32I";
+    TextureInternalFormat[TextureInternalFormat["RG16F"] = 33327] = "RG16F";
+    TextureInternalFormat[TextureInternalFormat["RG32F"] = 33328] = "RG32F";
+    // RGB
+    TextureInternalFormat[TextureInternalFormat["RGB8"] = 32849] = "RGB8";
+    TextureInternalFormat[TextureInternalFormat["RGB8_SNORM"] = 36758] = "RGB8_SNORM";
+    TextureInternalFormat[TextureInternalFormat["RGB8UI"] = 36221] = "RGB8UI";
+    TextureInternalFormat[TextureInternalFormat["RGB8I"] = 36239] = "RGB8I";
+    TextureInternalFormat[TextureInternalFormat["RGB16UI"] = 36215] = "RGB16UI";
+    TextureInternalFormat[TextureInternalFormat["RGB16I"] = 36233] = "RGB16I";
+    TextureInternalFormat[TextureInternalFormat["RGB32UI"] = 36209] = "RGB32UI";
+    TextureInternalFormat[TextureInternalFormat["RGB32I"] = 36227] = "RGB32I";
+    TextureInternalFormat[TextureInternalFormat["RGB16F"] = 34843] = "RGB16F";
+    TextureInternalFormat[TextureInternalFormat["RGB32F"] = 34837] = "RGB32F";
+    // RGBA
+    TextureInternalFormat[TextureInternalFormat["RGBA8"] = 32856] = "RGBA8";
+    TextureInternalFormat[TextureInternalFormat["RGBA8_SNORM"] = 36759] = "RGBA8_SNORM";
+    TextureInternalFormat[TextureInternalFormat["RGBA8UI"] = 36220] = "RGBA8UI";
+    TextureInternalFormat[TextureInternalFormat["RGBA8I"] = 36238] = "RGBA8I";
+    TextureInternalFormat[TextureInternalFormat["RGBA16UI"] = 36214] = "RGBA16UI";
+    TextureInternalFormat[TextureInternalFormat["RGBA16I"] = 36232] = "RGBA16I";
+    TextureInternalFormat[TextureInternalFormat["RGBA32UI"] = 36208] = "RGBA32UI";
+    TextureInternalFormat[TextureInternalFormat["RGBA32I"] = 36226] = "RGBA32I";
+    TextureInternalFormat[TextureInternalFormat["RGBA16F"] = 34842] = "RGBA16F";
+    TextureInternalFormat[TextureInternalFormat["RGBA32F"] = 34836] = "RGBA32F";
+    // TODO: support exotic formats
+    // DEPTH
+    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT16"] = 33189] = "DEPTH_COMPONENT16";
+    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT24"] = 33190] = "DEPTH_COMPONENT24";
+    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT32F"] = 36012] = "DEPTH_COMPONENT32F";
+    // DEPTH STENCIL
+    TextureInternalFormat[TextureInternalFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
+    TextureInternalFormat[TextureInternalFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
+    // ~LUMINANCE ALPHA
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+})(TextureInternalFormat || (TextureInternalFormat = {}));
+var TextureDataFormat;
+(function (TextureDataFormat) {
+    TextureDataFormat[TextureDataFormat["RED"] = 6403] = "RED";
+    TextureDataFormat[TextureDataFormat["RG"] = 33319] = "RG";
+    TextureDataFormat[TextureDataFormat["RGB"] = 6407] = "RGB";
+    TextureDataFormat[TextureDataFormat["RGBA"] = 6408] = "RGBA";
+    TextureDataFormat[TextureDataFormat["RED_INTEGER"] = 36244] = "RED_INTEGER";
+    TextureDataFormat[TextureDataFormat["RG_INTEGER"] = 33320] = "RG_INTEGER";
+    TextureDataFormat[TextureDataFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
+    TextureDataFormat[TextureDataFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
+    // TODO: support exotic formats
+    TextureDataFormat[TextureDataFormat["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
+    TextureDataFormat[TextureDataFormat["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+})(TextureDataFormat || (TextureDataFormat = {}));
+var TextureDataType;
+(function (TextureDataType) {
+    TextureDataType[TextureDataType["BYTE"] = 5120] = "BYTE";
+    TextureDataType[TextureDataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
+    TextureDataType[TextureDataType["SHORT"] = 5122] = "SHORT";
+    TextureDataType[TextureDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
+    TextureDataType[TextureDataType["INT"] = 5124] = "INT";
+    TextureDataType[TextureDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
+    TextureDataType[TextureDataType["FLOAT"] = 5126] = "FLOAT";
+    TextureDataType[TextureDataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
+    // TODO: support exotic formats
+    // UNSIGNED_SHORT_4_4_4_4
+    // UNSIGNED_SHORT_5_5_5_1
+    // UNSIGNED_SHORT_5_6_5
+    TextureDataType[TextureDataType["UNSIGNED_INT_24_8"] = 34042] = "UNSIGNED_INT_24_8";
+    // UNSIGNED_INT_5_9_9_9_REV
+    // UNSIGNED_INT_2_10_10_10_REV
+    // UNSIGNED_INT_10F_11F_11F_REV
+    TextureDataType[TextureDataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
+})(TextureDataType || (TextureDataType = {}));
+class Texture {
+    constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
+        this.gl = gl;
+        this.width = width;
+        this.height = height;
+        this.format = format;
+        this.wrapS = wrapS;
+        this.wrapT = wrapT;
+        this.minFilter = minFilter;
+        this.magFilter = magFilter;
+        this.glTexture = null;
+        this.init();
+    }
+    static fromImage(dev, image, options) {
+        return Texture.create(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
+    }
+    static empty(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
+        return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+    }
+    static create(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
+        const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
+        const tex = new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+        if (data) {
+            tex.store(data, dataFormat, dataType, options);
+        }
+        return tex;
+    }
+    init() {
+        const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        this.glTexture = texture;
+    }
+    restore() {
+        const { gl, glTexture } = this;
+        if (!gl.isTexture(glTexture)) {
+            this.init();
+        }
+    }
+    store(data, format, type, { xOffset = 0, yOffset = 0, mipmap = false } = {}) {
+        const { gl, glTexture, width, height } = this;
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, // level
+        xOffset, yOffset, width, height, format, type, 
+        // Chrome does not handle Uint8ClampedArray well
+        data instanceof Uint8ClampedArray ? new Uint8Array(data) : data);
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_2D);
+        }
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+    mipmap() {
+        const { gl, glTexture } = this;
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, null);
     }
 }
 
