@@ -6,14 +6,15 @@
     "jsRules": {},
     "rules": {
         "array-type": [true, "array"],
-        "arrow-parens": false,
-        "interface-name": [false],
-        "max-classes-per-file": [false],
+        "arrow-parens": [true, "ban-single-arg-parens"],
+        "interface-name": [true, "never-prefix"],
+        "max-classes-per-file": false,
         "member-access": [true, "no-public"],
         "no-bitwise": false,
         "no-consecutive-blank-lines": [true, 2],
+        "no-console": [true, "log", "warn", "error"],
         "object-literal-sort-keys": false,
-        "ordered-imports": [false]
+        "ordered-imports": false
     },
     "rulesDirectory": []
 }

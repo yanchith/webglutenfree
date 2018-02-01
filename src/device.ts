@@ -10,44 +10,36 @@ import { AttributeData } from "./attribute-data";
 import { Primitive } from "./element-buffer";
 import { Framebuffer } from "./framebuffer";
 
-export type DeviceMountOptions =
-    & MountOpts
-    & FromCanvasOpts
-    & FromContextOpts
-    & DeviceOpts
-    ;
-
-export type DeviceFromCanvasOptions =
-    & FromCanvasOpts
-    & FromContextOpts
-    & DeviceOpts
-    ;
-
-export type DeviceFromContextOptions =
-    & FromContextOpts
-    & DeviceOpts
-    ;
-
-
-export interface DeviceOpts {
+export interface DeviceMountOptions {
+    element?: HTMLElement;
+    alpha?: boolean;
+    antialias?: boolean;
+    depth?: boolean;
+    stencil?: boolean;
+    preserveDrawingBuffer?: boolean;
+    extensions?: Extension[];
+    debug?: boolean;
     pixelRatio?: number;
     viewport?: [number, number];
 }
 
-export interface FromContextOpts {
-    extensions?: Extension[];
-}
-
-export interface MountOpts {
-    element?: HTMLElement;
-}
-
-export interface FromCanvasOpts {
-    antialias?: boolean;
+export interface DeviceFromCanvasOptions {
     alpha?: boolean;
+    antialias?: boolean;
     depth?: boolean;
     stencil?: boolean;
     preserveDrawingBuffer?: boolean;
+    extensions?: Extension[];
+    debug?: boolean;
+    pixelRatio?: number;
+    viewport?: [number, number];
+}
+
+export interface DeviceFromContextOptions {
+    extensions?: Extension[];
+    debug?: boolean;
+    pixelRatio?: number;
+    viewport?: [number, number];
 }
 
 export interface ClearOptions {
@@ -102,15 +94,15 @@ export class Device {
         options: DeviceFromCanvasOptions = {},
     ): Device {
         const {
-            antialias = true,
             alpha = true,
+            antialias = true,
             depth = true,
             stencil = true,
             preserveDrawingBuffer = false,
         } = options;
         const gl = canvas.getContext("webgl2", {
-            antialias,
             alpha,
+            antialias,
             depth,
             stencil,
             preserveDrawingBuffer,
@@ -124,7 +116,12 @@ export class Device {
      */
     static fromContext(
         gl: WebGL2RenderingContext,
-        { pixelRatio, viewport, extensions }: DeviceFromContextOptions = {},
+        {
+            pixelRatio,
+            viewport,
+            extensions,
+            debug,
+        }: DeviceFromContextOptions = {},
     ): Device {
         if (extensions) {
             extensions.forEach(ext => {
@@ -133,6 +130,18 @@ export class Device {
                     throw new Error(`Could not get extension ${ext}`);
                 }
             });
+        }
+
+        if (debug) {
+            const wrapper = {} as any;
+            for (const key in gl) {
+                if (typeof (gl as any)[key] === "function") {
+                    wrapper[key] = createDebugFunc(gl, key);
+                } else {
+                    wrapper[key] = (gl as any)[key];
+                }
+            }
+            gl = wrapper;
         }
 
         const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
@@ -670,3 +679,10 @@ function access<P, R>(
     index: number,
     value: ((props: P, index: number) => R) | R,
 ): R { return typeof value === "function" ? value(props, index) : value; }
+
+function createDebugFunc(gl: any, key: string): (...args: any[]) => any {
+    return function debugWrapper() {
+        console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
+        return gl[key].apply(gl, arguments);
+    };
+}

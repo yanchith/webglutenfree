@@ -89,10 +89,10 @@ class Device {
      * Create a new device (containing a gl context) from existing canvas.
      */
     static fromCanvas(canvas, options = {}) {
-        const { antialias = true, alpha = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options;
+        const { alpha = true, antialias = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options;
         const gl = canvas.getContext("webgl2", {
-            antialias,
             alpha,
+            antialias,
             depth,
             stencil,
             preserveDrawingBuffer,
@@ -105,7 +105,7 @@ class Device {
     /**
      * Create a new device from existing gl context.
      */
-    static fromContext(gl, { pixelRatio, viewport, extensions } = {}) {
+    static fromContext(gl, { pixelRatio, viewport, extensions, debug, } = {}) {
         if (extensions) {
             extensions.forEach(ext => {
                 // We currently do not have extensions with callable API
@@ -113,6 +113,18 @@ class Device {
                     throw new Error(`Could not get extension ${ext}`);
                 }
             });
+        }
+        if (debug) {
+            const wrapper = {};
+            for (const key in gl) {
+                if (typeof gl[key] === "function") {
+                    wrapper[key] = createDebugFunc(gl, key);
+                }
+                else {
+                    wrapper[key] = gl[key];
+                }
+            }
+            gl = wrapper;
         }
         const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
         dev.update();
@@ -494,6 +506,12 @@ class Target {
     }
 }
 function access(props, index, value) { return typeof value === "function" ? value(props, index) : value; }
+function createDebugFunc(gl, key) {
+    return function debugWrapper() {
+        console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
+        return gl[key].apply(gl, arguments);
+    };
+}
 
 var TextureWrap;
 (function (TextureWrap) {
@@ -1082,9 +1100,6 @@ function createProgram(gl, vertex, fragment) {
 }
 function createShader(gl, type, source) {
     const shader = gl.createShader(type);
-    if (!shader) {
-        throw new Error("Could not create Shader");
-    }
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
