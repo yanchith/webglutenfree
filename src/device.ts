@@ -4,7 +4,7 @@ import {
     DepthDescriptor,
     StencilDescriptor,
     BlendDescriptor,
-    TextureDescriptor,
+    TextureAccessor,
     UniformDescriptor,
 } from "./command";
 import { AttributeData } from "./attribute-data";
@@ -327,7 +327,7 @@ export class Target {
             depthDescr,
             stencilDescr,
             blendDescr,
-            textureDescrs,
+            textureAccessors,
             uniformDescrs,
         } = cmd;
 
@@ -337,7 +337,7 @@ export class Target {
         this.stencil(stencilDescr);
         this.blend(blendDescr);
 
-        this.textures(textureDescrs, props, 0);
+        this.textures(textureAccessors, props, 0);
         this.uniforms(uniformDescrs, props, 0);
 
         // Note that attrs.glVertexArray may be null for empty attrs and that
@@ -376,7 +376,7 @@ export class Target {
             depthDescr,
             stencilDescr,
             blendDescr,
-            textureDescrs,
+            textureAccessors,
             uniformDescrs,
         } = cmd;
 
@@ -398,7 +398,7 @@ export class Target {
         gl.bindVertexArray(null);
 
         cb((attrs: AttributeData, props: P) => {
-            this.textures(textureDescrs, props, iter);
+            this.textures(textureAccessors, props, iter);
             this.uniforms(uniformDescrs, props, iter);
             iter++;
             const vao = attrs.glVertexArray;
@@ -541,13 +541,13 @@ export class Target {
     }
 
     private textures<P>(
-        textureDescrs: TextureDescriptor<P>[],
+        textureAccessors: TextureAccessor<P>[],
         props: P,
         index: number,
     ): void {
         const gl = this.gl;
-        textureDescrs.forEach((descr, i) => {
-            const tex = access(props, index, descr.value);
+        textureAccessors.forEach((accessor, i) => {
+            const tex = access(props, index, accessor);
             gl.activeTexture(gl.TEXTURE0 + i);
             gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
         });

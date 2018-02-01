@@ -6,7 +6,7 @@ import { Texture, TextureInternalFormat } from "./texture";
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 
-export type Access<P, R> = R | ((props: P, index: number) => R);
+export type Accessor<P, R> = R | ((props: P, index: number) => R);
 export type StencilOrSeparate<T> = T | { front: T, back: T };
 export type BlendOrSeparate<T> = T | { rgb: T, alpha: T };
 
@@ -42,8 +42,11 @@ export interface CommandOptions<P> {
 }
 
 export interface Textures<P> {
-    [name: string]: Access<P, Texture<TextureInternalFormat>>;
+    [name: string]: TextureAccessor<P>;
 }
+
+export type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
+
 export interface Uniforms<P> { [name: string]: Uniform<P>; }
 
 export type Uniform<P> =
@@ -60,137 +63,137 @@ export type Uniform<P> =
 
 export interface Uniform1f<P> {
     type: "1f";
-    value: Access<P, number>;
+    value: Accessor<P, number>;
 }
 
 export interface Uniform1fv<P> {
     type: "1fv";
-    value: Access<P, Float32Array | number[]>;
+    value: Accessor<P, Float32Array | number[]>;
 }
 
 export interface Uniform1i<P> {
     type: "1i";
-    value: Access<P, number>;
+    value: Accessor<P, number>;
 }
 
 export interface Uniform1iv<P> {
     type: "1iv";
-    value: Access<P, Int32Array | number[]>;
+    value: Accessor<P, Int32Array | number[]>;
 }
 
 export interface Uniform1ui<P> {
     type: "1ui";
-    value: Access<P, number>;
+    value: Accessor<P, number>;
 }
 
 export interface Uniform1uiv<P> {
     type: "1uiv";
-    value: Access<P, Uint32Array | number[]>;
+    value: Accessor<P, Uint32Array | number[]>;
 }
 
 export interface Uniform2f<P> {
     type: "2f";
-    value: Access<P, Float32Array | number[]>;
+    value: Accessor<P, Float32Array | number[]>;
 }
 
 export interface Uniform2fv<P> {
     type: "2fv";
-    value: Access<P, Float32Array | number[]>;
+    value: Accessor<P, Float32Array | number[]>;
 }
 
 export interface Uniform2i<P> {
     type: "2i";
-    value: Access<P, Int32Array | number[]>;
+    value: Accessor<P, Int32Array | number[]>;
 }
 
 export interface Uniform2iv<P> {
     type: "2iv";
-    value: Access<P, Int32Array | number[]>;
+    value: Accessor<P, Int32Array | number[]>;
 }
 
 export interface Uniform2ui<P> {
     type: "2ui";
-    value: Access<P, Uint32Array | number[]>;
+    value: Accessor<P, Uint32Array | number[]>;
 }
 
 export interface Uniform2uiv<P> {
     type: "2uiv";
-    value: Access<P, Uint32Array | number[]>;
+    value: Accessor<P, Uint32Array | number[]>;
 }
 
 export interface Uniform3f<P> {
     type: "3f";
-    value: Access<P, Float32Array | number[]>;
+    value: Accessor<P, Float32Array | number[]>;
 }
 
 export interface Uniform3fv<P> {
     type: "3fv";
-    value: Access<P, Float32Array | number[]>;
+    value: Accessor<P, Float32Array | number[]>;
 }
 
 export interface Uniform3i<P> {
     type: "3i";
-    value: Access<P, Int32Array | number[]>;
+    value: Accessor<P, Int32Array | number[]>;
 }
 
 export interface Uniform3iv<P> {
     type: "3iv";
-    value: Access<P, Int32Array | number[]>;
+    value: Accessor<P, Int32Array | number[]>;
 }
 
 export interface Uniform3ui<P> {
     type: "3ui";
-    value: Access<P, Uint32Array | number[]>;
+    value: Accessor<P, Uint32Array | number[]>;
 }
 
 export interface Uniform3uiv<P> {
     type: "3uiv";
-    value: Access<P, Uint32Array | number[]>;
+    value: Accessor<P, Uint32Array | number[]>;
 }
 
 export interface Uniform4f<P> {
     type: "4f";
-    value: Access<P, Float32Array | number[]>;
+    value: Accessor<P, Float32Array | number[]>;
 }
 
 export interface Uniform4fv<P> {
     type: "4fv";
-    value: Access<P, Float32Array | number[]>;
+    value: Accessor<P, Float32Array | number[]>;
 }
 
 export interface Uniform4i<P> {
     type: "4i";
-    value: Access<P, Int32Array | number[]>;
+    value: Accessor<P, Int32Array | number[]>;
 }
 
 export interface Uniform4iv<P> {
     type: "4iv";
-    value: Access<P, Int32Array | number[]>;
+    value: Accessor<P, Int32Array | number[]>;
 }
 
 export interface Uniform4ui<P> {
     type: "4ui";
-    value: Access<P, Uint32Array | number[]>;
+    value: Accessor<P, Uint32Array | number[]>;
 }
 
 export interface Uniform4uiv<P> {
     type: "4uiv";
-    value: Access<P, Uint32Array | number[]>;
+    value: Accessor<P, Uint32Array | number[]>;
 }
 
 export interface UniformMatrix2fv<P> {
     type: "matrix2fv";
-    value: Access<P, Float32Array | number[]>;
+    value: Accessor<P, Float32Array | number[]>;
 }
 
 export interface UniformMatrix3fv<P> {
     type: "matrix3fv";
-    value: Access<P, Float32Array | number[]>;
+    value: Accessor<P, Float32Array | number[]>;
 }
 
 export interface UniformMatrix4fv<P> {
     type: "matrix4fv";
-    value: Access<P, Float32Array | number[]>;
+    value: Accessor<P, Float32Array | number[]>;
 }
 
 export enum DepthFunc {
@@ -320,7 +323,7 @@ export class Command<P> {
     readonly depthDescr?: DepthDescriptor;
     readonly stencilDescr?: StencilDescriptor;
     readonly blendDescr?: BlendDescriptor;
-    readonly textureDescrs: TextureDescriptor<P>[];
+    readonly textureAccessors: TextureAccessor<P>[];
     readonly uniformDescrs: UniformDescriptor<P>[];
 
     private gl: WebGL2RenderingContext;
@@ -348,7 +351,7 @@ export class Command<P> {
         this.stencilDescr = stencilDescr;
         this.blendDescr = blendDescr;
         this.glProgram = null;
-        this.textureDescrs = [];
+        this.textureAccessors = [];
         this.uniformDescrs = [];
 
         this.init();
@@ -367,22 +370,27 @@ export class Command<P> {
         gl.deleteShader(vs);
         gl.deleteShader(fs);
 
-
-        // Some uniform declarations can be evaluated right away, so do it at
-        // init-time. Create a descriptor for the rest that is evaluated at
-        // render-time.
-
         gl.useProgram(prog);
 
-        const textureDescrs: TextureDescriptor<P>[] = [];
+        // Texture declarations are evaluated in two phases:
+        // 1) Sampler location offsets are sent to the shader eagerly
+        // 2) Textures are bound to the locations at draw time
+        // Note that Object.entries provides values in a nondeterministic order,
+        // but we store the descriptors in an array, remembering the order.
+
+        const textureAccessors: TextureAccessor<P>[] = [];
         Object.entries(textures).forEach(([ident, t], i) => {
             const loc = gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for sampler: ${ident}`);
             }
             gl.uniform1i(loc, i);
-            textureDescrs.push(new TextureDescriptor(t));
+            textureAccessors.push(t);
         });
+
+        // Some uniform declarations can be evaluated right away, so do it at
+        // init-time. Create a descriptor for the rest that is evaluated at
+        // render-time.
 
         const uniformDescrs: UniformDescriptor<P>[] = [];
         Object.entries(uniforms).forEach(([ident, u]) => {
@@ -515,7 +523,7 @@ export class Command<P> {
         gl.useProgram(null);
 
         (this as any).glProgram = prog;
-        (this as any).textureDescrs = textureDescrs;
+        (this as any).textureAccessors = textureAccessors;
         (this as any).uniformDescrs = uniformDescrs;
     }
 
@@ -586,12 +594,6 @@ export class BlendDescriptor {
         readonly equationRGB: number,
         readonly equationAlpha: number,
         readonly color?: [number, number, number, number],
-    ) { }
-}
-
-export class TextureDescriptor<P> {
-    constructor(
-        readonly value: Access<P, Texture<TextureInternalFormat>>,
     ) { }
 }
 

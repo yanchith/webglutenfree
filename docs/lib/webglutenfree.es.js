@@ -267,12 +267,12 @@ class Target {
      */
     draw(cmd, attrs, props) {
         const gl = this.gl;
-        const { glProgram, depthDescr, stencilDescr, blendDescr, textureDescrs, uniformDescrs, } = cmd;
+        const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         gl.useProgram(glProgram);
         this.depth(depthDescr);
         this.stencil(stencilDescr);
         this.blend(blendDescr);
-        this.textures(textureDescrs, props, 0);
+        this.textures(textureAccessors, props, 0);
         this.uniforms(uniformDescrs, props, 0);
         // Note that attrs.glVertexArray may be null for empty attrs and that
         // is ok
@@ -293,7 +293,7 @@ class Target {
      */
     batch(cmd, cb) {
         const gl = this.gl;
-        const { glProgram, depthDescr, stencilDescr, blendDescr, textureDescrs, uniformDescrs, } = cmd;
+        const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch.
         gl.useProgram(glProgram);
@@ -306,7 +306,7 @@ class Target {
         // change in each iteration, we need to initialize the first value
         gl.bindVertexArray(null);
         cb((attrs, props) => {
-            this.textures(textureDescrs, props, iter);
+            this.textures(textureAccessors, props, iter);
             this.uniforms(uniformDescrs, props, iter);
             iter++;
             const vao = attrs.glVertexArray;
@@ -390,10 +390,10 @@ class Target {
             gl.disable(gl.BLEND);
         }
     }
-    textures(textureDescrs, props, index) {
+    textures(textureAccessors, props, index) {
         const gl = this.gl;
-        textureDescrs.forEach((descr, i) => {
-            const tex = access(props, index, descr.value);
+        textureAccessors.forEach((accessor, i) => {
+            const tex = access(props, index, accessor);
             gl.activeTexture(gl.TEXTURE0 + i);
             gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
         });
@@ -587,7 +587,7 @@ class Command {
         this.stencilDescr = stencilDescr;
         this.blendDescr = blendDescr;
         this.glProgram = null;
-        this.textureDescrs = [];
+        this.textureAccessors = [];
         this.uniformDescrs = [];
         this.init();
     }
@@ -629,19 +629,24 @@ class Command {
         const prog = createProgram(gl, vs, fs);
         gl.deleteShader(vs);
         gl.deleteShader(fs);
-        // Some uniform declarations can be evaluated right away, so do it at
-        // init-time. Create a descriptor for the rest that is evaluated at
-        // render-time.
         gl.useProgram(prog);
-        const textureDescrs = [];
+        // Texture declarations are evaluated in two phases:
+        // 1) Sampler location offsets are sent to the shader eagerly
+        // 2) Textures are bound to the locations at draw time
+        // Note that Object.entries provides values in a nondeterministic order,
+        // but we store the descriptors in an array, remembering the order.
+        const textureAccessors = [];
         Object.entries(textures).forEach(([ident, t], i) => {
             const loc = gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for sampler: ${ident}`);
             }
             gl.uniform1i(loc, i);
-            textureDescrs.push(new TextureDescriptor(t));
+            textureAccessors.push(t);
         });
+        // Some uniform declarations can be evaluated right away, so do it at
+        // init-time. Create a descriptor for the rest that is evaluated at
+        // render-time.
         const uniformDescrs = [];
         Object.entries(uniforms).forEach(([ident, u]) => {
             const loc = gl.getUniformLocation(prog, ident);
@@ -760,7 +765,7 @@ class Command {
         });
         gl.useProgram(null);
         this.glProgram = prog;
-        this.textureDescrs = textureDescrs;
+        this.textureAccessors = textureAccessors;
         this.uniformDescrs = uniformDescrs;
     }
     /**
@@ -829,11 +834,6 @@ class BlendDescriptor {
         this.equationRGB = equationRGB;
         this.equationAlpha = equationAlpha;
         this.color = color;
-    }
-}
-class TextureDescriptor {
-    constructor(value) {
-        this.value = value;
     }
 }
 class UniformDescriptor {
