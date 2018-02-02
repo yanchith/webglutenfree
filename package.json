@@ -2,6 +2,7 @@
   "name": "webglutenfree",
   "version": "0.0.3",
   "description": "We serve your draw calls type-safe and gluten-free",
+  "keywords": ["webgl", "gl", "stateless", "graphics", "glsl"],
   "author": "yanchith",
   "license": "MIT",
   "main": "dist/webglutenfree.umd.js",
