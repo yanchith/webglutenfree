@@ -21,7 +21,7 @@ We are mostly missing documentation.
 ## Gallery
 
 Try looking at our [gallery](https://yanchith.github.io/webglutenfree/)
-(Firefox >= 59 with modules enabled or Chrome >= 61).
+(Firefox >= 59 with `dom.moduleScripts.enabled` or Chrome >= 61).
 
 ## The Mandatory Triangle
 
