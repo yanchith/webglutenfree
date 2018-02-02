@@ -3,6 +3,11 @@
   "version": "0.0.3",
   "description": "We serve your draw calls type-safe and gluten-free",
   "keywords": ["webgl", "gl", "stateless", "graphics", "glsl"],
+  "repository" :
+  {
+      "type" : "git",
+      "url" : "https://github.com/yanchith/webglutenfree.git"
+  },
   "author": "yanchith",
   "license": "MIT",
   "main": "dist/webglutenfree.umd.js",
