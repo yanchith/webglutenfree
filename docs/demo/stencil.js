@@ -2,7 +2,7 @@ import {
     Device,
     BufferBits,
     Command,
-    AttributeData,
+    Attributes,
     DepthFunc,
     StencilFunc,
     StencilOp,
@@ -151,13 +151,13 @@ const drawOutlines = Command.create(
     },
 );
 
-const cubeAttrs = AttributeData.indexed(
+const cubeAttrs = Attributes.withIndexedBuffers(
     dev,
     cube.elements,
     drawObjects.locate({ a_position: cube.positions }),
 );
 
-const bunnyAttrs = AttributeData.indexed(
+const bunnyAttrs = Attributes.withIndexedBuffers(
     dev,
     bunny.elements,
     drawObjects.locate({ a_position: bunny.positions }),

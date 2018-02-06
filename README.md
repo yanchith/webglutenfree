@@ -2,10 +2,11 @@
 
 We serve your draw calls type-safe and gluten-free.
 
-Webglutenfree is a lightweight, high-level abstraction layer on top of WebGL2.
-The library encourages init time creation for all drawing resources
-(`Command`s, `AttributeData`, `Texture`s, `Framebuffer`s, etc.). Afterwards,
-drawing is possible by requesting a `Target` and executing draw commands on it.
+Webglutenfree is a lightweight, high-level abstraction layer on top of WebGL2
+that removes gl state machine from the equation. The library encourages init
+time creation for all drawing resources (`Command`s, `Attributes`, `Texture`s,
+`Framebuffer`s, etc.). Drawing is done by requesting a render `Target` and
+executing draw commands on it.
 
 Webglutenfree tries not only to be safe and simple to use while adding minimal
 overhead, but also guide users down the more performant path.
@@ -15,7 +16,7 @@ additional layer of comfort and safety.
 
 ## Current State
 
-Work is underway on stabilizing the features and getting to a first release.
+Work is underway on stabilizing the API and getting to a `0.1.0` release.
 We are mostly missing documentation.
 
 ## Gallery
@@ -23,7 +24,7 @@ We are mostly missing documentation.
 Try looking at our [gallery](https://yanchith.github.io/webglutenfree/)
 (Firefox >= 59 with `dom.moduleScripts.enabled` or Chrome >= 61).
 
-## The Mandatory Triangle
+## Usage
 
 Webglutenfree initialization consists acquiring a `Device` (WebGL context),
 creating a `Command` (WebGL program), and uploading your data to the GPU.
@@ -32,7 +33,12 @@ Afterwards, a render target is obtained from the `Device` (or `Framebuffer`)
 and used to execute draw commands.
 
 ```javascript
-import { Device, Command, AttributeData, Primitive } from "webglutenfree";
+import {
+    Device,
+    Command,
+    Attributes,
+    Primitive,
+} from "webglutenfree";
 
 const dev = Device.mount();
 
@@ -64,21 +70,21 @@ const cmd = Command.create(
     `,
 );
 
-const attrs = AttributeData.create(
+const attrs = Attributes.withBuffers(
     dev,
     Primitive.TRIANGLES,
-    cmd.locate({
-        a_position: [
+    {
+        0: [
             [-0.3, -0.5],
             [0.3, -0.5],
             [0, 0.5],
         ],
-        a_color: [
+        1: [
             [1, 0, 0, 1],
             [0, 1, 0, 1],
             [0, 0, 1, 1],
         ],
-    }),
+    },
 );
 
 dev.target(rt => {

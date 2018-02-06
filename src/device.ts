@@ -1,4 +1,5 @@
-import * as assert from "./assert";
+import * as assert from "./util/assert";
+import { BufferBits, Primitive } from "./types";
 import {
     Command,
     DepthDescriptor,
@@ -7,8 +8,7 @@ import {
     TextureAccessor,
     UniformDescriptor,
 } from "./command";
-import { AttributeData } from "./attribute-data";
-import { Primitive } from "./element-buffer";
+import { Attributes } from "./attributes";
 import { Framebuffer } from "./framebuffer";
 
 export interface DeviceMountOptions {
@@ -58,16 +58,6 @@ export interface ClearOptions {
 export enum Extension {
     EXTColorBufferFloat = "EXT_color_buffer_float",
     OESTextureFloatLinear = "OES_texture_float_linear",
-}
-
-export enum BufferBits {
-    COLOR = 0x00004000,
-    DEPTH = 0x00000100,
-    STENCIL = 0x00000400,
-    COLOR_DEPTH = COLOR | DEPTH,
-    COLOR_STENCIL = COLOR | STENCIL,
-    DEPTH_STENCIL = DEPTH | STENCIL,
-    COLOR_DEPTH_STENCIL = COLOR | DEPTH | STENCIL,
 }
 
 export class Device {
@@ -320,7 +310,7 @@ export class Target {
      * Draw to the target with a command, attributes, and command properties.
      * The properties are passed to the command's uniform callbacks, if used.
      */
-    draw<P>(cmd: Command<P>, attrs: AttributeData, props: P): void {
+    draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void {
         const gl = this.gl;
         const {
             glProgram,
@@ -368,7 +358,7 @@ export class Target {
      */
     batch<P>(
         cmd: Command<P>,
-        cb: (draw: (attrs: AttributeData, props: P) => void) => void,
+        cb: (draw: (attrs: Attributes, props: P) => void) => void,
     ): void {
         const gl = this.gl;
         const {
@@ -397,7 +387,7 @@ export class Target {
         // change in each iteration, we need to initialize the first value
         gl.bindVertexArray(null);
 
-        cb((attrs: AttributeData, props: P) => {
+        cb((attrs: Attributes, props: P) => {
             this.textures(textureAccessors, props, iter);
             this.uniforms(uniformDescrs, props, iter);
             iter++;

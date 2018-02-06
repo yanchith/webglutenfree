@@ -1,7 +1,7 @@
 import {
     Device,
     Command,
-    AttributeData,
+    Attributes,
     Primitive,
 } from "./lib/webglutenfree.es.js";
 
@@ -35,21 +35,21 @@ const cmd = Command.create(
     `,
 );
 
-const attrs = AttributeData.create(
+const attrs = Attributes.withBuffers(
     dev,
     Primitive.TRIANGLES,
-    cmd.locate({
-        a_position: [
+    {
+        0: [
             [-0.3, -0.5],
             [0.3, -0.5],
             [0, 0.5],
         ],
-        a_color: [
+        1: [
             [1, 0, 0, 1],
             [0, 1, 0, 1],
             [0, 0, 1, 1],
         ],
-    }),
+    },
 );
 
 dev.target(rt => {

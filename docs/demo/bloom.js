@@ -2,7 +2,7 @@ import {
     Device,
     BufferBits,
     Command,
-    AttributeData,
+    Attributes,
     Primitive,
     Texture,
     TextureInternalFormat,
@@ -27,21 +27,21 @@ const GAUSSIAN = [
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const initialTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const initialFbo = Framebuffer.fromColor(dev, width, height, initialTex);
+const initialTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const initialFbo = Framebuffer.withColor(dev, width, height, initialTex);
 
-const splitColorTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const splitBrightTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const splitFbo = Framebuffer.fromColor(dev, width, height, [
+const splitColorTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const splitBrightTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const splitFbo = Framebuffer.withColor(dev, width, height, [
     splitColorTex,
     splitBrightTex,
 ]);
 
-const bloomPingTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const bloomPingFbo = Framebuffer.fromColor(dev, width, height, bloomPingTex);
+const bloomPingTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const bloomPingFbo = Framebuffer.withColor(dev, width, height, bloomPingTex);
 
-const bloomPongTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const bloomPongFbo = Framebuffer.fromColor(dev, width, height, bloomPongTex);
+const bloomPongTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const bloomPongFbo = Framebuffer.withColor(dev, width, height, bloomPongTex);
 
 const view = mat4.create();
 
@@ -237,8 +237,8 @@ const tonemap = Command.create(
 );
 
 
-const screenspaceAttrs = AttributeData.empty(dev, Primitive.TRIANGLES, 3);
-const cubeAttrs = AttributeData.indexed(
+const screenspaceAttrs = Attributes.create(dev, Primitive.TRIANGLES, 3);
+const cubeAttrs = Attributes.withIndexedBuffers(
     dev,
     cube.elements,
     { 0: cube.positions },

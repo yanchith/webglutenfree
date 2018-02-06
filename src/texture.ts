@@ -1,18 +1,5 @@
 import { Device } from "./device";
 
-export interface TextureOptions {
-    min?: TextureMinFilter;
-    mag?: TextureMagFilter;
-    wrapS?: TextureWrap;
-    wrapT?: TextureWrap;
-}
-
-export interface TextureStoreOptions {
-    mipmap?: boolean;
-    xOffset?: number;
-    yOffset?: number;
-}
-
 export enum TextureWrap {
     CLAMP_TO_EDGE = 0x812F,
     REPEAT = 0x2901,
@@ -405,26 +392,22 @@ export interface InternalFormatToTypedArray {
     [p: number]: ArrayBufferView;
 }
 
+export interface TextureOptions {
+    min?: TextureMinFilter;
+    mag?: TextureMagFilter;
+    wrapS?: TextureWrap;
+    wrapT?: TextureWrap;
+}
+
+export interface TextureStoreOptions {
+    mipmap?: boolean;
+    xOffset?: number;
+    yOffset?: number;
+}
+
 export class Texture<F extends TextureInternalFormat> {
 
-    static fromImage(
-        dev: Device,
-        image: ImageData,
-        options?: TextureOptions & TextureStoreOptions,
-    ): Texture<TextureInternalFormat.RGBA8> {
-        return Texture.create(
-            dev,
-            image.width,
-            image.height,
-            TextureInternalFormat.RGBA8,
-            image.data,
-            TextureDataFormat.RGBA,
-            TextureDataType.UNSIGNED_BYTE,
-            options,
-        );
-    }
-
-    static empty<F extends TextureInternalFormat>(
+    static create<F extends TextureInternalFormat>(
         dev: Device,
         width: number,
         height: number,
@@ -445,7 +428,24 @@ export class Texture<F extends TextureInternalFormat> {
         );
     }
 
-    static create<F extends TextureInternalFormat>(
+    static withImage(
+        dev: Device,
+        image: ImageData,
+        options?: TextureOptions & TextureStoreOptions,
+    ): Texture<TextureInternalFormat.RGBA8> {
+        return Texture.withTypedArray(
+            dev,
+            image.width,
+            image.height,
+            TextureInternalFormat.RGBA8,
+            image.data,
+            TextureDataFormat.RGBA,
+            TextureDataType.UNSIGNED_BYTE,
+            options,
+        );
+    }
+
+    static withTypedArray<F extends TextureInternalFormat>(
         dev: Device,
         width: number,
         height: number,
@@ -461,15 +461,13 @@ export class Texture<F extends TextureInternalFormat> {
             wrapS = TextureWrap.CLAMP_TO_EDGE,
             wrapT = TextureWrap.CLAMP_TO_EDGE,
         } = options;
-        const tex = new Texture(
+        return new Texture(
             dev.gl,
             width, height,
             internalFormat,
             wrapS, wrapT,
             min, mag,
-        );
-        if (data) { tex.store(data, dataFormat, dataType, options); }
-        return tex;
+        ).store(data, dataFormat, dataType, options);
     }
 
     readonly width: number;
@@ -544,9 +542,10 @@ export class Texture<F extends TextureInternalFormat> {
         format: InternalFormatToDataFormat[F],
         type: InternalFormatToDataType[F],
         { xOffset = 0, yOffset = 0, mipmap = false }: TextureStoreOptions = {},
-    ): void {
+    ): this {
         const { gl, glTexture, width, height } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, data.BYTES_PER_ELEMENT)
         gl.texSubImage2D(
             gl.TEXTURE_2D,
             0, // level
@@ -556,11 +555,13 @@ export class Texture<F extends TextureInternalFormat> {
             height,
             format,
             type,
-            // Chrome does not handle Uint8ClampedArray well
+        // Chrome does not handle Uint8ClampedArray well
             data instanceof Uint8ClampedArray ? new Uint8Array(data) : data,
         );
         if (mipmap) { gl.generateMipmap(gl.TEXTURE_2D); }
         gl.bindTexture(gl.TEXTURE_2D, null);
+
+        return this;
     }
 
     mipmap(): void {

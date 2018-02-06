@@ -7,7 +7,7 @@ import {
     Device,
     BufferBits,
     Command,
-    AttributeData,
+    Attributes,
     Primitive,
     Texture,
     TextureInternalFormat,
@@ -20,14 +20,14 @@ const PERSISTENCE_FACTOR = 0.8;
 const dev = Device.mount({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const newFrameTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const newFrameFbo = Framebuffer.fromColor(dev, width, height, newFrameTex);
+const newFrameTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const newFrameFbo = Framebuffer.withColor(dev, width, height, newFrameTex);
 
-const pingTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const pingFbo = Framebuffer.fromColor(dev, width, height, pingTex);
+const pingTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const pingFbo = Framebuffer.withColor(dev, width, height, pingTex);
 
-const pongTex = Texture.empty(dev, width, height, TextureInternalFormat.RGBA8);
-const pongFbo = Framebuffer.fromColor(dev, width, height, pongTex);
+const pongTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const pongFbo = Framebuffer.withColor(dev, width, height, pongTex);
 
 const view = mat4.create();
 
@@ -138,8 +138,8 @@ const blend = Command.create(
     },
 );
 
-const screenspaceAttrs = AttributeData.empty(dev, Primitive.TRIANGLES, 3);
-const bunnyAttrs = AttributeData.indexed(
+const screenspaceAttrs = Attributes.create(dev, Primitive.TRIANGLES, 3);
+const bunnyAttrs = Attributes.withIndexedBuffers(
     dev,
     bunny.elements,
     draw.locate({ a_position: bunny.positions }),

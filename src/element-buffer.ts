@@ -1,7 +1,7 @@
-import * as assert from "./assert";
-import * as array from "./array";
+import * as assert from "./util/assert";
+import * as array from "./util/array";
+import { BufferUsage, DataType, Primitive, toByteLength } from "./types";
 import { Device } from "./device";
-import { BufferUsage } from "./vertex-buffer";
 
 export type ElementArray =
     | number[] // infers POINTS
@@ -18,24 +18,11 @@ export type ElementArray =
 /**
  * Possible data types of element buffers.
  */
-export enum ElementBufferType {
-    UNSIGNED_BYTE = 0x1401,
-    UNSIGNED_SHORT = 0x1403,
-    UNSIGNED_INT = 0x1405,
-}
-
-/**
- * WebGL drawing primitives.
- */
-export enum Primitive {
-    POINTS = 0x0000,
-    LINES = 0x0001,
-    LINE_LOOP = 0x0002,
-    LINE_STRIP = 0x0003,
-    TRIANGLES = 0x0004,
-    TRIANGLE_STRIP = 0x0005,
-    TRIANGLE_FAN = 0x0006,
-}
+export type ElementBufferType =
+    | DataType.UNSIGNED_BYTE
+    | DataType.UNSIGNED_SHORT
+    | DataType.UNSIGNED_INT
+    ;
 
 export type ElementBufferTypedArray =
     | Uint8Array
@@ -45,13 +32,20 @@ export type ElementBufferTypedArray =
     ;
 
 export interface ElementBufferTypeToTypedArray {
-    [ElementBufferType.UNSIGNED_BYTE]: Uint8Array | Uint8ClampedArray;
-    [ElementBufferType.UNSIGNED_SHORT]: Uint16Array;
-    [ElementBufferType.UNSIGNED_INT]: Uint32Array;
+    [DataType.UNSIGNED_BYTE]: Uint8Array | Uint8ClampedArray;
+    [DataType.UNSIGNED_SHORT]: Uint16Array;
+    [DataType.UNSIGNED_INT]: Uint32Array;
 
     [p: number]: ElementBufferTypedArray;
 }
 
+export interface ElementBufferOptions {
+    usage?: BufferUsage;
+}
+
+export interface ElementBufferStoreOptions {
+    offset?: number;
+}
 
 /**
  * Element buffers contain indices for accessing vertex buffer data. They are,
@@ -60,17 +54,38 @@ export interface ElementBufferTypeToTypedArray {
 export class ElementBuffer<T extends ElementBufferType> {
 
     /**
-     * Creates a new element buffer from plain javascript array. Tries to infer
+     * Create a new element buffer with given type, primitive, and size.
+     */
+    static create<T extends ElementBufferType>(
+        dev: Device,
+        type: T,
+        primitive: Primitive,
+        size: number,
+        { usage = BufferUsage.DYNAMIC_DRAW }: ElementBufferOptions = {},
+    ): ElementBuffer<T> {
+        return new ElementBuffer(
+            dev.gl,
+            type,
+            primitive,
+            size,
+            toByteLength(size, type),
+            usage,
+        );
+    }
+
+    /**
+     * Create a new element buffer from potentially nested array. Infers
      * Primitive from the array's shape:
      *   number[] -> POINTS
      *   [number, number][] -> LINES
      *   [number, number, number][] -> TRIANGLES
-     * To select other drawing Primitives, use fromTypedArray family of methods.
+     * Array is referenced only for the duration of this call.
      */
-    static fromArray(
+    static withArray(
         dev: Device,
         data: ElementArray,
-    ): ElementBuffer<ElementBufferType.UNSIGNED_INT> {
+        options?: ElementBufferOptions,
+    ): ElementBuffer<DataType.UNSIGNED_INT> {
         if (array.isArray2(data)) {
             const shape = array.shape2(data);
             assert.range(shape[1], 2, 3, "element tuple length");
@@ -78,80 +93,80 @@ export class ElementBuffer<T extends ElementBufferType> {
             const primitive = shape[1] === 3
                 ? Primitive.TRIANGLES
                 : Primitive.LINES;
-            return ElementBuffer.create(
+            return ElementBuffer.withTypedArray(
                 dev,
-                ElementBufferType.UNSIGNED_INT,
+                DataType.UNSIGNED_INT,
                 primitive,
                 ravel,
             );
         }
-        return ElementBuffer.create(
+        return ElementBuffer.withTypedArray(
             dev,
-            ElementBufferType.UNSIGNED_INT,
+            DataType.UNSIGNED_INT,
             Primitive.POINTS,
             data,
+            options,
         );
     }
 
     /**
-     * Create a new element buffer from unsigned short ints.
+     * Create a new element buffer of given type with provided data. Data is
+     * referenced only for the duration of this call.
      */
-    static create<T extends ElementBufferType>(
+    static withTypedArray<T extends ElementBufferType>(
         dev: Device,
         type: T,
         primitive: Primitive,
         data: ElementBufferTypeToTypedArray[T] | number[],
-        usage: BufferUsage = BufferUsage.STATIC_DRAW,
+        { usage = BufferUsage.STATIC_DRAW }: ElementBufferOptions = {},
     ): ElementBuffer<T> {
-        const buffer = Array.isArray(data)
-            ? createBuffer(type, data)
-            // Note: we have to convert Uint8ClampedArray to Uint8Array
-            // because of webgl bug
-            // https://github.com/KhronosGroup/WebGL/issues/1533
-            : data instanceof Uint8ClampedArray
-                ? new Uint8Array(data)
-                : data;
-        return new ElementBuffer(dev.gl, type, primitive, usage, buffer);
+        return new ElementBuffer(
+            dev.gl,
+            type,
+            primitive,
+            data.length,
+            toByteLength(data.length, type),
+            usage,
+        ).store(data);
     }
 
     readonly type: T;
+    readonly size: number;
+    readonly byteSize: number;
     readonly primitive: Primitive;
     readonly usage: BufferUsage;
 
     readonly glBuffer: WebGLBuffer | null;
 
     private gl: WebGL2RenderingContext;
-    private data: ElementBufferTypedArray;
 
     private constructor(
         gl: WebGL2RenderingContext,
         type: T,
         primitive: Primitive,
+        size: number,
+        byteSize: number,
         usage: BufferUsage,
-        data: ElementBufferTypedArray,
     ) {
         this.gl = gl;
-        this.data = data;
         this.type = type;
         this.primitive = primitive;
+        this.size = size;
+        this.byteSize = byteSize;
         this.usage = usage;
         this.glBuffer = null;
 
         this.init();
     }
 
-    get count(): number {
-        return this.data.length;
-    }
-
     /**
      * Force buffer reinitialization.
      */
     init(): void {
-        const { usage, gl, data } = this;
+        const { usage, byteSize, gl } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, usage);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteSize, usage);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         (this as any).glBuffer = buffer;
     }
@@ -165,12 +180,13 @@ export class ElementBuffer<T extends ElementBufferType> {
     }
 
     /**
-     * Upload new data to buffer, possibly with offset.
+     * Upload new data to buffer. Data is referenced only for the duration of
+     * this call.
      */
     store(
         data: ElementBufferTypeToTypedArray[T] | number[],
-        offset: number = 0,
-    ): void {
+        { offset = 0 }: ElementBufferStoreOptions = {},
+    ): this {
         const { type, gl, glBuffer } = this;
         const buffer = Array.isArray(data)
             ? createBuffer(type, data)
@@ -184,6 +200,8 @@ export class ElementBuffer<T extends ElementBufferType> {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glBuffer);
         gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, byteOffset, buffer);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+        return this;
     }
 }
 
@@ -192,9 +210,9 @@ function createBuffer(
     arr: number[],
 ): ElementBufferTypedArray {
     switch (type) {
-        case ElementBufferType.UNSIGNED_BYTE: return new Uint8Array(arr);
-        case ElementBufferType.UNSIGNED_SHORT: return new Uint16Array(arr);
-        case ElementBufferType.UNSIGNED_INT: return new Uint32Array(arr);
+        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
+        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
+        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
         default: return assert.never(type, `Invalid buffer type: ${type}`);
     }
 }

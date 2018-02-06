@@ -1,12 +1,14 @@
+export { BufferBits, BufferUsage, DataType, Primitive } from "./types";
+
 export {
     Device,
     Extension,
-    BufferBits,
     DeviceMountOptions,
     DeviceFromCanvasOptions,
     DeviceFromContextOptions,
     ClearOptions,
 } from "./device";
+
 export {
     Command,
     CommandOptions,
@@ -16,13 +18,25 @@ export {
     BlendFunc,
     BlendEquation,
 } from "./command";
-export { VertexBuffer, VertexBufferType, BufferUsage } from "./vertex-buffer";
-export { ElementBuffer, ElementBufferType, Primitive } from "./element-buffer";
-export { AttributeData, AttributeType } from "./attribute-data";
+
+export {
+    VertexBuffer,
+    VertexBufferType,
+    VertexBufferOptions,
+    VertexBufferStoreOptions,
+} from "./vertex-buffer";
+
+export {
+    ElementBuffer,
+    ElementBufferType,
+    ElementBufferOptions,
+    ElementBufferStoreOptions,
+} from "./element-buffer";
+
+export { Attributes, AttributeType } from "./attributes";
+
 export {
     Texture,
-    TextureOptions,
-    TextureStoreOptions,
     TextureFilter,
     TextureMinFilter,
     TextureMagFilter,
@@ -30,5 +44,8 @@ export {
     TextureInternalFormat,
     TextureDataFormat,
     TextureDataType,
+    TextureOptions,
+    TextureStoreOptions,
 } from "./texture";
+
 export { Framebuffer } from "./framebuffer";

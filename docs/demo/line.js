@@ -1,7 +1,7 @@
 import {
     Device,
     Command,
-    AttributeData,
+    Attributes,
     Primitive,
 } from "./lib/webglutenfree.es.js";
 
@@ -35,7 +35,7 @@ const cmd = Command.create(
     `,
 );
 
-const attrs = AttributeData.indexed(
+const attrs = Attributes.withIndexedBuffers(
     dev,
     [
         [0, 1],

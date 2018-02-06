@@ -3,7 +3,7 @@ import {
     BufferBits,
     Command,
     BlendFunc,
-    AttributeData,
+    Attributes,
     Primitive,
 } from "./lib/webglutenfree.es.js";
 import * as spiral from "./lib/spiral.js"
@@ -80,7 +80,7 @@ const cmd = Command.create(
     },
 );
 
-const attrs = AttributeData.create(
+const attrs = Attributes.withBuffers(
     dev,
     Primitive.TRIANGLES,
     cmd.locate({

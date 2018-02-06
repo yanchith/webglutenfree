@@ -1,12 +1,12 @@
-import * as assert from "./assert";
-import * as array from "./array";
+import * as assert from "./util/assert";
+import * as array from "./util/array";
 import { Device } from "./device";
+import { Primitive, DataType } from "./types";
 import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
 import {
     ElementBuffer,
     ElementBufferType,
     ElementArray,
-    Primitive,
 } from "./element-buffer";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
@@ -22,17 +22,17 @@ export enum AttributeType {
     IPOINTER = "ipointer",
 }
 
-export interface Attributes {
-    [name: string]: Attribute;
-    [location: number]: Attribute;
+export interface AttributesConfig {
+    [name: string]: AttributeConfig;
+    [location: number]: AttributeConfig;
 }
 
-export type Attribute =
-    | AttributeArray
-    | AttributeObject
+export type AttributeConfig =
+    | AttributeArrayConfig
+    | AttributeObjectConfig
     ;
 
-export type AttributeArray =
+export type AttributeArrayConfig =
     | number[] // infers size 1
     | [number, number][] // infers size 2
     | [number, number, number][] // infers size 3
@@ -45,21 +45,21 @@ export type AttributeArray =
     | number[][]
     ;
 
-export type AttributeObject =
-    | AttributePointer
-    | AttributeIPointer
+export type AttributeObjectConfig =
+    | AttributePointerConfig
+    | AttributeIPointerConfig
     ;
 
 export type VertexBufferIntegerType =
-    | VertexBufferType.BYTE
-    | VertexBufferType.SHORT
-    | VertexBufferType.INT
-    | VertexBufferType.UNSIGNED_BYTE
-    | VertexBufferType.UNSIGNED_SHORT
-    | VertexBufferType.UNSIGNED_INT
+    | DataType.BYTE
+    | DataType.SHORT
+    | DataType.INT
+    | DataType.UNSIGNED_BYTE
+    | DataType.UNSIGNED_SHORT
+    | DataType.UNSIGNED_INT
     ;
 
-export interface AttributePointer {
+export interface AttributePointerConfig {
     type: AttributeType.POINTER;
     buffer: VertexBuffer<VertexBufferType> | number[];
     count: number;
@@ -68,7 +68,7 @@ export interface AttributePointer {
     divisor?: number;
 }
 
-export interface AttributeIPointer {
+export interface AttributeIPointerConfig {
     type: AttributeType.IPOINTER;
     buffer: VertexBuffer<VertexBufferIntegerType>;
     count: number;
@@ -80,18 +80,31 @@ export interface AttributeIPointer {
  * Vertex array objects store store vertex buffers, an index buffer,
  * and attributes with the vertex format for provided vertex buffers.
  */
-export class AttributeData {
+export class Attributes {
+
+    /**
+     * Create empty attributes of a given primitive. This actually performs no
+     * gl calls, only remembers the count for `gl.drawArrays()`
+     */
+    static create(
+        dev: Device,
+        primitive: Primitive,
+        count: number,
+    ): Attributes {
+        const gl = dev.gl;
+        return new Attributes(gl, primitive, [], count, 0);
+    }
 
     /**
      * Create new attributes with primitive and attribute definitions.
      * Attribute definitions can either reference an existing vertex buffer,
      * or have enough information to create a vertex buffer.
      */
-    static create(
+    static withBuffers(
         dev: Device,
         primitive: Primitive,
-        attributes: Attributes,
-    ): AttributeData {
+        attributes: AttributesConfig,
+    ): Attributes {
         const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
@@ -115,7 +128,7 @@ export class AttributeData {
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
 
-        return new AttributeData(gl, primitive, attrs, count, instanceCount);
+        return new Attributes(gl, primitive, attrs, count, instanceCount);
     }
 
     /**
@@ -125,11 +138,11 @@ export class AttributeData {
      * Element definitions can either reference an existing element buffer,
      * or have enough information to create an element buffer.
      */
-    static indexed(
+    static withIndexedBuffers(
         dev: Device,
         elements: ElementArray | ElementBuffer<ElementBufferType>,
-        attributes: Attributes,
-    ): AttributeData {
+        attributes: AttributesConfig,
+    ): Attributes {
         const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
@@ -142,10 +155,10 @@ export class AttributeData {
 
         const elementBuffer = elements && (elements instanceof ElementBuffer
             ? elements
-            : ElementBuffer.fromArray(dev, elements));
+            : ElementBuffer.withArray(dev, elements));
 
         const count = elementBuffer
-            ? elementBuffer.count
+            ? elementBuffer.size
             : attrs.length
                 ? attrs
                     .map(attr => attr.count)
@@ -159,7 +172,7 @@ export class AttributeData {
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
 
-        return new AttributeData(
+        return new Attributes(
             gl,
             elementBuffer.primitive,
             attrs,
@@ -167,19 +180,6 @@ export class AttributeData {
             instanceCount,
             elementBuffer,
         );
-    }
-
-    /**
-     * Create empty attributes of a given primitive. This actually performs no
-     * gl calls, only remembers the count for `gl.drawArrays()`
-     */
-    static empty(
-        dev: Device,
-        primitive: Primitive,
-        count: number,
-    ): AttributeData {
-        const gl = dev.gl;
-        return new AttributeData(gl, primitive, [], count, 0);
     }
 
     readonly primitive: Primitive;
@@ -208,7 +208,7 @@ export class AttributeData {
         this.elementBuffer = elements;
         this.attributes = attributes;
         this.count = count;
-        this.elementCount = elements ? elements.count : 0;
+        this.elementCount = elements ? elements.size : 0;
         this.instanceCount = instanceCount;
         this.glVertexArray = null;
 
@@ -315,7 +315,7 @@ class AttributeDescriptor {
     static create(
         dev: Device,
         location: number,
-        props: Attribute,
+        props: AttributeConfig,
     ): AttributeDescriptor {
         if (Array.isArray(props)) {
             if (array.isArray2(props)) {
@@ -324,7 +324,7 @@ class AttributeDescriptor {
                 return new AttributeDescriptor(
                     location,
                     AttributeType.POINTER,
-                    VertexBuffer.create(dev, VertexBufferType.FLOAT, r),
+                    VertexBuffer.withTypedArray(dev, DataType.FLOAT, r),
                     s[0],
                     s[1],
                     false,
@@ -334,7 +334,7 @@ class AttributeDescriptor {
             return new AttributeDescriptor(
                 location,
                 AttributeType.POINTER,
-                VertexBuffer.create(dev, VertexBufferType.FLOAT, props),
+                VertexBuffer.withTypedArray(dev, DataType.FLOAT, props),
                 props.length,
                 1,
                 false,
@@ -346,9 +346,9 @@ class AttributeDescriptor {
             location,
             props.type,
             Array.isArray(props.buffer)
-                ? VertexBuffer.create(
+                ? VertexBuffer.withTypedArray(
                     dev,
-                    VertexBufferType.FLOAT,
+                    DataType.FLOAT,
                     props.buffer,
                 )
                 : props.buffer,

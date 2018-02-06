@@ -1,6 +1,6 @@
-import * as assert from "./assert";
+import * as assert from "./util/assert";
 import { Device } from "./device";
-import { Attributes } from "./attribute-data";
+import { AttributesConfig } from "./attributes";
 import { Texture, TextureInternalFormat } from "./texture";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
@@ -539,10 +539,10 @@ export class Command<P> {
      * Transforms names found in the attributes object to numbers representing
      * actual attribute locations for the program in this command.
      */
-    locate(attributes: Attributes): Attributes {
+    locate(attributes: AttributesConfig): AttributesConfig {
         const { gl, glProgram } = this;
         return Object.entries(attributes)
-            .reduce<Attributes>((accum, [identifier, definition]) => {
+            .reduce<AttributesConfig>((accum, [identifier, definition]) => {
                 if (INT_PATTERN.test(identifier)) {
                     accum[identifier] = definition;
                 } else {

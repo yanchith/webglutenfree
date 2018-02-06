@@ -1,7 +1,7 @@
 import {
     Device,
     Command,
-    AttributeData,
+    Attributes,
     Texture,
 } from "./lib/webglutenfree.es.js";
 import * as square from "./lib/square.js"
@@ -47,7 +47,7 @@ const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
 async function run() {
     const imageData = await loadImage("img/lenna.png", true);
-    const imageTexture = Texture.fromImage(dev, imageData);
+    const imageTexture = Texture.withImage(dev, imageData);
 
     const cmd = Command.create(
         dev,
@@ -131,7 +131,7 @@ async function run() {
         },
     );
 
-    const attrs = AttributeData.indexed(
+    const attrs = Attributes.withIndexedBuffers(
         dev,
         square.elements,
         cmd.locate({

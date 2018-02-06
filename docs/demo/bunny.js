@@ -3,7 +3,7 @@ import {
     BufferBits,
     Command,
     BlendFunc,
-    AttributeData,
+    Attributes,
 } from "./lib/webglutenfree.es.js";
 import * as bunny from "./lib/bunny.js"
 
@@ -66,7 +66,7 @@ const cmd = Command.create(
     },
 );
 
-const attrs = AttributeData.indexed(
+const attrs = Attributes.withIndexedBuffers(
     dev,
     bunny.elements,
     cmd.locate({ a_position: bunny.positions }),

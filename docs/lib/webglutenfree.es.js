@@ -54,13 +54,8 @@ function fmt(msg) {
 }
 
 /**
- * Available extensions.
+ * Possible buffer targets to operate on.
  */
-var Extension;
-(function (Extension) {
-    Extension["EXTColorBufferFloat"] = "EXT_color_buffer_float";
-    Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
-})(Extension || (Extension = {}));
 var BufferBits;
 (function (BufferBits) {
     BufferBits[BufferBits["COLOR"] = 16384] = "COLOR";
@@ -71,6 +66,71 @@ var BufferBits;
     BufferBits[BufferBits["DEPTH_STENCIL"] = 1280] = "DEPTH_STENCIL";
     BufferBits[BufferBits["COLOR_DEPTH_STENCIL"] = 17664] = "COLOR_DEPTH_STENCIL";
 })(BufferBits || (BufferBits = {}));
+/**
+ * Possible buffer usage.
+ */
+var BufferUsage;
+(function (BufferUsage) {
+    BufferUsage[BufferUsage["STATIC_DRAW"] = 35044] = "STATIC_DRAW";
+    BufferUsage[BufferUsage["DYNAMIC_DRAW"] = 35048] = "DYNAMIC_DRAW";
+    BufferUsage[BufferUsage["STREAM_DRAW"] = 35040] = "STREAM_DRAW";
+    BufferUsage[BufferUsage["STATIC_READ"] = 35045] = "STATIC_READ";
+    BufferUsage[BufferUsage["DYNAMIC_READ"] = 35049] = "DYNAMIC_READ";
+    BufferUsage[BufferUsage["STREAM_READ"] = 35041] = "STREAM_READ";
+    BufferUsage[BufferUsage["STATIC_COPY"] = 35046] = "STATIC_COPY";
+    BufferUsage[BufferUsage["DYNAMIC_COPY"] = 35050] = "DYNAMIC_COPY";
+    BufferUsage[BufferUsage["STREAM_COPY"] = 35042] = "STREAM_COPY";
+})(BufferUsage || (BufferUsage = {}));
+/**
+ * Possible data types.
+ */
+var DataType;
+(function (DataType) {
+    DataType[DataType["BYTE"] = 5120] = "BYTE";
+    DataType[DataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
+    DataType[DataType["SHORT"] = 5122] = "SHORT";
+    DataType[DataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
+    DataType[DataType["INT"] = 5124] = "INT";
+    DataType[DataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
+    DataType[DataType["FLOAT"] = 5126] = "FLOAT";
+})(DataType || (DataType = {}));
+/**
+ * Drawing primitives.
+ */
+var Primitive;
+(function (Primitive) {
+    Primitive[Primitive["POINTS"] = 0] = "POINTS";
+    Primitive[Primitive["LINES"] = 1] = "LINES";
+    Primitive[Primitive["LINE_LOOP"] = 2] = "LINE_LOOP";
+    Primitive[Primitive["LINE_STRIP"] = 3] = "LINE_STRIP";
+    Primitive[Primitive["TRIANGLES"] = 4] = "TRIANGLES";
+    Primitive[Primitive["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
+    Primitive[Primitive["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
+})(Primitive || (Primitive = {}));
+function toByteLength(length, type) {
+    switch (type) {
+        case DataType.BYTE:
+        case DataType.UNSIGNED_BYTE:
+            return length;
+        case DataType.SHORT:
+        case DataType.UNSIGNED_SHORT:
+            return length * 2;
+        case DataType.INT:
+        case DataType.UNSIGNED_INT:
+        case DataType.FLOAT:
+            return length * 4;
+        default: return never(type);
+    }
+}
+
+/**
+ * Available extensions.
+ */
+var Extension;
+(function (Extension) {
+    Extension["EXTColorBufferFloat"] = "EXT_color_buffer_float";
+    Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
+})(Extension || (Extension = {}));
 class Device {
     /**
      * Create a new canvas and device (containing a gl context). Mount it on
@@ -960,68 +1020,40 @@ function createShader(gl, type, source) {
 }
 
 /**
- * Possible buffer usage.
- */
-var BufferUsage;
-(function (BufferUsage) {
-    BufferUsage[BufferUsage["STATIC_DRAW"] = 35044] = "STATIC_DRAW";
-    BufferUsage[BufferUsage["DYNAMIC_DRAW"] = 35048] = "DYNAMIC_DRAW";
-    BufferUsage[BufferUsage["STREAM_DRAW"] = 35040] = "STREAM_DRAW";
-    BufferUsage[BufferUsage["STATIC_READ"] = 35045] = "STATIC_READ";
-    BufferUsage[BufferUsage["DYNAMIC_READ"] = 35049] = "DYNAMIC_READ";
-    BufferUsage[BufferUsage["STREAM_READ"] = 35041] = "STREAM_READ";
-    BufferUsage[BufferUsage["STATIC_COPY"] = 35046] = "STATIC_COPY";
-    BufferUsage[BufferUsage["DYNAMIC_COPY"] = 35050] = "DYNAMIC_COPY";
-    BufferUsage[BufferUsage["STREAM_COPY"] = 35042] = "STREAM_COPY";
-})(BufferUsage || (BufferUsage = {}));
-/**
- * Possible data types of vertex buffers.
- */
-var VertexBufferType;
-(function (VertexBufferType) {
-    VertexBufferType[VertexBufferType["BYTE"] = 5120] = "BYTE";
-    VertexBufferType[VertexBufferType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
-    VertexBufferType[VertexBufferType["SHORT"] = 5122] = "SHORT";
-    VertexBufferType[VertexBufferType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
-    VertexBufferType[VertexBufferType["INT"] = 5124] = "INT";
-    VertexBufferType[VertexBufferType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
-    VertexBufferType[VertexBufferType["FLOAT"] = 5126] = "FLOAT";
-})(VertexBufferType || (VertexBufferType = {}));
-/**
  * Vertex buffers contain GPU accessible data. Accessing them is usually done
  * via setting up an attribute that reads the buffer.
  */
 class VertexBuffer {
-    constructor(gl, type, usage, data) {
+    constructor(gl, type, size, byteSize, usage) {
         this.gl = gl;
         this.type = type;
+        this.size = size;
+        this.byteSize = byteSize;
         this.usage = usage;
-        this.data = data;
         this.glBuffer = null;
         this.init();
     }
     /**
-     * Create a new vertex buffer of given type with provided data.
+     * Create a new vertex buffer with given type and of given size.
      */
-    static create(dev, type, data, usage = BufferUsage.STATIC_DRAW) {
-        const buffer = Array.isArray(data)
-            ? createBuffer(type, data)
-            // Note: we have to convert Uint8ClampedArray to Uint8Array
-            // because of webgl bug
-            // https://github.com/KhronosGroup/WebGL/issues/1533
-            : data instanceof Uint8ClampedArray
-                ? new Uint8Array(data)
-                : data;
-        return new VertexBuffer(dev.gl, type, usage, buffer);
+    static create(dev, type, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
+        return new VertexBuffer(dev.gl, type, size, toByteLength(size, type), usage);
+    }
+    /**
+     * Create a new vertex buffer of given type with provided data. Data is
+     * referenced only for the duration of this call.
+     */
+    static withTypedArray(dev, type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
+        return new VertexBuffer(dev.gl, type, data.length, toByteLength(data.length, type), usage).store(data);
     }
     /**
      * Force buffer reinitialization.
      */
     init() {
-        const { usage, gl, data } = this;
+        const { usage, byteSize, gl } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, data, usage);
+        gl.bufferData(gl.ARRAY_BUFFER, byteSize, usage);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         this.glBuffer = buffer;
     }
@@ -1035,9 +1067,10 @@ class VertexBuffer {
         }
     }
     /**
-     * Upload new data to buffer, possibly with offset.
+     * Upload new data to buffer. Data is referenced only for the duration of
+     * this call.
      */
-    store(data, offset = 0) {
+    store(data, { offset = 0 } = {}) {
         const { type, gl, glBuffer } = this;
         const buffer = Array.isArray(data)
             ? createBuffer(type, data)
@@ -1051,17 +1084,18 @@ class VertexBuffer {
         gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, byteOffset, buffer);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        return this;
     }
 }
 function createBuffer(type, arr) {
     switch (type) {
-        case VertexBufferType.BYTE: return new Int8Array(arr);
-        case VertexBufferType.SHORT: return new Int16Array(arr);
-        case VertexBufferType.INT: return new Int32Array(arr);
-        case VertexBufferType.UNSIGNED_BYTE: return new Uint8Array(arr);
-        case VertexBufferType.UNSIGNED_SHORT: return new Uint16Array(arr);
-        case VertexBufferType.UNSIGNED_INT: return new Uint32Array(arr);
-        case VertexBufferType.FLOAT: return new Float32Array(arr);
+        case DataType.BYTE: return new Int8Array(arr);
+        case DataType.SHORT: return new Int16Array(arr);
+        case DataType.INT: return new Int32Array(arr);
+        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
+        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
+        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
+        case DataType.FLOAT: return new Float32Array(arr);
         default: return never(type, `Invalid buffer type: ${type}`);
     }
 }
@@ -1090,50 +1124,35 @@ function ravel2(unraveled, shape) {
 }
 
 /**
- * Possible data types of element buffers.
- */
-var ElementBufferType;
-(function (ElementBufferType) {
-    ElementBufferType[ElementBufferType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
-    ElementBufferType[ElementBufferType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
-    ElementBufferType[ElementBufferType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
-})(ElementBufferType || (ElementBufferType = {}));
-/**
- * WebGL drawing primitives.
- */
-var Primitive;
-(function (Primitive) {
-    Primitive[Primitive["POINTS"] = 0] = "POINTS";
-    Primitive[Primitive["LINES"] = 1] = "LINES";
-    Primitive[Primitive["LINE_LOOP"] = 2] = "LINE_LOOP";
-    Primitive[Primitive["LINE_STRIP"] = 3] = "LINE_STRIP";
-    Primitive[Primitive["TRIANGLES"] = 4] = "TRIANGLES";
-    Primitive[Primitive["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
-    Primitive[Primitive["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
-})(Primitive || (Primitive = {}));
-/**
  * Element buffers contain indices for accessing vertex buffer data. They are,
  * together with vertex buffers part of VertexArray objects.
  */
 class ElementBuffer {
-    constructor(gl, type, primitive, usage, data) {
+    constructor(gl, type, primitive, size, byteSize, usage) {
         this.gl = gl;
-        this.data = data;
         this.type = type;
         this.primitive = primitive;
+        this.size = size;
+        this.byteSize = byteSize;
         this.usage = usage;
         this.glBuffer = null;
         this.init();
     }
     /**
-     * Creates a new element buffer from plain javascript array. Tries to infer
+     * Create a new element buffer with given type, primitive, and size.
+     */
+    static create(dev, type, primitive, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
+        return new ElementBuffer(dev.gl, type, primitive, size, toByteLength(size, type), usage);
+    }
+    /**
+     * Create a new element buffer from potentially nested array. Infers
      * Primitive from the array's shape:
      *   number[] -> POINTS
      *   [number, number][] -> LINES
      *   [number, number, number][] -> TRIANGLES
-     * To select other drawing Primitives, use fromTypedArray family of methods.
+     * Array is referenced only for the duration of this call.
      */
-    static fromArray(dev, data) {
+    static withArray(dev, data, options) {
         if (isArray2(data)) {
             const shape = shape2(data);
             range(shape[1], 2, 3, "element tuple length");
@@ -1141,35 +1160,25 @@ class ElementBuffer {
             const primitive = shape[1] === 3
                 ? Primitive.TRIANGLES
                 : Primitive.LINES;
-            return ElementBuffer.create(dev, ElementBufferType.UNSIGNED_INT, primitive, ravel);
+            return ElementBuffer.withTypedArray(dev, DataType.UNSIGNED_INT, primitive, ravel);
         }
-        return ElementBuffer.create(dev, ElementBufferType.UNSIGNED_INT, Primitive.POINTS, data);
+        return ElementBuffer.withTypedArray(dev, DataType.UNSIGNED_INT, Primitive.POINTS, data, options);
     }
     /**
-     * Create a new element buffer from unsigned short ints.
+     * Create a new element buffer of given type with provided data. Data is
+     * referenced only for the duration of this call.
      */
-    static create(dev, type, primitive, data, usage = BufferUsage.STATIC_DRAW) {
-        const buffer = Array.isArray(data)
-            ? createBuffer$1(type, data)
-            // Note: we have to convert Uint8ClampedArray to Uint8Array
-            // because of webgl bug
-            // https://github.com/KhronosGroup/WebGL/issues/1533
-            : data instanceof Uint8ClampedArray
-                ? new Uint8Array(data)
-                : data;
-        return new ElementBuffer(dev.gl, type, primitive, usage, buffer);
-    }
-    get count() {
-        return this.data.length;
+    static withTypedArray(dev, type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
+        return new ElementBuffer(dev.gl, type, primitive, data.length, toByteLength(data.length, type), usage).store(data);
     }
     /**
      * Force buffer reinitialization.
      */
     init() {
-        const { usage, gl, data } = this;
+        const { usage, byteSize, gl } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, usage);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteSize, usage);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         this.glBuffer = buffer;
     }
@@ -1183,9 +1192,10 @@ class ElementBuffer {
         }
     }
     /**
-     * Upload new data to buffer, possibly with offset.
+     * Upload new data to buffer. Data is referenced only for the duration of
+     * this call.
      */
-    store(data, offset = 0) {
+    store(data, { offset = 0 } = {}) {
         const { type, gl, glBuffer } = this;
         const buffer = Array.isArray(data)
             ? createBuffer$1(type, data)
@@ -1199,13 +1209,14 @@ class ElementBuffer {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glBuffer);
         gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, byteOffset, buffer);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        return this;
     }
 }
 function createBuffer$1(type, arr) {
     switch (type) {
-        case ElementBufferType.UNSIGNED_BYTE: return new Uint8Array(arr);
-        case ElementBufferType.UNSIGNED_SHORT: return new Uint16Array(arr);
-        case ElementBufferType.UNSIGNED_INT: return new Uint32Array(arr);
+        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
+        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
+        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
         default: return never(type, `Invalid buffer type: ${type}`);
     }
 }
@@ -1225,13 +1236,21 @@ var AttributeType;
  * Vertex array objects store store vertex buffers, an index buffer,
  * and attributes with the vertex format for provided vertex buffers.
  */
-class AttributeData {
+class Attributes {
+    /**
+     * Create empty attributes of a given primitive. This actually performs no
+     * gl calls, only remembers the count for `gl.drawArrays()`
+     */
+    static create(dev, primitive, count) {
+        const gl = dev.gl;
+        return new Attributes(gl, primitive, [], count, 0);
+    }
     /**
      * Create new attributes with primitive and attribute definitions.
      * Attribute definitions can either reference an existing vertex buffer,
      * or have enough information to create a vertex buffer.
      */
-    static create(dev, primitive, attributes) {
+    static withBuffers(dev, primitive, attributes) {
         const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
@@ -1252,7 +1271,7 @@ class AttributeData {
                 .map(attr => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
-        return new AttributeData(gl, primitive, attrs, count, instanceCount);
+        return new Attributes(gl, primitive, attrs, count, instanceCount);
     }
     /**
      * Create new attributes with element and attribute definitions.
@@ -1261,7 +1280,7 @@ class AttributeData {
      * Element definitions can either reference an existing element buffer,
      * or have enough information to create an element buffer.
      */
-    static indexed(dev, elements, attributes) {
+    static withIndexedBuffers(dev, elements, attributes) {
         const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
@@ -1273,9 +1292,9 @@ class AttributeData {
         });
         const elementBuffer = elements && (elements instanceof ElementBuffer
             ? elements
-            : ElementBuffer.fromArray(dev, elements));
+            : ElementBuffer.withArray(dev, elements));
         const count = elementBuffer
-            ? elementBuffer.count
+            ? elementBuffer.size
             : attrs.length
                 ? attrs
                     .map(attr => attr.count)
@@ -1287,15 +1306,7 @@ class AttributeData {
                 .map(attr => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
-        return new AttributeData(gl, elementBuffer.primitive, attrs, count, instanceCount, elementBuffer);
-    }
-    /**
-     * Create empty attributes of a given primitive. This actually performs no
-     * gl calls, only remembers the count for `gl.drawArrays()`
-     */
-    static empty(dev, primitive, count) {
-        const gl = dev.gl;
-        return new AttributeData(gl, primitive, [], count, 0);
+        return new Attributes(gl, elementBuffer.primitive, attrs, count, instanceCount, elementBuffer);
     }
     constructor(gl, primitive, attributes, count, instanceCount, elements) {
         this.gl = gl;
@@ -1303,7 +1314,7 @@ class AttributeData {
         this.elementBuffer = elements;
         this.attributes = attributes;
         this.count = count;
-        this.elementCount = elements ? elements.count : 0;
+        this.elementCount = elements ? elements.size : 0;
         this.instanceCount = instanceCount;
         this.glVertexArray = null;
         this.init();
@@ -1392,12 +1403,12 @@ class AttributeDescriptor {
             if (isArray2(props)) {
                 const s = shape2(props);
                 const r = ravel2(props, s);
-                return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.create(dev, VertexBufferType.FLOAT, r), s[0], s[1], false, 0);
+                return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.withTypedArray(dev, DataType.FLOAT, r), s[0], s[1], false, 0);
             }
-            return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.create(dev, VertexBufferType.FLOAT, props), props.length, 1, false, 0);
+            return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.withTypedArray(dev, DataType.FLOAT, props), props.length, 1, false, 0);
         }
         return new AttributeDescriptor(location, props.type, Array.isArray(props.buffer)
-            ? VertexBuffer.create(dev, VertexBufferType.FLOAT, props.buffer)
+            ? VertexBuffer.withTypedArray(dev, DataType.FLOAT, props.buffer)
             : props.buffer, props.count, props.size, props.type === AttributeType.POINTER
             ? (props.normalized || false)
             : false, props.divisor || 0);
@@ -1528,19 +1539,15 @@ class Texture {
         this.glTexture = null;
         this.init();
     }
-    static fromImage(dev, image, options) {
-        return Texture.create(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
-    }
-    static empty(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
+    static create(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
         return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
     }
-    static create(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
+    static withImage(dev, image, options) {
+        return Texture.withTypedArray(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
+    }
+    static withTypedArray(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
         const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
-        const tex = new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
-        if (data) {
-            tex.store(data, dataFormat, dataType, options);
-        }
-        return tex;
+        return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
     }
     init() {
         const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
@@ -1563,6 +1570,7 @@ class Texture {
     store(data, format, type, { xOffset = 0, yOffset = 0, mipmap = false } = {}) {
         const { gl, glTexture, width, height } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, data.BYTES_PER_ELEMENT);
         gl.texSubImage2D(gl.TEXTURE_2D, 0, // level
         xOffset, yOffset, width, height, format, type, 
         // Chrome does not handle Uint8ClampedArray well
@@ -1571,6 +1579,7 @@ class Texture {
             gl.generateMipmap(gl.TEXTURE_2D);
         }
         gl.bindTexture(gl.TEXTURE_2D, null);
+        return this;
     }
     mipmap() {
         const { gl, glTexture } = this;
@@ -1585,7 +1594,7 @@ class Framebuffer {
      * Create a framebuffer containg one or more color buffers with given
      * width and height.
      */
-    static fromColor(dev, width, height, color) {
+    static withColor(dev, width, height, color) {
         const gl = dev instanceof Device ? dev.gl : dev;
         const colors = Array.isArray(color) ? color : [color];
         nonEmpty(colors, "color");
@@ -1598,7 +1607,7 @@ class Framebuffer {
     /**
      * Create a framebuffer containg a depth buffer with given width and height.
      */
-    static fromDepth(dev, width, height, depth) {
+    static withDepth(dev, width, height, depth) {
         const gl = dev instanceof Device ? dev.gl : dev;
         equal(width, depth.width, "width");
         equal(height, depth.height, "height");
@@ -1608,7 +1617,7 @@ class Framebuffer {
      * Create a framebuffer containg a depth-stencil buffer with given
      * width and height.
      */
-    static fromDepthStencil(dev, width, height, depthStencil) {
+    static withDepthStencil(dev, width, height, depthStencil) {
         const gl = dev instanceof Device ? dev.gl : dev;
         equal(width, depthStencil.width, "width");
         equal(height, depthStencil.height, "height");
@@ -1618,7 +1627,7 @@ class Framebuffer {
      * Create a framebuffer containg one or more color buffers and a depth
      * buffer with given width and height.
      */
-    static fromColorDepth(dev, width, height, color, depth) {
+    static withColorDepth(dev, width, height, color, depth) {
         const gl = dev instanceof Device ? dev.gl : dev;
         const colorBuffers = Array.isArray(color) ? color : [color];
         nonEmpty(colorBuffers, "color");
@@ -1634,7 +1643,7 @@ class Framebuffer {
      * Create a framebuffer containg one or more color buffers and a
      * depth-stencil buffer with given width and height.
      */
-    static fromColorDepthStencil(dev, width, height, color, depthStencil) {
+    static withColorDepthStencil(dev, width, height, color, depthStencil) {
         const gl = dev instanceof Device ? dev.gl : dev;
         const colors = Array.isArray(color) ? color : [color];
         nonEmpty(colors, "color");
@@ -1712,5 +1721,5 @@ class Framebuffer {
     }
 }
 
-export { Device, Extension, BufferBits, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferType, BufferUsage, ElementBuffer, ElementBufferType, Primitive, AttributeData, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
+export { BufferBits, BufferUsage, DataType, Primitive, Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
 //# sourceMappingURL=webglutenfree.es.js.map

@@ -4,10 +4,10 @@ import {
     Command,
     BlendFunc,
     VertexBuffer,
-    VertexBufferType,
-    AttributeData,
-    Primitive,
+    Attributes,
     BufferUsage,
+    DataType,
+    Primitive,
 } from "./lib/webglutenfree.es.js";
 
 const N_PARTICLES = 5000;
@@ -122,15 +122,15 @@ for (let i = 0; i < particlePositions.length; i++) {
     particlePositions[i] = Math.random() * 2 - 1;
 }
 
-const buffer = VertexBuffer.create(
+const buffer = VertexBuffer.withTypedArray(
     dev,
-    VertexBufferType.FLOAT,
+    DataType.FLOAT,
     particlePositions,
-    BufferUsage.DYNAMIC_DRAW,
+    { usage: BufferUsage.DYNAMIC_DRAW },
 );
 
 const angle = Math.PI * 2 / 3;
-const attrs = AttributeData.create(
+const attrs = Attributes.withBuffers(
     dev,
     Primitive.TRIANGLES,
     cmd.locate({

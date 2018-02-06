@@ -1,4 +1,4 @@
-import * as assert from "./assert";
+import * as assert from "./util/assert";
 import { Device, Target } from "./device";
 import {
     Texture,
@@ -13,7 +13,7 @@ export class Framebuffer {
      * Create a framebuffer containg one or more color buffers with given
      * width and height.
      */
-    static fromColor(
+    static withColor(
         dev: Device,
         width: number,
         height: number,
@@ -33,7 +33,7 @@ export class Framebuffer {
     /**
      * Create a framebuffer containg a depth buffer with given width and height.
      */
-    static fromDepth(
+    static withDepth(
         dev: Device,
         width: number,
         height: number,
@@ -49,7 +49,7 @@ export class Framebuffer {
      * Create a framebuffer containg a depth-stencil buffer with given
      * width and height.
      */
-    static fromDepthStencil(
+    static withDepthStencil(
         dev: Device,
         width: number,
         height: number,
@@ -65,7 +65,7 @@ export class Framebuffer {
      * Create a framebuffer containg one or more color buffers and a depth
      * buffer with given width and height.
      */
-    static fromColorDepth(
+    static withColorDepth(
         dev: Device,
         width: number,
         height: number,
@@ -89,7 +89,7 @@ export class Framebuffer {
      * Create a framebuffer containg one or more color buffers and a
      * depth-stencil buffer with given width and height.
      */
-    static fromColorDepthStencil(
+    static withColorDepthStencil(
         dev: Device,
         width: number,
         height: number,

@@ -1,7 +1,7 @@
 import {
     Device,
     Command,
-    AttributeData,
+    Attributes,
     Primitive,
 } from "./lib/webglutenfree.es.js";
 
@@ -41,7 +41,7 @@ const cmd = Command.create(
     `,
 );
 
-const attrs = AttributeData.empty(dev, Primitive.TRIANGLES, 150);
+const attrs = Attributes.create(dev, Primitive.TRIANGLES, 150);
 
 dev.target(rt => {
     rt.draw(cmd, attrs);

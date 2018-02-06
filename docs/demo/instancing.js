@@ -2,9 +2,9 @@ import {
     Device,
     BufferBits,
     Command,
-    AttributeData,
+    Attributes,
     VertexBuffer,
-    VertexBufferType,
+    DataType,
 } from "./lib/webglutenfree.es.js";
 
 const dev = Device.mount();
@@ -72,7 +72,7 @@ const cmd = Command.create(
     },
 );
 
-const attrs = AttributeData.indexed(
+const attrs = Attributes.withIndexedBuffers(
     dev,
     [
         [0, 3, 2],
@@ -87,7 +87,7 @@ const attrs = AttributeData.indexed(
         ],
         a_offset: {
             type: "pointer",
-            buffer: VertexBuffer.create(dev, VertexBufferType.FLOAT, [
+            buffer: VertexBuffer.withTypedArray(dev, DataType.FLOAT, [
                 3, 3,
                 0, 3,
                 3, 0,
@@ -102,7 +102,7 @@ const attrs = AttributeData.indexed(
         },
         a_color: {
             type: "pointer",
-            buffer: VertexBuffer.create(dev, VertexBufferType.UNSIGNED_BYTE, [
+            buffer: VertexBuffer.withTypedArray(dev, DataType.UNSIGNED_BYTE, [
                 255, 0, 0, 255,
                 0, 255, 0, 255,
                 0, 0, 255, 255,
