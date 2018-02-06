@@ -43,7 +43,7 @@ export interface DeviceFromContextOptions {
     viewport?: [number, number];
 }
 
-export interface ClearOptions {
+export interface TargetClearOptions {
     r?: number;
     g?: number;
     b?: number;
@@ -267,10 +267,24 @@ export class Target {
      * the behavior is undefined.
      */
     with(cb: (rt: Target) => void): void {
-        this.bind();
+        const { gl, glFramebuffer, glDrawBuffers } = this;
+        const {
+            width = gl.drawingBufferWidth,
+            height = gl.drawingBufferHeight,
+        } = this;
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer || null);
+        gl.drawBuffers(glDrawBuffers);
+        gl.viewport(0, 0, width, height);
+
         cb(this);
+
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
     }
 
+    /**
+     * Blit source framebuffer onto this render target. Use buffer bits to
+     * choose, which buffers to blit.
+     */
     blit(source: Framebuffer, bits: BufferBits): void {
         const { gl, width, height } = this;
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
@@ -286,7 +300,7 @@ export class Target {
     }
 
     /**
-     * Clear the selected buffers to provided values.
+     * Clear selected buffers to provided values.
      */
     clear(
         bits: BufferBits,
@@ -297,7 +311,7 @@ export class Target {
             a = 1,
             depth = 1,
             stencil = 0,
-        }: ClearOptions = {},
+        }: TargetClearOptions = {},
     ): void {
         const gl = this.gl;
         if (bits & BufferBits.COLOR) { gl.clearColor(r, g, b, a); }
@@ -307,8 +321,9 @@ export class Target {
     }
 
     /**
-     * Draw to the target with a command, attributes, and command properties.
-     * The properties are passed to the command's uniform callbacks, if used.
+     * Draw to this target with a command, attributes, and command properties.
+     * The properties are passed to the command's uniform or texture callbacks,
+     * if used.
      */
     draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void {
         const gl = this.gl;
@@ -349,12 +364,19 @@ export class Target {
                 attrs.instanceCount,
             );
         }
+
+        // If we bound something, we need to unbind it now
+        if (attrs.glVertexArray) {
+            gl.bindVertexArray(null);
+        }
+
+        gl.useProgram(null);
     }
 
     /**
-     * Perform multiple draws to the target with the same command, but multiple
+     * Perform multiple draws to this target with the same command, but multiple
      * attributes and command properties. The properties are passed to the
-     * command's uniform callbacks, if used.
+     * command's uniform or texture callbacks, if used.
      */
     batch<P>(
         cmd: Command<P>,
@@ -383,8 +405,9 @@ export class Target {
         let iter = 0;
         let currVao: WebGLVertexArrayObject | null = null;
 
-        // Since we are not cleaning after ourselves, and we check for vao
-        // change in each iteration, we need to initialize the first value
+        // Since we are not cleaning after ourselves within the batch and we
+        // check for vao change each iteration, we need to initialize
+        // the first value
         gl.bindVertexArray(null);
 
         cb((attrs: Attributes, props: P) => {
@@ -414,17 +437,13 @@ export class Target {
                 );
             }
         });
-    }
 
-    private bind(): void {
-        const { gl, glFramebuffer, glDrawBuffers } = this;
-        const {
-            width = gl.drawingBufferWidth,
-            height = gl.drawingBufferHeight,
-        } = this;
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer || null);
-        gl.drawBuffers(glDrawBuffers);
-        gl.viewport(0, 0, width, height);
+        // If we bound something, we need to unbind it now
+        if (currVao) {
+            gl.bindVertexArray(null);
+        }
+
+        gl.useProgram(null);
     }
 
     private drawArrays(

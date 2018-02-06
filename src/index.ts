@@ -6,7 +6,7 @@ export {
     DeviceMountOptions,
     DeviceFromCanvasOptions,
     DeviceFromContextOptions,
-    ClearOptions,
+    TargetClearOptions,
 } from "./device";
 
 export {
