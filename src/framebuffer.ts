@@ -19,7 +19,6 @@ export class Framebuffer {
         height: number,
         color: Texture<ColorFormat> | Texture<ColorFormat>[],
     ): Framebuffer {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const colors = Array.isArray(color) ? color : [color];
         assert.nonEmpty(colors, "color");
         colors.forEach(buffer => {
@@ -27,7 +26,7 @@ export class Framebuffer {
             assert.equal(height, buffer.height, "height");
         });
 
-        return new Framebuffer(gl, width, height, colors);
+        return new Framebuffer(dev.gl, width, height, colors);
     }
 
     /**
@@ -39,10 +38,9 @@ export class Framebuffer {
         height: number,
         depth: Texture<DepthFormat>,
     ): Framebuffer {
-        const gl = dev instanceof Device ? dev.gl : dev;
         assert.equal(width, depth.width, "width");
         assert.equal(height, depth.height, "height");
-        return new Framebuffer(gl, width, height, [], depth, true);
+        return new Framebuffer(dev.gl, width, height, [], depth, true);
     }
 
     /**
@@ -55,10 +53,9 @@ export class Framebuffer {
         height: number,
         depthStencil: Texture<DepthStencilFormat>,
     ): Framebuffer {
-        const gl = dev instanceof Device ? dev.gl : dev;
         assert.equal(width, depthStencil.width, "width");
         assert.equal(height, depthStencil.height, "height");
-        return new Framebuffer(gl, width, height, [], depthStencil, false);
+        return new Framebuffer(dev.gl, width, height, [], depthStencil, false);
     }
 
     /**
@@ -72,7 +69,6 @@ export class Framebuffer {
         color: Texture<ColorFormat> | Texture<ColorFormat>[],
         depth: Texture<DepthFormat>,
     ): Framebuffer {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const colorBuffers = Array.isArray(color) ? color : [color];
         assert.nonEmpty(colorBuffers, "color");
         colorBuffers.forEach(buffer => {
@@ -82,7 +78,7 @@ export class Framebuffer {
         assert.equal(width, depth.width, "width");
         assert.equal(height, depth.height, "height");
 
-        return new Framebuffer(gl, width, height, colorBuffers, depth, true);
+        return new Framebuffer(dev.gl, width, height, colorBuffers, depth, true);
     }
 
     /**
@@ -96,7 +92,6 @@ export class Framebuffer {
         color: Texture<ColorFormat> | Texture<ColorFormat>[],
         depthStencil: Texture<DepthStencilFormat>,
     ): Framebuffer {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const colors = Array.isArray(color) ? color : [color];
         assert.nonEmpty(colors, "color");
         colors.forEach(buffer => {
@@ -106,7 +101,7 @@ export class Framebuffer {
         assert.equal(width, depthStencil.width, "width");
         assert.equal(height, depthStencil.height, "height");
 
-        return new Framebuffer(gl, width, height, colors, depthStencil, false);
+        return new Framebuffer(dev.gl, width, height, colors, depthStencil, false);
     }
 
 
