@@ -310,9 +310,18 @@ class Target {
      * the behavior is undefined.
      */
     with(cb) {
-        this.bind();
+        const { gl, glFramebuffer, glDrawBuffers } = this;
+        const { width = gl.drawingBufferWidth, height = gl.drawingBufferHeight, } = this;
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer || null);
+        gl.drawBuffers(glDrawBuffers);
+        gl.viewport(0, 0, width, height);
         cb(this);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
     }
+    /**
+     * Blit source framebuffer onto this render target. Use buffer bits to
+     * choose, which buffers to blit.
+     */
     blit(source, bits) {
         const { gl, width, height } = this;
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
@@ -320,7 +329,7 @@ class Target {
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     }
     /**
-     * Clear the selected buffers to provided values.
+     * Clear selected buffers to provided values.
      */
     clear(bits, { r = 0, g = 0, b = 0, a = 1, depth = 1, stencil = 0, } = {}) {
         const gl = this.gl;
@@ -336,8 +345,9 @@ class Target {
         gl.clear(bits);
     }
     /**
-     * Draw to the target with a command, attributes, and command properties.
-     * The properties are passed to the command's uniform callbacks, if used.
+     * Draw to this target with a command, attributes, and command properties.
+     * The properties are passed to the command's uniform or texture callbacks,
+     * if used.
      */
     draw(cmd, attrs, props) {
         const gl = this.gl;
@@ -359,11 +369,16 @@ class Target {
             this.drawArrays(attrs.primitive, attrs.count, 0, // offset
             attrs.instanceCount);
         }
+        // If we bound something, we need to unbind it now
+        if (attrs.glVertexArray) {
+            gl.bindVertexArray(null);
+        }
+        gl.useProgram(null);
     }
     /**
-     * Perform multiple draws to the target with the same command, but multiple
+     * Perform multiple draws to this target with the same command, but multiple
      * attributes and command properties. The properties are passed to the
-     * command's uniform callbacks, if used.
+     * command's uniform or texture callbacks, if used.
      */
     batch(cmd, cb) {
         const gl = this.gl;
@@ -376,8 +391,9 @@ class Target {
         this.blend(blendDescr);
         let iter = 0;
         let currVao = null;
-        // Since we are not cleaning after ourselves, and we check for vao
-        // change in each iteration, we need to initialize the first value
+        // Since we are not cleaning after ourselves within the batch and we
+        // check for vao change each iteration, we need to initialize
+        // the first value
         gl.bindVertexArray(null);
         cb((attrs, props) => {
             this.textures(textureAccessors, props, iter);
@@ -397,13 +413,11 @@ class Target {
                 attrs.instanceCount);
             }
         });
-    }
-    bind() {
-        const { gl, glFramebuffer, glDrawBuffers } = this;
-        const { width = gl.drawingBufferWidth, height = gl.drawingBufferHeight, } = this;
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer || null);
-        gl.drawBuffers(glDrawBuffers);
-        gl.viewport(0, 0, width, height);
+        // If we bound something, we need to unbind it now
+        if (currVao) {
+            gl.bindVertexArray(null);
+        }
+        gl.useProgram(null);
     }
     drawArrays(primitive, count, offset, instanceCount) {
         if (instanceCount) {
@@ -1591,40 +1605,36 @@ class Framebuffer {
      * width and height.
      */
     static withColor(dev, width, height, color) {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const colors = Array.isArray(color) ? color : [color];
         nonEmpty(colors, "color");
         colors.forEach(buffer => {
             equal(width, buffer.width, "width");
             equal(height, buffer.height, "height");
         });
-        return new Framebuffer(gl, width, height, colors);
+        return new Framebuffer(dev.gl, width, height, colors);
     }
     /**
      * Create a framebuffer containg a depth buffer with given width and height.
      */
     static withDepth(dev, width, height, depth) {
-        const gl = dev instanceof Device ? dev.gl : dev;
         equal(width, depth.width, "width");
         equal(height, depth.height, "height");
-        return new Framebuffer(gl, width, height, [], depth, true);
+        return new Framebuffer(dev.gl, width, height, [], depth, true);
     }
     /**
      * Create a framebuffer containg a depth-stencil buffer with given
      * width and height.
      */
     static withDepthStencil(dev, width, height, depthStencil) {
-        const gl = dev instanceof Device ? dev.gl : dev;
         equal(width, depthStencil.width, "width");
         equal(height, depthStencil.height, "height");
-        return new Framebuffer(gl, width, height, [], depthStencil, false);
+        return new Framebuffer(dev.gl, width, height, [], depthStencil, false);
     }
     /**
      * Create a framebuffer containg one or more color buffers and a depth
      * buffer with given width and height.
      */
     static withColorDepth(dev, width, height, color, depth) {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const colorBuffers = Array.isArray(color) ? color : [color];
         nonEmpty(colorBuffers, "color");
         colorBuffers.forEach(buffer => {
@@ -1633,14 +1643,13 @@ class Framebuffer {
         });
         equal(width, depth.width, "width");
         equal(height, depth.height, "height");
-        return new Framebuffer(gl, width, height, colorBuffers, depth, true);
+        return new Framebuffer(dev.gl, width, height, colorBuffers, depth, true);
     }
     /**
      * Create a framebuffer containg one or more color buffers and a
      * depth-stencil buffer with given width and height.
      */
     static withColorDepthStencil(dev, width, height, color, depthStencil) {
-        const gl = dev instanceof Device ? dev.gl : dev;
         const colors = Array.isArray(color) ? color : [color];
         nonEmpty(colors, "color");
         colors.forEach(buffer => {
@@ -1649,7 +1658,7 @@ class Framebuffer {
         });
         equal(width, depthStencil.width, "width");
         equal(height, depthStencil.height, "height");
-        return new Framebuffer(gl, width, height, colors, depthStencil, false);
+        return new Framebuffer(dev.gl, width, height, colors, depthStencil, false);
     }
     constructor(gl, width, height, colors, depthStencil, depthOnly = true) {
         this.gl = gl;
