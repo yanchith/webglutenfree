@@ -40,6 +40,19 @@ export enum DataType {
     INT = 0x1404,
     UNSIGNED_INT = 0x1405,
     FLOAT = 0x1406,
+    HALF_FLOAT = 0x140B,
+
+    // TODO: support exotic formats
+    // UNSIGNED_SHORT_4_4_4_4
+    // UNSIGNED_SHORT_5_5_5_1
+    // UNSIGNED_SHORT_5_6_5
+
+    UNSIGNED_INT_24_8 = 0x84FA,
+    // UNSIGNED_INT_5_9_9_9_REV
+    // UNSIGNED_INT_2_10_10_10_REV
+    // UNSIGNED_INT_10F_11F_11F_REV
+
+    FLOAT_32_UNSIGNED_INT_24_8_REV = 0x8DAD,
 }
 
 /**
@@ -55,18 +68,22 @@ export enum Primitive {
     TRIANGLE_FAN = 0x0006,
 }
 
-export function toByteLength(length: number, type: DataType): number {
+export function sizeOf(type: DataType): number {
     switch (type) {
         case DataType.BYTE:
         case DataType.UNSIGNED_BYTE:
-            return length;
+            return 1;
         case DataType.SHORT:
         case DataType.UNSIGNED_SHORT:
-            return length * 2;
+        case DataType.HALF_FLOAT:
+            return 2;
         case DataType.INT:
         case DataType.UNSIGNED_INT:
+        case DataType.UNSIGNED_INT_24_8:
         case DataType.FLOAT:
-            return length * 4;
+            return 4;
+        case DataType.FLOAT_32_UNSIGNED_INT_24_8_REV:
+            return 8;
         default: return assert.never(type);
     }
 }

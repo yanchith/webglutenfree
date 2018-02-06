@@ -93,6 +93,16 @@ var DataType;
     DataType[DataType["INT"] = 5124] = "INT";
     DataType[DataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
     DataType[DataType["FLOAT"] = 5126] = "FLOAT";
+    DataType[DataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
+    // TODO: support exotic formats
+    // UNSIGNED_SHORT_4_4_4_4
+    // UNSIGNED_SHORT_5_5_5_1
+    // UNSIGNED_SHORT_5_6_5
+    DataType[DataType["UNSIGNED_INT_24_8"] = 34042] = "UNSIGNED_INT_24_8";
+    // UNSIGNED_INT_5_9_9_9_REV
+    // UNSIGNED_INT_2_10_10_10_REV
+    // UNSIGNED_INT_10F_11F_11F_REV
+    DataType[DataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
 })(DataType || (DataType = {}));
 /**
  * Drawing primitives.
@@ -107,18 +117,22 @@ var Primitive;
     Primitive[Primitive["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
     Primitive[Primitive["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
 })(Primitive || (Primitive = {}));
-function toByteLength(length, type) {
+function sizeOf(type) {
     switch (type) {
         case DataType.BYTE:
         case DataType.UNSIGNED_BYTE:
-            return length;
+            return 1;
         case DataType.SHORT:
         case DataType.UNSIGNED_SHORT:
-            return length * 2;
+        case DataType.HALF_FLOAT:
+            return 2;
         case DataType.INT:
         case DataType.UNSIGNED_INT:
+        case DataType.UNSIGNED_INT_24_8:
         case DataType.FLOAT:
-            return length * 4;
+            return 4;
+        case DataType.FLOAT_32_UNSIGNED_INT_24_8_REV:
+            return 8;
         default: return never(type);
     }
 }
@@ -1037,14 +1051,14 @@ class VertexBuffer {
      * Create a new vertex buffer with given type and of given size.
      */
     static create(dev, type, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
-        return new VertexBuffer(dev.gl, type, size, toByteLength(size, type), usage);
+        return new VertexBuffer(dev.gl, type, size, size * sizeOf(type), usage);
     }
     /**
      * Create a new vertex buffer of given type with provided data. Data is
      * referenced only for the duration of this call.
      */
     static withTypedArray(dev, type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
-        return new VertexBuffer(dev.gl, type, data.length, toByteLength(data.length, type), usage).store(data);
+        return new VertexBuffer(dev.gl, type, data.length, data.length * sizeOf(type), usage).store(data);
     }
     /**
      * Force buffer reinitialization.
@@ -1142,7 +1156,7 @@ class ElementBuffer {
      * Create a new element buffer with given type, primitive, and size.
      */
     static create(dev, type, primitive, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
-        return new ElementBuffer(dev.gl, type, primitive, size, toByteLength(size, type), usage);
+        return new ElementBuffer(dev.gl, type, primitive, size, size * sizeOf(type), usage);
     }
     /**
      * Create a new element buffer from potentially nested array. Infers
@@ -1169,7 +1183,7 @@ class ElementBuffer {
      * referenced only for the duration of this call.
      */
     static withTypedArray(dev, type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
-        return new ElementBuffer(dev.gl, type, primitive, data.length, toByteLength(data.length, type), usage).store(data);
+        return new ElementBuffer(dev.gl, type, primitive, data.length, data.length * sizeOf(type), usage).store(data);
     }
     /**
      * Force buffer reinitialization.
@@ -1489,43 +1503,23 @@ var TextureInternalFormat;
     // LUMINANCE
     // ALPHA
 })(TextureInternalFormat || (TextureInternalFormat = {}));
-var TextureDataFormat;
-(function (TextureDataFormat) {
-    TextureDataFormat[TextureDataFormat["RED"] = 6403] = "RED";
-    TextureDataFormat[TextureDataFormat["RG"] = 33319] = "RG";
-    TextureDataFormat[TextureDataFormat["RGB"] = 6407] = "RGB";
-    TextureDataFormat[TextureDataFormat["RGBA"] = 6408] = "RGBA";
-    TextureDataFormat[TextureDataFormat["RED_INTEGER"] = 36244] = "RED_INTEGER";
-    TextureDataFormat[TextureDataFormat["RG_INTEGER"] = 33320] = "RG_INTEGER";
-    TextureDataFormat[TextureDataFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
-    TextureDataFormat[TextureDataFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
+var TextureFormat;
+(function (TextureFormat) {
+    TextureFormat[TextureFormat["RED"] = 6403] = "RED";
+    TextureFormat[TextureFormat["RG"] = 33319] = "RG";
+    TextureFormat[TextureFormat["RGB"] = 6407] = "RGB";
+    TextureFormat[TextureFormat["RGBA"] = 6408] = "RGBA";
+    TextureFormat[TextureFormat["RED_INTEGER"] = 36244] = "RED_INTEGER";
+    TextureFormat[TextureFormat["RG_INTEGER"] = 33320] = "RG_INTEGER";
+    TextureFormat[TextureFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
+    TextureFormat[TextureFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
     // TODO: support exotic formats
-    TextureDataFormat[TextureDataFormat["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
-    TextureDataFormat[TextureDataFormat["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
+    TextureFormat[TextureFormat["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
+    TextureFormat[TextureFormat["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
     // LUMINANCE_ALPHA
     // LUMINANCE
     // ALPHA
-})(TextureDataFormat || (TextureDataFormat = {}));
-var TextureDataType;
-(function (TextureDataType) {
-    TextureDataType[TextureDataType["BYTE"] = 5120] = "BYTE";
-    TextureDataType[TextureDataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
-    TextureDataType[TextureDataType["SHORT"] = 5122] = "SHORT";
-    TextureDataType[TextureDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
-    TextureDataType[TextureDataType["INT"] = 5124] = "INT";
-    TextureDataType[TextureDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
-    TextureDataType[TextureDataType["FLOAT"] = 5126] = "FLOAT";
-    TextureDataType[TextureDataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
-    // TODO: support exotic formats
-    // UNSIGNED_SHORT_4_4_4_4
-    // UNSIGNED_SHORT_5_5_5_1
-    // UNSIGNED_SHORT_5_6_5
-    TextureDataType[TextureDataType["UNSIGNED_INT_24_8"] = 34042] = "UNSIGNED_INT_24_8";
-    // UNSIGNED_INT_5_9_9_9_REV
-    // UNSIGNED_INT_2_10_10_10_REV
-    // UNSIGNED_INT_10F_11F_11F_REV
-    TextureDataType[TextureDataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
-})(TextureDataType || (TextureDataType = {}));
+})(TextureFormat || (TextureFormat = {}));
 class Texture {
     constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
         this.gl = gl;
@@ -1543,7 +1537,7 @@ class Texture {
         return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
     }
     static withImage(dev, image, options) {
-        return Texture.withTypedArray(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureDataFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
+        return Texture.withTypedArray(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureFormat.RGBA, DataType.UNSIGNED_BYTE, options);
     }
     static withTypedArray(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
         const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
@@ -1570,6 +1564,8 @@ class Texture {
     store(data, format, type, { xOffset = 0, yOffset = 0, mipmap = false } = {}) {
         const { gl, glTexture, width, height } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        // This pixel row alignment is theoretically smaller than needed
+        // TODO: find greatest correct unpack alignment for pixel rows
         gl.pixelStorei(gl.UNPACK_ALIGNMENT, data.BYTES_PER_ELEMENT);
         gl.texSubImage2D(gl.TEXTURE_2D, 0, // level
         xOffset, yOffset, width, height, format, type, 
@@ -1721,5 +1717,5 @@ class Framebuffer {
     }
 }
 
-export { BufferBits, BufferUsage, DataType, Primitive, Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureDataFormat, TextureDataType, Framebuffer };
+export { BufferBits, BufferUsage, DataType, Primitive, Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureFormat, Framebuffer };
 //# sourceMappingURL=webglutenfree.es.js.map

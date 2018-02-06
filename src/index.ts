@@ -42,7 +42,7 @@ export {
     TextureMagFilter,
     TextureWrap,
     TextureInternalFormat,
-    TextureDataFormat,
+    TextureFormat,
     TextureDataType,
     TextureOptions,
     TextureStoreOptions,

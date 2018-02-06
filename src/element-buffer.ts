@@ -1,6 +1,6 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
-import { BufferUsage, DataType, Primitive, toByteLength } from "./types";
+import { BufferUsage, DataType, Primitive, sizeOf } from "./types";
 import { Device } from "./device";
 
 export type ElementArray =
@@ -68,7 +68,7 @@ export class ElementBuffer<T extends ElementBufferType> {
             type,
             primitive,
             size,
-            toByteLength(size, type),
+            size * sizeOf(type),
             usage,
         );
     }
@@ -125,7 +125,7 @@ export class ElementBuffer<T extends ElementBufferType> {
             type,
             primitive,
             data.length,
-            toByteLength(data.length, type),
+            data.length * sizeOf(type),
             usage,
         ).store(data);
     }

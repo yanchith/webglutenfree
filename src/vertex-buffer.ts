@@ -1,11 +1,19 @@
 import * as assert from "./util/assert";
-import { BufferUsage, DataType, toByteLength } from "./types";
+import { BufferUsage, DataType, sizeOf } from "./types";
 import { Device } from "./device";
 
 /**
  * Possible data types of vertex buffers.
  */
-export type VertexBufferType = DataType;
+export type VertexBufferType =
+    | DataType.UNSIGNED_BYTE
+    | DataType.BYTE
+    | DataType.UNSIGNED_SHORT
+    | DataType.SHORT
+    | DataType.UNSIGNED_INT
+    | DataType.INT
+    | DataType.FLOAT
+    ;
 
 export type VertexBufferTypedArray =
     | Uint8Array
@@ -57,7 +65,7 @@ export class VertexBuffer<T extends VertexBufferType> {
             dev.gl,
             type,
             size,
-            toByteLength(size, type),
+            size * sizeOf(type),
             usage,
         );
     }
@@ -76,7 +84,7 @@ export class VertexBuffer<T extends VertexBufferType> {
             dev.gl,
             type,
             data.length,
-            toByteLength(data.length, type),
+            data.length * sizeOf(type),
             usage,
         ).store(data);
     }
