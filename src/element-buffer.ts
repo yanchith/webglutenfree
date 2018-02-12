@@ -131,8 +131,8 @@ export class ElementBuffer<T extends ElementBufferType> {
     }
 
     readonly type: T;
-    readonly size: number;
-    readonly byteSize: number;
+    readonly length: number;
+    readonly byteLength: number;
     readonly primitive: Primitive;
     readonly usage: BufferUsage;
 
@@ -144,15 +144,15 @@ export class ElementBuffer<T extends ElementBufferType> {
         gl: WebGL2RenderingContext,
         type: T,
         primitive: Primitive,
-        size: number,
-        byteSize: number,
+        length: number,
+        byteLength: number,
         usage: BufferUsage,
     ) {
         this.gl = gl;
         this.type = type;
         this.primitive = primitive;
-        this.size = size;
-        this.byteSize = byteSize;
+        this.length = length;
+        this.byteLength = byteLength;
         this.usage = usage;
         this.glBuffer = null;
 
@@ -163,10 +163,10 @@ export class ElementBuffer<T extends ElementBufferType> {
      * Force buffer reinitialization.
      */
     init(): void {
-        const { usage, byteSize, gl } = this;
+        const { usage, byteLength, gl } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteSize, usage);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteLength, usage);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         (this as any).glBuffer = buffer;
     }

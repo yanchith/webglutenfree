@@ -90,8 +90,8 @@ export class VertexBuffer<T extends VertexBufferType> {
     }
 
     readonly type: T;
-    readonly size: number;
-    readonly byteSize: number;
+    readonly length: number;
+    readonly byteLength: number;
     readonly usage: BufferUsage;
 
     readonly glBuffer: WebGLBuffer | null;
@@ -101,14 +101,14 @@ export class VertexBuffer<T extends VertexBufferType> {
     private constructor(
         gl: WebGL2RenderingContext,
         type: T,
-        size: number,
-        byteSize: number,
+        length: number,
+        byteLength: number,
         usage: BufferUsage,
     ) {
         this.gl = gl;
         this.type = type;
-        this.size = size;
-        this.byteSize = byteSize;
+        this.length = length;
+        this.byteLength = byteLength;
         this.usage = usage;
         this.glBuffer = null;
 
@@ -119,10 +119,10 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Force buffer reinitialization.
      */
     init(): void {
-        const { usage, byteSize, gl } = this;
+        const { usage, byteLength, gl } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, byteSize, usage);
+        gl.bufferData(gl.ARRAY_BUFFER, byteLength, usage);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         (this as any).glBuffer = buffer;
     }

@@ -158,7 +158,7 @@ export class Attributes {
             : ElementBuffer.withArray(dev, elements));
 
         const count = elementBuffer
-            ? elementBuffer.size
+            ? elementBuffer.length
             : attrs.length
                 ? attrs
                     .map(attr => attr.count)
@@ -208,7 +208,7 @@ export class Attributes {
         this.elementBuffer = elements;
         this.attributes = attributes;
         this.count = count;
-        this.elementCount = elements ? elements.size : 0;
+        this.elementCount = elements ? elements.length : 0;
         this.instanceCount = instanceCount;
         this.glVertexArray = null;
 

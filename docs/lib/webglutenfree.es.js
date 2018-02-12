@@ -1052,11 +1052,11 @@ function createShader(gl, type, source) {
  * via setting up an attribute that reads the buffer.
  */
 class VertexBuffer {
-    constructor(gl, type, size, byteSize, usage) {
+    constructor(gl, type, length, byteLength, usage) {
         this.gl = gl;
         this.type = type;
-        this.size = size;
-        this.byteSize = byteSize;
+        this.length = length;
+        this.byteLength = byteLength;
         this.usage = usage;
         this.glBuffer = null;
         this.init();
@@ -1078,10 +1078,10 @@ class VertexBuffer {
      * Force buffer reinitialization.
      */
     init() {
-        const { usage, byteSize, gl } = this;
+        const { usage, byteLength, gl } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, byteSize, usage);
+        gl.bufferData(gl.ARRAY_BUFFER, byteLength, usage);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         this.glBuffer = buffer;
     }
@@ -1156,12 +1156,12 @@ function ravel2(unraveled, shape) {
  * together with vertex buffers part of VertexArray objects.
  */
 class ElementBuffer {
-    constructor(gl, type, primitive, size, byteSize, usage) {
+    constructor(gl, type, primitive, length, byteLength, usage) {
         this.gl = gl;
         this.type = type;
         this.primitive = primitive;
-        this.size = size;
-        this.byteSize = byteSize;
+        this.length = length;
+        this.byteLength = byteLength;
         this.usage = usage;
         this.glBuffer = null;
         this.init();
@@ -1203,10 +1203,10 @@ class ElementBuffer {
      * Force buffer reinitialization.
      */
     init() {
-        const { usage, byteSize, gl } = this;
+        const { usage, byteLength, gl } = this;
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteSize, usage);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteLength, usage);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         this.glBuffer = buffer;
     }
@@ -1322,7 +1322,7 @@ class Attributes {
             ? elements
             : ElementBuffer.withArray(dev, elements));
         const count = elementBuffer
-            ? elementBuffer.size
+            ? elementBuffer.length
             : attrs.length
                 ? attrs
                     .map(attr => attr.count)
@@ -1342,7 +1342,7 @@ class Attributes {
         this.elementBuffer = elements;
         this.attributes = attributes;
         this.count = count;
-        this.elementCount = elements ? elements.size : 0;
+        this.elementCount = elements ? elements.length : 0;
         this.instanceCount = instanceCount;
         this.glVertexArray = null;
         this.init();
