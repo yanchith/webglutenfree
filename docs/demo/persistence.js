@@ -31,29 +31,6 @@ const pongFbo = Framebuffer.withColor(dev, width, height, pongTex);
 
 const view = mat4.create();
 
-const screenspaceVS = `#version 300 es
-precision mediump float;
-
-out vec2 v_tex_coord;
-
-void main() {
-    switch (gl_VertexID % 3) {
-        case 0:
-            gl_Position = vec4(-1, 3, 0, 1);
-            v_tex_coord = vec2(0, 2);
-            break;
-        case 1:
-            gl_Position = vec4(-1, -1, 0, 1);
-            v_tex_coord = vec2(0, 0);
-            break;
-        case 2:
-            gl_Position = vec4(3, -1, 0, 1);
-            v_tex_coord = vec2(2, 0);
-            break;
-    }
-}
-`;
-
 const draw = Command.create(
     dev,
     `#version 300 es
@@ -103,7 +80,28 @@ const draw = Command.create(
 
 const blend = Command.create(
     dev,
-    screenspaceVS,
+    `#version 300 es
+        precision mediump float;
+
+        out vec2 v_tex_coord;
+
+        void main() {
+            switch (gl_VertexID % 3) {
+                case 0:
+                    gl_Position = vec4(-1, 3, 0, 1);
+                    v_tex_coord = vec2(0, 2);
+                    break;
+                case 1:
+                    gl_Position = vec4(-1, -1, 0, 1);
+                    v_tex_coord = vec2(0, 0);
+                    break;
+                case 2:
+                    gl_Position = vec4(3, -1, 0, 1);
+                    v_tex_coord = vec2(2, 0);
+                    break;
+            }
+        }
+    `,
     `#version 300 es
         precision mediump float;
 
