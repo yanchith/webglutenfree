@@ -1,5 +1,5 @@
 import * as assert from "./util/assert";
-import { Device, Target } from "./device";
+import { Device, Target, S } from "./device";
 import {
     Texture,
     TextureColorInternalFormat as ColorFormat,
@@ -157,11 +157,11 @@ export class Framebuffer {
 
         const fbo = gl.createFramebuffer();
 
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
 
         colors.forEach((buffer, i) => {
             gl.framebufferTexture2D(
-                gl.FRAMEBUFFER,
+                gl.DRAW_FRAMEBUFFER,
                 gl.COLOR_ATTACHMENT0 + i,
                 gl.TEXTURE_2D,
                 buffer.glTexture,
@@ -171,7 +171,7 @@ export class Framebuffer {
 
         if (depthStencil) {
             gl.framebufferTexture2D(
-                gl.FRAMEBUFFER,
+                gl.DRAW_FRAMEBUFFER,
                 depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT,
                 gl.TEXTURE_2D,
                 depthStencil,
@@ -179,8 +179,14 @@ export class Framebuffer {
             );
         }
 
-        const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
+
+        // Restore gl.DRAW_FRAMEBUFFER to previous value
+        const stacks = S.get(gl)!;
+        const { S_DRAW_FRAMEBUFFER } = stacks;
+        assert.nonEmpty(S_DRAW_FRAMEBUFFER);
+        const prev = S_DRAW_FRAMEBUFFER[S_DRAW_FRAMEBUFFER.length - 1];
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, prev);
 
         if (status !== gl.FRAMEBUFFER_COMPLETE) {
             gl.deleteFramebuffer(fbo);

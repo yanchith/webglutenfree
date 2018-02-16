@@ -158,7 +158,8 @@ export class Device {
         this.canvas = canvas;
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewport = explicitViewport;
-        this.backbufferTarget = new Target(gl, [gl.BACK]);
+        this.backbufferTarget = new Target(gl, [gl.BACK], null);
+        S.set(gl, new Stacks(gl));
     }
 
     /**
@@ -254,7 +255,7 @@ export class Target {
     constructor(
         private gl: WebGL2RenderingContext,
         readonly glDrawBuffers: number[],
-        readonly glFramebuffer?: WebGLFramebuffer,
+        readonly glFramebuffer: WebGLFramebuffer | null,
         readonly width?: number,
         readonly height?: number,
     ) { }
@@ -272,13 +273,24 @@ export class Target {
             width = gl.drawingBufferWidth,
             height = gl.drawingBufferHeight,
         } = this;
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer || null);
+
+        const { S_DRAW_FRAMEBUFFER, S_DRAW_BUFFERS } = S.get(gl)!;
+
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
         gl.drawBuffers(glDrawBuffers);
+
+        S_DRAW_FRAMEBUFFER.push(glFramebuffer);
+        S_DRAW_BUFFERS.push(glDrawBuffers);
+
         gl.viewport(0, 0, width, height);
 
         cb(this);
 
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+        S_DRAW_FRAMEBUFFER.pop();
+        S_DRAW_BUFFERS.pop();
+
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, peek(S_DRAW_FRAMEBUFFER));
+        gl.drawBuffers(peek(S_DRAW_BUFFERS));
     }
 
     /**
@@ -287,6 +299,9 @@ export class Target {
      */
     blit(source: Framebuffer, bits: BufferBits): void {
         const { gl, width, height } = this;
+
+        const { S_READ_FRAMEBUFFER } = S.get(gl)!;
+
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.blitFramebuffer(
             0, 0,
@@ -296,7 +311,7 @@ export class Target {
             bits,
             gl.NEAREST,
         );
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, peek(S_READ_FRAMEBUFFER));
     }
 
     /**
@@ -706,3 +721,19 @@ function createDebugFunc(gl: any, key: string): (...args: any[]) => any {
         return gl[key].apply(gl, arguments);
     };
 }
+
+function peek<T>(stack: T[]): T {
+    assert.nonEmpty(stack);
+    return stack[stack.length - 1];
+}
+
+export class Stacks {
+    constructor(
+        gl: WebGL2RenderingContext,
+        readonly S_DRAW_FRAMEBUFFER: (WebGLFramebuffer | null)[] = [null],
+        readonly S_READ_FRAMEBUFFER: (WebGLFramebuffer | null)[] = [null],
+        readonly S_DRAW_BUFFERS: number[][] = [[gl.BACK]],
+    ) {}
+}
+
+export const S = new WeakMap<WebGL2RenderingContext, Stacks>();

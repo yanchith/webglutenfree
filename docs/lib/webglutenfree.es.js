@@ -209,7 +209,8 @@ class Device {
         this.canvas = canvas;
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewport = explicitViewport;
-        this.backbufferTarget = new Target(gl, [gl.BACK]);
+        this.backbufferTarget = new Target(gl, [gl.BACK], null);
+        S.set(gl, new Stacks(gl));
     }
     /**
      * Return width of the gl drawing buffer.
@@ -312,11 +313,17 @@ class Target {
     with(cb) {
         const { gl, glFramebuffer, glDrawBuffers } = this;
         const { width = gl.drawingBufferWidth, height = gl.drawingBufferHeight, } = this;
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer || null);
+        const { S_DRAW_FRAMEBUFFER, S_DRAW_BUFFERS } = S.get(gl);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
         gl.drawBuffers(glDrawBuffers);
+        S_DRAW_FRAMEBUFFER.push(glFramebuffer);
+        S_DRAW_BUFFERS.push(glDrawBuffers);
         gl.viewport(0, 0, width, height);
         cb(this);
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+        S_DRAW_FRAMEBUFFER.pop();
+        S_DRAW_BUFFERS.pop();
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, peek(S_DRAW_FRAMEBUFFER));
+        gl.drawBuffers(peek(S_DRAW_BUFFERS));
     }
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
@@ -324,9 +331,10 @@ class Target {
      */
     blit(source, bits) {
         const { gl, width, height } = this;
+        const { S_READ_FRAMEBUFFER } = S.get(gl);
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.blitFramebuffer(0, 0, source.width, source.height, 0, 0, width || gl.drawingBufferWidth, height || gl.drawingBufferHeight, bits, gl.NEAREST);
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, peek(S_READ_FRAMEBUFFER));
     }
     /**
      * Clear selected buffers to provided values.
@@ -603,6 +611,18 @@ function createDebugFunc(gl, key) {
         return gl[key].apply(gl, arguments);
     };
 }
+function peek(stack) {
+    nonEmpty(stack);
+    return stack[stack.length - 1];
+}
+class Stacks {
+    constructor(gl, S_DRAW_FRAMEBUFFER = [null], S_READ_FRAMEBUFFER = [null], S_DRAW_BUFFERS = [[gl.BACK]]) {
+        this.S_DRAW_FRAMEBUFFER = S_DRAW_FRAMEBUFFER;
+        this.S_READ_FRAMEBUFFER = S_READ_FRAMEBUFFER;
+        this.S_DRAW_BUFFERS = S_DRAW_BUFFERS;
+    }
+}
+const S = new WeakMap();
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
@@ -1679,15 +1699,20 @@ class Framebuffer {
     init() {
         const { width, height, gl, glColorAttachments, colors, depthStencil, depthOnly, } = this;
         const fbo = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
         colors.forEach((buffer, i) => {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
+            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
         });
         if (depthStencil) {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil, 0);
+            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil, 0);
         }
-        const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
+        // Restore gl.DRAW_FRAMEBUFFER to previous value
+        const stacks = S.get(gl);
+        const { S_DRAW_FRAMEBUFFER } = stacks;
+        nonEmpty(S_DRAW_FRAMEBUFFER);
+        const prev = S_DRAW_FRAMEBUFFER[S_DRAW_FRAMEBUFFER.length - 1];
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, prev);
         if (status !== gl.FRAMEBUFFER_COMPLETE) {
             gl.deleteFramebuffer(fbo);
             throw new Error("Framebuffer not complete");
