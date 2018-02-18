@@ -164,7 +164,7 @@ const cmdDraw = Command.create(
         void main() {
             vec4 pix_esc = texture(u_esc, v_tex_coord);
             float greyscale = pix_esc.x / u_max_iters;
-            if (greyscale < 0.001) {
+            if (greyscale < 0.00001) {
                 f_color = vec4(vec3(0), 1);
             } else {
                 f_color = vec4(vec3(1. - greyscale), 1);
