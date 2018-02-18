@@ -1,5 +1,5 @@
 import * as assert from "./util/assert";
-import { Device, Target, S } from "./device";
+import { Device, Target, SYM_STACK_DRAW_FRAMEBUFFER } from "./device";
 import {
     Texture,
     TextureColorInternalFormat as ColorFormat,
@@ -26,7 +26,7 @@ export class Framebuffer {
             assert.equal(height, buffer.height, "height");
         });
 
-        return new Framebuffer(dev.gl, width, height, colors);
+        return new Framebuffer(dev, width, height, colors);
     }
 
     /**
@@ -40,7 +40,7 @@ export class Framebuffer {
     ): Framebuffer {
         assert.equal(width, depth.width, "width");
         assert.equal(height, depth.height, "height");
-        return new Framebuffer(dev.gl, width, height, [], depth, true);
+        return new Framebuffer(dev, width, height, [], depth, true);
     }
 
     /**
@@ -55,7 +55,7 @@ export class Framebuffer {
     ): Framebuffer {
         assert.equal(width, depthStencil.width, "width");
         assert.equal(height, depthStencil.height, "height");
-        return new Framebuffer(dev.gl, width, height, [], depthStencil, false);
+        return new Framebuffer(dev, width, height, [], depthStencil, false);
     }
 
     /**
@@ -78,7 +78,7 @@ export class Framebuffer {
         assert.equal(width, depth.width, "width");
         assert.equal(height, depth.height, "height");
 
-        return new Framebuffer(dev.gl, width, height, colorBuffers, depth, true);
+        return new Framebuffer(dev, width, height, colorBuffers, depth, true);
     }
 
     /**
@@ -101,7 +101,7 @@ export class Framebuffer {
         assert.equal(width, depthStencil.width, "width");
         assert.equal(height, depthStencil.height, "height");
 
-        return new Framebuffer(dev.gl, width, height, colors, depthStencil, false);
+        return new Framebuffer(dev, width, height, colors, depthStencil, false);
     }
 
 
@@ -110,7 +110,7 @@ export class Framebuffer {
 
     readonly glFramebuffer: WebGLFramebuffer | null;
 
-    private gl: WebGL2RenderingContext;
+    private dev: Device;
     private glColorAttachments: number[];
 
     private framebufferTarget: Target | null;
@@ -120,21 +120,21 @@ export class Framebuffer {
     private depthOnly: boolean;
 
     private constructor(
-        gl: WebGL2RenderingContext,
+        dev: Device,
         width: number,
         height: number,
         colors: Texture<ColorFormat>[],
         depthStencil?: Texture<DepthFormat> | Texture<DepthStencilFormat>,
         depthOnly: boolean = true,
     ) {
-        this.gl = gl;
+        this.dev = dev;
         this.width = width;
         this.height = height;
         this.colors = colors;
         this.depthStencil = depthStencil;
         this.depthOnly = depthOnly;
         this.glColorAttachments = colors
-            .map((_, i) => gl.COLOR_ATTACHMENT0 + i);
+            .map((_, i) => dev.gl.COLOR_ATTACHMENT0 + i);
         this.glFramebuffer = null;
         this.framebufferTarget = null;
 
@@ -148,7 +148,8 @@ export class Framebuffer {
         const {
             width,
             height,
-            gl,
+            dev,
+            dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: S_DRAW_FRAMEBUFFER },
             glColorAttachments,
             colors,
             depthStencil,
@@ -182,8 +183,6 @@ export class Framebuffer {
         const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
 
         // Restore gl.DRAW_FRAMEBUFFER to previous value
-        const stacks = S.get(gl)!;
-        const { S_DRAW_FRAMEBUFFER } = stacks;
         assert.nonEmpty(S_DRAW_FRAMEBUFFER);
         const prev = S_DRAW_FRAMEBUFFER[S_DRAW_FRAMEBUFFER.length - 1];
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, prev);
@@ -197,7 +196,7 @@ export class Framebuffer {
 
         if (fbo) {
             this.framebufferTarget = new Target(
-                gl,
+                dev,
                 glColorAttachments,
                 fbo,
                 width,
@@ -211,7 +210,7 @@ export class Framebuffer {
      */
     restore(): void {
         const {
-            gl,
+            dev: { gl },
             glFramebuffer,
             colors,
             depthStencil,

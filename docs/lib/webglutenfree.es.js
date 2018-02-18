@@ -137,6 +137,9 @@ function sizeOf(type) {
     }
 }
 
+const SYM_STACK_READ_FRAMEBUFFER = Symbol();
+const SYM_STACK_DRAW_FRAMEBUFFER = Symbol();
+const SYM_STACK_DRAW_BUFFERS = Symbol();
 /**
  * Available extensions.
  */
@@ -146,6 +149,16 @@ var Extension;
     Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
 })(Extension || (Extension = {}));
 class Device {
+    constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
+        this[_a] = [null];
+        this[_b] = [null];
+        this.gl = gl;
+        this.canvas = canvas;
+        this.explicitPixelRatio = explicitPixelRatio;
+        this.explicitViewport = explicitViewport;
+        this.backbufferTarget = new Target(this, [gl.BACK], null);
+        this[SYM_STACK_DRAW_BUFFERS] = [[gl.BACK]];
+    }
     /**
      * Create a new canvas and device (containing a gl context). Mount it on
      * `element` parameter (default is `document.body`).
@@ -203,14 +216,6 @@ class Device {
         const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
         dev.update();
         return dev;
-    }
-    constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
-        this.gl = gl;
-        this.canvas = canvas;
-        this.explicitPixelRatio = explicitPixelRatio;
-        this.explicitViewport = explicitViewport;
-        this.backbufferTarget = new Target(gl, [gl.BACK], null);
-        S.set(gl, new Stacks(gl));
     }
     /**
      * Return width of the gl drawing buffer.
@@ -289,6 +294,7 @@ class Device {
         this.backbufferTarget.with(cb);
     }
 }
+_a = SYM_STACK_READ_FRAMEBUFFER, _b = SYM_STACK_DRAW_FRAMEBUFFER;
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
@@ -296,8 +302,8 @@ class Device {
  * Targets provide methods for drawing to a surface and clearing its values.
  */
 class Target {
-    constructor(gl, glDrawBuffers, glFramebuffer, width, height) {
-        this.gl = gl;
+    constructor(dev, glDrawBuffers, glFramebuffer, width, height) {
+        this.dev = dev;
         this.glDrawBuffers = glDrawBuffers;
         this.glFramebuffer = glFramebuffer;
         this.width = width;
@@ -311,9 +317,8 @@ class Target {
      * the behavior is undefined.
      */
     with(cb) {
-        const { gl, glFramebuffer, glDrawBuffers } = this;
+        const { dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: S_DRAW_FRAMEBUFFER, [SYM_STACK_DRAW_BUFFERS]: S_DRAW_BUFFERS, }, glFramebuffer, glDrawBuffers, } = this;
         const { width = gl.drawingBufferWidth, height = gl.drawingBufferHeight, } = this;
-        const { S_DRAW_FRAMEBUFFER, S_DRAW_BUFFERS } = S.get(gl);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
         gl.drawBuffers(glDrawBuffers);
         S_DRAW_FRAMEBUFFER.push(glFramebuffer);
@@ -330,8 +335,7 @@ class Target {
      * choose, which buffers to blit.
      */
     blit(source, bits) {
-        const { gl, width, height } = this;
-        const { S_READ_FRAMEBUFFER } = S.get(gl);
+        const { dev: { gl, [SYM_STACK_READ_FRAMEBUFFER]: S_READ_FRAMEBUFFER }, width, height, } = this;
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.blitFramebuffer(0, 0, source.width, source.height, 0, 0, width || gl.drawingBufferWidth, height || gl.drawingBufferHeight, bits, gl.NEAREST);
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, peek(S_READ_FRAMEBUFFER));
@@ -340,7 +344,7 @@ class Target {
      * Clear selected buffers to provided values.
      */
     clear(bits, { r = 0, g = 0, b = 0, a = 1, depth = 1, stencil = 0, } = {}) {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         if (bits & BufferBits.COLOR) {
             gl.clearColor(r, g, b, a);
         }
@@ -358,7 +362,7 @@ class Target {
      * if used.
      */
     draw(cmd, attrs, props) {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         gl.useProgram(glProgram);
         this.depth(depthDescr);
@@ -389,7 +393,7 @@ class Target {
      * command's uniform or texture callbacks, if used.
      */
     batch(cmd, cb) {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch.
@@ -428,23 +432,25 @@ class Target {
         gl.useProgram(null);
     }
     drawArrays(primitive, count, offset, instanceCount) {
+        const gl = this.dev.gl;
         if (instanceCount) {
-            this.gl.drawArraysInstanced(primitive, offset, count, instanceCount);
+            gl.drawArraysInstanced(primitive, offset, count, instanceCount);
         }
         else {
-            this.gl.drawArrays(primitive, offset, count);
+            gl.drawArrays(primitive, offset, count);
         }
     }
     drawElements(primitive, count, type, offset, instCount) {
+        const gl = this.dev.gl;
         if (instCount) {
-            this.gl.drawElementsInstanced(primitive, count, type, offset, instCount);
+            gl.drawElementsInstanced(primitive, count, type, offset, instCount);
         }
         else {
-            this.gl.drawElements(primitive, count, type, offset);
+            gl.drawElements(primitive, count, type, offset);
         }
     }
     depth(depthDescr) {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         if (depthDescr) {
             gl.enable(gl.DEPTH_TEST);
             gl.depthFunc(depthDescr.func);
@@ -456,7 +462,7 @@ class Target {
         }
     }
     stencil(stencilDescr) {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         if (stencilDescr) {
             const { fFunc, bFunc, fFuncRef, bfuncRef, fFuncMask, bFuncMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = stencilDescr;
             gl.enable(gl.STENCIL_TEST);
@@ -472,7 +478,7 @@ class Target {
         }
     }
     blend(blendDescr) {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         if (blendDescr) {
             gl.enable(gl.BLEND);
             gl.blendFuncSeparate(blendDescr.srcRGB, blendDescr.dstRGB, blendDescr.srcAlpha, blendDescr.dstAlpha);
@@ -487,7 +493,7 @@ class Target {
         }
     }
     textures(textureAccessors, props, index) {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         textureAccessors.forEach((accessor, i) => {
             const tex = access(props, index, accessor);
             gl.activeTexture(gl.TEXTURE0 + i);
@@ -495,7 +501,7 @@ class Target {
         });
     }
     uniforms(uniformDescrs, props, index) {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         uniformDescrs.forEach(({ identifier: ident, location: loc, definition: def, }) => {
             switch (def.type) {
                 case "1f":
@@ -615,14 +621,8 @@ function peek(stack) {
     nonEmpty(stack);
     return stack[stack.length - 1];
 }
-class Stacks {
-    constructor(gl, S_DRAW_FRAMEBUFFER = [null], S_READ_FRAMEBUFFER = [null], S_DRAW_BUFFERS = [[gl.BACK]]) {
-        this.S_DRAW_FRAMEBUFFER = S_DRAW_FRAMEBUFFER;
-        this.S_READ_FRAMEBUFFER = S_READ_FRAMEBUFFER;
-        this.S_DRAW_BUFFERS = S_DRAW_BUFFERS;
-    }
-}
-const S = new WeakMap();
+var _a;
+var _b;
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
@@ -1631,7 +1631,7 @@ class Framebuffer {
             equal(width, buffer.width, "width");
             equal(height, buffer.height, "height");
         });
-        return new Framebuffer(dev.gl, width, height, colors);
+        return new Framebuffer(dev, width, height, colors);
     }
     /**
      * Create a framebuffer containg a depth buffer with given width and height.
@@ -1639,7 +1639,7 @@ class Framebuffer {
     static withDepth(dev, width, height, depth) {
         equal(width, depth.width, "width");
         equal(height, depth.height, "height");
-        return new Framebuffer(dev.gl, width, height, [], depth, true);
+        return new Framebuffer(dev, width, height, [], depth, true);
     }
     /**
      * Create a framebuffer containg a depth-stencil buffer with given
@@ -1648,7 +1648,7 @@ class Framebuffer {
     static withDepthStencil(dev, width, height, depthStencil) {
         equal(width, depthStencil.width, "width");
         equal(height, depthStencil.height, "height");
-        return new Framebuffer(dev.gl, width, height, [], depthStencil, false);
+        return new Framebuffer(dev, width, height, [], depthStencil, false);
     }
     /**
      * Create a framebuffer containg one or more color buffers and a depth
@@ -1663,7 +1663,7 @@ class Framebuffer {
         });
         equal(width, depth.width, "width");
         equal(height, depth.height, "height");
-        return new Framebuffer(dev.gl, width, height, colorBuffers, depth, true);
+        return new Framebuffer(dev, width, height, colorBuffers, depth, true);
     }
     /**
      * Create a framebuffer containg one or more color buffers and a
@@ -1678,17 +1678,17 @@ class Framebuffer {
         });
         equal(width, depthStencil.width, "width");
         equal(height, depthStencil.height, "height");
-        return new Framebuffer(dev.gl, width, height, colors, depthStencil, false);
+        return new Framebuffer(dev, width, height, colors, depthStencil, false);
     }
-    constructor(gl, width, height, colors, depthStencil, depthOnly = true) {
-        this.gl = gl;
+    constructor(dev, width, height, colors, depthStencil, depthOnly = true) {
+        this.dev = dev;
         this.width = width;
         this.height = height;
         this.colors = colors;
         this.depthStencil = depthStencil;
         this.depthOnly = depthOnly;
         this.glColorAttachments = colors
-            .map((_, i) => gl.COLOR_ATTACHMENT0 + i);
+            .map((_, i) => dev.gl.COLOR_ATTACHMENT0 + i);
         this.glFramebuffer = null;
         this.framebufferTarget = null;
         this.init();
@@ -1697,7 +1697,7 @@ class Framebuffer {
      * Force framebuffer reinitialization.
      */
     init() {
-        const { width, height, gl, glColorAttachments, colors, depthStencil, depthOnly, } = this;
+        const { width, height, dev, dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: S_DRAW_FRAMEBUFFER }, glColorAttachments, colors, depthStencil, depthOnly, } = this;
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
         colors.forEach((buffer, i) => {
@@ -1708,8 +1708,6 @@ class Framebuffer {
         }
         const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
         // Restore gl.DRAW_FRAMEBUFFER to previous value
-        const stacks = S.get(gl);
-        const { S_DRAW_FRAMEBUFFER } = stacks;
         nonEmpty(S_DRAW_FRAMEBUFFER);
         const prev = S_DRAW_FRAMEBUFFER[S_DRAW_FRAMEBUFFER.length - 1];
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, prev);
@@ -1719,14 +1717,14 @@ class Framebuffer {
         }
         this.glFramebuffer = fbo;
         if (fbo) {
-            this.framebufferTarget = new Target(gl, glColorAttachments, fbo, width, height);
+            this.framebufferTarget = new Target(dev, glColorAttachments, fbo, width, height);
         }
     }
     /**
      * Reinitialize invalid framebuffer, eg. after context is lost.
      */
     restore() {
-        const { gl, glFramebuffer, colors, depthStencil, } = this;
+        const { dev: { gl }, glFramebuffer, colors, depthStencil, } = this;
         colors.forEach(buffer => buffer.restore());
         if (depthStencil) {
             depthStencil.restore();

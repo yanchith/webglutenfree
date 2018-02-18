@@ -11,6 +11,10 @@ import {
 import { Attributes } from "./attributes";
 import { Framebuffer } from "./framebuffer";
 
+export const SYM_STACK_READ_FRAMEBUFFER = Symbol();
+export const SYM_STACK_DRAW_FRAMEBUFFER = Symbol();
+export const SYM_STACK_DRAW_BUFFERS = Symbol();
+
 export interface DeviceMountOptions {
     element?: HTMLElement;
     alpha?: boolean;
@@ -143,6 +147,11 @@ export class Device {
     readonly gl: WebGL2RenderingContext;
     readonly canvas: HTMLCanvasElement;
 
+    readonly [SYM_STACK_READ_FRAMEBUFFER]: (WebGLFramebuffer | null)[] = [null];
+    readonly [SYM_STACK_DRAW_FRAMEBUFFER]: (WebGLFramebuffer | null)[] = [null];
+
+    readonly [SYM_STACK_DRAW_BUFFERS]: number[][];
+
     private explicitPixelRatio?: number;
     private explicitViewport?: [number, number];
 
@@ -158,8 +167,8 @@ export class Device {
         this.canvas = canvas;
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewport = explicitViewport;
-        this.backbufferTarget = new Target(gl, [gl.BACK], null);
-        S.set(gl, new Stacks(gl));
+        this.backbufferTarget = new Target(this, [gl.BACK], null);
+        this[SYM_STACK_DRAW_BUFFERS] = [[gl.BACK]];
     }
 
     /**
@@ -253,7 +262,7 @@ export class Device {
 export class Target {
 
     constructor(
-        private gl: WebGL2RenderingContext,
+        private dev: Device,
         readonly glDrawBuffers: number[],
         readonly glFramebuffer: WebGLFramebuffer | null,
         readonly width?: number,
@@ -268,13 +277,19 @@ export class Target {
      * the behavior is undefined.
      */
     with(cb: (rt: Target) => void): void {
-        const { gl, glFramebuffer, glDrawBuffers } = this;
+        const {
+            dev: {
+                gl,
+                [SYM_STACK_DRAW_FRAMEBUFFER]: S_DRAW_FRAMEBUFFER,
+                [SYM_STACK_DRAW_BUFFERS]: S_DRAW_BUFFERS,
+            },
+            glFramebuffer,
+            glDrawBuffers,
+        } = this;
         const {
             width = gl.drawingBufferWidth,
             height = gl.drawingBufferHeight,
         } = this;
-
-        const { S_DRAW_FRAMEBUFFER, S_DRAW_BUFFERS } = S.get(gl)!;
 
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
         gl.drawBuffers(glDrawBuffers);
@@ -298,9 +313,11 @@ export class Target {
      * choose, which buffers to blit.
      */
     blit(source: Framebuffer, bits: BufferBits): void {
-        const { gl, width, height } = this;
-
-        const { S_READ_FRAMEBUFFER } = S.get(gl)!;
+        const {
+            dev: { gl, [SYM_STACK_READ_FRAMEBUFFER]: S_READ_FRAMEBUFFER },
+            width,
+            height,
+        } = this;
 
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.blitFramebuffer(
@@ -328,7 +345,7 @@ export class Target {
             stencil = 0,
         }: TargetClearOptions = {},
     ): void {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         if (bits & BufferBits.COLOR) { gl.clearColor(r, g, b, a); }
         if (bits & BufferBits.DEPTH) { gl.clearDepth(depth); }
         if (bits & BufferBits.STENCIL) { gl.clearStencil(stencil); }
@@ -341,7 +358,7 @@ export class Target {
      * if used.
      */
     draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         const {
             glProgram,
             depthDescr,
@@ -397,7 +414,7 @@ export class Target {
         cmd: Command<P>,
         cb: (draw: (attrs: Attributes, props: P) => void) => void,
     ): void {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         const {
             glProgram,
             depthDescr,
@@ -467,15 +484,16 @@ export class Target {
         offset: number,
         instanceCount: number,
     ): void {
+        const gl = this.dev.gl;
         if (instanceCount) {
-            this.gl.drawArraysInstanced(
+            gl.drawArraysInstanced(
                 primitive,
                 offset,
                 count,
                 instanceCount,
             );
         } else {
-            this.gl.drawArrays(primitive, offset, count);
+            gl.drawArrays(primitive, offset, count);
         }
     }
 
@@ -486,8 +504,9 @@ export class Target {
         offset: number,
         instCount: number,
     ): void {
+        const gl = this.dev.gl;
         if (instCount) {
-            this.gl.drawElementsInstanced(
+            gl.drawElementsInstanced(
                 primitive,
                 count,
                 type,
@@ -495,7 +514,7 @@ export class Target {
                 instCount,
             );
         } else {
-            this.gl.drawElements(
+            gl.drawElements(
                 primitive,
                 count,
                 type,
@@ -505,7 +524,7 @@ export class Target {
     }
 
     private depth(depthDescr?: DepthDescriptor): void {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         if (depthDescr) {
             gl.enable(gl.DEPTH_TEST);
             gl.depthFunc(depthDescr.func);
@@ -515,7 +534,7 @@ export class Target {
     }
 
     private stencil(stencilDescr?: StencilDescriptor): void {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         if (stencilDescr) {
             const {
                 fFunc,
@@ -544,7 +563,7 @@ export class Target {
     }
 
     private blend(blendDescr?: BlendDescriptor): void {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         if (blendDescr) {
             gl.enable(gl.BLEND);
             gl.blendFuncSeparate(
@@ -569,7 +588,7 @@ export class Target {
         props: P,
         index: number,
     ): void {
-        const gl = this.gl;
+        const gl = this.dev.gl;
         textureAccessors.forEach((accessor, i) => {
             const tex = access(props, index, accessor);
             gl.activeTexture(gl.TEXTURE0 + i);
@@ -582,8 +601,7 @@ export class Target {
         props: P,
         index: number,
     ): void {
-        const gl = this.gl;
-
+        const gl = this.dev.gl;
         uniformDescrs.forEach(({
             identifier: ident,
             location: loc,
@@ -726,14 +744,3 @@ function peek<T>(stack: T[]): T {
     assert.nonEmpty(stack);
     return stack[stack.length - 1];
 }
-
-export class Stacks {
-    constructor(
-        gl: WebGL2RenderingContext,
-        readonly S_DRAW_FRAMEBUFFER: (WebGLFramebuffer | null)[] = [null],
-        readonly S_READ_FRAMEBUFFER: (WebGLFramebuffer | null)[] = [null],
-        readonly S_DRAW_BUFFERS: number[][] = [[gl.BACK]],
-    ) {}
-}
-
-export const S = new WeakMap<WebGL2RenderingContext, Stacks>();
