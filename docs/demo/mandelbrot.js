@@ -9,23 +9,22 @@ import {
     Framebuffer,
 } from "./lib/webglutenfree.es.js";
 
-const MAX_ITERS = 1 << 8; // 8 bit colors
+const MAX_ITERS = 1 << 8;
 
 const dev = Device.mount({
-    antialias: false,
     extensions: ["EXT_color_buffer_float"],
 });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const pingTexVal = Texture.create(dev, width, height, TextureInternalFormat.RG32F);
-const pingTexEsc = Texture.create(dev, width, height, TextureInternalFormat.R32UI);
+const pingTexEsc = Texture.create(dev, width, height, TextureInternalFormat.R32F);
 const pingFbo = Framebuffer.withColor(dev, width, height, [
     pingTexVal,
     pingTexEsc,
 ]);
 
 const pongTexVal = Texture.create(dev, width, height, TextureInternalFormat.RG32F);
-const pongTexEsc = Texture.create(dev, width, height, TextureInternalFormat.R32UI);
+const pongTexEsc = Texture.create(dev, width, height, TextureInternalFormat.R32F);
 const pongFbo = Framebuffer.withColor(dev, width, height, [
     pongTexVal,
     pongTexEsc,
@@ -165,9 +164,11 @@ const cmdDraw = Command.create(
         void main() {
             vec4 pix_esc = texture(u_esc, v_tex_coord);
             float greyscale = pix_esc.x / u_max_iters;
-            // f_color = vec4(vec3(greyscale), 1);
-            f_color = texture(u_esc, v_tex_coord);
-            // f_color = gl_FragCoord / 1500.0;
+            if (greyscale < 0.001) {
+                f_color = vec4(vec3(0), 1);
+            } else {
+                f_color = vec4(vec3(1. - greyscale), 1);
+            }
         }
     `,
     {
