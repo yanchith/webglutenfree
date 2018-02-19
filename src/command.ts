@@ -1,5 +1,5 @@
 import * as assert from "./util/assert";
-import { Device } from "./device";
+import { Device, SYM_STACK_PROGRAM } from "./device";
 import { AttributesConfig } from "./attributes";
 import { Texture, TextureInternalFormat } from "./texture";
 
@@ -308,7 +308,7 @@ export class Command<P> {
         const blendDescr = parseBlend(blend);
 
         return new Command(
-            dev.gl,
+            dev,
             vert,
             frag,
             textures,
@@ -326,14 +326,14 @@ export class Command<P> {
     readonly textureAccessors: TextureAccessor<P>[];
     readonly uniformDescrs: UniformDescriptor<P>[];
 
-    private gl: WebGL2RenderingContext;
+    private dev: Device;
     private vsSource: string;
     private fsSource: string;
     private textures: Textures<P>;
     private uniforms: Uniforms<P>;
 
     private constructor(
-        gl: WebGL2RenderingContext,
+        dev: Device,
         vsSource: string,
         fsSource: string,
         textures: Textures<P>,
@@ -342,7 +342,7 @@ export class Command<P> {
         stencilDescr?: StencilDescriptor,
         blendDescr?: BlendDescriptor,
     ) {
-        this.gl = gl;
+        this.dev = dev;
         this.vsSource = vsSource;
         this.fsSource = fsSource;
         this.textures = textures;
@@ -361,7 +361,13 @@ export class Command<P> {
      * Force command reinitialization.
      */
     init(): void {
-        const { gl, vsSource, fsSource, textures, uniforms } = this;
+        const {
+            dev: { gl, [SYM_STACK_PROGRAM]: STACK_PROGRAM },
+            vsSource,
+            fsSource,
+            textures,
+            uniforms,
+        } = this;
 
         const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
@@ -370,7 +376,7 @@ export class Command<P> {
         gl.deleteShader(vs);
         gl.deleteShader(fs);
 
-        gl.useProgram(prog);
+        STACK_PROGRAM.push(prog);
 
         // Texture declarations are evaluated in two phases:
         // 1) Sampler location offsets are sent to the shader eagerly
@@ -520,7 +526,7 @@ export class Command<P> {
             }
         });
 
-        gl.useProgram(null);
+        STACK_PROGRAM.pop();
 
         (this as any).glProgram = prog;
         (this as any).textureAccessors = textureAccessors;
@@ -531,7 +537,7 @@ export class Command<P> {
      * Reinitialize invalid buffer, eg. after context is lost.
      */
     restore(): void {
-        const { gl, glProgram } = this;
+        const { dev: { gl }, glProgram } = this;
         if (!gl.isProgram(glProgram)) { this.init(); }
     }
 
@@ -540,7 +546,7 @@ export class Command<P> {
      * actual attribute locations for the program in this command.
      */
     locate(attributes: AttributesConfig): AttributesConfig {
-        const { gl, glProgram } = this;
+        const { dev: { gl }, glProgram } = this;
         return Object.entries(attributes)
             .reduce<AttributesConfig>((accum, [identifier, definition]) => {
                 if (INT_PATTERN.test(identifier)) {

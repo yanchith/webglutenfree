@@ -137,9 +137,31 @@ function sizeOf(type) {
     }
 }
 
-const SYM_STACK_READ_FRAMEBUFFER = Symbol();
-const SYM_STACK_DRAW_FRAMEBUFFER = Symbol();
-const SYM_STACK_DRAW_BUFFERS = Symbol();
+class Stack {
+    constructor(initialValue, cb) {
+        this.s = [initialValue];
+        this.cb = cb;
+    }
+    push(value) {
+        this.s.push(value);
+        this.cb(value);
+    }
+    pop() {
+        nonEmpty(this.s, "Stack must not be empty for pop");
+        const value = this.s.pop();
+        this.cb(this.peek());
+        return value;
+    }
+    peek() {
+        nonEmpty(this.s, "Stack must never be empty for peek");
+        return this.s[this.s.length - 1];
+    }
+}
+
+const SYM_STACK_PROGRAM = Symbol.for("STACK_PROGRAM");
+const SYM_STACK_READ_FRAMEBUFFER = Symbol.for("STACK_READ_FRAMEBUFFER");
+const SYM_STACK_DRAW_FRAMEBUFFER = Symbol.for("STACK_DRAW_FRAMEBUFFER");
+const SYM_STACK_DRAW_BUFFERS = Symbol.for("STACK_DRAW_BUFFERS");
 /**
  * Available extensions.
  */
@@ -149,16 +171,6 @@ var Extension;
     Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
 })(Extension || (Extension = {}));
 class Device {
-    constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
-        this[_a] = [null];
-        this[_b] = [null];
-        this.gl = gl;
-        this.canvas = canvas;
-        this.explicitPixelRatio = explicitPixelRatio;
-        this.explicitViewport = explicitViewport;
-        this.backbufferTarget = new Target(this, [gl.BACK], null);
-        this[SYM_STACK_DRAW_BUFFERS] = [[gl.BACK]];
-    }
     /**
      * Create a new canvas and device (containing a gl context). Mount it on
      * `element` parameter (default is `document.body`).
@@ -216,6 +228,17 @@ class Device {
         const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
         dev.update();
         return dev;
+    }
+    constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
+        this.gl = gl;
+        this.canvas = canvas;
+        this.explicitPixelRatio = explicitPixelRatio;
+        this.explicitViewport = explicitViewport;
+        this.backbufferTarget = new Target(this, [gl.BACK], null);
+        this[SYM_STACK_PROGRAM] = new Stack(null, val => gl.useProgram(val));
+        this[SYM_STACK_READ_FRAMEBUFFER] = new Stack(null, val => gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
+        this[SYM_STACK_DRAW_FRAMEBUFFER] = new Stack(null, val => gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
+        this[SYM_STACK_DRAW_BUFFERS] = new Stack([gl.BACK], val => gl.drawBuffers(val));
     }
     /**
      * Return width of the gl drawing buffer.
@@ -294,7 +317,6 @@ class Device {
         this.backbufferTarget.with(cb);
     }
 }
-_a = SYM_STACK_READ_FRAMEBUFFER, _b = SYM_STACK_DRAW_FRAMEBUFFER;
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
@@ -317,28 +339,24 @@ class Target {
      * the behavior is undefined.
      */
     with(cb) {
-        const { dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: S_DRAW_FRAMEBUFFER, [SYM_STACK_DRAW_BUFFERS]: S_DRAW_BUFFERS, }, glFramebuffer, glDrawBuffers, } = this;
+        const { dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: STACK_DRAW_FRAMEBUFFER, [SYM_STACK_DRAW_BUFFERS]: STACK_DRAW_BUFFERS, }, glFramebuffer, glDrawBuffers, } = this;
         const { width = gl.drawingBufferWidth, height = gl.drawingBufferHeight, } = this;
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
-        gl.drawBuffers(glDrawBuffers);
-        S_DRAW_FRAMEBUFFER.push(glFramebuffer);
-        S_DRAW_BUFFERS.push(glDrawBuffers);
+        STACK_DRAW_FRAMEBUFFER.push(glFramebuffer);
+        STACK_DRAW_BUFFERS.push(glDrawBuffers);
         gl.viewport(0, 0, width, height);
         cb(this);
-        S_DRAW_FRAMEBUFFER.pop();
-        S_DRAW_BUFFERS.pop();
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, peek(S_DRAW_FRAMEBUFFER));
-        gl.drawBuffers(peek(S_DRAW_BUFFERS));
+        STACK_DRAW_FRAMEBUFFER.pop();
+        STACK_DRAW_BUFFERS.pop();
     }
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
      * choose, which buffers to blit.
      */
     blit(source, bits) {
-        const { dev: { gl, [SYM_STACK_READ_FRAMEBUFFER]: S_READ_FRAMEBUFFER }, width, height, } = this;
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
+        const { dev: { gl, [SYM_STACK_READ_FRAMEBUFFER]: STACK_READ_FRAMEBUFFER }, width, height, } = this;
+        STACK_READ_FRAMEBUFFER.push(source.glFramebuffer);
         gl.blitFramebuffer(0, 0, source.width, source.height, 0, 0, width || gl.drawingBufferWidth, height || gl.drawingBufferHeight, bits, gl.NEAREST);
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, peek(S_READ_FRAMEBUFFER));
+        STACK_READ_FRAMEBUFFER.pop();
     }
     /**
      * Clear selected buffers to provided values.
@@ -362,9 +380,9 @@ class Target {
      * if used.
      */
     draw(cmd, attrs, props) {
-        const gl = this.dev.gl;
+        const { dev: { gl, [SYM_STACK_PROGRAM]: STACK_PROGRAM } } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
-        gl.useProgram(glProgram);
+        STACK_PROGRAM.push(glProgram);
         this.depth(depthDescr);
         this.stencil(stencilDescr);
         this.blend(blendDescr);
@@ -385,7 +403,7 @@ class Target {
         if (attrs.glVertexArray) {
             gl.bindVertexArray(null);
         }
-        gl.useProgram(null);
+        STACK_PROGRAM.pop();
     }
     /**
      * Perform multiple draws to this target with the same command, but multiple
@@ -393,11 +411,11 @@ class Target {
      * command's uniform or texture callbacks, if used.
      */
     batch(cmd, cb) {
-        const gl = this.dev.gl;
+        const { dev: { gl, [SYM_STACK_PROGRAM]: STACK_PROGRAM } } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch.
-        gl.useProgram(glProgram);
+        STACK_PROGRAM.push(glProgram);
         this.depth(depthDescr);
         this.stencil(stencilDescr);
         this.blend(blendDescr);
@@ -429,7 +447,7 @@ class Target {
         if (currVao) {
             gl.bindVertexArray(null);
         }
-        gl.useProgram(null);
+        STACK_PROGRAM.pop();
     }
     drawArrays(primitive, count, offset, instanceCount) {
         const gl = this.dev.gl;
@@ -617,12 +635,6 @@ function createDebugFunc(gl, key) {
         return gl[key].apply(gl, arguments);
     };
 }
-function peek(stack) {
-    nonEmpty(stack);
-    return stack[stack.length - 1];
-}
-var _a;
-var _b;
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
@@ -685,8 +697,8 @@ var BlendEquation;
     BlendEquation[BlendEquation["MAX"] = 32776] = "MAX";
 })(BlendEquation || (BlendEquation = {}));
 class Command {
-    constructor(gl, vsSource, fsSource, textures, uniforms, depthDescr, stencilDescr, blendDescr) {
-        this.gl = gl;
+    constructor(dev, vsSource, fsSource, textures, uniforms, depthDescr, stencilDescr, blendDescr) {
+        this.dev = dev;
         this.vsSource = vsSource;
         this.fsSource = fsSource;
         this.textures = textures;
@@ -725,19 +737,19 @@ class Command {
         const depthDescr = parseDepth(depth);
         const stencilDescr = parseStencil(stencil);
         const blendDescr = parseBlend(blend);
-        return new Command(dev.gl, vert, frag, textures, uniforms, depthDescr, stencilDescr, blendDescr);
+        return new Command(dev, vert, frag, textures, uniforms, depthDescr, stencilDescr, blendDescr);
     }
     /**
      * Force command reinitialization.
      */
     init() {
-        const { gl, vsSource, fsSource, textures, uniforms } = this;
+        const { dev: { gl, [SYM_STACK_PROGRAM]: STACK_PROGRAM }, vsSource, fsSource, textures, uniforms, } = this;
         const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
         const prog = createProgram(gl, vs, fs);
         gl.deleteShader(vs);
         gl.deleteShader(fs);
-        gl.useProgram(prog);
+        STACK_PROGRAM.push(prog);
         // Texture declarations are evaluated in two phases:
         // 1) Sampler location offsets are sent to the shader eagerly
         // 2) Textures are bound to the locations at draw time
@@ -871,7 +883,7 @@ class Command {
                 uniformDescrs.push(new UniformDescriptor(ident, loc, u));
             }
         });
-        gl.useProgram(null);
+        STACK_PROGRAM.pop();
         this.glProgram = prog;
         this.textureAccessors = textureAccessors;
         this.uniformDescrs = uniformDescrs;
@@ -880,7 +892,7 @@ class Command {
      * Reinitialize invalid buffer, eg. after context is lost.
      */
     restore() {
-        const { gl, glProgram } = this;
+        const { dev: { gl }, glProgram } = this;
         if (!gl.isProgram(glProgram)) {
             this.init();
         }
@@ -890,7 +902,7 @@ class Command {
      * actual attribute locations for the program in this command.
      */
     locate(attributes) {
-        const { gl, glProgram } = this;
+        const { dev: { gl }, glProgram } = this;
         return Object.entries(attributes)
             .reduce((accum, [identifier, definition]) => {
             if (INT_PATTERN.test(identifier)) {
@@ -1697,9 +1709,9 @@ class Framebuffer {
      * Force framebuffer reinitialization.
      */
     init() {
-        const { width, height, dev, dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: S_DRAW_FRAMEBUFFER }, glColorAttachments, colors, depthStencil, depthOnly, } = this;
+        const { width, height, dev, dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: STACK_DRAW_FRAMEBUFFER }, glColorAttachments, colors, depthStencil, depthOnly, } = this;
         const fbo = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
+        STACK_DRAW_FRAMEBUFFER.push(fbo);
         colors.forEach((buffer, i) => {
             gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
         });
@@ -1707,10 +1719,7 @@ class Framebuffer {
             gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil, 0);
         }
         const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
-        // Restore gl.DRAW_FRAMEBUFFER to previous value
-        nonEmpty(S_DRAW_FRAMEBUFFER);
-        const prev = S_DRAW_FRAMEBUFFER[S_DRAW_FRAMEBUFFER.length - 1];
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, prev);
+        STACK_DRAW_FRAMEBUFFER.pop();
         if (status !== gl.FRAMEBUFFER_COMPLETE) {
             gl.deleteFramebuffer(fbo);
             throw new Error("Framebuffer not complete");

@@ -25,6 +25,7 @@
     "prebuild:watch": "rimraf build",
     "build:watch": "tsc --outDir build --watch",
     "tslint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
+    "dev": "yarn build && rimraf dist && yarn dist:es && yarn demolib",
     "predist": "rimraf dist",
     "dist": "yarn dist:es && yarn dist:umd && yarn dist:es:prod && yarn dist:umd:prod && yarn dist:es:prod:min && yarn dist:umd:prod:min && yarn dist:dts",
     "predist:watch": "rimraf dist",

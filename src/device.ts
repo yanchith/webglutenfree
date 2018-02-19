@@ -1,4 +1,5 @@
 import * as assert from "./util/assert";
+import { Stack } from "./util/stack";
 import { BufferBits, Primitive } from "./types";
 import {
     Command,
@@ -11,9 +12,10 @@ import {
 import { Attributes } from "./attributes";
 import { Framebuffer } from "./framebuffer";
 
-export const SYM_STACK_READ_FRAMEBUFFER = Symbol();
-export const SYM_STACK_DRAW_FRAMEBUFFER = Symbol();
-export const SYM_STACK_DRAW_BUFFERS = Symbol();
+export const SYM_STACK_PROGRAM = Symbol.for("STACK_PROGRAM");
+export const SYM_STACK_READ_FRAMEBUFFER = Symbol.for("STACK_READ_FRAMEBUFFER");
+export const SYM_STACK_DRAW_FRAMEBUFFER = Symbol.for("STACK_DRAW_FRAMEBUFFER");
+export const SYM_STACK_DRAW_BUFFERS = Symbol.for("STACK_DRAW_BUFFERS");
 
 export interface DeviceMountOptions {
     element?: HTMLElement;
@@ -147,10 +149,10 @@ export class Device {
     readonly gl: WebGL2RenderingContext;
     readonly canvas: HTMLCanvasElement;
 
-    readonly [SYM_STACK_READ_FRAMEBUFFER]: (WebGLFramebuffer | null)[] = [null];
-    readonly [SYM_STACK_DRAW_FRAMEBUFFER]: (WebGLFramebuffer | null)[] = [null];
-
-    readonly [SYM_STACK_DRAW_BUFFERS]: number[][];
+    readonly [SYM_STACK_PROGRAM]: Stack<WebGLProgram | null>;
+    readonly [SYM_STACK_READ_FRAMEBUFFER]: Stack<WebGLFramebuffer | null>;
+    readonly [SYM_STACK_DRAW_FRAMEBUFFER]: Stack<WebGLFramebuffer | null>;
+    readonly [SYM_STACK_DRAW_BUFFERS]: Stack<number[]>;
 
     private explicitPixelRatio?: number;
     private explicitViewport?: [number, number];
@@ -168,7 +170,26 @@ export class Device {
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewport = explicitViewport;
         this.backbufferTarget = new Target(this, [gl.BACK], null);
-        this[SYM_STACK_DRAW_BUFFERS] = [[gl.BACK]];
+
+        this[SYM_STACK_PROGRAM] = new Stack<WebGLProgram | null>(
+            null,
+            val => gl.useProgram(val),
+        );
+
+        this[SYM_STACK_READ_FRAMEBUFFER] = new Stack<WebGLFramebuffer | null>(
+            null,
+            val => gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val),
+        );
+
+        this[SYM_STACK_DRAW_FRAMEBUFFER] = new Stack<WebGLFramebuffer | null>(
+            null,
+            val => gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val),
+        );
+
+        this[SYM_STACK_DRAW_BUFFERS] = new Stack<number[]>(
+            [gl.BACK],
+            val => gl.drawBuffers(val),
+        );
     }
 
     /**
@@ -280,8 +301,8 @@ export class Target {
         const {
             dev: {
                 gl,
-                [SYM_STACK_DRAW_FRAMEBUFFER]: S_DRAW_FRAMEBUFFER,
-                [SYM_STACK_DRAW_BUFFERS]: S_DRAW_BUFFERS,
+                [SYM_STACK_DRAW_FRAMEBUFFER]: STACK_DRAW_FRAMEBUFFER,
+                [SYM_STACK_DRAW_BUFFERS]: STACK_DRAW_BUFFERS,
             },
             glFramebuffer,
             glDrawBuffers,
@@ -291,21 +312,15 @@ export class Target {
             height = gl.drawingBufferHeight,
         } = this;
 
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
-        gl.drawBuffers(glDrawBuffers);
-
-        S_DRAW_FRAMEBUFFER.push(glFramebuffer);
-        S_DRAW_BUFFERS.push(glDrawBuffers);
+        STACK_DRAW_FRAMEBUFFER.push(glFramebuffer);
+        STACK_DRAW_BUFFERS.push(glDrawBuffers);
 
         gl.viewport(0, 0, width, height);
 
         cb(this);
 
-        S_DRAW_FRAMEBUFFER.pop();
-        S_DRAW_BUFFERS.pop();
-
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, peek(S_DRAW_FRAMEBUFFER));
-        gl.drawBuffers(peek(S_DRAW_BUFFERS));
+        STACK_DRAW_FRAMEBUFFER.pop();
+        STACK_DRAW_BUFFERS.pop();
     }
 
     /**
@@ -314,12 +329,12 @@ export class Target {
      */
     blit(source: Framebuffer, bits: BufferBits): void {
         const {
-            dev: { gl, [SYM_STACK_READ_FRAMEBUFFER]: S_READ_FRAMEBUFFER },
+            dev: { gl, [SYM_STACK_READ_FRAMEBUFFER]: STACK_READ_FRAMEBUFFER },
             width,
             height,
         } = this;
 
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
+        STACK_READ_FRAMEBUFFER.push(source.glFramebuffer);
         gl.blitFramebuffer(
             0, 0,
             source.width, source.height,
@@ -328,7 +343,7 @@ export class Target {
             bits,
             gl.NEAREST,
         );
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, peek(S_READ_FRAMEBUFFER));
+        STACK_READ_FRAMEBUFFER.pop();
     }
 
     /**
@@ -358,7 +373,7 @@ export class Target {
      * if used.
      */
     draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void {
-        const gl = this.dev.gl;
+        const { dev: { gl, [SYM_STACK_PROGRAM]: STACK_PROGRAM } } = this;
         const {
             glProgram,
             depthDescr,
@@ -368,7 +383,7 @@ export class Target {
             uniformDescrs,
         } = cmd;
 
-        gl.useProgram(glProgram);
+        STACK_PROGRAM.push(glProgram);
 
         this.depth(depthDescr);
         this.stencil(stencilDescr);
@@ -402,7 +417,7 @@ export class Target {
             gl.bindVertexArray(null);
         }
 
-        gl.useProgram(null);
+        STACK_PROGRAM.pop();
     }
 
     /**
@@ -414,7 +429,7 @@ export class Target {
         cmd: Command<P>,
         cb: (draw: (attrs: Attributes, props: P) => void) => void,
     ): void {
-        const gl = this.dev.gl;
+        const { dev: { gl, [SYM_STACK_PROGRAM]: STACK_PROGRAM } } = this;
         const {
             glProgram,
             depthDescr,
@@ -427,7 +442,7 @@ export class Target {
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch.
 
-        gl.useProgram(glProgram);
+        STACK_PROGRAM.push(glProgram);
 
         this.depth(depthDescr);
         this.stencil(stencilDescr);
@@ -475,7 +490,7 @@ export class Target {
             gl.bindVertexArray(null);
         }
 
-        gl.useProgram(null);
+        STACK_PROGRAM.pop();
     }
 
     private drawArrays(
@@ -738,9 +753,4 @@ function createDebugFunc(gl: any, key: string): (...args: any[]) => any {
         console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
         return gl[key].apply(gl, arguments);
     };
-}
-
-function peek<T>(stack: T[]): T {
-    assert.nonEmpty(stack);
-    return stack[stack.length - 1];
 }
