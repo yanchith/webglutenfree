@@ -1,27 +1,27 @@
 import * as assert from "./assert";
 
-export type Callback<T> = (value: T) => void;
+export type ChangeCallback<T> = (prevValue: T, newValue: T) => void;
 
 export class Stack<T> {
 
     private s: T[];
-    private cb: Callback<T>;
+    private onChange: ChangeCallback<T>;
 
-    constructor(initialValue: T, cb: Callback<T>) {
+    constructor(initialValue: T, onChange: ChangeCallback<T>) {
         this.s = [initialValue];
-        this.cb = cb;
+        this.onChange = onChange;
     }
 
     push(value: T): void {
+        this.onChange(this.peek(), value);
         this.s.push(value);
-        this.cb(value);
     }
 
     pop(): T {
         assert.nonEmpty(this.s, "Stack must not be empty for pop");
-        const value = this.s.pop();
-        this.cb(this.peek());
-        return value!;
+        const prevValue = this.s.pop()!;
+        this.onChange(prevValue, this.peek());
+        return prevValue;
     }
 
     peek(): T {

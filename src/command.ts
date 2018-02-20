@@ -362,7 +362,7 @@ export class Command<P> {
      */
     init(): void {
         const {
-            dev: { gl, [SYM_STACK_PROGRAM]: STACK_PROGRAM },
+            dev: { gl, [SYM_STACK_PROGRAM]: stackProgram },
             vsSource,
             fsSource,
             textures,
@@ -376,7 +376,7 @@ export class Command<P> {
         gl.deleteShader(vs);
         gl.deleteShader(fs);
 
-        STACK_PROGRAM.push(prog);
+        stackProgram.push(prog);
 
         // Texture declarations are evaluated in two phases:
         // 1) Sampler location offsets are sent to the shader eagerly
@@ -526,7 +526,7 @@ export class Command<P> {
             }
         });
 
-        STACK_PROGRAM.pop();
+        stackProgram.pop();
 
         (this as any).glProgram = prog;
         (this as any).textureAccessors = textureAccessors;

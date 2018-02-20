@@ -138,19 +138,19 @@ function sizeOf(type) {
 }
 
 class Stack {
-    constructor(initialValue, cb) {
+    constructor(initialValue, onChange) {
         this.s = [initialValue];
-        this.cb = cb;
+        this.onChange = onChange;
     }
     push(value) {
+        this.onChange(this.peek(), value);
         this.s.push(value);
-        this.cb(value);
     }
     pop() {
         nonEmpty(this.s, "Stack must not be empty for pop");
-        const value = this.s.pop();
-        this.cb(this.peek());
-        return value;
+        const prevValue = this.s.pop();
+        this.onChange(prevValue, this.peek());
+        return prevValue;
     }
     peek() {
         nonEmpty(this.s, "Stack must never be empty for peek");
@@ -158,10 +158,11 @@ class Stack {
     }
 }
 
-const SYM_STACK_PROGRAM = Symbol.for("STACK_PROGRAM");
-const SYM_STACK_READ_FRAMEBUFFER = Symbol.for("STACK_READ_FRAMEBUFFER");
-const SYM_STACK_DRAW_FRAMEBUFFER = Symbol.for("STACK_DRAW_FRAMEBUFFER");
-const SYM_STACK_DRAW_BUFFERS = Symbol.for("STACK_DRAW_BUFFERS");
+const SYM_STACK_PROGRAM = Symbol();
+const SYM_STACK_VERTEX_ARRAY = Symbol();
+const SYM_STACK_READ_FRAMEBUFFER = Symbol();
+const SYM_STACK_DRAW_FRAMEBUFFER = Symbol();
+const SYM_STACK_DRAW_BUFFERS = Symbol();
 /**
  * Available extensions.
  */
@@ -235,10 +236,17 @@ class Device {
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewport = explicitViewport;
         this.backbufferTarget = new Target(this, [gl.BACK], null);
-        this[SYM_STACK_PROGRAM] = new Stack(null, val => gl.useProgram(val));
-        this[SYM_STACK_READ_FRAMEBUFFER] = new Stack(null, val => gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
-        this[SYM_STACK_DRAW_FRAMEBUFFER] = new Stack(null, val => gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
-        this[SYM_STACK_DRAW_BUFFERS] = new Stack([gl.BACK], val => gl.drawBuffers(val));
+        this[SYM_STACK_PROGRAM] = new Stack(null, (prev, val) => prev === val ? void 0 : gl.useProgram(val));
+        this[SYM_STACK_VERTEX_ARRAY] = new Stack(null, (prev, val) => prev === val ? void 0 : gl.bindVertexArray(val));
+        this[SYM_STACK_READ_FRAMEBUFFER] = new Stack(null, (prev, val) => prev === val
+            ? void 0
+            : gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
+        this[SYM_STACK_DRAW_FRAMEBUFFER] = new Stack(null, (prev, val) => prev === val
+            ? void 0
+            : gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
+        this[SYM_STACK_DRAW_BUFFERS] = new Stack([gl.BACK], (prev, val) => eqNumberArrays(prev, val)
+            ? void 0
+            : gl.drawBuffers(val));
     }
     /**
      * Return width of the gl drawing buffer.
@@ -320,8 +328,6 @@ class Device {
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
- *
- * Targets provide methods for drawing to a surface and clearing its values.
  */
 class Target {
     constructor(dev, glDrawBuffers, glFramebuffer, width, height) {
@@ -335,44 +341,48 @@ class Target {
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
      *
-     * All drawing to the target should be done within the callback. Otherwise
-     * the behavior is undefined.
+     * All drawing to the target should be done within the callback to prevent
+     * unnecessary rebinding.
      */
     with(cb) {
-        const { dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: STACK_DRAW_FRAMEBUFFER, [SYM_STACK_DRAW_BUFFERS]: STACK_DRAW_BUFFERS, }, glFramebuffer, glDrawBuffers, } = this;
+        const { dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: stackDrawFramebuffer, [SYM_STACK_DRAW_BUFFERS]: stackDrawBuffers, }, glFramebuffer, glDrawBuffers, } = this;
         const { width = gl.drawingBufferWidth, height = gl.drawingBufferHeight, } = this;
-        STACK_DRAW_FRAMEBUFFER.push(glFramebuffer);
-        STACK_DRAW_BUFFERS.push(glDrawBuffers);
+        stackDrawFramebuffer.push(glFramebuffer);
+        stackDrawBuffers.push(glDrawBuffers);
         gl.viewport(0, 0, width, height);
         cb(this);
-        STACK_DRAW_FRAMEBUFFER.pop();
-        STACK_DRAW_BUFFERS.pop();
+        stackDrawFramebuffer.pop();
+        stackDrawBuffers.pop();
     }
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
      * choose, which buffers to blit.
      */
     blit(source, bits) {
-        const { dev: { gl, [SYM_STACK_READ_FRAMEBUFFER]: STACK_READ_FRAMEBUFFER }, width, height, } = this;
-        STACK_READ_FRAMEBUFFER.push(source.glFramebuffer);
-        gl.blitFramebuffer(0, 0, source.width, source.height, 0, 0, width || gl.drawingBufferWidth, height || gl.drawingBufferHeight, bits, gl.NEAREST);
-        STACK_READ_FRAMEBUFFER.pop();
+        const { dev: { gl, [SYM_STACK_READ_FRAMEBUFFER]: stackReadFramebuffer }, width, height, } = this;
+        this.with(() => {
+            stackReadFramebuffer.push(source.glFramebuffer);
+            gl.blitFramebuffer(0, 0, source.width, source.height, 0, 0, width || gl.drawingBufferWidth, height || gl.drawingBufferHeight, bits, gl.NEAREST);
+            stackReadFramebuffer.pop();
+        });
     }
     /**
      * Clear selected buffers to provided values.
      */
     clear(bits, { r = 0, g = 0, b = 0, a = 1, depth = 1, stencil = 0, } = {}) {
-        const gl = this.dev.gl;
-        if (bits & BufferBits.COLOR) {
-            gl.clearColor(r, g, b, a);
-        }
-        if (bits & BufferBits.DEPTH) {
-            gl.clearDepth(depth);
-        }
-        if (bits & BufferBits.STENCIL) {
-            gl.clearStencil(stencil);
-        }
-        gl.clear(bits);
+        this.with(() => {
+            const gl = this.dev.gl;
+            if (bits & BufferBits.COLOR) {
+                gl.clearColor(r, g, b, a);
+            }
+            if (bits & BufferBits.DEPTH) {
+                gl.clearDepth(depth);
+            }
+            if (bits & BufferBits.STENCIL) {
+                gl.clearStencil(stencil);
+            }
+            gl.clear(bits);
+        });
     }
     /**
      * Draw to this target with a command, attributes, and command properties.
@@ -380,60 +390,17 @@ class Target {
      * if used.
      */
     draw(cmd, attrs, props) {
-        const { dev: { gl, [SYM_STACK_PROGRAM]: STACK_PROGRAM } } = this;
+        const { dev: { [SYM_STACK_PROGRAM]: stackProgram, [SYM_STACK_VERTEX_ARRAY]: stackVertexArray, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
-        STACK_PROGRAM.push(glProgram);
-        this.depth(depthDescr);
-        this.stencil(stencilDescr);
-        this.blend(blendDescr);
-        this.textures(textureAccessors, props, 0);
-        this.uniforms(uniformDescrs, props, 0);
-        // Note that attrs.glVertexArray may be null for empty attrs and that
-        // is ok
-        gl.bindVertexArray(attrs.glVertexArray);
-        if (attrs.indexed) {
-            this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
-            attrs.instanceCount);
-        }
-        else {
-            this.drawArrays(attrs.primitive, attrs.count, 0, // offset
-            attrs.instanceCount);
-        }
-        // If we bound something, we need to unbind it now
-        if (attrs.glVertexArray) {
-            gl.bindVertexArray(null);
-        }
-        STACK_PROGRAM.pop();
-    }
-    /**
-     * Perform multiple draws to this target with the same command, but multiple
-     * attributes and command properties. The properties are passed to the
-     * command's uniform or texture callbacks, if used.
-     */
-    batch(cmd, cb) {
-        const { dev: { gl, [SYM_STACK_PROGRAM]: STACK_PROGRAM } } = this;
-        const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
-        // The price for gl.useProgram, enabling depth/stencil tests and
-        // blending is paid only once for all draw calls in batch.
-        STACK_PROGRAM.push(glProgram);
-        this.depth(depthDescr);
-        this.stencil(stencilDescr);
-        this.blend(blendDescr);
-        let iter = 0;
-        let currVao = null;
-        // Since we are not cleaning after ourselves within the batch and we
-        // check for vao change each iteration, we need to initialize
-        // the first value
-        gl.bindVertexArray(null);
-        cb((attrs, props) => {
-            this.textures(textureAccessors, props, iter);
-            this.uniforms(uniformDescrs, props, iter);
-            iter++;
-            const vao = attrs.glVertexArray;
-            if (vao !== currVao) {
-                gl.bindVertexArray(vao);
-                currVao = vao;
-            }
+        this.with(() => {
+            this.depth(depthDescr);
+            this.stencil(stencilDescr);
+            this.blend(blendDescr);
+            stackProgram.push(glProgram);
+            this.textures(textureAccessors, props, 0);
+            this.uniforms(uniformDescrs, props, 0);
+            // Note that attrs.glVertexArray may be null for empty attrs -> ok
+            stackVertexArray.push(attrs.glVertexArray);
             if (attrs.indexed) {
                 this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
                 attrs.instanceCount);
@@ -442,12 +409,49 @@ class Target {
                 this.drawArrays(attrs.primitive, attrs.count, 0, // offset
                 attrs.instanceCount);
             }
+            stackVertexArray.pop();
+            stackProgram.pop();
         });
-        // If we bound something, we need to unbind it now
-        if (currVao) {
-            gl.bindVertexArray(null);
-        }
-        STACK_PROGRAM.pop();
+    }
+    /**
+     * Perform multiple draws to this target with the same command, but multiple
+     * attributes and command properties. The properties are passed to the
+     * command's uniform or texture callbacks, if used.
+     *
+     * All drawing should be performed within the callback to prevent
+     * unnecesasry rebinding.
+     */
+    batch(cmd, cb) {
+        const { dev: { [SYM_STACK_PROGRAM]: stackProgram, [SYM_STACK_VERTEX_ARRAY]: stackVertexArray, }, } = this;
+        const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
+        // The price for gl.useProgram, enabling depth/stencil tests and
+        // blending is paid only once for all draw calls in batch, unless API
+        // is badly abused and the draw() callback is called outside ot batch()
+        this.with(() => {
+            stackProgram.push(glProgram);
+            this.depth(depthDescr);
+            this.stencil(stencilDescr);
+            this.blend(blendDescr);
+            let iter = 0;
+            cb((attrs, props) => {
+                this.textures(textureAccessors, props, iter);
+                this.uniforms(uniformDescrs, props, iter);
+                iter++;
+                stackProgram.push(glProgram);
+                stackVertexArray.push(attrs.glVertexArray);
+                if (attrs.indexed) {
+                    this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
+                    attrs.instanceCount);
+                }
+                else {
+                    this.drawArrays(attrs.primitive, attrs.count, 0, // offset
+                    attrs.instanceCount);
+                }
+                stackVertexArray.pop();
+                stackProgram.pop();
+            });
+            stackProgram.pop();
+        });
     }
     drawArrays(primitive, count, offset, instanceCount) {
         const gl = this.dev.gl;
@@ -635,6 +639,20 @@ function createDebugFunc(gl, key) {
         return gl[key].apply(gl, arguments);
     };
 }
+function eqNumberArrays(left, right) {
+    if (left === right) {
+        return true;
+    }
+    if (left.length !== right.length) {
+        return false;
+    }
+    for (let i = 0; i < left.length; i++) {
+        if (left[i] !== right[i]) {
+            return false;
+        }
+    }
+    return true;
+}
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
@@ -743,13 +761,13 @@ class Command {
      * Force command reinitialization.
      */
     init() {
-        const { dev: { gl, [SYM_STACK_PROGRAM]: STACK_PROGRAM }, vsSource, fsSource, textures, uniforms, } = this;
+        const { dev: { gl, [SYM_STACK_PROGRAM]: stackProgram }, vsSource, fsSource, textures, uniforms, } = this;
         const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
         const prog = createProgram(gl, vs, fs);
         gl.deleteShader(vs);
         gl.deleteShader(fs);
-        STACK_PROGRAM.push(prog);
+        stackProgram.push(prog);
         // Texture declarations are evaluated in two phases:
         // 1) Sampler location offsets are sent to the shader eagerly
         // 2) Textures are bound to the locations at draw time
@@ -883,7 +901,7 @@ class Command {
                 uniformDescrs.push(new UniformDescriptor(ident, loc, u));
             }
         });
-        STACK_PROGRAM.pop();
+        stackProgram.pop();
         this.glProgram = prog;
         this.textureAccessors = textureAccessors;
         this.uniformDescrs = uniformDescrs;
@@ -1302,8 +1320,7 @@ class Attributes {
      * gl calls, only remembers the count for `gl.drawArrays()`
      */
     static create(dev, primitive, count) {
-        const gl = dev.gl;
-        return new Attributes(gl, primitive, [], count, 0);
+        return new Attributes(dev, primitive, [], count, 0);
     }
     /**
      * Create new attributes with primitive and attribute definitions.
@@ -1311,7 +1328,6 @@ class Attributes {
      * or have enough information to create a vertex buffer.
      */
     static withBuffers(dev, primitive, attributes) {
-        const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
             if (!INT_PATTERN$1.test(locationStr)) {
@@ -1331,7 +1347,7 @@ class Attributes {
                 .map(attr => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
-        return new Attributes(gl, primitive, attrs, count, instanceCount);
+        return new Attributes(dev, primitive, attrs, count, instanceCount);
     }
     /**
      * Create new attributes with element and attribute definitions.
@@ -1341,7 +1357,6 @@ class Attributes {
      * or have enough information to create an element buffer.
      */
     static withIndexedBuffers(dev, elements, attributes) {
-        const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
             if (!INT_PATTERN$1.test(locationStr)) {
@@ -1366,10 +1381,10 @@ class Attributes {
                 .map(attr => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
-        return new Attributes(gl, elementBuffer.primitive, attrs, count, instanceCount, elementBuffer);
+        return new Attributes(dev, elementBuffer.primitive, attrs, count, instanceCount, elementBuffer);
     }
-    constructor(gl, primitive, attributes, count, instanceCount, elements) {
-        this.gl = gl;
+    constructor(dev, primitive, attributes, count, instanceCount, elements) {
+        this.dev = dev;
         this.primitive = primitive;
         this.elementBuffer = elements;
         this.attributes = attributes;
@@ -1393,9 +1408,9 @@ class Attributes {
         if (this.isEmpty()) {
             return;
         }
-        const { gl, attributes, elementBuffer } = this;
+        const { dev: { gl, [SYM_STACK_VERTEX_ARRAY]: stackVertexArray }, attributes, elementBuffer, } = this;
         const vao = gl.createVertexArray();
-        gl.bindVertexArray(vao);
+        stackVertexArray.push(vao);
         attributes.forEach(({ location, type, buffer: { glBuffer, type: glBufferType }, size, normalized = false, divisor, }) => {
             // Enable sending attribute arrays for location
             gl.enableVertexAttribArray(location);
@@ -1417,7 +1432,7 @@ class Attributes {
         if (elementBuffer) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
         }
-        gl.bindVertexArray(null);
+        stackVertexArray.pop(vao);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         if (elementBuffer) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -1429,7 +1444,7 @@ class Attributes {
      * to reinitialize vertex buffer and element buffer dependencies.
      */
     restore() {
-        const { gl, glVertexArray, attributes, elementBuffer } = this;
+        const { dev: { gl }, glVertexArray, attributes, elementBuffer } = this;
         if (elementBuffer) {
             elementBuffer.restore();
         }
@@ -1709,9 +1724,9 @@ class Framebuffer {
      * Force framebuffer reinitialization.
      */
     init() {
-        const { width, height, dev, dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: STACK_DRAW_FRAMEBUFFER }, glColorAttachments, colors, depthStencil, depthOnly, } = this;
+        const { width, height, dev, dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: stackDrawFramebuffer }, glColorAttachments, colors, depthStencil, depthOnly, } = this;
         const fbo = gl.createFramebuffer();
-        STACK_DRAW_FRAMEBUFFER.push(fbo);
+        stackDrawFramebuffer.push(fbo);
         colors.forEach((buffer, i) => {
             gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
         });
@@ -1719,7 +1734,7 @@ class Framebuffer {
             gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil, 0);
         }
         const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
-        STACK_DRAW_FRAMEBUFFER.pop();
+        stackDrawFramebuffer.pop();
         if (status !== gl.FRAMEBUFFER_COMPLETE) {
             gl.deleteFramebuffer(fbo);
             throw new Error("Framebuffer not complete");

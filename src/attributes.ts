@@ -1,6 +1,6 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
-import { Device } from "./device";
+import { Device, SYM_STACK_VERTEX_ARRAY } from "./device";
 import { Primitive, DataType } from "./types";
 import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
 import {
@@ -91,8 +91,7 @@ export class Attributes {
         primitive: Primitive,
         count: number,
     ): Attributes {
-        const gl = dev.gl;
-        return new Attributes(gl, primitive, [], count, 0);
+        return new Attributes(dev, primitive, [], count, 0);
     }
 
     /**
@@ -105,7 +104,6 @@ export class Attributes {
         primitive: Primitive,
         attributes: AttributesConfig,
     ): Attributes {
-        const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
                 if (!INT_PATTERN.test(locationStr)) {
@@ -128,7 +126,7 @@ export class Attributes {
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
 
-        return new Attributes(gl, primitive, attrs, count, instanceCount);
+        return new Attributes(dev, primitive, attrs, count, instanceCount);
     }
 
     /**
@@ -143,7 +141,6 @@ export class Attributes {
         elements: ElementArray | ElementBuffer<ElementBufferType>,
         attributes: AttributesConfig,
     ): Attributes {
-        const gl = dev.gl;
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
                 if (!INT_PATTERN.test(locationStr)) {
@@ -173,7 +170,7 @@ export class Attributes {
             : 0;
 
         return new Attributes(
-            gl,
+            dev,
             elementBuffer.primitive,
             attrs,
             count,
@@ -189,21 +186,21 @@ export class Attributes {
 
     readonly glVertexArray: WebGLVertexArrayObject | null;
 
-    private gl: WebGL2RenderingContext;
+    private dev: Device;
 
     // The buffers
     private attributes: AttributeDescriptor[];
     private elementBuffer?: ElementBuffer<ElementBufferType>;
 
     private constructor(
-        gl: WebGL2RenderingContext,
+        dev: Device,
         primitive: Primitive,
         attributes: AttributeDescriptor[],
         count: number,
         instanceCount: number,
         elements?: ElementBuffer<ElementBufferType> | undefined,
     ) {
-        this.gl = gl;
+        this.dev = dev;
         this.primitive = primitive;
         this.elementBuffer = elements;
         this.attributes = attributes;
@@ -230,10 +227,15 @@ export class Attributes {
         // Do not create the gl vao if there are no buffers to bind
         if (this.isEmpty()) { return; }
 
-        const { gl, attributes, elementBuffer } = this;
+        const {
+            dev: { gl, [SYM_STACK_VERTEX_ARRAY]: stackVertexArray },
+            attributes,
+            elementBuffer,
+        } = this;
         const vao = gl.createVertexArray();
 
-        gl.bindVertexArray(vao);
+        stackVertexArray.push(vao);
+
         attributes.forEach(({
             location,
             type,
@@ -276,7 +278,7 @@ export class Attributes {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
         }
 
-        gl.bindVertexArray(null);
+        stackVertexArray.pop(vao);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         if (elementBuffer) {
@@ -291,7 +293,7 @@ export class Attributes {
      * to reinitialize vertex buffer and element buffer dependencies.
      */
     restore(): void {
-        const { gl, glVertexArray, attributes, elementBuffer } = this;
+        const { dev: { gl }, glVertexArray, attributes, elementBuffer } = this;
         if (elementBuffer) { elementBuffer.restore(); }
         attributes.forEach(attr => attr.buffer.restore());
         // If we have no attributes nor elements, there is no need to restore

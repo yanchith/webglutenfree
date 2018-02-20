@@ -149,7 +149,7 @@ export class Framebuffer {
             width,
             height,
             dev,
-            dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: STACK_DRAW_FRAMEBUFFER },
+            dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: stackDrawFramebuffer },
             glColorAttachments,
             colors,
             depthStencil,
@@ -158,7 +158,7 @@ export class Framebuffer {
 
         const fbo = gl.createFramebuffer();
 
-        STACK_DRAW_FRAMEBUFFER.push(fbo);
+        stackDrawFramebuffer.push(fbo);
 
         colors.forEach((buffer, i) => {
             gl.framebufferTexture2D(
@@ -182,7 +182,7 @@ export class Framebuffer {
 
         const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
 
-        STACK_DRAW_FRAMEBUFFER.pop();
+        stackDrawFramebuffer.pop();
 
         if (status !== gl.FRAMEBUFFER_COMPLETE) {
             gl.deleteFramebuffer(fbo);
