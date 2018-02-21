@@ -320,9 +320,9 @@ export class Command<P> {
     }
 
     readonly glProgram: WebGLProgram | null;
-    readonly depthDescr?: DepthDescriptor;
-    readonly stencilDescr?: StencilDescriptor;
-    readonly blendDescr?: BlendDescriptor;
+    readonly depthDescr: DepthDescriptor | null;
+    readonly stencilDescr: StencilDescriptor | null;
+    readonly blendDescr: BlendDescriptor | null;
     readonly textureAccessors: TextureAccessor<P>[];
     readonly uniformDescrs: UniformDescriptor<P>[];
 
@@ -347,9 +347,9 @@ export class Command<P> {
         this.fsSource = fsSource;
         this.textures = textures;
         this.uniforms = uniforms;
-        this.depthDescr = depthDescr;
-        this.stencilDescr = stencilDescr;
-        this.blendDescr = blendDescr;
+        this.depthDescr = depthDescr || null;
+        this.stencilDescr = stencilDescr || null;
+        this.blendDescr = blendDescr || null;
         this.glProgram = null;
         this.textureAccessors = [];
         this.uniformDescrs = [];
@@ -564,6 +564,16 @@ export class Command<P> {
 }
 
 export class DepthDescriptor {
+    static equals(left: DepthDescriptor | null, right: DepthDescriptor | null) {
+        if (left === right) { return true; }
+        if (!left || !right) { return false; }
+        if (left.func !== right.func) { return false; }
+        if (left.mask !== right.mask) { return false; }
+        if (left.rangeStart !== right.rangeStart) { return false; }
+        if (left.rangeEnd !== right.rangeEnd) { return false; }
+        return true;
+    }
+
     constructor(
         readonly func: number,
         readonly mask: boolean,
@@ -573,11 +583,34 @@ export class DepthDescriptor {
 }
 
 export class StencilDescriptor {
+    static equals(
+        left: StencilDescriptor | null,
+        right: StencilDescriptor | null,
+    ) {
+        if (left === right) { return true; }
+        if (!left || !right) { return false; }
+        if (left.fFunc !== right.fFunc) { return false; }
+        if (left.bFunc !== right.bFunc) { return false; }
+        if (left.fFuncRef !== right.fFuncRef) { return false; }
+        if (left.bFuncRef !== right.bFuncRef) { return false; }
+        if (left.fFuncMask !== right.fFuncMask) { return false; }
+        if (left.bFuncMask !== right.bFuncMask) { return false; }
+        if (left.fMask !== right.fMask) { return false; }
+        if (left.bMask !== right.bMask) { return false; }
+        if (left.fOpFail !== right.fOpFail) { return false; }
+        if (left.bOpFail !== right.bOpFail) { return false; }
+        if (left.fOpZFail !== right.fOpZFail) { return false; }
+        if (left.bOpZFail !== right.bOpZFail) { return false; }
+        if (left.fOpZPass !== right.fOpZPass) { return false; }
+        if (left.bOpZPass !== right.bOpZPass) { return false; }
+        return true;
+    }
+
     constructor(
         readonly fFunc: number,
         readonly bFunc: number,
         readonly fFuncRef: number,
-        readonly bfuncRef: number,
+        readonly bFuncRef: number,
         readonly fFuncMask: number,
         readonly bFuncMask: number,
         readonly fMask: number,
@@ -592,13 +625,31 @@ export class StencilDescriptor {
 }
 
 export class BlendDescriptor {
+    static equals(left: BlendDescriptor | null, right: BlendDescriptor | null) {
+        if (left === right) { return true; }
+        if (!left || !right) { return false; }
+        if (left.srcRGB !== right.srcRGB) { return false; }
+        if (left.srcAlpha !== right.srcAlpha) { return false; }
+        if (left.dstRGB !== right.dstRGB) { return false; }
+        if (left.dstAlpha !== right.dstAlpha) { return false; }
+        if (left.eqnRGB !== right.eqnRGB) { return false; }
+        if (left.eqnAlpha !== right.eqnAlpha) { return false; }
+        if (left.color === right.color) { return true; }
+        if (!left.color || !right.color) { return false; }
+        if (left.color[0] !== right.color[0]) { return false; }
+        if (left.color[1] !== right.color[1]) { return false; }
+        if (left.color[2] !== right.color[2]) { return false; }
+        if (left.color[3] !== right.color[3]) { return false; }
+        return true;
+    }
+
     constructor(
         readonly srcRGB: number,
         readonly srcAlpha: number,
         readonly dstRGB: number,
         readonly dstAlpha: number,
-        readonly equationRGB: number,
-        readonly equationAlpha: number,
+        readonly eqnRGB: number,
+        readonly eqnAlpha: number,
         readonly color?: [number, number, number, number],
     ) { }
 }

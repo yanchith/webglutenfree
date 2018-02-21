@@ -18,7 +18,11 @@ const process = {
     },
 };
 
-export function nonNull<T>(p: T, name?: string, msg?: string): void {
+export function nonNull<T>(
+    p: T | null | undefined,
+    name?: string,
+    msg?: string,
+): void {
     if (process.env.NODE_ENV !== "production") {
         if (typeof p === "undefined" || typeof p === "object" && !p) {
             throw new Error(msg || fmt(`object ${name || ""} ${p}`));
@@ -26,7 +30,11 @@ export function nonNull<T>(p: T, name?: string, msg?: string): void {
     }
 }
 
-export function nonEmpty<T>(p: T[], name?: string, msg?: string): void {
+export function nonEmpty<T>(
+    p: T[] | null | undefined,
+    name?: string,
+    msg?: string,
+): void {
     if (process.env.NODE_ENV !== "production") {
         if (!p || !p.length) {
             throw new Error(msg || fmt(`array ${name || ""} empty`));

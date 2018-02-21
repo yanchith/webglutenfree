@@ -14,9 +14,7 @@ import { Framebuffer } from "./framebuffer";
 
 export const SYM_STACK_PROGRAM = Symbol();
 export const SYM_STACK_VERTEX_ARRAY = Symbol();
-export const SYM_STACK_READ_FRAMEBUFFER = Symbol();
 export const SYM_STACK_DRAW_FRAMEBUFFER = Symbol();
-export const SYM_STACK_DRAW_BUFFERS = Symbol();
 
 export interface DeviceMountOptions {
     element?: HTMLElement;
@@ -152,14 +150,18 @@ export class Device {
 
     readonly [SYM_STACK_PROGRAM]: Stack<WebGLProgram | null>;
     readonly [SYM_STACK_VERTEX_ARRAY]: Stack<WebGLVertexArrayObject | null>;
-    readonly [SYM_STACK_READ_FRAMEBUFFER]: Stack<WebGLFramebuffer | null>;
     readonly [SYM_STACK_DRAW_FRAMEBUFFER]: Stack<WebGLFramebuffer | null>;
-    readonly [SYM_STACK_DRAW_BUFFERS]: Stack<number[]>;
 
     private explicitPixelRatio?: number;
     private explicitViewport?: [number, number];
 
     private backbufferTarget: Target;
+
+    private stackDepthTest: Stack<DepthDescriptor | null>;
+    private stackStencilTest: Stack<StencilDescriptor | null>;
+    private stackBlend: Stack<BlendDescriptor | null>;
+    private stackReadFramebuffer: Stack<WebGLFramebuffer | null>;
+    private stackDrawBuffers: Stack<number[]>;
 
     private constructor(
         gl: WebGL2RenderingContext,
@@ -173,6 +175,92 @@ export class Device {
         this.explicitViewport = explicitViewport;
         this.backbufferTarget = new Target(this, [gl.BACK], null);
 
+        this.stackDepthTest = new Stack<DepthDescriptor | null>(
+            null,
+            (prev, val) => {
+                if (!DepthDescriptor.equals(prev, val)) {
+                    if (val) {
+                        gl.enable(gl.DEPTH_TEST);
+                        gl.depthFunc(val.func);
+                        gl.depthMask(val.mask);
+                        gl.depthRange(val.rangeStart, val.rangeEnd);
+                    } else { gl.disable(gl.DEPTH_TEST); }
+                }
+            },
+        );
+
+        this.stackStencilTest = new Stack<StencilDescriptor | null>(
+            null,
+            (prev, val) => {
+                if (!StencilDescriptor.equals(prev, val)) {
+                    if (val) {
+                        const {
+                            fFunc,
+                            bFunc,
+                            fFuncRef,
+                            bFuncRef,
+                            fFuncMask,
+                            bFuncMask,
+                            fMask,
+                            bMask,
+                            fOpFail,
+                            bOpFail,
+                            fOpZFail,
+                            bOpZFail,
+                            fOpZPass,
+                            bOpZPass,
+                        } = val;
+                        gl.enable(gl.STENCIL_TEST);
+                        gl.stencilFuncSeparate(gl.FRONT, fFunc, fFuncRef, fFuncMask);
+                        gl.stencilFuncSeparate(gl.BACK, bFunc, bFuncRef, bFuncMask);
+                        gl.stencilMaskSeparate(gl.FRONT, fMask);
+                        gl.stencilMaskSeparate(gl.BACK, bMask);
+                        gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
+                        gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
+                    } else { gl.disable(gl.STENCIL_TEST); }
+                }
+            },
+        );
+
+        this.stackBlend = new Stack<BlendDescriptor | null>(
+            null,
+            (prev, val) => {
+                if (!BlendDescriptor.equals(prev, val)) {
+                    if (val) {
+                        gl.enable(gl.BLEND);
+                        gl.blendFuncSeparate(
+                            val.srcRGB,
+                            val.dstRGB,
+                            val.srcAlpha,
+                            val.dstAlpha,
+                        );
+                        gl.blendEquationSeparate(
+                            val.eqnRGB,
+                            val.eqnAlpha,
+                        );
+                        if (val.color) {
+                            const [r, g, b, a] = val.color;
+                            gl.blendColor(r, g, b, a);
+                        }
+                    } else { gl.disable(gl.BLEND); }
+                }
+            },
+        );
+
+        this.stackReadFramebuffer = new Stack<WebGLFramebuffer | null>(
+            null,
+            (prev, val) => prev === val
+                ? void 0
+                : gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val),
+        );
+
+        this.stackDrawBuffers = new Stack<number[]>(
+            [gl.BACK],
+            (prev, val) => eqNumberArrays(prev, val)
+                ? void 0
+                : gl.drawBuffers(val),
+        );
+
         this[SYM_STACK_PROGRAM] = new Stack<WebGLProgram | null>(
             null,
             (prev, val) => prev === val ? void 0 : gl.useProgram(val),
@@ -183,25 +271,11 @@ export class Device {
             (prev, val) => prev === val ? void 0 : gl.bindVertexArray(val),
         );
 
-        this[SYM_STACK_READ_FRAMEBUFFER] = new Stack<WebGLFramebuffer | null>(
-            null,
-            (prev, val) => prev === val
-                ? void 0
-                : gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val),
-        );
-
         this[SYM_STACK_DRAW_FRAMEBUFFER] = new Stack<WebGLFramebuffer | null>(
             null,
             (prev, val) => prev === val
                 ? void 0
                 : gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val),
-        );
-
-        this[SYM_STACK_DRAW_BUFFERS] = new Stack<number[]>(
-            [gl.BACK],
-            (prev, val) => eqNumberArrays(prev, val)
-                ? void 0
-                : gl.drawBuffers(val),
         );
     }
 
@@ -312,8 +386,8 @@ export class Target {
         const {
             dev: {
                 gl,
+                stackDrawBuffers,
                 [SYM_STACK_DRAW_FRAMEBUFFER]: stackDrawFramebuffer,
-                [SYM_STACK_DRAW_BUFFERS]: stackDrawBuffers,
             },
             glFramebuffer,
             glDrawBuffers,
@@ -340,7 +414,7 @@ export class Target {
      */
     blit(source: Framebuffer, bits: BufferBits): void {
         const {
-            dev: { gl, [SYM_STACK_READ_FRAMEBUFFER]: stackReadFramebuffer },
+            dev: { gl, stackReadFramebuffer },
             width,
             height,
         } = this;
@@ -390,6 +464,9 @@ export class Target {
     draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void {
         const {
             dev: {
+                stackDepthTest,
+                stackStencilTest,
+                stackBlend,
                 [SYM_STACK_PROGRAM]: stackProgram,
                 [SYM_STACK_VERTEX_ARRAY]: stackVertexArray,
             },
@@ -404,10 +481,9 @@ export class Target {
         } = cmd;
 
         this.with(() => {
-            this.depth(depthDescr);
-            this.stencil(stencilDescr);
-            this.blend(blendDescr);
-
+            stackDepthTest.push(depthDescr);
+            stackStencilTest.push(stencilDescr);
+            stackBlend.push(blendDescr);
             stackProgram.push(glProgram);
 
             this.textures(textureAccessors, props, 0);
@@ -433,6 +509,10 @@ export class Target {
             }
 
             stackVertexArray.pop();
+
+            stackBlend.pop();
+            stackStencilTest.pop();
+            stackDepthTest.pop();
             stackProgram.pop();
         });
     }
@@ -451,6 +531,9 @@ export class Target {
     ): void {
         const {
             dev: {
+                stackDepthTest,
+                stackStencilTest,
+                stackBlend,
                 [SYM_STACK_PROGRAM]: stackProgram,
                 [SYM_STACK_VERTEX_ARRAY]: stackVertexArray,
             },
@@ -468,24 +551,33 @@ export class Target {
         // blending is paid only once for all draw calls in batch, unless API
         // is badly abused and the draw() callback is called outside ot batch()
 
-        this.with(() => {
-            stackProgram.push(glProgram);
+        // Perform shared batch setup
 
-            this.depth(depthDescr);
-            this.stencil(stencilDescr);
-            this.blend(blendDescr);
+        stackDepthTest.push(depthDescr);
+        stackStencilTest.push(stencilDescr);
+        stackBlend.push(blendDescr);
+        stackProgram.push(glProgram);
 
-            let iter = 0;
+        let iter = 0;
 
-            cb((attrs: Attributes, props: P) => {
-                this.textures(textureAccessors, props, iter);
-                this.uniforms(uniformDescrs, props, iter);
+        cb((attrs: Attributes, props: P) => {
+            // with() ensures the original target is still bound
+            this.with(() => {
                 iter++;
 
                 // TODO: find a way to restore vertex array rebinding
                 // optimization
 
+                // Ensure the shared setup still holds
+
+                stackDepthTest.push(depthDescr);
+                stackStencilTest.push(stencilDescr);
+                stackBlend.push(blendDescr);
                 stackProgram.push(glProgram);
+
+                this.textures(textureAccessors, props, iter);
+                this.uniforms(uniformDescrs, props, iter);
+
                 stackVertexArray.push(attrs.glVertexArray);
 
                 if (attrs.indexed) {
@@ -506,11 +598,18 @@ export class Target {
                 }
 
                 stackVertexArray.pop();
-                stackProgram.pop();
-            });
 
-            stackProgram.pop();
+                stackProgram.pop();
+                stackBlend.pop();
+                stackStencilTest.pop();
+                stackDepthTest.pop();
+            });
         });
+
+        stackProgram.pop();
+        stackBlend.pop();
+        stackStencilTest.pop();
+        stackDepthTest.pop();
     }
 
     private drawArrays(
@@ -556,66 +655,6 @@ export class Target {
                 offset,
             );
         }
-    }
-
-    private depth(depthDescr?: DepthDescriptor): void {
-        const gl = this.dev.gl;
-        if (depthDescr) {
-            gl.enable(gl.DEPTH_TEST);
-            gl.depthFunc(depthDescr.func);
-            gl.depthMask(depthDescr.mask);
-            gl.depthRange(depthDescr.rangeStart, depthDescr.rangeEnd);
-        } else { gl.disable(gl.DEPTH_TEST); }
-    }
-
-    private stencil(stencilDescr?: StencilDescriptor): void {
-        const gl = this.dev.gl;
-        if (stencilDescr) {
-            const {
-                fFunc,
-                bFunc,
-                fFuncRef,
-                bfuncRef,
-                fFuncMask,
-                bFuncMask,
-                fMask,
-                bMask,
-                fOpFail,
-                bOpFail,
-                fOpZFail,
-                bOpZFail,
-                fOpZPass,
-                bOpZPass,
-            } = stencilDescr;
-            gl.enable(gl.STENCIL_TEST);
-            gl.stencilFuncSeparate(gl.FRONT, fFunc, fFuncRef, fFuncMask);
-            gl.stencilFuncSeparate(gl.BACK, bFunc, bfuncRef, bFuncMask);
-            gl.stencilMaskSeparate(gl.FRONT, fMask);
-            gl.stencilMaskSeparate(gl.BACK, bMask);
-            gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
-            gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
-        } else { gl.disable(gl.STENCIL_TEST); }
-    }
-
-    private blend(blendDescr?: BlendDescriptor): void {
-        const gl = this.dev.gl;
-        if (blendDescr) {
-            gl.enable(gl.BLEND);
-            gl.blendFuncSeparate(
-                blendDescr.srcRGB,
-                blendDescr.dstRGB,
-                blendDescr.srcAlpha,
-                blendDescr.dstAlpha,
-            );
-            gl.blendEquationSeparate(
-                blendDescr.equationRGB,
-                blendDescr.equationAlpha,
-            );
-            if (blendDescr.color) {
-                const [r, g, b, a] = blendDescr.color;
-                gl.blendColor(r, g, b, a);
-            }
-        } else { gl.disable(gl.BLEND); }
     }
 
     private textures<P>(

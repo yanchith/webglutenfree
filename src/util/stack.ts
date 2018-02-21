@@ -1,6 +1,7 @@
 import * as assert from "./assert";
 
-export type ChangeCallback<T> = (prevValue: T, newValue: T) => void;
+export type Op = "push" | "pop";
+export type ChangeCallback<T> = (prevValue: T, newValue: T, op: Op) => void;
 
 export class Stack<T> {
 
@@ -13,14 +14,14 @@ export class Stack<T> {
     }
 
     push(value: T): void {
-        this.onChange(this.peek(), value);
+        this.onChange(this.peek(), value, "push");
         this.s.push(value);
     }
 
     pop(): T {
         assert.nonEmpty(this.s, "Stack must not be empty for pop");
         const prevValue = this.s.pop()!;
-        this.onChange(prevValue, this.peek());
+        this.onChange(prevValue, this.peek(), "pop");
         return prevValue;
     }
 
