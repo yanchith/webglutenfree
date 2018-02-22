@@ -2,11 +2,13 @@
 
 We serve your draw calls type-safe and gluten-free.
 
-Webglutenfree is a lightweight, high-level abstraction layer on top of WebGL2
-that removes gl state machine from the equation. The library encourages init
-time creation for all drawing resources (`Command`s, `Attributes`, `Texture`s,
-`Framebuffer`s, etc.). Drawing is done by requesting a render `Target` and
-executing draw commands on it.
+Webglutenfree is a lightweight, high-level abstraction layer on top of WebGL2.
+We decided to bake this one without internal ~~gluten~~ state, letting everyone
+enjoy WebGL without worrying too much about their health.
+
+The library encourages init time creation for all drawing resources (`Command`s,
+`Attributes`, `Texture`s, `Framebuffer`s, etc.). Drawing is done by requesting a
+render `Target` and executing draw commands with it.
 
 Webglutenfree tries not only to be safe and simple to use while adding minimal
 overhead, but also guide users down the more performant path.
