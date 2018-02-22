@@ -1,6 +1,6 @@
 {
   "name": "webglutenfree",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "We serve your draw calls type-safe and gluten-free",
   "keywords": [
     "webgl",
