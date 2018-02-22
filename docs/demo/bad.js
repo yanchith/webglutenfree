@@ -260,11 +260,13 @@ dev.target(rt => devRt = rt);
 
 const loop = time => {
     // Render geometry into texture
-    initialRt.clear(BufferBits.COLOR);
-    initialRt.draw(scene, cubeAttrs, { time });
+    dev.target(rt => {
+        initialRt.clear(BufferBits.COLOR);
+        initialRt.draw(scene, cubeAttrs, { time });
 
-    // Split color and brightness to 2 render targets (splitColor, splitBright)
-    splitRt.draw(split, screenspaceAttrs);
+        // Split color and brightness to 2 render targets (splitColor, splitBright)
+        splitRt.draw(split, screenspaceAttrs);
+    });
 
     if (nBloomPasses) {
         // Do first 2 bloom passes: splitBright -> bloomWrite -> bloomRead
