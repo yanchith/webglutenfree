@@ -10,6 +10,9 @@ import {
 } from "./lib/webglutenfree.es.js";
 
 const MAX_ITERS = 1 << 8;
+const ESCAPE_THRESHOLD = 2.0;
+const REAL_DOMAIN = [-1.20, -1];
+const IMAG_DOMAIN = [0.20, 0.35];
 
 const dev = Device.mount({
     extensions: ["EXT_color_buffer_float"],
@@ -60,6 +63,7 @@ const cmdCompute = Command.create(
         precision mediump float;
 
         uniform uint u_tick;
+        uniform float u_escape_threshold;
         uniform vec2 u_re_domain, u_im_domain;
         uniform sampler2D u_prev_val, u_prev_esc;
 
@@ -115,7 +119,7 @@ const cmdCompute = Command.create(
                 );
                 vec2 val = escape(c, prev_val);
                 uint esc = 0u;
-                if (length(val) > 2.0) {
+                if (length(val) > u_escape_threshold) {
                     esc = u_tick;
                 }
                 f_val = val;
@@ -138,11 +142,15 @@ const cmdCompute = Command.create(
             },
             u_re_domain: {
                 type: "2f",
-                value: [-1.20, -1],
+                value: REAL_DOMAIN,
             },
             u_im_domain: {
                 type: "2f",
-                value: [0.20, 0.35],
+                value: IMAG_DOMAIN,
+            },
+            u_escape_threshold: {
+                type: "1f",
+                value: ESCAPE_THRESHOLD,
             },
         },
     },
