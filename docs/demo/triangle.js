@@ -1,9 +1,4 @@
-import {
-    Device,
-    Command,
-    Attributes,
-    Primitive,
-} from "./lib/webglutenfree.es.js";
+import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.js";
 
 const dev = Device.mount();
 
@@ -35,23 +30,19 @@ const cmd = Command.create(
     `,
 );
 
-const attrs = Attributes.withBuffers(
-    dev,
-    Primitive.TRIANGLES,
-    {
-        0: [
-            [-0.3, -0.5],
-            [0.3, -0.5],
-            [0, 0.5],
-        ],
-        1: [
-            [1, 0, 0, 1],
-            [0, 1, 0, 1],
-            [0, 0, 1, 1],
-        ],
-    },
-);
+const attrs = Attributes.withBuffers(dev, Primitive.TRIANGLES, {
+    0: [
+        [-0.3, -0.5],
+        [0.3, -0.5],
+        [0, 0.5],
+    ],
+    1: [
+        [1, 0, 0, 1],
+        [0, 1, 0, 1],
+        [0, 0, 1, 1],
+    ],
+});
 
 dev.target(rt => {
     rt.draw(cmd, attrs);
-});
+})

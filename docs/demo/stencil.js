@@ -6,9 +6,12 @@ import {
     DepthFunc,
     StencilFunc,
     StencilOp,
-} from "./lib/webglutenfree.es.js";
-import * as cube from "./lib/cube.js"
-import * as bunny from "./lib/bunny.js"
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./lib/gl-matrix-min.js";
+
+import * as cube from "./lib/cube.js";
+import * as bunny from "./lib/bunny.js";
+import * as teapot from "./lib/teapot.js";
 
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -23,7 +26,7 @@ const projection = mat4.perspective(
 
 const view = mat4.create();
 
-const drawObjects = Command.create(
+const cmdDraw = Command.create(
     dev,
     `#version 300 es
         precision mediump float;
@@ -60,7 +63,7 @@ const drawObjects = Command.create(
         uniforms: {
             u_model: {
                 type: "matrix4fv",
-                value: ({ model }) => model,
+                value: ({ matrix }) => matrix,
             },
             u_view: {
                 type: "matrix4fv",
@@ -93,7 +96,7 @@ const drawObjects = Command.create(
     },
 );
 
-const drawOutlines = Command.create(
+const cmdDrawOutlines = Command.create(
     dev,
     `#version 300 es
         precision mediump float;
@@ -124,7 +127,7 @@ const drawOutlines = Command.create(
         uniforms: {
             u_model: {
                 type: "matrix4fv",
-                value: ({ model }) => model,
+                value: ({ matrix }) => matrix,
             },
             u_view: {
                 type: "matrix4fv",
@@ -151,39 +154,43 @@ const drawOutlines = Command.create(
     },
 );
 
-const cubeAttrs = Attributes.withIndexedBuffers(
-    dev,
-    cube.elements,
-    drawObjects.locate({ a_position: cube.positions }),
-);
+const models = [teapot, bunny, cube];
 
-const bunnyAttrs = Attributes.withIndexedBuffers(
-    dev,
-    bunny.elements,
-    drawObjects.locate({ a_position: bunny.positions }),
-);
+const objs = models.map((m, i) => {
+    const angle = i / models.length * 2 * Math.PI;
+    const scale = (i + 1) * 0.1;
+    const matrix = mat4.fromRotation(mat4.create(), angle, [0, 1, 0]);
+    mat4.translate(matrix, matrix, [2, 0, 0]);
+    mat4.scale(matrix, matrix, [scale, scale, scale]);
+    return {
+        matrix,
+        attrs: Attributes.withIndexedBuffers(
+            dev,
+            m.elements,
+            { 0: m.positions },
+        ),
+    };
+});
 
-const cubeModel = mat4.fromScaling(mat4.create(), [0.5, 0.5, 0.5]);
-const bunnyModel = mat4.fromRotationTranslationScale(
-    mat4.create(),
-    quat.fromEuler(quat.create(), 0, 120, 0),
-    [-3, 0, 0],
-    [0.2, 0.2, 0.2],
-);
-
-const cubeOutlnModel = mat4.scale(mat4.create(), cubeModel, [1.04, 1.04, 1.04]);
-const bunnyOutlnModel = mat4.scale(mat4.create(), bunnyModel, [1.04, 1.04, 1.04]);
+const outlineObjs = objs.map(obj => {
+    return {
+        matrix: mat4.scale(mat4.create(), obj.matrix, [1.04, 1.04, 1.04]),
+        attrs: obj.attrs,
+    }
+});
 
 const loop = time => {
     dev.target(rt => {
         rt.clear(BufferBits.COLOR_DEPTH_STENCIL);
-        rt.batch(drawObjects, draw => {
-            draw(cubeAttrs, { time, model: cubeModel });
-            draw(bunnyAttrs, { time, model: bunnyModel });
+        rt.batch(cmdDraw, draw => {
+            objs.forEach(({ attrs, matrix }) => {
+                draw(attrs, { time, matrix });
+            });
         });
-        rt.batch(drawOutlines, draw => {
-            draw(cubeAttrs, { time, model: cubeOutlnModel });
-            draw(bunnyAttrs, { time, model: bunnyOutlnModel });
+        rt.batch(cmdDrawOutlines, draw => {
+            outlineObjs.forEach(({ attrs, matrix }) => {
+                draw(attrs, { time, matrix });
+            });
         });
     });
     window.requestAnimationFrame(loop);

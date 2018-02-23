@@ -7,7 +7,7 @@ import {
     Texture,
     TextureInternalFormat,
     Framebuffer,
-} from "./lib/webglutenfree.es.js";
+} from "./lib/webglutenfree.js";
 
 const MAX_ITERS = 1 << 8;
 const ESCAPE_THRESHOLD = 2.0;
@@ -211,11 +211,12 @@ let tick = 0;
 const loop = time => {
     tick++;
 
+    // Compute using previous values in ping, store to pong
     pong.fbo.target(rt => {
         rt.draw(cmdCompute, attrs, { tick, ping });
     });
 
-    // Lastly copy the contents of pong to canvas
+    // Update canvas based on pong
     dev.target(rt => {
         rt.draw(cmdDraw, attrs, { pong });
     });

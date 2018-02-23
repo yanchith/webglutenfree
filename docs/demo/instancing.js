@@ -5,7 +5,8 @@ import {
     Attributes,
     VertexBuffer,
     DataType,
-} from "./lib/webglutenfree.es.js";
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./lib/gl-matrix-min.js";
 
 const dev = Device.mount();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
@@ -22,8 +23,8 @@ const cmd = Command.create(
         uniform mat4 u_view;
 
         layout (location = 0) in vec2 a_position;
-        layout (location = 1) in vec4 a_color;
-        layout (location = 2) in vec2 a_offset;
+        layout (location = 1) in vec2 a_offset;
+        layout (location = 2) in vec4 a_color;
 
         out vec4 v_vertex_color;
 
@@ -78,14 +79,14 @@ const attrs = Attributes.withIndexedBuffers(
         [0, 3, 2],
         [1, 3, 0],
     ],
-    cmd.locate({
-        a_position: [
+    {
+        0: [
             [1, 1],
             [-1, 1],
             [1, -1],
             [-1, -1],
         ],
-        a_offset: {
+        1: {
             type: "pointer",
             buffer: VertexBuffer.withTypedArray(dev, DataType.FLOAT, [
                 3, 3,
@@ -100,7 +101,7 @@ const attrs = Attributes.withIndexedBuffers(
             size: 2,
             divisor: 1,
         },
-        a_color: {
+        2: {
             type: "pointer",
             buffer: VertexBuffer.withTypedArray(dev, DataType.UNSIGNED_BYTE, [
                 255, 0, 0, 255,
@@ -116,7 +117,7 @@ const attrs = Attributes.withIndexedBuffers(
             normalized: true,
             divisor: 1,
         },
-    }),
+    },
 );
 
 const loop = () => {

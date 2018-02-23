@@ -16,10 +16,14 @@ if (PROD) {
 if (MIN) { plugins.push(pluginUglify({}, minify)); }
 
 
+const prodPart = PROD ? ".production" : "";
+const fmtPart = FMT === "umd" ? ".umd" : "";
+const minPart = MIN ? ".min" : "";
+
 export default {
     input: "build/index.js",
     output: {
-        file: `dist/webglutenfree${PROD ? ".production" : ""}.${FMT}${MIN ? ".min" : ""}.js`,
+        file: `dist/webglutenfree${prodPart}${fmtPart}${minPart}.js`,
         format: FMT,
         name: 'webglutenfree',
         sourcemap: true,

@@ -7,22 +7,29 @@ import {
     Texture,
     TextureInternalFormat,
     Framebuffer,
-} from "./lib/webglutenfree.es.js";
-import * as cube from "./lib/cube.js"
+} from "./lib/webglutenfree.js";
+import { vec2, mat4 } from "./lib/gl-matrix-min.js";
 
-const N_BLOOM_PASSES = 3;
+import * as teapot from "./lib/teapot.js"
 
-const GAUSSIAN = [
-    0.000229,
-    0.005977,
-    0.060598,
-    0.241732,
-    0.382928,
-    0.241732,
-    0.060598,
-    0.005977,
-    0.000229,
-]
+const kernels = {
+    blur3: [0.27901, 0.44198, 0.27901],
+    blur5: [0.06136, 0.24477, 0.38774, 0.24477, 0.06136],
+    blur9: [
+        0.000229,
+        0.005977,
+        0.060598,
+        0.241732,
+        0.382928,
+        0.241732,
+        0.060598,
+        0.005977,
+        0.000229,
+    ],
+}
+
+const N_BLOOM_PASSES = 8;
+const KERNEL = kernels.blur3;
 
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -68,7 +75,7 @@ void main() {
 }
 `;
 
-const scene = Command.create(
+const cmdDraw = Command.create(
     dev,
     `#version 300 es
         precision mediump float;
@@ -103,7 +110,7 @@ const scene = Command.create(
                 type: "matrix4fv",
                 value: ({ time }) => mat4.lookAt(
                     view,
-                    [30 * Math.cos(time / 1000), 5, 30 * Math.sin(time / 1000)],
+                    [200 * Math.cos(time / 1000), 5, 200 * Math.sin(time / 1000)],
                     [0, 0, 0],
                     [0, 1, 0]
                 ),
@@ -122,7 +129,7 @@ const scene = Command.create(
     },
 );
 
-const split = Command.create(
+const cmdSplit = Command.create(
     dev,
     screenspaceVS,
     `#version 300 es
@@ -151,13 +158,13 @@ const split = Command.create(
     },
 );
 
-const bloom = Command.create(
+const cmdBlur = Command.create(
     dev,
     screenspaceVS,
     `#version 300 es
         precision mediump float;
 
-        #define KERNEL_LENGTH ${GAUSSIAN.length}
+        #define KERNEL_LENGTH ${KERNEL.length}
 
         uniform sampler2D u_image;
         uniform float[KERNEL_LENGTH] u_kernel;
@@ -188,7 +195,7 @@ const bloom = Command.create(
         uniforms: {
             u_kernel: {
                 type: "1fv",
-                value: GAUSSIAN,
+                value: KERNEL,
             },
             u_blur_direction: {
                 type: "2f",
@@ -198,7 +205,7 @@ const bloom = Command.create(
     },
 );
 
-const tonemap = Command.create(
+const cmdTonemap = Command.create(
     dev,
     screenspaceVS,
     `#version 300 es
@@ -238,10 +245,10 @@ const tonemap = Command.create(
 
 
 const screenspaceAttrs = Attributes.create(dev, Primitive.TRIANGLES, 3);
-const cubeAttrs = Attributes.withIndexedBuffers(
+const modelAttrs = Attributes.withIndexedBuffers(
     dev,
-    cube.elements,
-    { 0: cube.positions },
+    teapot.elements,
+    { 0: teapot.positions },
 );
 
 
@@ -254,22 +261,22 @@ const loop = time => {
     // Render geometry into texture
     initialFbo.target(rt => {
         rt.clear(BufferBits.COLOR);
-        rt.draw(scene, cubeAttrs, { time });
+        rt.draw(cmdDraw, modelAttrs, { time });
     });
 
-    // Split color and brightness to 2 render targets (splitColor, splitBright)
-    splitFbo.target(rt => rt.draw(split, screenspaceAttrs));
+    // Split color and brightness to 2 textures (splitColor, splitBright)
+    splitFbo.target(rt => rt.draw(cmdSplit, screenspaceAttrs));
 
     if (nBloomPasses) {
-        // Do first 2 bloom passes: splitBright -> bloomWrite -> bloomRead
+        // Do first 2 bloom passes: splitBright -> bloomPong -> bloomPing
         bloomPongFbo.target(rt => {
-            rt.draw(bloom, screenspaceAttrs, {
+            rt.draw(cmdBlur, screenspaceAttrs, {
                 source: splitBrightTex,
                 direction: HORIZONTAL,
             });
         });
         bloomPingFbo.target(rt => {
-            rt.draw(bloom, screenspaceAttrs, {
+            rt.draw(cmdBlur, screenspaceAttrs, {
                 source: bloomPongTex,
                 direction: VERTICAL,
             });
@@ -278,13 +285,13 @@ const loop = time => {
         // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
         for (let i = 1; i < nBloomPasses; i++) {
             bloomPongFbo.target(rt => {
-                rt.draw(bloom, screenspaceAttrs, {
+                rt.draw(cmdBlur, screenspaceAttrs, {
                     source: bloomPingTex,
                     direction: HORIZONTAL,
                 });
             });
             bloomPingFbo.target(rt => {
-                rt.draw(bloom, screenspaceAttrs, {
+                rt.draw(cmdBlur, screenspaceAttrs, {
                     source: bloomPongTex,
                     direction: VERTICAL,
                 });
@@ -294,7 +301,7 @@ const loop = time => {
 
     // Blend together blurred highlights with original color, perform tonemapping
     dev.target(rt => {
-        rt.draw(tonemap, screenspaceAttrs);
+        rt.draw(cmdTonemap, screenspaceAttrs);
     });
 
     window.requestAnimationFrame(loop);

@@ -1,9 +1,4 @@
-import {
-    Device,
-    Command,
-    Attributes,
-    Primitive,
-} from "./lib/webglutenfree.es.js";
+import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.js";
 
 const dev = Device.mount();
 
@@ -42,18 +37,18 @@ const attrs = Attributes.withIndexedBuffers(
         [1, 2],
         [2, 0],
     ],
-    cmd.locate({
-        a_position: [
+    {
+        0: [
             [-0.3, -0.5],
             [0.3, -0.5],
             [0, 0.5],
         ],
-        a_color: [
+        1: [
             [1, 0, 0, 1],
             [0, 1, 0, 1],
             [0, 0, 1, 1],
         ],
-    }),
+    },
 );
 
 dev.target(rt => {

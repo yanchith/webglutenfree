@@ -3,9 +3,11 @@ import {
     Command,
     Attributes,
     Texture,
-} from "./lib/webglutenfree.es.js";
-import * as square from "./lib/square.js"
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./lib/gl-matrix-min.js";
 import { loadImage } from "./lib/load-image.js";
+
+import * as square from "./lib/square.js"
 
 const kernels = {
     normal: [
@@ -35,11 +37,6 @@ const kernels = {
     ],
 };
 
-function computeKernelWeight(kernel) {
-    const weight = kernel.reduce((prev, curr) => prev + curr);
-    return weight <= 0 ? 1 : weight;
-}
-
 const KERNEL = kernels.edgeDetect;
 
 const dev = Device.mount();
@@ -54,7 +51,7 @@ async function run() {
         `#version 300 es
             precision mediump float;
 
-            uniform mat4 u_projection, u_model, u_view;
+            uniform mat4 u_projection, u_model;
 
             layout (location = 0) in vec2 a_position;
             layout (location = 1) in vec2 a_tex_coord;
@@ -64,7 +61,6 @@ async function run() {
             void main() {
                 v_tex_coord = a_tex_coord;
                 gl_Position = u_projection
-                    * u_view
                     * u_model
                     * vec4(a_position, 0.0, 1.0);
             }
@@ -102,10 +98,6 @@ async function run() {
                 u_model: {
                     type: "matrix4fv",
                     value: mat4.fromScaling(mat4.create(), [400, 400, 1]),
-                },
-                u_view: {
-                    type: "matrix4fv",
-                    value: mat4.identity(mat4.create()),
                 },
                 u_projection: {
                     type: "matrix4fv",
@@ -146,3 +138,8 @@ async function run() {
 }
 
 run();
+
+function computeKernelWeight(kernel) {
+    const weight = kernel.reduce((prev, curr) => prev + curr);
+    return weight <= 0 ? 1 : weight;
+}

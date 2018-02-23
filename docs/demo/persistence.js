@@ -12,7 +12,9 @@ import {
     Texture,
     TextureInternalFormat,
     Framebuffer,
-} from "./lib/webglutenfree.es.js";
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./lib/gl-matrix-min.js";
+
 import * as bunny from "./lib/bunny.js"
 
 const PERSISTENCE_FACTOR = 0.8;
@@ -31,7 +33,7 @@ const pongFbo = Framebuffer.withColor(dev, width, height, pongTex);
 
 const view = mat4.create();
 
-const draw = Command.create(
+const cmdDraw = Command.create(
     dev,
     `#version 300 es
         precision mediump float;
@@ -78,7 +80,7 @@ const draw = Command.create(
     },
 );
 
-const blend = Command.create(
+const cmdBlend = Command.create(
     dev,
     `#version 300 es
         precision mediump float;
@@ -140,7 +142,7 @@ const screenspaceAttrs = Attributes.create(dev, Primitive.TRIANGLES, 3);
 const bunnyAttrs = Attributes.withIndexedBuffers(
     dev,
     bunny.elements,
-    draw.locate({ a_position: bunny.positions }),
+    cmdDraw.locate({ a_position: bunny.positions }),
 );
 
 
@@ -165,13 +167,13 @@ const loop = time => {
     // We first draw the scene to a "newFrame" fbo
     newFrameFbo.target(rt => {
         rt.clear(BufferBits.COLOR);
-        rt.draw(draw, bunnyAttrs, { time });
+        rt.draw(cmdDraw, bunnyAttrs, { time });
     });
 
     // Then blend newFrame and ping to pong proportionate to PERSISTENCE_FACTOR
     pong.fbo.target(rt => {
         rt.draw(
-            blend,
+            cmdBlend,
             screenspaceAttrs,
             { newFrame: newFrameTex, ping: ping.tex },
         );

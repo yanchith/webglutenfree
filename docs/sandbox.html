@@ -30,9 +30,8 @@
         }
         window.requestAnimationFrame(fpsloop);
     </script>
-    <!-- These do not have es module releases -->
-    <script src="./lib/webgl-debug.js"></script>
-    <script src="./lib/gl-matrix-min.js"></script>
+    <!-- webgl-debug does not have a module release -->
+    <!-- <script src="./lib/webgl-debug.js"></script> -->
     <script type="module">
         import { Channel } from "./demolib/sandbox/channel.js";
         const chan = new Channel(window);
