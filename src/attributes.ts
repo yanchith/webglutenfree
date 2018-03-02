@@ -1,6 +1,6 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
-import { Device, SYM_STACK_VERTEX_ARRAY } from "./device";
+import { Device as _Device, SYM_STACK_VERTEX_ARRAY } from "./core";
 import { Primitive, DataType } from "./types";
 import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
 import {
@@ -87,7 +87,7 @@ export class Attributes {
      * gl calls, only remembers the count for `gl.drawArrays()`
      */
     static create(
-        dev: Device,
+        dev: _Device,
         primitive: Primitive,
         count: number,
     ): Attributes {
@@ -100,7 +100,7 @@ export class Attributes {
      * or have enough information to create a vertex buffer.
      */
     static withBuffers(
-        dev: Device,
+        dev: _Device,
         primitive: Primitive,
         attributes: AttributesConfig,
     ): Attributes {
@@ -137,7 +137,7 @@ export class Attributes {
      * or have enough information to create an element buffer.
      */
     static withIndexedBuffers(
-        dev: Device,
+        dev: _Device,
         elements: ElementArray | ElementBuffer<ElementBufferType>,
         attributes: AttributesConfig,
     ): Attributes {
@@ -186,14 +186,14 @@ export class Attributes {
 
     readonly glVertexArray: WebGLVertexArrayObject | null;
 
-    private dev: Device;
+    private dev: _Device;
 
     // The buffers
     private attributes: AttributeDescriptor[];
     private elementBuffer?: ElementBuffer<ElementBufferType>;
 
     private constructor(
-        dev: Device,
+        dev: _Device,
         primitive: Primitive,
         attributes: AttributeDescriptor[],
         count: number,
@@ -315,7 +315,7 @@ export class Attributes {
 class AttributeDescriptor {
 
     static create(
-        dev: Device,
+        dev: _Device,
         location: number,
         props: AttributeConfig,
     ): AttributeDescriptor {

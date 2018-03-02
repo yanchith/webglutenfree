@@ -1,10 +1,14 @@
 import * as assert from "./util/assert";
-import { Device, Target, SYM_STACK_DRAW_FRAMEBUFFER } from "./device";
 import {
-    Texture,
-    TextureColorInternalFormat as ColorFormat,
-    TextureDepthInternalFormat as DepthFormat,
-    TextureDepthStencilInternalFormat as DepthStencilFormat,
+    Device as _Device,
+    Target,
+    SYM_STACK_DRAW_FRAMEBUFFER,
+} from "./core";
+import {
+    Texture as _Texture,
+    TextureColorInternalFormat as TexColorFmt,
+    TextureDepthInternalFormat as TexDepthFmt,
+    TextureDepthStencilInternalFormat as TexDepthStencilFmt,
 } from "./texture";
 
 export class Framebuffer {
@@ -14,10 +18,10 @@ export class Framebuffer {
      * width and height.
      */
     static withColor(
-        dev: Device,
+        dev: _Device,
         width: number,
         height: number,
-        color: Texture<ColorFormat> | Texture<ColorFormat>[],
+        color: _Texture<TexColorFmt> | _Texture<TexColorFmt>[],
     ): Framebuffer {
         const colors = Array.isArray(color) ? color : [color];
         assert.nonEmpty(colors, "color");
@@ -33,10 +37,10 @@ export class Framebuffer {
      * Create a framebuffer containg a depth buffer with given width and height.
      */
     static withDepth(
-        dev: Device,
+        dev: _Device,
         width: number,
         height: number,
-        depth: Texture<DepthFormat>,
+        depth: _Texture<TexDepthFmt>,
     ): Framebuffer {
         assert.equal(width, depth.width, "width");
         assert.equal(height, depth.height, "height");
@@ -48,10 +52,10 @@ export class Framebuffer {
      * width and height.
      */
     static withDepthStencil(
-        dev: Device,
+        dev: _Device,
         width: number,
         height: number,
-        depthStencil: Texture<DepthStencilFormat>,
+        depthStencil: _Texture<TexDepthStencilFmt>,
     ): Framebuffer {
         assert.equal(width, depthStencil.width, "width");
         assert.equal(height, depthStencil.height, "height");
@@ -63,11 +67,11 @@ export class Framebuffer {
      * buffer with given width and height.
      */
     static withColorDepth(
-        dev: Device,
+        dev: _Device,
         width: number,
         height: number,
-        color: Texture<ColorFormat> | Texture<ColorFormat>[],
-        depth: Texture<DepthFormat>,
+        color: _Texture<TexColorFmt> | _Texture<TexColorFmt>[],
+        depth: _Texture<TexDepthFmt>,
     ): Framebuffer {
         const colorBuffers = Array.isArray(color) ? color : [color];
         assert.nonEmpty(colorBuffers, "color");
@@ -86,11 +90,11 @@ export class Framebuffer {
      * depth-stencil buffer with given width and height.
      */
     static withColorDepthStencil(
-        dev: Device,
+        dev: _Device,
         width: number,
         height: number,
-        color: Texture<ColorFormat> | Texture<ColorFormat>[],
-        depthStencil: Texture<DepthStencilFormat>,
+        color: _Texture<TexColorFmt> | _Texture<TexColorFmt>[],
+        depthStencil: _Texture<TexDepthStencilFmt>,
     ): Framebuffer {
         const colors = Array.isArray(color) ? color : [color];
         assert.nonEmpty(colors, "color");
@@ -110,21 +114,21 @@ export class Framebuffer {
 
     readonly glFramebuffer: WebGLFramebuffer | null;
 
-    private dev: Device;
+    private dev: _Device;
     private glColorAttachments: number[];
 
     private framebufferTarget: Target | null;
 
-    private colors: Texture<ColorFormat>[];
-    private depthStencil?: Texture<DepthFormat> | Texture<DepthStencilFormat>;
+    private colors: _Texture<TexColorFmt>[];
+    private depthStencil?: _Texture<TexDepthFmt> | _Texture<TexDepthStencilFmt>;
     private depthOnly: boolean;
 
     private constructor(
-        dev: Device,
+        dev: _Device,
         width: number,
         height: number,
-        colors: Texture<ColorFormat>[],
-        depthStencil?: Texture<DepthFormat> | Texture<DepthStencilFormat>,
+        colors: _Texture<TexColorFmt>[],
+        depthStencil?: _Texture<TexDepthFmt> | _Texture<TexDepthStencilFmt>,
         depthOnly: boolean = true,
     ) {
         this.dev = dev;

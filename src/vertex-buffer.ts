@@ -1,6 +1,6 @@
 import * as assert from "./util/assert";
 import { BufferUsage, DataType, sizeOf } from "./types";
-import { Device } from "./device";
+import { Device as _Device } from "./core";
 
 /**
  * Possible data types of vertex buffers.
@@ -56,7 +56,7 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Create a new vertex buffer with given type and of given size.
      */
     static create<T extends VertexBufferType>(
-        dev: Device,
+        dev: _Device,
         type: T,
         size: number,
         { usage = BufferUsage.DYNAMIC_DRAW } = {},
@@ -75,7 +75,7 @@ export class VertexBuffer<T extends VertexBufferType> {
      * referenced only for the duration of this call.
      */
     static withTypedArray<T extends VertexBufferType>(
-        dev: Device,
+        dev: _Device,
         type: T,
         data: VertexBufferTypeToTypedArray[T] | number[],
         { usage = BufferUsage.STATIC_DRAW }: VertexBufferOptions = {},

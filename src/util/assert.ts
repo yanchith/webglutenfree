@@ -1,5 +1,5 @@
 /**
- * This file is an exercise in proprocessor voodoo.
+ * This file is an exercise in preprocessor voodoo.
  *
  * "process.env.NODE_ENV", gets suplied by the string replacer during a
  * custom build or our production build. If "production", constant evaluation
@@ -10,7 +10,7 @@
  * make for a slightly nice programming model: const checkedVal = truthy(val)
  */
 
-// This does not get replaced and serves as a default velue. If all its uses
+// This does not get replaced and serves as a default value. If all its uses
 // are eliminated, the value itself is pruned as well.
 const process = {
     env: {

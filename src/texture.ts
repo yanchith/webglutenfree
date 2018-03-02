@@ -1,4 +1,4 @@
-import { Device } from "./device";
+import { Device as _Device } from "./core";
 import { DataType } from "./types";
 
 export enum TextureWrap {
@@ -396,7 +396,7 @@ export interface TextureStoreOptions {
 export class Texture<F extends TextureInternalFormat> {
 
     static create<F extends TextureInternalFormat>(
-        dev: Device,
+        dev: _Device,
         width: number,
         height: number,
         internalFormat: F,
@@ -417,7 +417,7 @@ export class Texture<F extends TextureInternalFormat> {
     }
 
     static withImage(
-        dev: Device,
+        dev: _Device,
         image: ImageData,
         options?: TextureOptions & TextureStoreOptions,
     ): Texture<TextureInternalFormat.RGBA8> {
@@ -434,7 +434,7 @@ export class Texture<F extends TextureInternalFormat> {
     }
 
     static withTypedArray<F extends TextureInternalFormat>(
-        dev: Device,
+        dev: _Device,
         width: number,
         height: number,
         internalFormat: F,

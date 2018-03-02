@@ -1,7 +1,7 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
 import { BufferUsage, DataType, Primitive, sizeOf } from "./types";
-import { Device } from "./device";
+import { Device as _Device } from "./core";
 
 export type ElementArray =
     | number[] // infers POINTS
@@ -57,7 +57,7 @@ export class ElementBuffer<T extends ElementBufferType> {
      * Create a new element buffer with given type, primitive, and size.
      */
     static create<T extends ElementBufferType>(
-        dev: Device,
+        dev: _Device,
         type: T,
         primitive: Primitive,
         size: number,
@@ -82,7 +82,7 @@ export class ElementBuffer<T extends ElementBufferType> {
      * Array is referenced only for the duration of this call.
      */
     static withArray(
-        dev: Device,
+        dev: _Device,
         data: ElementArray,
         options?: ElementBufferOptions,
     ): ElementBuffer<DataType.UNSIGNED_INT> {
@@ -114,7 +114,7 @@ export class ElementBuffer<T extends ElementBufferType> {
      * referenced only for the duration of this call.
      */
     static withTypedArray<T extends ElementBufferType>(
-        dev: Device,
+        dev: _Device,
         type: T,
         primitive: Primitive,
         data: ElementBufferTypeToTypedArray[T] | number[],

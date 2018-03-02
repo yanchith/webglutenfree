@@ -7,9 +7,6 @@ export {
     DeviceFromCanvasOptions,
     DeviceFromContextOptions,
     TargetClearOptions,
-} from "./device";
-
-export {
     Command,
     CommandOptions,
     DepthFunc,
@@ -17,7 +14,7 @@ export {
     StencilOp,
     BlendFunc,
     BlendEquation,
-} from "./command";
+} from "./core";
 
 export {
     VertexBuffer,
