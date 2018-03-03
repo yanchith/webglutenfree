@@ -1,7 +1,7 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
 import { BufferUsage, DataType, Primitive, sizeOf } from "./types";
-import { Device as _Device } from "./core";
+import { Device as _Device } from "./device";
 
 export type ElementArray =
     | number[] // infers POINTS
@@ -160,18 +160,6 @@ export class ElementBuffer<T extends ElementBufferType> {
     }
 
     /**
-     * Force buffer reinitialization.
-     */
-    init(): void {
-        const { usage, byteLength, gl } = this;
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteLength, usage);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-        (this as any).glBuffer = buffer;
-    }
-
-    /**
      * Reinitialize invalid buffer, eg. after context is lost.
      */
     restore(): void {
@@ -203,6 +191,16 @@ export class ElementBuffer<T extends ElementBufferType> {
 
         return this;
     }
+
+    private init(): void {
+        const { usage, byteLength, gl } = this;
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteLength, usage);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        (this as any).glBuffer = buffer;
+    }
+
 }
 
 function createBuffer(

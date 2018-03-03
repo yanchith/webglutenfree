@@ -6,7 +6,11 @@ export {
     DeviceMountOptions,
     DeviceFromCanvasOptions,
     DeviceFromContextOptions,
-    TargetClearOptions,
+} from "./device";
+
+export { TargetClearOptions } from "./target";
+
+export {
     Command,
     CommandOptions,
     DepthFunc,
@@ -14,7 +18,41 @@ export {
     StencilOp,
     BlendFunc,
     BlendEquation,
-} from "./core";
+    StencilOrSeparate,
+    BlendOrSeparate,
+    Accessor,
+    Uniform1f,
+    Uniform1fv,
+    Uniform1i,
+    Uniform1iv,
+    Uniform1ui,
+    Uniform1uiv,
+    Uniform2f,
+    Uniform2fv,
+    Uniform2i,
+    Uniform2iv,
+    Uniform2ui,
+    Uniform2uiv,
+    Uniform3f,
+    Uniform3fv,
+    Uniform3i,
+    Uniform3iv,
+    Uniform3ui,
+    Uniform3uiv,
+    Uniform4f,
+    Uniform4fv,
+    Uniform4i,
+    Uniform4iv,
+    Uniform4ui,
+    Uniform4uiv,
+    UniformMatrix2fv,
+    UniformMatrix3fv,
+    UniformMatrix4fv,
+    Uniform,
+    Uniforms,
+    TextureAccessor,
+    Textures,
+} from "./command";
 
 export {
     VertexBuffer,

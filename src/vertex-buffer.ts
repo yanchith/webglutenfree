@@ -1,6 +1,6 @@
 import * as assert from "./util/assert";
 import { BufferUsage, DataType, sizeOf } from "./types";
-import { Device as _Device } from "./core";
+import { Device as _Device } from "./device";
 
 /**
  * Possible data types of vertex buffers.
@@ -116,18 +116,6 @@ export class VertexBuffer<T extends VertexBufferType> {
     }
 
     /**
-     * Force buffer reinitialization.
-     */
-    init(): void {
-        const { usage, byteLength, gl } = this;
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, byteLength, usage);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        (this as any).glBuffer = buffer;
-    }
-
-    /**
      * Reinitialize invalid buffer, eg. after context is lost.
      */
     restore(): void {
@@ -158,6 +146,15 @@ export class VertexBuffer<T extends VertexBufferType> {
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
         return this;
+    }
+
+    private init(): void {
+        const { usage, byteLength, gl } = this;
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, byteLength, usage);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        (this as any).glBuffer = buffer;
     }
 }
 

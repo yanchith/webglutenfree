@@ -158,564 +158,6 @@ class Stack {
     }
 }
 
-const SYM_STACK_VERTEX_ARRAY = Symbol();
-const SYM_STACK_DRAW_FRAMEBUFFER = Symbol();
-/**
- * Available extensions.
- */
-var Extension;
-(function (Extension) {
-    Extension["EXTColorBufferFloat"] = "EXT_color_buffer_float";
-    Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
-})(Extension || (Extension = {}));
-class Device {
-    /**
-     * Create a new canvas and device (containing a gl context). Mount it on
-     * `element` parameter (default is `document.body`).
-     */
-    static mount(options = {}) {
-        const { element = document.body } = options;
-        if (element instanceof HTMLCanvasElement) {
-            return Device.fromCanvas(element, options);
-        }
-        const canvas = document.createElement("canvas");
-        element.appendChild(canvas);
-        return Device.fromCanvas(canvas, options);
-    }
-    /**
-     * Create a new device (containing a gl context) from existing canvas.
-     */
-    static fromCanvas(canvas, options = {}) {
-        const { alpha = true, antialias = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options;
-        const gl = canvas.getContext("webgl2", {
-            alpha,
-            antialias,
-            depth,
-            stencil,
-            preserveDrawingBuffer,
-        });
-        if (!gl) {
-            throw new Error("Could not get webgl2 context");
-        }
-        return Device.fromContext(gl, options);
-    }
-    /**
-     * Create a new device from existing gl context.
-     */
-    static fromContext(gl, { pixelRatio, viewport, extensions, debug, } = {}) {
-        if (extensions) {
-            extensions.forEach(ext => {
-                // We currently do not have extensions with callable API
-                if (!gl.getExtension(ext)) {
-                    throw new Error(`Could not get extension ${ext}`);
-                }
-            });
-        }
-        if (debug) {
-            const wrapper = {};
-            for (const key in gl) {
-                if (typeof gl[key] === "function") {
-                    wrapper[key] = createDebugFunc(gl, key);
-                }
-                else {
-                    wrapper[key] = gl[key];
-                }
-            }
-            gl = wrapper;
-        }
-        const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
-        dev.update();
-        return dev;
-    }
-    constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
-        this.gl = gl;
-        this.canvas = canvas;
-        this.explicitPixelRatio = explicitPixelRatio;
-        this.explicitViewport = explicitViewport;
-        this.backbufferTarget = new Target(this, [gl.BACK], null);
-        this.stackDepthTest = new Stack(null, (prev, val) => {
-            if (!DepthDescriptor.equals(prev, val)) {
-                if (val) {
-                    gl.enable(gl.DEPTH_TEST);
-                    gl.depthFunc(val.func);
-                    gl.depthMask(val.mask);
-                    gl.depthRange(val.rangeStart, val.rangeEnd);
-                }
-                else {
-                    gl.disable(gl.DEPTH_TEST);
-                }
-            }
-        });
-        this.stackStencilTest = new Stack(null, (prev, val) => {
-            if (!StencilDescriptor.equals(prev, val)) {
-                if (val) {
-                    const { fFunc, bFunc, fFuncRef, bFuncRef, fFuncMask, bFuncMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = val;
-                    gl.enable(gl.STENCIL_TEST);
-                    gl.stencilFuncSeparate(gl.FRONT, fFunc, fFuncRef, fFuncMask);
-                    gl.stencilFuncSeparate(gl.BACK, bFunc, bFuncRef, bFuncMask);
-                    gl.stencilMaskSeparate(gl.FRONT, fMask);
-                    gl.stencilMaskSeparate(gl.BACK, bMask);
-                    gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
-                    gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
-                }
-                else {
-                    gl.disable(gl.STENCIL_TEST);
-                }
-            }
-        });
-        this.stackBlend = new Stack(null, (prev, val) => {
-            if (!BlendDescriptor.equals(prev, val)) {
-                if (val) {
-                    gl.enable(gl.BLEND);
-                    gl.blendFuncSeparate(val.srcRGB, val.dstRGB, val.srcAlpha, val.dstAlpha);
-                    gl.blendEquationSeparate(val.eqnRGB, val.eqnAlpha);
-                    if (val.color) {
-                        const [r, g, b, a] = val.color;
-                        gl.blendColor(r, g, b, a);
-                    }
-                }
-                else {
-                    gl.disable(gl.BLEND);
-                }
-            }
-        });
-        this.stackReadFramebuffer = new Stack(null, (prev, val) => prev === val
-            ? void 0
-            : gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
-        this.stackDrawBuffers = new Stack([gl.BACK], (prev, val) => eqNumberArrays(prev, val)
-            ? void 0
-            : gl.drawBuffers(val));
-        this.stackProgram = new Stack(null, (prev, val) => prev === val ? void 0 : gl.useProgram(val));
-        this[SYM_STACK_VERTEX_ARRAY] = new Stack(null, (prev, val) => prev === val ? void 0 : gl.bindVertexArray(val));
-        this[SYM_STACK_DRAW_FRAMEBUFFER] = new Stack(null, (prev, val) => prev === val
-            ? void 0
-            : gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
-    }
-    /**
-     * Return width of the gl drawing buffer.
-     */
-    get bufferWidth() {
-        return this.gl.drawingBufferWidth;
-    }
-    /**
-     * Return height of the gl drawing buffer.
-     */
-    get bufferHeight() {
-        return this.gl.drawingBufferHeight;
-    }
-    /**
-     * Return width of the canvas. This will usually be the same as:
-     *   device.bufferWidth
-     */
-    get canvasWidth() {
-        return this.canvas.width;
-    }
-    /**
-     * Return height of the canvas. This will usually be the same as:
-     *   device.bufferHeight
-     */
-    get canvasHeight() {
-        return this.canvas.height;
-    }
-    /**
-     * Return width of canvas in CSS pixels (before applying device pixel ratio)
-     */
-    get canvasCSSWidth() {
-        return this.canvas.clientWidth;
-    }
-    /**
-     * Return height of canvas in CSS pixels (before applying device pixel ratio)
-     */
-    get canvasCSSHeight() {
-        return this.canvas.clientHeight;
-    }
-    /**
-     * Return the device pixel ratio for this device
-     */
-    get pixelRatio() {
-        return this.explicitPixelRatio || window.devicePixelRatio;
-    }
-    /**
-     * Notify the device to check whether updates are needed. This resizes the
-     * canvas, if the device pixel ratio or css canvas width/height changed.
-     */
-    update() {
-        const dpr = this.pixelRatio;
-        const canvas = this.canvas;
-        const width = this.explicitViewport
-            && this.explicitViewport[0]
-            || canvas.clientWidth * dpr;
-        const height = this.explicitViewport
-            && this.explicitViewport[1]
-            || canvas.clientHeight * dpr;
-        if (width !== canvas.width) {
-            canvas.width = width;
-        }
-        if (height !== canvas.height) {
-            canvas.height = height;
-        }
-    }
-    /**
-     * Request a render target from the device to draw into. This gives you the
-     * gl.BACK target.
-     *
-     * Drawing should be done within the callback by
-     * calling `ratget.clear()` or `target.draw()` family of methods.
-     *
-     * Also see `framebuffer.target()`.
-     */
-    target(cb) {
-        this.backbufferTarget.with(cb);
-    }
-}
-function createDebugFunc(gl, key) {
-    return function debugWrapper() {
-        console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
-        return gl[key].apply(gl, arguments);
-    };
-}
-function eqNumberArrays(left, right) {
-    if (left === right) {
-        return true;
-    }
-    if (left.length !== right.length) {
-        return false;
-    }
-    for (let i = 0; i < left.length; i++) {
-        if (left[i] !== right[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-/*
- ██████╗ ██████╗ ███╗   ███╗███╗   ███╗ █████╗ ███╗   ██╗██████╗
-██╔════╝██╔═══██╗████╗ ████║████╗ ████║██╔══██╗████╗  ██║██╔══██╗
-██║     ██║   ██║██╔████╔██║██╔████╔██║███████║██╔██╗ ██║██║  ██║
-██║     ██║   ██║██║╚██╔╝██║██║╚██╔╝██║██╔══██║██║╚██╗██║██║  ██║
-╚██████╗╚██████╔╝██║ ╚═╝ ██║██║ ╚═╝ ██║██║  ██║██║ ╚████║██████╔╝
- ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝
-*/
-const INT_PATTERN = /^0|[1-9]\d*$/;
-const UNKNOWN_ATTRIB_LOCATION = -1;
-var DepthFunc;
-(function (DepthFunc) {
-    DepthFunc[DepthFunc["ALWAYS"] = 519] = "ALWAYS";
-    DepthFunc[DepthFunc["NEVER"] = 512] = "NEVER";
-    DepthFunc[DepthFunc["EQUAL"] = 514] = "EQUAL";
-    DepthFunc[DepthFunc["NOTEQUAL"] = 517] = "NOTEQUAL";
-    DepthFunc[DepthFunc["LESS"] = 513] = "LESS";
-    DepthFunc[DepthFunc["LEQUAL"] = 515] = "LEQUAL";
-    DepthFunc[DepthFunc["GREATER"] = 516] = "GREATER";
-    DepthFunc[DepthFunc["GEQUAL"] = 518] = "GEQUAL";
-})(DepthFunc || (DepthFunc = {}));
-var StencilFunc;
-(function (StencilFunc) {
-    StencilFunc[StencilFunc["ALWAYS"] = 519] = "ALWAYS";
-    StencilFunc[StencilFunc["NEVER"] = 512] = "NEVER";
-    StencilFunc[StencilFunc["EQUAL"] = 514] = "EQUAL";
-    StencilFunc[StencilFunc["NOTEQUAL"] = 517] = "NOTEQUAL";
-    StencilFunc[StencilFunc["LESS"] = 513] = "LESS";
-    StencilFunc[StencilFunc["LEQUAL"] = 515] = "LEQUAL";
-    StencilFunc[StencilFunc["GREATER"] = 516] = "GREATER";
-    StencilFunc[StencilFunc["GEQUAL"] = 518] = "GEQUAL";
-})(StencilFunc || (StencilFunc = {}));
-var StencilOp;
-(function (StencilOp) {
-    StencilOp[StencilOp["KEEP"] = 7680] = "KEEP";
-    StencilOp[StencilOp["ZERO"] = 0] = "ZERO";
-    StencilOp[StencilOp["REPLACE"] = 7681] = "REPLACE";
-    StencilOp[StencilOp["INCR"] = 7682] = "INCR";
-    StencilOp[StencilOp["INCR_WRAP"] = 34055] = "INCR_WRAP";
-    StencilOp[StencilOp["DECR"] = 7683] = "DECR";
-    StencilOp[StencilOp["DECR_WRAP"] = 34056] = "DECR_WRAP";
-    StencilOp[StencilOp["INVERT"] = 5386] = "INVERT";
-})(StencilOp || (StencilOp = {}));
-var BlendFunc;
-(function (BlendFunc) {
-    BlendFunc[BlendFunc["ZERO"] = 0] = "ZERO";
-    BlendFunc[BlendFunc["ONE"] = 1] = "ONE";
-    BlendFunc[BlendFunc["SRC_COLOR"] = 768] = "SRC_COLOR";
-    BlendFunc[BlendFunc["SRC_ALPHA"] = 770] = "SRC_ALPHA";
-    BlendFunc[BlendFunc["ONE_MINUS_SRC_COLOR"] = 769] = "ONE_MINUS_SRC_COLOR";
-    BlendFunc[BlendFunc["ONE_MINUS_SRC_ALPHA"] = 771] = "ONE_MINUS_SRC_ALPHA";
-    BlendFunc[BlendFunc["DST_COLOR"] = 774] = "DST_COLOR";
-    BlendFunc[BlendFunc["DST_ALPHA"] = 772] = "DST_ALPHA";
-    BlendFunc[BlendFunc["ONE_MINUS_DST_COLOR"] = 775] = "ONE_MINUS_DST_COLOR";
-    BlendFunc[BlendFunc["ONE_MINUS_DST_ALPHA"] = 773] = "ONE_MINUS_DST_ALPHA";
-    BlendFunc[BlendFunc["CONSTANT_COLOR"] = 32769] = "CONSTANT_COLOR";
-    BlendFunc[BlendFunc["CONSTANT_ALPHA"] = 32771] = "CONSTANT_ALPHA";
-    BlendFunc[BlendFunc["ONE_MINUS_CONSTANT_COLOR"] = 32770] = "ONE_MINUS_CONSTANT_COLOR";
-    BlendFunc[BlendFunc["ONE_MINUS_CONSTANT_ALPHA"] = 32772] = "ONE_MINUS_CONSTANT_ALPHA";
-})(BlendFunc || (BlendFunc = {}));
-var BlendEquation;
-(function (BlendEquation) {
-    BlendEquation[BlendEquation["FUNC_ADD"] = 32774] = "FUNC_ADD";
-    BlendEquation[BlendEquation["FUNC_SUBTRACT"] = 32778] = "FUNC_SUBTRACT";
-    BlendEquation[BlendEquation["FUNC_REVERSE_SUBTRACT"] = 32779] = "FUNC_REVERSE_SUBTRACT";
-    BlendEquation[BlendEquation["MIN"] = 32775] = "MIN";
-    BlendEquation[BlendEquation["MAX"] = 32776] = "MAX";
-})(BlendEquation || (BlendEquation = {}));
-class Command {
-    constructor(dev, vsSource, fsSource, textures, uniforms, depthDescr, stencilDescr, blendDescr) {
-        this.dev = dev;
-        this.vsSource = vsSource;
-        this.fsSource = fsSource;
-        this.textures = textures;
-        this.uniforms = uniforms;
-        this.depthDescr = depthDescr || null;
-        this.stencilDescr = stencilDescr || null;
-        this.blendDescr = blendDescr || null;
-        this.glProgram = null;
-        this.textureAccessors = [];
-        this.uniformDescrs = [];
-        this.init();
-    }
-    static create(dev, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
-        nonNull(vert, "vert");
-        nonNull(frag, "frag");
-        if (depth) {
-            nonNull(depth.func, "depth.func");
-        }
-        if (blend) {
-            nonNull(blend.func, "blend.func");
-            nonNull(blend.func.src, "blend.func.src");
-            nonNull(blend.func.dst, "blend.func.dst");
-            if (typeof blend.func.src === "object") {
-                nonNull(blend.func.src.rgb, "blend.func.src.rgb");
-                nonNull(blend.func.src.alpha, "blend.func.src.alpha");
-            }
-            if (typeof blend.func.dst === "object") {
-                nonNull(blend.func.dst.rgb, "blend.func.dst.rgb");
-                nonNull(blend.func.dst.alpha, "blend.func.dst.alpha");
-            }
-        }
-        if (stencil) {
-            nonNull(stencil.func, "stencil.func");
-            // TODO: complete stencil validation... validation framework?
-        }
-        const depthDescr = parseDepth(depth);
-        const stencilDescr = parseStencil(stencil);
-        const blendDescr = parseBlend(blend);
-        return new Command(dev, vert, frag, textures, uniforms, depthDescr, stencilDescr, blendDescr);
-    }
-    /**
-     * Force command reinitialization.
-     */
-    init() {
-        const { dev: { gl, stackProgram }, vsSource, fsSource, textures, uniforms, } = this;
-        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
-        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
-        const prog = createProgram(gl, vs, fs);
-        gl.deleteShader(vs);
-        gl.deleteShader(fs);
-        stackProgram.push(prog);
-        // Texture declarations are evaluated in two phases:
-        // 1) Sampler location offsets are sent to the shader eagerly
-        // 2) Textures are bound to the locations at draw time
-        // Note that Object.entries provides values in a nondeterministic order,
-        // but we store the descriptors in an array, remembering the order.
-        const textureAccessors = [];
-        Object.entries(textures).forEach(([ident, t], i) => {
-            const loc = gl.getUniformLocation(prog, ident);
-            if (!loc) {
-                throw new Error(`No location for sampler: ${ident}`);
-            }
-            gl.uniform1i(loc, i);
-            textureAccessors.push(t);
-        });
-        // Some uniform declarations can be evaluated right away, so do it at
-        // init-time. Create a descriptor for the rest that is evaluated at
-        // render-time.
-        const uniformDescrs = [];
-        Object.entries(uniforms).forEach(([ident, u]) => {
-            const loc = gl.getUniformLocation(prog, ident);
-            if (!loc) {
-                throw new Error(`No location for uniform: ${ident}`);
-            }
-            if (typeof u.value !== "function") {
-                // Eagerly send everything we can process now to GPU
-                switch (u.type) {
-                    case "1f":
-                        gl.uniform1f(loc, u.value);
-                        break;
-                    case "1fv":
-                        gl.uniform1fv(loc, u.value);
-                        break;
-                    case "1i":
-                        gl.uniform1i(loc, u.value);
-                        break;
-                    case "1iv":
-                        gl.uniform1iv(loc, u.value);
-                        break;
-                    case "1ui":
-                        gl.uniform1ui(loc, u.value);
-                        break;
-                    case "1uiv":
-                        gl.uniform1uiv(loc, u.value);
-                        break;
-                    case "2f": {
-                        const [x, y] = u.value;
-                        gl.uniform2f(loc, x, y);
-                        break;
-                    }
-                    case "2fv":
-                        gl.uniform2fv(loc, u.value);
-                        break;
-                    case "2i": {
-                        const [x, y] = u.value;
-                        gl.uniform2i(loc, x, y);
-                        break;
-                    }
-                    case "2iv":
-                        gl.uniform2iv(loc, u.value);
-                        break;
-                    case "2ui": {
-                        const [x, y] = u.value;
-                        gl.uniform2ui(loc, x, y);
-                        break;
-                    }
-                    case "2uiv":
-                        gl.uniform2uiv(loc, u.value);
-                        break;
-                    case "3f": {
-                        const [x, y, z] = u.value;
-                        gl.uniform3f(loc, x, y, z);
-                        break;
-                    }
-                    case "3fv":
-                        gl.uniform3fv(loc, u.value);
-                        break;
-                    case "3i": {
-                        const [x, y, z] = u.value;
-                        gl.uniform3i(loc, x, y, z);
-                        break;
-                    }
-                    case "3iv":
-                        gl.uniform3iv(loc, u.value);
-                        break;
-                    case "3ui": {
-                        const [x, y, z] = u.value;
-                        gl.uniform3ui(loc, x, y, z);
-                        break;
-                    }
-                    case "3uiv":
-                        gl.uniform3uiv(loc, u.value);
-                        break;
-                    case "4f": {
-                        const [x, y, z, w] = u.value;
-                        gl.uniform4f(loc, x, y, z, w);
-                        break;
-                    }
-                    case "4fv":
-                        gl.uniform4fv(loc, u.value);
-                        break;
-                    case "4i": {
-                        const [x, y, z, w] = u.value;
-                        gl.uniform4i(loc, x, y, z, w);
-                        break;
-                    }
-                    case "4iv":
-                        gl.uniform4iv(loc, u.value);
-                        break;
-                    case "4ui": {
-                        const [x, y, z, w] = u.value;
-                        gl.uniform4ui(loc, x, y, z, w);
-                        break;
-                    }
-                    case "4uiv":
-                        gl.uniform4uiv(loc, u.value);
-                        break;
-                    case "matrix2fv":
-                        gl.uniformMatrix2fv(loc, false, u.value);
-                        break;
-                    case "matrix3fv":
-                        gl.uniformMatrix3fv(loc, false, u.value);
-                        break;
-                    case "matrix4fv":
-                        gl.uniformMatrix4fv(loc, false, u.value);
-                        break;
-                    default: never(u);
-                }
-            }
-            else {
-                // Store a descriptor for lazy values and textures for later use
-                uniformDescrs.push(new UniformDescriptor(ident, loc, u));
-            }
-        });
-        stackProgram.pop();
-        this.glProgram = prog;
-        this.textureAccessors = textureAccessors;
-        this.uniformDescrs = uniformDescrs;
-    }
-    /**
-     * Reinitialize invalid buffer, eg. after context is lost.
-     */
-    restore() {
-        const { dev: { gl }, glProgram } = this;
-        if (!gl.isProgram(glProgram)) {
-            this.init();
-        }
-    }
-    /**
-     * Transforms names found in the attributes object to numbers representing
-     * actual attribute locations for the program in this command.
-     */
-    locate(attributes) {
-        const { dev: { gl }, glProgram } = this;
-        return Object.entries(attributes)
-            .reduce((accum, [identifier, definition]) => {
-            if (INT_PATTERN.test(identifier)) {
-                accum[identifier] = definition;
-            }
-            else {
-                const location = gl.getAttribLocation(glProgram, identifier);
-                if (location === UNKNOWN_ATTRIB_LOCATION) {
-                    throw new Error(`No location for attrib: ${identifier}`);
-                }
-                accum[location] = definition;
-            }
-            return accum;
-        }, {});
-    }
-}
-function createProgram(gl, vertex, fragment) {
-    const program = gl.createProgram();
-    gl.attachShader(program, vertex);
-    gl.attachShader(program, fragment);
-    gl.linkProgram(program);
-    const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if (gl.isContextLost() || linked) {
-        return program;
-    }
-    const msg = gl.getProgramInfoLog(program);
-    gl.deleteProgram(program);
-    throw new Error(`Could not link shader program: ${msg}`);
-}
-function createShader(gl, type, source) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if (gl.isContextLost() || compiled) {
-        return shader;
-    }
-    const msg = gl.getShaderInfoLog(shader);
-    gl.deleteShader(shader);
-    const prettySource = source
-        .split("\n")
-        .map((l, i) => `${i + 1}: ${l}`)
-        .join("\n");
-    throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
-}
-/*
-████████╗ █████╗ ██████╗  ██████╗ ███████╗████████╗
-╚══██╔══╝██╔══██╗██╔══██╗██╔════╝ ██╔════╝╚══██╔══╝
-   ██║   ███████║██████╔╝██║  ███╗█████╗     ██║
-   ██║   ██╔══██║██╔══██╗██║   ██║██╔══╝     ██║
-   ██║   ██║  ██║██║  ██║╚██████╔╝███████╗   ██║
-   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝
-*/
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
@@ -736,25 +178,25 @@ class Target {
      * unnecessary rebinding.
      */
     with(cb) {
-        const { dev: { gl, stackDrawBuffers, [SYM_STACK_DRAW_FRAMEBUFFER]: stackDrawFramebuffer, }, glFramebuffer, glDrawBuffers, } = this;
+        const { dev: { gl, __STACK_DRAW_BUFFERS, __STACK_DRAW_FRAMEBUFFER }, glFramebuffer, glDrawBuffers, } = this;
         const { width = gl.drawingBufferWidth, height = gl.drawingBufferHeight, } = this;
-        stackDrawFramebuffer.push(glFramebuffer);
-        stackDrawBuffers.push(glDrawBuffers);
+        __STACK_DRAW_FRAMEBUFFER.push(glFramebuffer);
+        __STACK_DRAW_BUFFERS.push(glDrawBuffers);
         gl.viewport(0, 0, width, height);
         cb(this);
-        stackDrawFramebuffer.pop();
-        stackDrawBuffers.pop();
+        __STACK_DRAW_FRAMEBUFFER.pop();
+        __STACK_DRAW_BUFFERS.pop();
     }
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
      * choose, which buffers to blit.
      */
     blit(source, bits) {
-        const { dev: { gl, stackReadFramebuffer }, width, height, } = this;
+        const { dev: { gl, __STACK_READ_FRAMEBUFFER }, width, height, } = this;
         this.with(() => {
-            stackReadFramebuffer.push(source.glFramebuffer);
+            __STACK_READ_FRAMEBUFFER.push(source.glFramebuffer);
             gl.blitFramebuffer(0, 0, source.width, source.height, 0, 0, width || gl.drawingBufferWidth, height || gl.drawingBufferHeight, bits, gl.NEAREST);
-            stackReadFramebuffer.pop();
+            __STACK_READ_FRAMEBUFFER.pop();
         });
     }
     /**
@@ -781,17 +223,17 @@ class Target {
      * if used.
      */
     draw(cmd, attrs, props) {
-        const { dev: { stackDepthTest, stackStencilTest, stackBlend, stackProgram, [SYM_STACK_VERTEX_ARRAY]: stackVertexArray, }, } = this;
+        const { dev: { __STACK_VERTEX_ARRAY, __STACK_PROGRAM, __STACK_DEPTH_TEST, __STACK_STENCIL_TEST, __STACK_BLEND, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         this.with(() => {
-            stackDepthTest.push(depthDescr);
-            stackStencilTest.push(stencilDescr);
-            stackBlend.push(blendDescr);
-            stackProgram.push(glProgram);
+            __STACK_DEPTH_TEST.push(depthDescr);
+            __STACK_STENCIL_TEST.push(stencilDescr);
+            __STACK_BLEND.push(blendDescr);
+            __STACK_PROGRAM.push(glProgram);
             this.textures(textureAccessors, props, 0);
             this.uniforms(uniformDescrs, props, 0);
             // Note that attrs.glVertexArray may be null for empty attrs -> ok
-            stackVertexArray.push(attrs.glVertexArray);
+            __STACK_VERTEX_ARRAY.push(attrs.glVertexArray);
             if (attrs.indexed) {
                 this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
                 attrs.instanceCount);
@@ -800,11 +242,11 @@ class Target {
                 this.drawArrays(attrs.primitive, attrs.count, 0, // offset
                 attrs.instanceCount);
             }
-            stackVertexArray.pop();
-            stackBlend.pop();
-            stackStencilTest.pop();
-            stackDepthTest.pop();
-            stackProgram.pop();
+            __STACK_VERTEX_ARRAY.pop();
+            __STACK_BLEND.pop();
+            __STACK_STENCIL_TEST.pop();
+            __STACK_DEPTH_TEST.pop();
+            __STACK_PROGRAM.pop();
         });
     }
     /**
@@ -816,16 +258,16 @@ class Target {
      * unnecesasry rebinding.
      */
     batch(cmd, cb) {
-        const { dev: { stackDepthTest, stackStencilTest, stackBlend, stackProgram, [SYM_STACK_VERTEX_ARRAY]: stackVertexArray, }, } = this;
+        const { dev: { __STACK_VERTEX_ARRAY, __STACK_PROGRAM, __STACK_DEPTH_TEST, __STACK_STENCIL_TEST, __STACK_BLEND, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch, unless API
         // is badly abused and the draw() callback is called outside ot batch()
         // Perform shared batch setup
-        stackDepthTest.push(depthDescr);
-        stackStencilTest.push(stencilDescr);
-        stackBlend.push(blendDescr);
-        stackProgram.push(glProgram);
+        __STACK_DEPTH_TEST.push(depthDescr);
+        __STACK_STENCIL_TEST.push(stencilDescr);
+        __STACK_BLEND.push(blendDescr);
+        __STACK_PROGRAM.push(glProgram);
         let iter = 0;
         cb((attrs, props) => {
             // with() ensures the original target is still bound
@@ -834,13 +276,13 @@ class Target {
                 // TODO: find a way to restore vertex array rebinding
                 // optimization
                 // Ensure the shared setup still holds
-                stackDepthTest.push(depthDescr);
-                stackStencilTest.push(stencilDescr);
-                stackBlend.push(blendDescr);
-                stackProgram.push(glProgram);
+                __STACK_DEPTH_TEST.push(depthDescr);
+                __STACK_STENCIL_TEST.push(stencilDescr);
+                __STACK_BLEND.push(blendDescr);
+                __STACK_PROGRAM.push(glProgram);
                 this.textures(textureAccessors, props, iter);
                 this.uniforms(uniformDescrs, props, iter);
-                stackVertexArray.push(attrs.glVertexArray);
+                __STACK_VERTEX_ARRAY.push(attrs.glVertexArray);
                 if (attrs.indexed) {
                     this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
                     attrs.instanceCount);
@@ -849,17 +291,17 @@ class Target {
                     this.drawArrays(attrs.primitive, attrs.count, 0, // offset
                     attrs.instanceCount);
                 }
-                stackVertexArray.pop();
-                stackProgram.pop();
-                stackBlend.pop();
-                stackStencilTest.pop();
-                stackDepthTest.pop();
+                __STACK_VERTEX_ARRAY.pop();
+                __STACK_PROGRAM.pop();
+                __STACK_BLEND.pop();
+                __STACK_STENCIL_TEST.pop();
+                __STACK_DEPTH_TEST.pop();
             });
         });
-        stackProgram.pop();
-        stackBlend.pop();
-        stackStencilTest.pop();
-        stackDepthTest.pop();
+        __STACK_PROGRAM.pop();
+        __STACK_BLEND.pop();
+        __STACK_STENCIL_TEST.pop();
+        __STACK_DEPTH_TEST.pop();
     }
     drawArrays(primitive, count, offset, instanceCount) {
         const gl = this.dev.gl;
@@ -998,14 +440,287 @@ class Target {
     }
 }
 function access(props, index, value) { return typeof value === "function" ? value(props, index) : value; }
-/*
-██████╗ ███████╗███████╗ ██████╗██████╗ ███████╗
-██╔══██╗██╔════╝██╔════╝██╔════╝██╔══██╗██╔════╝
-██║  ██║█████╗  ███████╗██║     ██████╔╝███████╗
-██║  ██║██╔══╝  ╚════██║██║     ██╔══██╗╚════██║
-██████╔╝███████╗███████║╚██████╗██║  ██║███████║
-╚═════╝ ╚══════╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝
-*/
+
+const INT_PATTERN = /^0|[1-9]\d*$/;
+const UNKNOWN_ATTRIB_LOCATION = -1;
+var DepthFunc;
+(function (DepthFunc) {
+    DepthFunc[DepthFunc["ALWAYS"] = 519] = "ALWAYS";
+    DepthFunc[DepthFunc["NEVER"] = 512] = "NEVER";
+    DepthFunc[DepthFunc["EQUAL"] = 514] = "EQUAL";
+    DepthFunc[DepthFunc["NOTEQUAL"] = 517] = "NOTEQUAL";
+    DepthFunc[DepthFunc["LESS"] = 513] = "LESS";
+    DepthFunc[DepthFunc["LEQUAL"] = 515] = "LEQUAL";
+    DepthFunc[DepthFunc["GREATER"] = 516] = "GREATER";
+    DepthFunc[DepthFunc["GEQUAL"] = 518] = "GEQUAL";
+})(DepthFunc || (DepthFunc = {}));
+var StencilFunc;
+(function (StencilFunc) {
+    StencilFunc[StencilFunc["ALWAYS"] = 519] = "ALWAYS";
+    StencilFunc[StencilFunc["NEVER"] = 512] = "NEVER";
+    StencilFunc[StencilFunc["EQUAL"] = 514] = "EQUAL";
+    StencilFunc[StencilFunc["NOTEQUAL"] = 517] = "NOTEQUAL";
+    StencilFunc[StencilFunc["LESS"] = 513] = "LESS";
+    StencilFunc[StencilFunc["LEQUAL"] = 515] = "LEQUAL";
+    StencilFunc[StencilFunc["GREATER"] = 516] = "GREATER";
+    StencilFunc[StencilFunc["GEQUAL"] = 518] = "GEQUAL";
+})(StencilFunc || (StencilFunc = {}));
+var StencilOp;
+(function (StencilOp) {
+    StencilOp[StencilOp["KEEP"] = 7680] = "KEEP";
+    StencilOp[StencilOp["ZERO"] = 0] = "ZERO";
+    StencilOp[StencilOp["REPLACE"] = 7681] = "REPLACE";
+    StencilOp[StencilOp["INCR"] = 7682] = "INCR";
+    StencilOp[StencilOp["INCR_WRAP"] = 34055] = "INCR_WRAP";
+    StencilOp[StencilOp["DECR"] = 7683] = "DECR";
+    StencilOp[StencilOp["DECR_WRAP"] = 34056] = "DECR_WRAP";
+    StencilOp[StencilOp["INVERT"] = 5386] = "INVERT";
+})(StencilOp || (StencilOp = {}));
+var BlendFunc;
+(function (BlendFunc) {
+    BlendFunc[BlendFunc["ZERO"] = 0] = "ZERO";
+    BlendFunc[BlendFunc["ONE"] = 1] = "ONE";
+    BlendFunc[BlendFunc["SRC_COLOR"] = 768] = "SRC_COLOR";
+    BlendFunc[BlendFunc["SRC_ALPHA"] = 770] = "SRC_ALPHA";
+    BlendFunc[BlendFunc["ONE_MINUS_SRC_COLOR"] = 769] = "ONE_MINUS_SRC_COLOR";
+    BlendFunc[BlendFunc["ONE_MINUS_SRC_ALPHA"] = 771] = "ONE_MINUS_SRC_ALPHA";
+    BlendFunc[BlendFunc["DST_COLOR"] = 774] = "DST_COLOR";
+    BlendFunc[BlendFunc["DST_ALPHA"] = 772] = "DST_ALPHA";
+    BlendFunc[BlendFunc["ONE_MINUS_DST_COLOR"] = 775] = "ONE_MINUS_DST_COLOR";
+    BlendFunc[BlendFunc["ONE_MINUS_DST_ALPHA"] = 773] = "ONE_MINUS_DST_ALPHA";
+    BlendFunc[BlendFunc["CONSTANT_COLOR"] = 32769] = "CONSTANT_COLOR";
+    BlendFunc[BlendFunc["CONSTANT_ALPHA"] = 32771] = "CONSTANT_ALPHA";
+    BlendFunc[BlendFunc["ONE_MINUS_CONSTANT_COLOR"] = 32770] = "ONE_MINUS_CONSTANT_COLOR";
+    BlendFunc[BlendFunc["ONE_MINUS_CONSTANT_ALPHA"] = 32772] = "ONE_MINUS_CONSTANT_ALPHA";
+})(BlendFunc || (BlendFunc = {}));
+var BlendEquation;
+(function (BlendEquation) {
+    BlendEquation[BlendEquation["FUNC_ADD"] = 32774] = "FUNC_ADD";
+    BlendEquation[BlendEquation["FUNC_SUBTRACT"] = 32778] = "FUNC_SUBTRACT";
+    BlendEquation[BlendEquation["FUNC_REVERSE_SUBTRACT"] = 32779] = "FUNC_REVERSE_SUBTRACT";
+    BlendEquation[BlendEquation["MIN"] = 32775] = "MIN";
+    BlendEquation[BlendEquation["MAX"] = 32776] = "MAX";
+})(BlendEquation || (BlendEquation = {}));
+class Command {
+    constructor(dev, vsSource, fsSource, textures, uniforms, depthDescr, stencilDescr, blendDescr) {
+        this.dev = dev;
+        this.vsSource = vsSource;
+        this.fsSource = fsSource;
+        this.textures = textures;
+        this.uniforms = uniforms;
+        this.depthDescr = depthDescr || null;
+        this.stencilDescr = stencilDescr || null;
+        this.blendDescr = blendDescr || null;
+        this.glProgram = null;
+        this.textureAccessors = [];
+        this.uniformDescrs = [];
+        this.init();
+    }
+    static create(dev, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
+        nonNull(vert, "vert");
+        nonNull(frag, "frag");
+        if (depth) {
+            nonNull(depth.func, "depth.func");
+        }
+        if (blend) {
+            nonNull(blend.func, "blend.func");
+            nonNull(blend.func.src, "blend.func.src");
+            nonNull(blend.func.dst, "blend.func.dst");
+            if (typeof blend.func.src === "object") {
+                nonNull(blend.func.src.rgb, "blend.func.src.rgb");
+                nonNull(blend.func.src.alpha, "blend.func.src.alpha");
+            }
+            if (typeof blend.func.dst === "object") {
+                nonNull(blend.func.dst.rgb, "blend.func.dst.rgb");
+                nonNull(blend.func.dst.alpha, "blend.func.dst.alpha");
+            }
+        }
+        if (stencil) {
+            nonNull(stencil.func, "stencil.func");
+            // TODO: complete stencil validation... validation framework?
+        }
+        const depthDescr = parseDepth(depth);
+        const stencilDescr = parseStencil(stencil);
+        const blendDescr = parseBlend(blend);
+        return new Command(dev, vert, frag, textures, uniforms, depthDescr, stencilDescr, blendDescr);
+    }
+    /**
+     * Reinitialize invalid buffer, eg. after context is lost.
+     */
+    restore() {
+        const { dev: { gl }, glProgram } = this;
+        if (!gl.isProgram(glProgram)) {
+            this.init();
+        }
+    }
+    /**
+     * Transforms names found in the attributes object to numbers representing
+     * actual attribute locations for the program in this command.
+     */
+    locate(attributes) {
+        const { dev: { gl }, glProgram } = this;
+        return Object.entries(attributes)
+            .reduce((accum, [identifier, definition]) => {
+            if (INT_PATTERN.test(identifier)) {
+                accum[identifier] = definition;
+            }
+            else {
+                const location = gl.getAttribLocation(glProgram, identifier);
+                if (location === UNKNOWN_ATTRIB_LOCATION) {
+                    throw new Error(`No location for attrib: ${identifier}`);
+                }
+                accum[location] = definition;
+            }
+            return accum;
+        }, {});
+    }
+    init() {
+        const { dev: { gl, __STACK_PROGRAM }, vsSource, fsSource, textures, uniforms, } = this;
+        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+        const prog = createProgram(gl, vs, fs);
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
+        __STACK_PROGRAM.push(prog);
+        // Texture declarations are evaluated in two phases:
+        // 1) Sampler location offsets are sent to the shader eagerly
+        // 2) Textures are bound to the locations at draw time
+        // Note that Object.entries provides values in a nondeterministic order,
+        // but we store the descriptors in an array, remembering the order.
+        const textureAccessors = [];
+        Object.entries(textures).forEach(([ident, t], i) => {
+            const loc = gl.getUniformLocation(prog, ident);
+            if (!loc) {
+                throw new Error(`No location for sampler: ${ident}`);
+            }
+            gl.uniform1i(loc, i);
+            textureAccessors.push(t);
+        });
+        // Some uniform declarations can be evaluated right away, so do it at
+        // init-time. Create a descriptor for the rest that is evaluated at
+        // render-time.
+        const uniformDescrs = [];
+        Object.entries(uniforms).forEach(([ident, u]) => {
+            const loc = gl.getUniformLocation(prog, ident);
+            if (!loc) {
+                throw new Error(`No location for uniform: ${ident}`);
+            }
+            if (typeof u.value !== "function") {
+                // Eagerly send everything we can process now to GPU
+                switch (u.type) {
+                    case "1f":
+                        gl.uniform1f(loc, u.value);
+                        break;
+                    case "1fv":
+                        gl.uniform1fv(loc, u.value);
+                        break;
+                    case "1i":
+                        gl.uniform1i(loc, u.value);
+                        break;
+                    case "1iv":
+                        gl.uniform1iv(loc, u.value);
+                        break;
+                    case "1ui":
+                        gl.uniform1ui(loc, u.value);
+                        break;
+                    case "1uiv":
+                        gl.uniform1uiv(loc, u.value);
+                        break;
+                    case "2f": {
+                        const [x, y] = u.value;
+                        gl.uniform2f(loc, x, y);
+                        break;
+                    }
+                    case "2fv":
+                        gl.uniform2fv(loc, u.value);
+                        break;
+                    case "2i": {
+                        const [x, y] = u.value;
+                        gl.uniform2i(loc, x, y);
+                        break;
+                    }
+                    case "2iv":
+                        gl.uniform2iv(loc, u.value);
+                        break;
+                    case "2ui": {
+                        const [x, y] = u.value;
+                        gl.uniform2ui(loc, x, y);
+                        break;
+                    }
+                    case "2uiv":
+                        gl.uniform2uiv(loc, u.value);
+                        break;
+                    case "3f": {
+                        const [x, y, z] = u.value;
+                        gl.uniform3f(loc, x, y, z);
+                        break;
+                    }
+                    case "3fv":
+                        gl.uniform3fv(loc, u.value);
+                        break;
+                    case "3i": {
+                        const [x, y, z] = u.value;
+                        gl.uniform3i(loc, x, y, z);
+                        break;
+                    }
+                    case "3iv":
+                        gl.uniform3iv(loc, u.value);
+                        break;
+                    case "3ui": {
+                        const [x, y, z] = u.value;
+                        gl.uniform3ui(loc, x, y, z);
+                        break;
+                    }
+                    case "3uiv":
+                        gl.uniform3uiv(loc, u.value);
+                        break;
+                    case "4f": {
+                        const [x, y, z, w] = u.value;
+                        gl.uniform4f(loc, x, y, z, w);
+                        break;
+                    }
+                    case "4fv":
+                        gl.uniform4fv(loc, u.value);
+                        break;
+                    case "4i": {
+                        const [x, y, z, w] = u.value;
+                        gl.uniform4i(loc, x, y, z, w);
+                        break;
+                    }
+                    case "4iv":
+                        gl.uniform4iv(loc, u.value);
+                        break;
+                    case "4ui": {
+                        const [x, y, z, w] = u.value;
+                        gl.uniform4ui(loc, x, y, z, w);
+                        break;
+                    }
+                    case "4uiv":
+                        gl.uniform4uiv(loc, u.value);
+                        break;
+                    case "matrix2fv":
+                        gl.uniformMatrix2fv(loc, false, u.value);
+                        break;
+                    case "matrix3fv":
+                        gl.uniformMatrix3fv(loc, false, u.value);
+                        break;
+                    case "matrix4fv":
+                        gl.uniformMatrix4fv(loc, false, u.value);
+                        break;
+                    default: never(u);
+                }
+            }
+            else {
+                // Store a descriptor for lazy values and textures for later use
+                uniformDescrs.push(new UniformDescriptor(ident, loc, u));
+            }
+        });
+        __STACK_PROGRAM.pop();
+        this.glProgram = prog;
+        this.textureAccessors = textureAccessors;
+        this.uniformDescrs = uniformDescrs;
+    }
+}
 class DepthDescriptor {
     constructor(func, mask, rangeStart, rangeEnd) {
         this.func = func;
@@ -1253,6 +968,264 @@ function parseBlend(blend) {
             : blend.equation
         : BlendEquation.FUNC_ADD, blend.color);
 }
+function createProgram(gl, vertex, fragment) {
+    const program = gl.createProgram();
+    gl.attachShader(program, vertex);
+    gl.attachShader(program, fragment);
+    gl.linkProgram(program);
+    const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (gl.isContextLost() || linked) {
+        return program;
+    }
+    const msg = gl.getProgramInfoLog(program);
+    gl.deleteProgram(program);
+    throw new Error(`Could not link shader program: ${msg}`);
+}
+function createShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    if (gl.isContextLost() || compiled) {
+        return shader;
+    }
+    const msg = gl.getShaderInfoLog(shader);
+    gl.deleteShader(shader);
+    const prettySource = source
+        .split("\n")
+        .map((l, i) => `${i + 1}: ${l}`)
+        .join("\n");
+    throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
+}
+
+/**
+ * Available extensions.
+ */
+var Extension;
+(function (Extension) {
+    Extension["EXTColorBufferFloat"] = "EXT_color_buffer_float";
+    Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
+})(Extension || (Extension = {}));
+class Device {
+    /**
+     * Create a new canvas and device (containing a gl context). Mount it on
+     * `element` parameter (default is `document.body`).
+     */
+    static mount(options = {}) {
+        const { element = document.body } = options;
+        if (element instanceof HTMLCanvasElement) {
+            return Device.fromCanvas(element, options);
+        }
+        const canvas = document.createElement("canvas");
+        element.appendChild(canvas);
+        return Device.fromCanvas(canvas, options);
+    }
+    /**
+     * Create a new device (containing a gl context) from existing canvas.
+     */
+    static fromCanvas(canvas, options = {}) {
+        const { alpha = true, antialias = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options;
+        const gl = canvas.getContext("webgl2", {
+            alpha,
+            antialias,
+            depth,
+            stencil,
+            preserveDrawingBuffer,
+        });
+        if (!gl) {
+            throw new Error("Could not get webgl2 context");
+        }
+        return Device.fromContext(gl, options);
+    }
+    /**
+     * Create a new device from existing gl context.
+     */
+    static fromContext(gl, { pixelRatio, viewport, extensions, debug, } = {}) {
+        if (extensions) {
+            extensions.forEach(ext => {
+                // We currently do not have extensions with callable API
+                if (!gl.getExtension(ext)) {
+                    throw new Error(`Could not get extension ${ext}`);
+                }
+            });
+        }
+        if (debug) {
+            const wrapper = {};
+            for (const key in gl) {
+                if (typeof gl[key] === "function") {
+                    wrapper[key] = createDebugFunc(gl, key);
+                }
+                else {
+                    wrapper[key] = gl[key];
+                }
+            }
+            gl = wrapper;
+        }
+        const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
+        dev.update();
+        return dev;
+    }
+    constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
+        this.gl = gl;
+        this.canvas = canvas;
+        this.explicitPixelRatio = explicitPixelRatio;
+        this.explicitViewport = explicitViewport;
+        this.backbufferTarget = new Target(this, [gl.BACK], null);
+        this.__STACK_VERTEX_ARRAY = new Stack(null, (prev, val) => prev === val ? void 0 : gl.bindVertexArray(val));
+        this.__STACK_PROGRAM = new Stack(null, (prev, val) => prev === val ? void 0 : gl.useProgram(val));
+        this.__STACK_DEPTH_TEST = new Stack(null, (prev, val) => {
+            if (!DepthDescriptor.equals(prev, val)) {
+                if (val) {
+                    gl.enable(gl.DEPTH_TEST);
+                    gl.depthFunc(val.func);
+                    gl.depthMask(val.mask);
+                    gl.depthRange(val.rangeStart, val.rangeEnd);
+                }
+                else {
+                    gl.disable(gl.DEPTH_TEST);
+                }
+            }
+        });
+        this.__STACK_STENCIL_TEST = new Stack(null, (prev, val) => {
+            if (!StencilDescriptor.equals(prev, val)) {
+                if (val) {
+                    const { fFunc, bFunc, fFuncRef, bFuncRef, fFuncMask, bFuncMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = val;
+                    gl.enable(gl.STENCIL_TEST);
+                    gl.stencilFuncSeparate(gl.FRONT, fFunc, fFuncRef, fFuncMask);
+                    gl.stencilFuncSeparate(gl.BACK, bFunc, bFuncRef, bFuncMask);
+                    gl.stencilMaskSeparate(gl.FRONT, fMask);
+                    gl.stencilMaskSeparate(gl.BACK, bMask);
+                    gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
+                    gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
+                }
+                else {
+                    gl.disable(gl.STENCIL_TEST);
+                }
+            }
+        });
+        this.__STACK_BLEND = new Stack(null, (prev, val) => {
+            if (!BlendDescriptor.equals(prev, val)) {
+                if (val) {
+                    gl.enable(gl.BLEND);
+                    gl.blendFuncSeparate(val.srcRGB, val.dstRGB, val.srcAlpha, val.dstAlpha);
+                    gl.blendEquationSeparate(val.eqnRGB, val.eqnAlpha);
+                    if (val.color) {
+                        const [r, g, b, a] = val.color;
+                        gl.blendColor(r, g, b, a);
+                    }
+                }
+                else {
+                    gl.disable(gl.BLEND);
+                }
+            }
+        });
+        this.__STACK_DRAW_FRAMEBUFFER = new Stack(null, (prev, val) => prev === val
+            ? void 0
+            : gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
+        this.__STACK_READ_FRAMEBUFFER = new Stack(null, (prev, val) => prev === val
+            ? void 0
+            : gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
+        this.__STACK_DRAW_BUFFERS = new Stack([gl.BACK], (prev, val) => eqNumberArrays(prev, val)
+            ? void 0
+            : gl.drawBuffers(val));
+    }
+    /**
+     * Return width of the gl drawing buffer.
+     */
+    get bufferWidth() {
+        return this.gl.drawingBufferWidth;
+    }
+    /**
+     * Return height of the gl drawing buffer.
+     */
+    get bufferHeight() {
+        return this.gl.drawingBufferHeight;
+    }
+    /**
+     * Return width of the canvas. This will usually be the same as:
+     *   device.bufferWidth
+     */
+    get canvasWidth() {
+        return this.canvas.width;
+    }
+    /**
+     * Return height of the canvas. This will usually be the same as:
+     *   device.bufferHeight
+     */
+    get canvasHeight() {
+        return this.canvas.height;
+    }
+    /**
+     * Return width of canvas in CSS pixels (before applying device pixel ratio)
+     */
+    get canvasCSSWidth() {
+        return this.canvas.clientWidth;
+    }
+    /**
+     * Return height of canvas in CSS pixels (before applying device pixel ratio)
+     */
+    get canvasCSSHeight() {
+        return this.canvas.clientHeight;
+    }
+    /**
+     * Return the device pixel ratio for this device
+     */
+    get pixelRatio() {
+        return this.explicitPixelRatio || window.devicePixelRatio;
+    }
+    /**
+     * Notify the device to check whether updates are needed. This resizes the
+     * canvas, if the device pixel ratio or css canvas width/height changed.
+     */
+    update() {
+        const dpr = this.pixelRatio;
+        const canvas = this.canvas;
+        const width = this.explicitViewport
+            && this.explicitViewport[0]
+            || canvas.clientWidth * dpr;
+        const height = this.explicitViewport
+            && this.explicitViewport[1]
+            || canvas.clientHeight * dpr;
+        if (width !== canvas.width) {
+            canvas.width = width;
+        }
+        if (height !== canvas.height) {
+            canvas.height = height;
+        }
+    }
+    /**
+     * Request a render target from the device to draw into. This gives you the
+     * gl.BACK target.
+     *
+     * Drawing should be done within the callback by
+     * calling `ratget.clear()` or `target.draw()` family of methods.
+     *
+     * Also see `framebuffer.target()`.
+     */
+    target(cb) {
+        this.backbufferTarget.with(cb);
+    }
+}
+function createDebugFunc(gl, key) {
+    return function debugWrapper() {
+        console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
+        return gl[key].apply(gl, arguments);
+    };
+}
+function eqNumberArrays(left, right) {
+    if (left === right) {
+        return true;
+    }
+    if (left.length !== right.length) {
+        return false;
+    }
+    for (let i = 0; i < left.length; i++) {
+        if (left[i] !== right[i]) {
+            return false;
+        }
+    }
+    return true;
+}
 
 /**
  * Vertex buffers contain GPU accessible data. Accessing them is usually done
@@ -1282,17 +1255,6 @@ class VertexBuffer {
         return new VertexBuffer(dev.gl, type, data.length, data.length * sizeOf(type), usage).store(data);
     }
     /**
-     * Force buffer reinitialization.
-     */
-    init() {
-        const { usage, byteLength, gl } = this;
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, byteLength, usage);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        this.glBuffer = buffer;
-    }
-    /**
      * Reinitialize invalid buffer, eg. after context is lost.
      */
     restore() {
@@ -1320,6 +1282,14 @@ class VertexBuffer {
         gl.bufferSubData(gl.ARRAY_BUFFER, byteOffset, buffer);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         return this;
+    }
+    init() {
+        const { usage, byteLength, gl } = this;
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, byteLength, usage);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        this.glBuffer = buffer;
     }
 }
 function createBuffer(type, arr) {
@@ -1407,17 +1377,6 @@ class ElementBuffer {
         return new ElementBuffer(dev.gl, type, primitive, data.length, data.length * sizeOf(type), usage).store(data);
     }
     /**
-     * Force buffer reinitialization.
-     */
-    init() {
-        const { usage, byteLength, gl } = this;
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteLength, usage);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-        this.glBuffer = buffer;
-    }
-    /**
      * Reinitialize invalid buffer, eg. after context is lost.
      */
     restore() {
@@ -1445,6 +1404,14 @@ class ElementBuffer {
         gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, byteOffset, buffer);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         return this;
+    }
+    init() {
+        const { usage, byteLength, gl } = this;
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteLength, usage);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        this.glBuffer = buffer;
     }
 }
 function createBuffer$1(type, arr) {
@@ -1558,16 +1525,29 @@ class Attributes {
         return this.elementBuffer && this.elementBuffer.type;
     }
     /**
-     * Force vertex array reinitialization.
+     * Reinitialize invalid vertex array, eg. after context is lost. Also tries
+     * to reinitialize vertex buffer and element buffer dependencies.
      */
+    restore() {
+        const { dev: { gl }, glVertexArray, attributes, elementBuffer } = this;
+        if (elementBuffer) {
+            elementBuffer.restore();
+        }
+        attributes.forEach(attr => attr.buffer.restore());
+        // If we have no attributes nor elements, there is no need to restore
+        // any GPU state
+        if (!this.isEmpty() && !gl.isVertexArray(glVertexArray)) {
+            this.init();
+        }
+    }
     init() {
         // Do not create the gl vao if there are no buffers to bind
         if (this.isEmpty()) {
             return;
         }
-        const { dev: { gl, [SYM_STACK_VERTEX_ARRAY]: stackVertexArray }, attributes, elementBuffer, } = this;
+        const { dev: { gl, __STACK_VERTEX_ARRAY }, attributes, elementBuffer, } = this;
         const vao = gl.createVertexArray();
-        stackVertexArray.push(vao);
+        __STACK_VERTEX_ARRAY.push(vao);
         attributes.forEach(({ location, type, buffer: { glBuffer, type: glBufferType }, size, normalized = false, divisor, }) => {
             // Enable sending attribute arrays for location
             gl.enableVertexAttribArray(location);
@@ -1589,28 +1569,12 @@ class Attributes {
         if (elementBuffer) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
         }
-        stackVertexArray.pop(vao);
+        __STACK_VERTEX_ARRAY.pop();
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         if (elementBuffer) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         }
         this.glVertexArray = vao;
-    }
-    /**
-     * Reinitialize invalid vertex array, eg. after context is lost. Also tries
-     * to reinitialize vertex buffer and element buffer dependencies.
-     */
-    restore() {
-        const { dev: { gl }, glVertexArray, attributes, elementBuffer } = this;
-        if (elementBuffer) {
-            elementBuffer.restore();
-        }
-        attributes.forEach(attr => attr.buffer.restore());
-        // If we have no attributes nor elements, there is no need to restore
-        // any GPU state
-        if (!this.isEmpty() && !gl.isVertexArray(glVertexArray)) {
-            this.init();
-        }
     }
     isEmpty() {
         // IF we have either attributes or elements, this geometry can not
@@ -1761,18 +1725,6 @@ class Texture {
         const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
         return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
     }
-    init() {
-        const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
-        const texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        this.glTexture = texture;
-    }
     restore() {
         const { gl, glTexture } = this;
         if (!gl.isTexture(glTexture)) {
@@ -1800,6 +1752,18 @@ class Texture {
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
         gl.generateMipmap(gl.TEXTURE_2D);
         gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+    init() {
+        const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        this.glTexture = texture;
     }
 }
 
@@ -1878,30 +1842,6 @@ class Framebuffer {
         this.init();
     }
     /**
-     * Force framebuffer reinitialization.
-     */
-    init() {
-        const { width, height, dev, dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: stackDrawFramebuffer }, glColorAttachments, colors, depthStencil, depthOnly, } = this;
-        const fbo = gl.createFramebuffer();
-        stackDrawFramebuffer.push(fbo);
-        colors.forEach((buffer, i) => {
-            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
-        });
-        if (depthStencil) {
-            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil, 0);
-        }
-        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
-        stackDrawFramebuffer.pop();
-        if (status !== gl.FRAMEBUFFER_COMPLETE) {
-            gl.deleteFramebuffer(fbo);
-            throw new Error("Framebuffer not complete");
-        }
-        this.glFramebuffer = fbo;
-        if (fbo) {
-            this.framebufferTarget = new Target(dev, glColorAttachments, fbo, width, height);
-        }
-    }
-    /**
      * Reinitialize invalid framebuffer, eg. after context is lost.
      */
     restore() {
@@ -1926,6 +1866,27 @@ class Framebuffer {
     target(cb) {
         if (this.framebufferTarget) {
             this.framebufferTarget.with(cb);
+        }
+    }
+    init() {
+        const { width, height, dev, dev: { gl, __STACK_DRAW_FRAMEBUFFER }, glColorAttachments, colors, depthStencil, depthOnly, } = this;
+        const fbo = gl.createFramebuffer();
+        __STACK_DRAW_FRAMEBUFFER.push(fbo);
+        colors.forEach((buffer, i) => {
+            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
+        });
+        if (depthStencil) {
+            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil, 0);
+        }
+        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
+        __STACK_DRAW_FRAMEBUFFER.pop();
+        if (status !== gl.FRAMEBUFFER_COMPLETE) {
+            gl.deleteFramebuffer(fbo);
+            throw new Error("Framebuffer not complete");
+        }
+        this.glFramebuffer = fbo;
+        if (fbo) {
+            this.framebufferTarget = new Target(dev, glColorAttachments, fbo, width, height);
         }
     }
 }

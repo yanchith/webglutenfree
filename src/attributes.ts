@@ -1,7 +1,7 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
-import { Device as _Device, SYM_STACK_VERTEX_ARRAY } from "./core";
 import { Primitive, DataType } from "./types";
+import { Device as _Device } from "./device";
 import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
 import {
     ElementBuffer,
@@ -221,20 +221,32 @@ export class Attributes {
     }
 
     /**
-     * Force vertex array reinitialization.
+     * Reinitialize invalid vertex array, eg. after context is lost. Also tries
+     * to reinitialize vertex buffer and element buffer dependencies.
      */
-    init(): void {
+    restore(): void {
+        const { dev: { gl }, glVertexArray, attributes, elementBuffer } = this;
+        if (elementBuffer) { elementBuffer.restore(); }
+        attributes.forEach(attr => attr.buffer.restore());
+        // If we have no attributes nor elements, there is no need to restore
+        // any GPU state
+        if (!this.isEmpty() && !gl.isVertexArray(glVertexArray)) {
+            this.init();
+        }
+    }
+
+    private init(): void {
         // Do not create the gl vao if there are no buffers to bind
         if (this.isEmpty()) { return; }
 
         const {
-            dev: { gl, [SYM_STACK_VERTEX_ARRAY]: stackVertexArray },
+            dev: { gl, __STACK_VERTEX_ARRAY },
             attributes,
             elementBuffer,
         } = this;
         const vao = gl.createVertexArray();
 
-        stackVertexArray.push(vao);
+        __STACK_VERTEX_ARRAY.push(vao);
 
         attributes.forEach(({
             location,
@@ -278,7 +290,7 @@ export class Attributes {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
         }
 
-        stackVertexArray.pop(vao);
+        __STACK_VERTEX_ARRAY.pop();
 
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         if (elementBuffer) {
@@ -286,21 +298,6 @@ export class Attributes {
         }
 
         (this as any).glVertexArray = vao;
-    }
-
-    /**
-     * Reinitialize invalid vertex array, eg. after context is lost. Also tries
-     * to reinitialize vertex buffer and element buffer dependencies.
-     */
-    restore(): void {
-        const { dev: { gl }, glVertexArray, attributes, elementBuffer } = this;
-        if (elementBuffer) { elementBuffer.restore(); }
-        attributes.forEach(attr => attr.buffer.restore());
-        // If we have no attributes nor elements, there is no need to restore
-        // any GPU state
-        if (!this.isEmpty() && !gl.isVertexArray(glVertexArray)) {
-            this.init();
-        }
     }
 
     private isEmpty(): boolean {

@@ -1,9 +1,6 @@
 import * as assert from "./util/assert";
-import {
-    Device as _Device,
-    Target,
-    SYM_STACK_DRAW_FRAMEBUFFER,
-} from "./core";
+import { Device as _Device } from "./device";
+import { Target } from "./target";
 import {
     Texture as _Texture,
     TextureColorInternalFormat as TexColorFmt,
@@ -146,67 +143,6 @@ export class Framebuffer {
     }
 
     /**
-     * Force framebuffer reinitialization.
-     */
-    init(): void {
-        const {
-            width,
-            height,
-            dev,
-            dev: { gl, [SYM_STACK_DRAW_FRAMEBUFFER]: stackDrawFramebuffer },
-            glColorAttachments,
-            colors,
-            depthStencil,
-            depthOnly,
-        } = this;
-
-        const fbo = gl.createFramebuffer();
-
-        stackDrawFramebuffer.push(fbo);
-
-        colors.forEach((buffer, i) => {
-            gl.framebufferTexture2D(
-                gl.DRAW_FRAMEBUFFER,
-                gl.COLOR_ATTACHMENT0 + i,
-                gl.TEXTURE_2D,
-                buffer.glTexture,
-                0,
-            );
-        });
-
-        if (depthStencil) {
-            gl.framebufferTexture2D(
-                gl.DRAW_FRAMEBUFFER,
-                depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT,
-                gl.TEXTURE_2D,
-                depthStencil,
-                0,
-            );
-        }
-
-        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
-
-        stackDrawFramebuffer.pop();
-
-        if (status !== gl.FRAMEBUFFER_COMPLETE) {
-            gl.deleteFramebuffer(fbo);
-            throw new Error("Framebuffer not complete");
-        }
-
-        (this as any).glFramebuffer = fbo;
-
-        if (fbo) {
-            this.framebufferTarget = new Target(
-                dev,
-                glColorAttachments,
-                fbo,
-                width,
-                height,
-            );
-        }
-    }
-
-    /**
      * Reinitialize invalid framebuffer, eg. after context is lost.
      */
     restore(): void {
@@ -232,5 +168,63 @@ export class Framebuffer {
      */
     target(cb: (rt: Target) => void): void {
         if (this.framebufferTarget) { this.framebufferTarget.with(cb); }
+    }
+
+    private init(): void {
+        const {
+            width,
+            height,
+            dev,
+            dev: { gl, __STACK_DRAW_FRAMEBUFFER },
+            glColorAttachments,
+            colors,
+            depthStencil,
+            depthOnly,
+        } = this;
+
+        const fbo = gl.createFramebuffer();
+
+        __STACK_DRAW_FRAMEBUFFER.push(fbo);
+
+        colors.forEach((buffer, i) => {
+            gl.framebufferTexture2D(
+                gl.DRAW_FRAMEBUFFER,
+                gl.COLOR_ATTACHMENT0 + i,
+                gl.TEXTURE_2D,
+                buffer.glTexture,
+                0,
+            );
+        });
+
+        if (depthStencil) {
+            gl.framebufferTexture2D(
+                gl.DRAW_FRAMEBUFFER,
+                depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT,
+                gl.TEXTURE_2D,
+                depthStencil,
+                0,
+            );
+        }
+
+        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
+
+        __STACK_DRAW_FRAMEBUFFER.pop();
+
+        if (status !== gl.FRAMEBUFFER_COMPLETE) {
+            gl.deleteFramebuffer(fbo);
+            throw new Error("Framebuffer not complete");
+        }
+
+        (this as any).glFramebuffer = fbo;
+
+        if (fbo) {
+            this.framebufferTarget = new Target(
+                dev,
+                glColorAttachments,
+                fbo,
+                width,
+                height,
+            );
+        }
     }
 }

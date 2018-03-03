@@ -1,5 +1,5 @@
-import { Device as _Device } from "./core";
 import { DataType } from "./types";
+import { Device as _Device } from "./device";
 
 export enum TextureWrap {
     CLAMP_TO_EDGE = 0x812F,
@@ -493,33 +493,6 @@ export class Texture<F extends TextureInternalFormat> {
         this.init();
     }
 
-    init(): void {
-        const {
-            gl,
-            width,
-            height,
-            format,
-            wrapS,
-            wrapT,
-            minFilter,
-            magFilter,
-        } = this;
-        const texture = gl.createTexture();
-
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-
-        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
-
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
-
-        gl.bindTexture(gl.TEXTURE_2D, null);
-
-        (this as any).glTexture = texture;
-    }
-
     restore(): void {
         const { gl, glTexture } = this;
         if (!gl.isTexture(glTexture)) { this.init(); }
@@ -561,5 +534,32 @@ export class Texture<F extends TextureInternalFormat> {
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
         gl.generateMipmap(gl.TEXTURE_2D);
         gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
+    private init(): void {
+        const {
+            gl,
+            width,
+            height,
+            format,
+            wrapS,
+            wrapT,
+            minFilter,
+            magFilter,
+        } = this;
+        const texture = gl.createTexture();
+
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+
+        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
+
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        (this as any).glTexture = texture;
     }
 }
