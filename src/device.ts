@@ -122,17 +122,17 @@ export class Device {
         return dev;
     }
 
-    readonly gl: WebGL2RenderingContext;
-    readonly canvas: HTMLCanvasElement;
+    readonly _gl: WebGL2RenderingContext;
+    readonly _canvas: HTMLCanvasElement;
 
-    readonly __STACK_VERTEX_ARRAY: Stack<WebGLVertexArrayObject | null>;
-    readonly __STACK_PROGRAM: Stack<WebGLProgram | null>;
-    readonly __STACK_DEPTH_TEST: Stack<DepthDescriptor | null>;
-    readonly __STACK_STENCIL_TEST: Stack<StencilDescriptor | null>;
-    readonly __STACK_BLEND: Stack<BlendDescriptor | null>;
-    readonly __STACK_DRAW_FRAMEBUFFER: Stack<WebGLFramebuffer | null>;
-    readonly __STACK_READ_FRAMEBUFFER: Stack<WebGLFramebuffer | null>;
-    readonly __STACK_DRAW_BUFFERS: Stack<number[]>;
+    readonly _stackVertexArray: Stack<WebGLVertexArrayObject | null>;
+    readonly _stackProgram: Stack<WebGLProgram | null>;
+    readonly _stackDepthTest: Stack<DepthDescriptor | null>;
+    readonly _stackStencilTest: Stack<StencilDescriptor | null>;
+    readonly _stackBlend: Stack<BlendDescriptor | null>;
+    readonly _stackDrawFramebuffer: Stack<WebGLFramebuffer | null>;
+    readonly _stackReadFramebuffer: Stack<WebGLFramebuffer | null>;
+    readonly _stackDrawBuffers: Stack<number[]>;
 
     private explicitPixelRatio?: number;
     private explicitViewport?: [number, number];
@@ -146,23 +146,23 @@ export class Device {
         explicitPixelRatio?: number,
         explicitViewport?: [number, number],
     ) {
-        this.gl = gl;
-        this.canvas = canvas;
+        this._gl = gl;
+        this._canvas = canvas;
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewport = explicitViewport;
         this.backbufferTarget = new Target(this, [gl.BACK], null);
 
-        this.__STACK_VERTEX_ARRAY = new Stack<WebGLVertexArrayObject | null>(
+        this._stackVertexArray = new Stack<WebGLVertexArrayObject | null>(
             null,
             (prev, val) => prev === val ? void 0 : gl.bindVertexArray(val),
         );
 
-        this.__STACK_PROGRAM = new Stack<WebGLProgram | null>(
+        this._stackProgram = new Stack<WebGLProgram | null>(
             null,
             (prev, val) => prev === val ? void 0 : gl.useProgram(val),
         );
 
-        this.__STACK_DEPTH_TEST = new Stack<DepthDescriptor | null>(
+        this._stackDepthTest = new Stack<DepthDescriptor | null>(
             null,
             (prev, val) => {
                 if (!DepthDescriptor.equals(prev, val)) {
@@ -176,7 +176,7 @@ export class Device {
             },
         );
 
-        this.__STACK_STENCIL_TEST = new Stack<StencilDescriptor | null>(
+        this._stackStencilTest = new Stack<StencilDescriptor | null>(
             null,
             (prev, val) => {
                 if (!StencilDescriptor.equals(prev, val)) {
@@ -209,7 +209,7 @@ export class Device {
             },
         );
 
-        this.__STACK_BLEND = new Stack<BlendDescriptor | null>(
+        this._stackBlend = new Stack<BlendDescriptor | null>(
             null,
             (prev, val) => {
                 if (!BlendDescriptor.equals(prev, val)) {
@@ -234,21 +234,21 @@ export class Device {
             },
         );
 
-        this.__STACK_DRAW_FRAMEBUFFER = new Stack<WebGLFramebuffer | null>(
+        this._stackDrawFramebuffer = new Stack<WebGLFramebuffer | null>(
             null,
             (prev, val) => prev === val
                 ? void 0
                 : gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val),
         );
 
-        this.__STACK_READ_FRAMEBUFFER = new Stack<WebGLFramebuffer | null>(
+        this._stackReadFramebuffer = new Stack<WebGLFramebuffer | null>(
             null,
             (prev, val) => prev === val
                 ? void 0
                 : gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val),
         );
 
-        this.__STACK_DRAW_BUFFERS = new Stack<number[]>(
+        this._stackDrawBuffers = new Stack<number[]>(
             [gl.BACK],
             (prev, val) => eqNumberArrays(prev, val)
                 ? void 0
@@ -260,14 +260,14 @@ export class Device {
      * Return width of the gl drawing buffer.
      */
     get bufferWidth(): number {
-        return this.gl.drawingBufferWidth;
+        return this._gl.drawingBufferWidth;
     }
 
     /**
      * Return height of the gl drawing buffer.
      */
     get bufferHeight(): number {
-        return this.gl.drawingBufferHeight;
+        return this._gl.drawingBufferHeight;
     }
 
     /**
@@ -275,7 +275,7 @@ export class Device {
      *   device.bufferWidth
      */
     get canvasWidth(): number {
-        return this.canvas.width;
+        return this._canvas.width;
     }
 
     /**
@@ -283,21 +283,21 @@ export class Device {
      *   device.bufferHeight
      */
     get canvasHeight(): number {
-        return this.canvas.height;
+        return this._canvas.height;
     }
 
     /**
      * Return width of canvas in CSS pixels (before applying device pixel ratio)
      */
     get canvasCSSWidth(): number {
-        return this.canvas.clientWidth;
+        return this._canvas.clientWidth;
     }
 
     /**
      * Return height of canvas in CSS pixels (before applying device pixel ratio)
      */
     get canvasCSSHeight(): number {
-        return this.canvas.clientHeight;
+        return this._canvas.clientHeight;
     }
 
     /**
@@ -313,7 +313,7 @@ export class Device {
      */
     update(): void {
         const dpr = this.pixelRatio;
-        const canvas = this.canvas;
+        const canvas = this._canvas;
         const width = this.explicitViewport
             && this.explicitViewport[0]
             || canvas.clientWidth * dpr;

@@ -135,7 +135,7 @@ export class Framebuffer {
         this.depthStencil = depthStencil;
         this.depthOnly = depthOnly;
         this.glColorAttachments = colors
-            .map((_, i) => dev.gl.COLOR_ATTACHMENT0 + i);
+            .map((_, i) => dev._gl.COLOR_ATTACHMENT0 + i);
         this.glFramebuffer = null;
         this.framebufferTarget = null;
 
@@ -147,14 +147,14 @@ export class Framebuffer {
      */
     restore(): void {
         const {
-            dev: { gl },
+            dev: { _gl },
             glFramebuffer,
             colors,
             depthStencil,
         } = this;
         colors.forEach(buffer => buffer.restore());
         if (depthStencil) { depthStencil.restore(); }
-        if (!gl.isFramebuffer(glFramebuffer)) { this.init(); }
+        if (!_gl.isFramebuffer(glFramebuffer)) { this.init(); }
     }
 
     /**
@@ -175,43 +175,43 @@ export class Framebuffer {
             width,
             height,
             dev,
-            dev: { gl, __STACK_DRAW_FRAMEBUFFER },
+            dev: { _gl, _stackDrawFramebuffer },
             glColorAttachments,
             colors,
             depthStencil,
             depthOnly,
         } = this;
 
-        const fbo = gl.createFramebuffer();
+        const fbo = _gl.createFramebuffer();
 
-        __STACK_DRAW_FRAMEBUFFER.push(fbo);
+        _stackDrawFramebuffer.push(fbo);
 
         colors.forEach((buffer, i) => {
-            gl.framebufferTexture2D(
-                gl.DRAW_FRAMEBUFFER,
-                gl.COLOR_ATTACHMENT0 + i,
-                gl.TEXTURE_2D,
+            _gl.framebufferTexture2D(
+                _gl.DRAW_FRAMEBUFFER,
+                _gl.COLOR_ATTACHMENT0 + i,
+                _gl.TEXTURE_2D,
                 buffer.glTexture,
                 0,
             );
         });
 
         if (depthStencil) {
-            gl.framebufferTexture2D(
-                gl.DRAW_FRAMEBUFFER,
-                depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT,
-                gl.TEXTURE_2D,
+            _gl.framebufferTexture2D(
+                _gl.DRAW_FRAMEBUFFER,
+                depthOnly ? _gl.DEPTH_ATTACHMENT : _gl.DEPTH_STENCIL_ATTACHMENT,
+                _gl.TEXTURE_2D,
                 depthStencil,
                 0,
             );
         }
 
-        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
+        const status = _gl.checkFramebufferStatus(_gl.DRAW_FRAMEBUFFER);
 
-        __STACK_DRAW_FRAMEBUFFER.pop();
+        _stackDrawFramebuffer.pop();
 
-        if (status !== gl.FRAMEBUFFER_COMPLETE) {
-            gl.deleteFramebuffer(fbo);
+        if (status !== _gl.FRAMEBUFFER_COMPLETE) {
+            _gl.deleteFramebuffer(fbo);
             throw new Error("Framebuffer not complete");
         }
 

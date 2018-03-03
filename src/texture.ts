@@ -408,7 +408,7 @@ export class Texture<F extends TextureInternalFormat> {
         }: TextureOptions = {},
     ): Texture<F> {
         return new Texture(
-            dev.gl,
+            dev._gl,
             width, height,
             internalFormat,
             wrapS, wrapT,
@@ -450,7 +450,7 @@ export class Texture<F extends TextureInternalFormat> {
             wrapT = TextureWrap.CLAMP_TO_EDGE,
         } = options;
         return new Texture(
-            dev.gl,
+            dev._gl,
             width, height,
             internalFormat,
             wrapS, wrapT,

@@ -357,8 +357,8 @@ export class Command<P> {
      * Reinitialize invalid buffer, eg. after context is lost.
      */
     restore(): void {
-        const { dev: { gl }, glProgram } = this;
-        if (!gl.isProgram(glProgram)) { this.init(); }
+        const { dev: { _gl }, glProgram } = this;
+        if (!_gl.isProgram(glProgram)) { this.init(); }
     }
 
     /**
@@ -366,13 +366,16 @@ export class Command<P> {
      * actual attribute locations for the program in this command.
      */
     locate(attributes: AttributesConfig): AttributesConfig {
-        const { dev: { gl }, glProgram } = this;
+        const { dev: { _gl }, glProgram } = this;
         return Object.entries(attributes)
             .reduce<AttributesConfig>((accum, [identifier, definition]) => {
                 if (INT_PATTERN.test(identifier)) {
                     accum[identifier] = definition;
                 } else {
-                    const location = gl.getAttribLocation(glProgram, identifier);
+                    const location = _gl.getAttribLocation(
+                        glProgram,
+                        identifier,
+                    );
                     if (location === UNKNOWN_ATTRIB_LOCATION) {
                         throw new Error(`No location for attrib: ${identifier}`);
                     }
@@ -384,21 +387,21 @@ export class Command<P> {
 
     private init(): void {
         const {
-            dev: { gl, __STACK_PROGRAM },
+            dev: { _gl, _stackProgram },
             vsSource,
             fsSource,
             textures,
             uniforms,
         } = this;
 
-        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
-        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
-        const prog = createProgram(gl, vs, fs);
+        const vs = createShader(_gl, _gl.VERTEX_SHADER, vsSource);
+        const fs = createShader(_gl, _gl.FRAGMENT_SHADER, fsSource);
+        const prog = createProgram(_gl, vs, fs);
 
-        gl.deleteShader(vs);
-        gl.deleteShader(fs);
+        _gl.deleteShader(vs);
+        _gl.deleteShader(fs);
 
-        __STACK_PROGRAM.push(prog);
+        _stackProgram.push(prog);
 
         // Texture declarations are evaluated in two phases:
         // 1) Sampler location offsets are sent to the shader eagerly
@@ -408,11 +411,11 @@ export class Command<P> {
 
         const textureAccessors: TextureAccessor<P>[] = [];
         Object.entries(textures).forEach(([ident, t], i) => {
-            const loc = gl.getUniformLocation(prog, ident);
+            const loc = _gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for sampler: ${ident}`);
             }
-            gl.uniform1i(loc, i);
+            _gl.uniform1i(loc, i);
             textureAccessors.push(t);
         });
 
@@ -422,7 +425,7 @@ export class Command<P> {
 
         const uniformDescrs: UniformDescriptor<P>[] = [];
         Object.entries(uniforms).forEach(([ident, u]) => {
-            const loc = gl.getUniformLocation(prog, ident);
+            const loc = _gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for uniform: ${ident}`);
             }
@@ -430,111 +433,111 @@ export class Command<P> {
                 // Eagerly send everything we can process now to GPU
                 switch (u.type) {
                     case "1f":
-                        gl.uniform1f(loc, u.value);
+                        _gl.uniform1f(loc, u.value);
                         break;
                     case "1fv":
-                        gl.uniform1fv(loc, u.value);
+                        _gl.uniform1fv(loc, u.value);
                         break;
                     case "1i":
-                        gl.uniform1i(loc, u.value);
+                        _gl.uniform1i(loc, u.value);
                         break;
                     case "1iv":
-                        gl.uniform1iv(loc, u.value);
+                        _gl.uniform1iv(loc, u.value);
                         break;
                     case "1ui":
-                        gl.uniform1ui(loc, u.value);
+                        _gl.uniform1ui(loc, u.value);
                         break;
                     case "1uiv":
-                        gl.uniform1uiv(loc, u.value);
+                        _gl.uniform1uiv(loc, u.value);
                         break;
                     case "2f": {
                         const [x, y] = u.value;
-                        gl.uniform2f(loc, x, y);
+                        _gl.uniform2f(loc, x, y);
                         break;
                     }
                     case "2fv":
-                        gl.uniform2fv(loc, u.value);
+                        _gl.uniform2fv(loc, u.value);
                         break;
                     case "2i": {
                         const [x, y] = u.value;
-                        gl.uniform2i(loc, x, y);
+                        _gl.uniform2i(loc, x, y);
                         break;
                     }
                     case "2iv":
-                        gl.uniform2iv(loc, u.value);
+                        _gl.uniform2iv(loc, u.value);
                         break;
                     case "2ui": {
                         const [x, y] = u.value;
-                        gl.uniform2ui(loc, x, y);
+                        _gl.uniform2ui(loc, x, y);
                         break;
                     }
                     case "2uiv":
-                        gl.uniform2uiv(loc, u.value);
+                        _gl.uniform2uiv(loc, u.value);
                         break;
                     case "3f": {
                         const [x, y, z] = u.value;
-                        gl.uniform3f(loc, x, y, z);
+                        _gl.uniform3f(loc, x, y, z);
                         break;
                     }
                     case "3fv":
-                        gl.uniform3fv(loc, u.value);
+                        _gl.uniform3fv(loc, u.value);
                         break;
                     case "3i": {
                         const [x, y, z] = u.value;
-                        gl.uniform3i(loc, x, y, z);
+                        _gl.uniform3i(loc, x, y, z);
                         break;
                     }
                     case "3iv":
-                        gl.uniform3iv(loc, u.value);
+                        _gl.uniform3iv(loc, u.value);
                         break;
                     case "3ui": {
                         const [x, y, z] = u.value;
-                        gl.uniform3ui(loc, x, y, z);
+                        _gl.uniform3ui(loc, x, y, z);
                         break;
                     }
                     case "3uiv":
-                        gl.uniform3uiv(loc, u.value);
+                        _gl.uniform3uiv(loc, u.value);
                         break;
                     case "4f": {
                         const [x, y, z, w] = u.value;
-                        gl.uniform4f(loc, x, y, z, w);
+                        _gl.uniform4f(loc, x, y, z, w);
                         break;
                     }
                     case "4fv":
-                        gl.uniform4fv(loc, u.value);
+                        _gl.uniform4fv(loc, u.value);
                         break;
                     case "4i": {
                         const [x, y, z, w] = u.value;
-                        gl.uniform4i(loc, x, y, z, w);
+                        _gl.uniform4i(loc, x, y, z, w);
                         break;
                     }
                     case "4iv":
-                        gl.uniform4iv(loc, u.value);
+                        _gl.uniform4iv(loc, u.value);
                         break;
                     case "4ui": {
                         const [x, y, z, w] = u.value;
-                        gl.uniform4ui(loc, x, y, z, w);
+                        _gl.uniform4ui(loc, x, y, z, w);
                         break;
                     }
                     case "4uiv":
-                        gl.uniform4uiv(loc, u.value);
+                        _gl.uniform4uiv(loc, u.value);
                         break;
                     case "matrix2fv":
-                        gl.uniformMatrix2fv(
+                        _gl.uniformMatrix2fv(
                             loc,
                             false,
                             u.value,
                         );
                         break;
                     case "matrix3fv":
-                        gl.uniformMatrix3fv(
+                        _gl.uniformMatrix3fv(
                             loc,
                             false,
                             u.value,
                         );
                         break;
                     case "matrix4fv":
-                        gl.uniformMatrix4fv(
+                        _gl.uniformMatrix4fv(
                             loc,
                             false,
                             u.value,
@@ -548,7 +551,7 @@ export class Command<P> {
             }
         });
 
-        __STACK_PROGRAM.pop();
+        _stackProgram.pop();
 
         (this as any).glProgram = prog;
         (this as any).textureAccessors = textureAccessors;

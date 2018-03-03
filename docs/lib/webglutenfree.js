@@ -178,25 +178,25 @@ class Target {
      * unnecessary rebinding.
      */
     with(cb) {
-        const { dev: { gl, __STACK_DRAW_BUFFERS, __STACK_DRAW_FRAMEBUFFER }, glFramebuffer, glDrawBuffers, } = this;
-        const { width = gl.drawingBufferWidth, height = gl.drawingBufferHeight, } = this;
-        __STACK_DRAW_FRAMEBUFFER.push(glFramebuffer);
-        __STACK_DRAW_BUFFERS.push(glDrawBuffers);
-        gl.viewport(0, 0, width, height);
+        const { dev: { _gl, _stackDrawBuffers, _stackDrawFramebuffer }, glFramebuffer, glDrawBuffers, } = this;
+        const { width = _gl.drawingBufferWidth, height = _gl.drawingBufferHeight, } = this;
+        _stackDrawFramebuffer.push(glFramebuffer);
+        _stackDrawBuffers.push(glDrawBuffers);
+        _gl.viewport(0, 0, width, height);
         cb(this);
-        __STACK_DRAW_FRAMEBUFFER.pop();
-        __STACK_DRAW_BUFFERS.pop();
+        _stackDrawFramebuffer.pop();
+        _stackDrawBuffers.pop();
     }
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
      * choose, which buffers to blit.
      */
     blit(source, bits) {
-        const { dev: { gl, __STACK_READ_FRAMEBUFFER }, width, height, } = this;
+        const { dev: { _gl, _stackReadFramebuffer }, width, height, } = this;
         this.with(() => {
-            __STACK_READ_FRAMEBUFFER.push(source.glFramebuffer);
-            gl.blitFramebuffer(0, 0, source.width, source.height, 0, 0, width || gl.drawingBufferWidth, height || gl.drawingBufferHeight, bits, gl.NEAREST);
-            __STACK_READ_FRAMEBUFFER.pop();
+            _stackReadFramebuffer.push(source.glFramebuffer);
+            _gl.blitFramebuffer(0, 0, source.width, source.height, 0, 0, width || _gl.drawingBufferWidth, height || _gl.drawingBufferHeight, bits, _gl.NEAREST);
+            _stackReadFramebuffer.pop();
         });
     }
     /**
@@ -204,7 +204,7 @@ class Target {
      */
     clear(bits, { r = 0, g = 0, b = 0, a = 1, depth = 1, stencil = 0, } = {}) {
         this.with(() => {
-            const gl = this.dev.gl;
+            const gl = this.dev._gl;
             if (bits & BufferBits.COLOR) {
                 gl.clearColor(r, g, b, a);
             }
@@ -223,17 +223,17 @@ class Target {
      * if used.
      */
     draw(cmd, attrs, props) {
-        const { dev: { __STACK_VERTEX_ARRAY, __STACK_PROGRAM, __STACK_DEPTH_TEST, __STACK_STENCIL_TEST, __STACK_BLEND, }, } = this;
+        const { dev: { _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         this.with(() => {
-            __STACK_DEPTH_TEST.push(depthDescr);
-            __STACK_STENCIL_TEST.push(stencilDescr);
-            __STACK_BLEND.push(blendDescr);
-            __STACK_PROGRAM.push(glProgram);
+            _stackDepthTest.push(depthDescr);
+            _stackStencilTest.push(stencilDescr);
+            _stackBlend.push(blendDescr);
+            _stackProgram.push(glProgram);
             this.textures(textureAccessors, props, 0);
             this.uniforms(uniformDescrs, props, 0);
             // Note that attrs.glVertexArray may be null for empty attrs -> ok
-            __STACK_VERTEX_ARRAY.push(attrs.glVertexArray);
+            _stackVertexArray.push(attrs.glVertexArray);
             if (attrs.indexed) {
                 this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
                 attrs.instanceCount);
@@ -242,11 +242,11 @@ class Target {
                 this.drawArrays(attrs.primitive, attrs.count, 0, // offset
                 attrs.instanceCount);
             }
-            __STACK_VERTEX_ARRAY.pop();
-            __STACK_BLEND.pop();
-            __STACK_STENCIL_TEST.pop();
-            __STACK_DEPTH_TEST.pop();
-            __STACK_PROGRAM.pop();
+            _stackVertexArray.pop();
+            _stackBlend.pop();
+            _stackStencilTest.pop();
+            _stackDepthTest.pop();
+            _stackProgram.pop();
         });
     }
     /**
@@ -258,16 +258,16 @@ class Target {
      * unnecesasry rebinding.
      */
     batch(cmd, cb) {
-        const { dev: { __STACK_VERTEX_ARRAY, __STACK_PROGRAM, __STACK_DEPTH_TEST, __STACK_STENCIL_TEST, __STACK_BLEND, }, } = this;
+        const { dev: { _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch, unless API
         // is badly abused and the draw() callback is called outside ot batch()
         // Perform shared batch setup
-        __STACK_DEPTH_TEST.push(depthDescr);
-        __STACK_STENCIL_TEST.push(stencilDescr);
-        __STACK_BLEND.push(blendDescr);
-        __STACK_PROGRAM.push(glProgram);
+        _stackDepthTest.push(depthDescr);
+        _stackStencilTest.push(stencilDescr);
+        _stackBlend.push(blendDescr);
+        _stackProgram.push(glProgram);
         let iter = 0;
         cb((attrs, props) => {
             // with() ensures the original target is still bound
@@ -276,13 +276,13 @@ class Target {
                 // TODO: find a way to restore vertex array rebinding
                 // optimization
                 // Ensure the shared setup still holds
-                __STACK_DEPTH_TEST.push(depthDescr);
-                __STACK_STENCIL_TEST.push(stencilDescr);
-                __STACK_BLEND.push(blendDescr);
-                __STACK_PROGRAM.push(glProgram);
+                _stackDepthTest.push(depthDescr);
+                _stackStencilTest.push(stencilDescr);
+                _stackBlend.push(blendDescr);
+                _stackProgram.push(glProgram);
                 this.textures(textureAccessors, props, iter);
                 this.uniforms(uniformDescrs, props, iter);
-                __STACK_VERTEX_ARRAY.push(attrs.glVertexArray);
+                _stackVertexArray.push(attrs.glVertexArray);
                 if (attrs.indexed) {
                     this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
                     attrs.instanceCount);
@@ -291,20 +291,20 @@ class Target {
                     this.drawArrays(attrs.primitive, attrs.count, 0, // offset
                     attrs.instanceCount);
                 }
-                __STACK_VERTEX_ARRAY.pop();
-                __STACK_PROGRAM.pop();
-                __STACK_BLEND.pop();
-                __STACK_STENCIL_TEST.pop();
-                __STACK_DEPTH_TEST.pop();
+                _stackVertexArray.pop();
+                _stackProgram.pop();
+                _stackBlend.pop();
+                _stackStencilTest.pop();
+                _stackDepthTest.pop();
             });
         });
-        __STACK_PROGRAM.pop();
-        __STACK_BLEND.pop();
-        __STACK_STENCIL_TEST.pop();
-        __STACK_DEPTH_TEST.pop();
+        _stackProgram.pop();
+        _stackBlend.pop();
+        _stackStencilTest.pop();
+        _stackDepthTest.pop();
     }
     drawArrays(primitive, count, offset, instanceCount) {
-        const gl = this.dev.gl;
+        const gl = this.dev._gl;
         if (instanceCount) {
             gl.drawArraysInstanced(primitive, offset, count, instanceCount);
         }
@@ -313,7 +313,7 @@ class Target {
         }
     }
     drawElements(primitive, count, type, offset, instCount) {
-        const gl = this.dev.gl;
+        const gl = this.dev._gl;
         if (instCount) {
             gl.drawElementsInstanced(primitive, count, type, offset, instCount);
         }
@@ -322,7 +322,7 @@ class Target {
         }
     }
     textures(textureAccessors, props, index) {
-        const gl = this.dev.gl;
+        const gl = this.dev._gl;
         textureAccessors.forEach((accessor, i) => {
             const tex = access(props, index, accessor);
             gl.activeTexture(gl.TEXTURE0 + i);
@@ -330,7 +330,7 @@ class Target {
         });
     }
     uniforms(uniformDescrs, props, index) {
-        const gl = this.dev.gl;
+        const gl = this.dev._gl;
         uniformDescrs.forEach(({ identifier: ident, location: loc, definition: def, }) => {
             switch (def.type) {
                 case "1f":
@@ -548,8 +548,8 @@ class Command {
      * Reinitialize invalid buffer, eg. after context is lost.
      */
     restore() {
-        const { dev: { gl }, glProgram } = this;
-        if (!gl.isProgram(glProgram)) {
+        const { dev: { _gl }, glProgram } = this;
+        if (!_gl.isProgram(glProgram)) {
             this.init();
         }
     }
@@ -558,14 +558,14 @@ class Command {
      * actual attribute locations for the program in this command.
      */
     locate(attributes) {
-        const { dev: { gl }, glProgram } = this;
+        const { dev: { _gl }, glProgram } = this;
         return Object.entries(attributes)
             .reduce((accum, [identifier, definition]) => {
             if (INT_PATTERN.test(identifier)) {
                 accum[identifier] = definition;
             }
             else {
-                const location = gl.getAttribLocation(glProgram, identifier);
+                const location = _gl.getAttribLocation(glProgram, identifier);
                 if (location === UNKNOWN_ATTRIB_LOCATION) {
                     throw new Error(`No location for attrib: ${identifier}`);
                 }
@@ -575,13 +575,13 @@ class Command {
         }, {});
     }
     init() {
-        const { dev: { gl, __STACK_PROGRAM }, vsSource, fsSource, textures, uniforms, } = this;
-        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
-        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
-        const prog = createProgram(gl, vs, fs);
-        gl.deleteShader(vs);
-        gl.deleteShader(fs);
-        __STACK_PROGRAM.push(prog);
+        const { dev: { _gl, _stackProgram }, vsSource, fsSource, textures, uniforms, } = this;
+        const vs = createShader(_gl, _gl.VERTEX_SHADER, vsSource);
+        const fs = createShader(_gl, _gl.FRAGMENT_SHADER, fsSource);
+        const prog = createProgram(_gl, vs, fs);
+        _gl.deleteShader(vs);
+        _gl.deleteShader(fs);
+        _stackProgram.push(prog);
         // Texture declarations are evaluated in two phases:
         // 1) Sampler location offsets are sent to the shader eagerly
         // 2) Textures are bound to the locations at draw time
@@ -589,11 +589,11 @@ class Command {
         // but we store the descriptors in an array, remembering the order.
         const textureAccessors = [];
         Object.entries(textures).forEach(([ident, t], i) => {
-            const loc = gl.getUniformLocation(prog, ident);
+            const loc = _gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for sampler: ${ident}`);
             }
-            gl.uniform1i(loc, i);
+            _gl.uniform1i(loc, i);
             textureAccessors.push(t);
         });
         // Some uniform declarations can be evaluated right away, so do it at
@@ -601,7 +601,7 @@ class Command {
         // render-time.
         const uniformDescrs = [];
         Object.entries(uniforms).forEach(([ident, u]) => {
-            const loc = gl.getUniformLocation(prog, ident);
+            const loc = _gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for uniform: ${ident}`);
             }
@@ -609,103 +609,103 @@ class Command {
                 // Eagerly send everything we can process now to GPU
                 switch (u.type) {
                     case "1f":
-                        gl.uniform1f(loc, u.value);
+                        _gl.uniform1f(loc, u.value);
                         break;
                     case "1fv":
-                        gl.uniform1fv(loc, u.value);
+                        _gl.uniform1fv(loc, u.value);
                         break;
                     case "1i":
-                        gl.uniform1i(loc, u.value);
+                        _gl.uniform1i(loc, u.value);
                         break;
                     case "1iv":
-                        gl.uniform1iv(loc, u.value);
+                        _gl.uniform1iv(loc, u.value);
                         break;
                     case "1ui":
-                        gl.uniform1ui(loc, u.value);
+                        _gl.uniform1ui(loc, u.value);
                         break;
                     case "1uiv":
-                        gl.uniform1uiv(loc, u.value);
+                        _gl.uniform1uiv(loc, u.value);
                         break;
                     case "2f": {
                         const [x, y] = u.value;
-                        gl.uniform2f(loc, x, y);
+                        _gl.uniform2f(loc, x, y);
                         break;
                     }
                     case "2fv":
-                        gl.uniform2fv(loc, u.value);
+                        _gl.uniform2fv(loc, u.value);
                         break;
                     case "2i": {
                         const [x, y] = u.value;
-                        gl.uniform2i(loc, x, y);
+                        _gl.uniform2i(loc, x, y);
                         break;
                     }
                     case "2iv":
-                        gl.uniform2iv(loc, u.value);
+                        _gl.uniform2iv(loc, u.value);
                         break;
                     case "2ui": {
                         const [x, y] = u.value;
-                        gl.uniform2ui(loc, x, y);
+                        _gl.uniform2ui(loc, x, y);
                         break;
                     }
                     case "2uiv":
-                        gl.uniform2uiv(loc, u.value);
+                        _gl.uniform2uiv(loc, u.value);
                         break;
                     case "3f": {
                         const [x, y, z] = u.value;
-                        gl.uniform3f(loc, x, y, z);
+                        _gl.uniform3f(loc, x, y, z);
                         break;
                     }
                     case "3fv":
-                        gl.uniform3fv(loc, u.value);
+                        _gl.uniform3fv(loc, u.value);
                         break;
                     case "3i": {
                         const [x, y, z] = u.value;
-                        gl.uniform3i(loc, x, y, z);
+                        _gl.uniform3i(loc, x, y, z);
                         break;
                     }
                     case "3iv":
-                        gl.uniform3iv(loc, u.value);
+                        _gl.uniform3iv(loc, u.value);
                         break;
                     case "3ui": {
                         const [x, y, z] = u.value;
-                        gl.uniform3ui(loc, x, y, z);
+                        _gl.uniform3ui(loc, x, y, z);
                         break;
                     }
                     case "3uiv":
-                        gl.uniform3uiv(loc, u.value);
+                        _gl.uniform3uiv(loc, u.value);
                         break;
                     case "4f": {
                         const [x, y, z, w] = u.value;
-                        gl.uniform4f(loc, x, y, z, w);
+                        _gl.uniform4f(loc, x, y, z, w);
                         break;
                     }
                     case "4fv":
-                        gl.uniform4fv(loc, u.value);
+                        _gl.uniform4fv(loc, u.value);
                         break;
                     case "4i": {
                         const [x, y, z, w] = u.value;
-                        gl.uniform4i(loc, x, y, z, w);
+                        _gl.uniform4i(loc, x, y, z, w);
                         break;
                     }
                     case "4iv":
-                        gl.uniform4iv(loc, u.value);
+                        _gl.uniform4iv(loc, u.value);
                         break;
                     case "4ui": {
                         const [x, y, z, w] = u.value;
-                        gl.uniform4ui(loc, x, y, z, w);
+                        _gl.uniform4ui(loc, x, y, z, w);
                         break;
                     }
                     case "4uiv":
-                        gl.uniform4uiv(loc, u.value);
+                        _gl.uniform4uiv(loc, u.value);
                         break;
                     case "matrix2fv":
-                        gl.uniformMatrix2fv(loc, false, u.value);
+                        _gl.uniformMatrix2fv(loc, false, u.value);
                         break;
                     case "matrix3fv":
-                        gl.uniformMatrix3fv(loc, false, u.value);
+                        _gl.uniformMatrix3fv(loc, false, u.value);
                         break;
                     case "matrix4fv":
-                        gl.uniformMatrix4fv(loc, false, u.value);
+                        _gl.uniformMatrix4fv(loc, false, u.value);
                         break;
                     default: never(u);
                 }
@@ -715,7 +715,7 @@ class Command {
                 uniformDescrs.push(new UniformDescriptor(ident, loc, u));
             }
         });
-        __STACK_PROGRAM.pop();
+        _stackProgram.pop();
         this.glProgram = prog;
         this.textureAccessors = textureAccessors;
         this.uniformDescrs = uniformDescrs;
@@ -1066,14 +1066,14 @@ class Device {
         return dev;
     }
     constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
-        this.gl = gl;
-        this.canvas = canvas;
+        this._gl = gl;
+        this._canvas = canvas;
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewport = explicitViewport;
         this.backbufferTarget = new Target(this, [gl.BACK], null);
-        this.__STACK_VERTEX_ARRAY = new Stack(null, (prev, val) => prev === val ? void 0 : gl.bindVertexArray(val));
-        this.__STACK_PROGRAM = new Stack(null, (prev, val) => prev === val ? void 0 : gl.useProgram(val));
-        this.__STACK_DEPTH_TEST = new Stack(null, (prev, val) => {
+        this._stackVertexArray = new Stack(null, (prev, val) => prev === val ? void 0 : gl.bindVertexArray(val));
+        this._stackProgram = new Stack(null, (prev, val) => prev === val ? void 0 : gl.useProgram(val));
+        this._stackDepthTest = new Stack(null, (prev, val) => {
             if (!DepthDescriptor.equals(prev, val)) {
                 if (val) {
                     gl.enable(gl.DEPTH_TEST);
@@ -1086,7 +1086,7 @@ class Device {
                 }
             }
         });
-        this.__STACK_STENCIL_TEST = new Stack(null, (prev, val) => {
+        this._stackStencilTest = new Stack(null, (prev, val) => {
             if (!StencilDescriptor.equals(prev, val)) {
                 if (val) {
                     const { fFunc, bFunc, fFuncRef, bFuncRef, fFuncMask, bFuncMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = val;
@@ -1103,7 +1103,7 @@ class Device {
                 }
             }
         });
-        this.__STACK_BLEND = new Stack(null, (prev, val) => {
+        this._stackBlend = new Stack(null, (prev, val) => {
             if (!BlendDescriptor.equals(prev, val)) {
                 if (val) {
                     gl.enable(gl.BLEND);
@@ -1119,13 +1119,13 @@ class Device {
                 }
             }
         });
-        this.__STACK_DRAW_FRAMEBUFFER = new Stack(null, (prev, val) => prev === val
+        this._stackDrawFramebuffer = new Stack(null, (prev, val) => prev === val
             ? void 0
             : gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
-        this.__STACK_READ_FRAMEBUFFER = new Stack(null, (prev, val) => prev === val
+        this._stackReadFramebuffer = new Stack(null, (prev, val) => prev === val
             ? void 0
             : gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
-        this.__STACK_DRAW_BUFFERS = new Stack([gl.BACK], (prev, val) => eqNumberArrays(prev, val)
+        this._stackDrawBuffers = new Stack([gl.BACK], (prev, val) => eqNumberArrays(prev, val)
             ? void 0
             : gl.drawBuffers(val));
     }
@@ -1133,39 +1133,39 @@ class Device {
      * Return width of the gl drawing buffer.
      */
     get bufferWidth() {
-        return this.gl.drawingBufferWidth;
+        return this._gl.drawingBufferWidth;
     }
     /**
      * Return height of the gl drawing buffer.
      */
     get bufferHeight() {
-        return this.gl.drawingBufferHeight;
+        return this._gl.drawingBufferHeight;
     }
     /**
      * Return width of the canvas. This will usually be the same as:
      *   device.bufferWidth
      */
     get canvasWidth() {
-        return this.canvas.width;
+        return this._canvas.width;
     }
     /**
      * Return height of the canvas. This will usually be the same as:
      *   device.bufferHeight
      */
     get canvasHeight() {
-        return this.canvas.height;
+        return this._canvas.height;
     }
     /**
      * Return width of canvas in CSS pixels (before applying device pixel ratio)
      */
     get canvasCSSWidth() {
-        return this.canvas.clientWidth;
+        return this._canvas.clientWidth;
     }
     /**
      * Return height of canvas in CSS pixels (before applying device pixel ratio)
      */
     get canvasCSSHeight() {
-        return this.canvas.clientHeight;
+        return this._canvas.clientHeight;
     }
     /**
      * Return the device pixel ratio for this device
@@ -1179,7 +1179,7 @@ class Device {
      */
     update() {
         const dpr = this.pixelRatio;
-        const canvas = this.canvas;
+        const canvas = this._canvas;
         const width = this.explicitViewport
             && this.explicitViewport[0]
             || canvas.clientWidth * dpr;
@@ -1245,14 +1245,14 @@ class VertexBuffer {
      * Create a new vertex buffer with given type and of given size.
      */
     static create(dev, type, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
-        return new VertexBuffer(dev.gl, type, size, size * sizeOf(type), usage);
+        return new VertexBuffer(dev._gl, type, size, size * sizeOf(type), usage);
     }
     /**
      * Create a new vertex buffer of given type with provided data. Data is
      * referenced only for the duration of this call.
      */
     static withTypedArray(dev, type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
-        return new VertexBuffer(dev.gl, type, data.length, data.length * sizeOf(type), usage).store(data);
+        return new VertexBuffer(dev._gl, type, data.length, data.length * sizeOf(type), usage).store(data);
     }
     /**
      * Reinitialize invalid buffer, eg. after context is lost.
@@ -1347,7 +1347,7 @@ class ElementBuffer {
      * Create a new element buffer with given type, primitive, and size.
      */
     static create(dev, type, primitive, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
-        return new ElementBuffer(dev.gl, type, primitive, size, size * sizeOf(type), usage);
+        return new ElementBuffer(dev._gl, type, primitive, size, size * sizeOf(type), usage);
     }
     /**
      * Create a new element buffer from potentially nested array. Infers
@@ -1374,7 +1374,7 @@ class ElementBuffer {
      * referenced only for the duration of this call.
      */
     static withTypedArray(dev, type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
-        return new ElementBuffer(dev.gl, type, primitive, data.length, data.length * sizeOf(type), usage).store(data);
+        return new ElementBuffer(dev._gl, type, primitive, data.length, data.length * sizeOf(type), usage).store(data);
     }
     /**
      * Reinitialize invalid buffer, eg. after context is lost.
@@ -1529,14 +1529,14 @@ class Attributes {
      * to reinitialize vertex buffer and element buffer dependencies.
      */
     restore() {
-        const { dev: { gl }, glVertexArray, attributes, elementBuffer } = this;
+        const { dev: { _gl }, glVertexArray, attributes, elementBuffer } = this;
         if (elementBuffer) {
             elementBuffer.restore();
         }
         attributes.forEach(attr => attr.buffer.restore());
         // If we have no attributes nor elements, there is no need to restore
         // any GPU state
-        if (!this.isEmpty() && !gl.isVertexArray(glVertexArray)) {
+        if (!this.isEmpty() && !_gl.isVertexArray(glVertexArray)) {
             this.init();
         }
     }
@@ -1545,34 +1545,34 @@ class Attributes {
         if (this.isEmpty()) {
             return;
         }
-        const { dev: { gl, __STACK_VERTEX_ARRAY }, attributes, elementBuffer, } = this;
-        const vao = gl.createVertexArray();
-        __STACK_VERTEX_ARRAY.push(vao);
+        const { dev: { _gl, _stackVertexArray }, attributes, elementBuffer, } = this;
+        const vao = _gl.createVertexArray();
+        _stackVertexArray.push(vao);
         attributes.forEach(({ location, type, buffer: { glBuffer, type: glBufferType }, size, normalized = false, divisor, }) => {
             // Enable sending attribute arrays for location
-            gl.enableVertexAttribArray(location);
+            _gl.enableVertexAttribArray(location);
             // Send buffer
-            gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
+            _gl.bindBuffer(_gl.ARRAY_BUFFER, glBuffer);
             switch (type) {
                 case AttributeType.POINTER:
-                    gl.vertexAttribPointer(location, size, glBufferType, normalized, 0, 0);
+                    _gl.vertexAttribPointer(location, size, glBufferType, normalized, 0, 0);
                     break;
                 case AttributeType.IPOINTER:
-                    gl.vertexAttribIPointer(location, size, glBufferType, 0, 0);
+                    _gl.vertexAttribIPointer(location, size, glBufferType, 0, 0);
                     break;
                 default: never(type);
             }
             if (divisor) {
-                gl.vertexAttribDivisor(location, divisor);
+                _gl.vertexAttribDivisor(location, divisor);
             }
         });
         if (elementBuffer) {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
+            _gl.bindBuffer(_gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
         }
-        __STACK_VERTEX_ARRAY.pop();
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        _stackVertexArray.pop();
+        _gl.bindBuffer(_gl.ARRAY_BUFFER, null);
         if (elementBuffer) {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+            _gl.bindBuffer(_gl.ELEMENT_ARRAY_BUFFER, null);
         }
         this.glVertexArray = vao;
     }
@@ -1716,14 +1716,14 @@ class Texture {
         this.init();
     }
     static create(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
-        return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+        return new Texture(dev._gl, width, height, internalFormat, wrapS, wrapT, min, mag);
     }
     static withImage(dev, image, options) {
         return Texture.withTypedArray(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureFormat.RGBA, DataType.UNSIGNED_BYTE, options);
     }
     static withTypedArray(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
         const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
-        return new Texture(dev.gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
+        return new Texture(dev._gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
     }
     restore() {
         const { gl, glTexture } = this;
@@ -1836,7 +1836,7 @@ class Framebuffer {
         this.depthStencil = depthStencil;
         this.depthOnly = depthOnly;
         this.glColorAttachments = colors
-            .map((_, i) => dev.gl.COLOR_ATTACHMENT0 + i);
+            .map((_, i) => dev._gl.COLOR_ATTACHMENT0 + i);
         this.glFramebuffer = null;
         this.framebufferTarget = null;
         this.init();
@@ -1845,12 +1845,12 @@ class Framebuffer {
      * Reinitialize invalid framebuffer, eg. after context is lost.
      */
     restore() {
-        const { dev: { gl }, glFramebuffer, colors, depthStencil, } = this;
+        const { dev: { _gl }, glFramebuffer, colors, depthStencil, } = this;
         colors.forEach(buffer => buffer.restore());
         if (depthStencil) {
             depthStencil.restore();
         }
-        if (!gl.isFramebuffer(glFramebuffer)) {
+        if (!_gl.isFramebuffer(glFramebuffer)) {
             this.init();
         }
     }
@@ -1869,19 +1869,19 @@ class Framebuffer {
         }
     }
     init() {
-        const { width, height, dev, dev: { gl, __STACK_DRAW_FRAMEBUFFER }, glColorAttachments, colors, depthStencil, depthOnly, } = this;
-        const fbo = gl.createFramebuffer();
-        __STACK_DRAW_FRAMEBUFFER.push(fbo);
+        const { width, height, dev, dev: { _gl, _stackDrawFramebuffer }, glColorAttachments, colors, depthStencil, depthOnly, } = this;
+        const fbo = _gl.createFramebuffer();
+        _stackDrawFramebuffer.push(fbo);
         colors.forEach((buffer, i) => {
-            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
+            _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.COLOR_ATTACHMENT0 + i, _gl.TEXTURE_2D, buffer.glTexture, 0);
         });
         if (depthStencil) {
-            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, depthOnly ? gl.DEPTH_ATTACHMENT : gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil, 0);
+            _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, depthOnly ? _gl.DEPTH_ATTACHMENT : _gl.DEPTH_STENCIL_ATTACHMENT, _gl.TEXTURE_2D, depthStencil, 0);
         }
-        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
-        __STACK_DRAW_FRAMEBUFFER.pop();
-        if (status !== gl.FRAMEBUFFER_COMPLETE) {
-            gl.deleteFramebuffer(fbo);
+        const status = _gl.checkFramebufferStatus(_gl.DRAW_FRAMEBUFFER);
+        _stackDrawFramebuffer.pop();
+        if (status !== _gl.FRAMEBUFFER_COMPLETE) {
+            _gl.deleteFramebuffer(fbo);
             throw new Error("Framebuffer not complete");
         }
         this.glFramebuffer = fbo;

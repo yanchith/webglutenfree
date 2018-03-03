@@ -41,24 +41,24 @@ export class Target {
      */
     with(cb: (rt: Target) => void): void {
         const {
-            dev: { gl, __STACK_DRAW_BUFFERS, __STACK_DRAW_FRAMEBUFFER },
+            dev: { _gl, _stackDrawBuffers, _stackDrawFramebuffer },
             glFramebuffer,
             glDrawBuffers,
         } = this;
         const {
-            width = gl.drawingBufferWidth,
-            height = gl.drawingBufferHeight,
+            width = _gl.drawingBufferWidth,
+            height = _gl.drawingBufferHeight,
         } = this;
 
-        __STACK_DRAW_FRAMEBUFFER.push(glFramebuffer);
-        __STACK_DRAW_BUFFERS.push(glDrawBuffers);
+        _stackDrawFramebuffer.push(glFramebuffer);
+        _stackDrawBuffers.push(glDrawBuffers);
 
-        gl.viewport(0, 0, width, height);
+        _gl.viewport(0, 0, width, height);
 
         cb(this);
 
-        __STACK_DRAW_FRAMEBUFFER.pop();
-        __STACK_DRAW_BUFFERS.pop();
+        _stackDrawFramebuffer.pop();
+        _stackDrawBuffers.pop();
     }
 
     /**
@@ -67,22 +67,23 @@ export class Target {
      */
     blit(source: _Framebuffer, bits: BufferBits): void {
         const {
-            dev: { gl, __STACK_READ_FRAMEBUFFER },
+            dev: { _gl, _stackReadFramebuffer },
             width,
             height,
         } = this;
 
         this.with(() => {
-            __STACK_READ_FRAMEBUFFER.push(source.glFramebuffer);
-            gl.blitFramebuffer(
+            _stackReadFramebuffer.push(source.glFramebuffer);
+            _gl.blitFramebuffer(
                 0, 0,
                 source.width, source.height,
                 0, 0,
-                width || gl.drawingBufferWidth, height || gl.drawingBufferHeight,
+                width || _gl.drawingBufferWidth,
+                height || _gl.drawingBufferHeight,
                 bits,
-                gl.NEAREST,
+                _gl.NEAREST,
             );
-            __STACK_READ_FRAMEBUFFER.pop();
+            _stackReadFramebuffer.pop();
         });
     }
 
@@ -101,7 +102,7 @@ export class Target {
         }: TargetClearOptions = {},
     ): void {
         this.with(() => {
-            const gl = this.dev.gl;
+            const gl = this.dev._gl;
             if (bits & BufferBits.COLOR) { gl.clearColor(r, g, b, a); }
             if (bits & BufferBits.DEPTH) { gl.clearDepth(depth); }
             if (bits & BufferBits.STENCIL) { gl.clearStencil(stencil); }
@@ -117,11 +118,11 @@ export class Target {
     draw<P>(cmd: _Command<P>, attrs: _Attributes, props: P): void {
         const {
             dev: {
-                __STACK_VERTEX_ARRAY,
-                __STACK_PROGRAM,
-                __STACK_DEPTH_TEST,
-                __STACK_STENCIL_TEST,
-                __STACK_BLEND,
+                _stackVertexArray,
+                _stackProgram,
+                _stackDepthTest,
+                _stackStencilTest,
+                _stackBlend,
             },
         } = this;
         const {
@@ -134,16 +135,16 @@ export class Target {
         } = cmd;
 
         this.with(() => {
-            __STACK_DEPTH_TEST.push(depthDescr);
-            __STACK_STENCIL_TEST.push(stencilDescr);
-            __STACK_BLEND.push(blendDescr);
-            __STACK_PROGRAM.push(glProgram);
+            _stackDepthTest.push(depthDescr);
+            _stackStencilTest.push(stencilDescr);
+            _stackBlend.push(blendDescr);
+            _stackProgram.push(glProgram);
 
             this.textures(textureAccessors, props, 0);
             this.uniforms(uniformDescrs, props, 0);
 
             // Note that attrs.glVertexArray may be null for empty attrs -> ok
-            __STACK_VERTEX_ARRAY.push(attrs.glVertexArray);
+            _stackVertexArray.push(attrs.glVertexArray);
             if (attrs.indexed) {
                 this.drawElements(
                     attrs.primitive,
@@ -161,12 +162,12 @@ export class Target {
                 );
             }
 
-            __STACK_VERTEX_ARRAY.pop();
+            _stackVertexArray.pop();
 
-            __STACK_BLEND.pop();
-            __STACK_STENCIL_TEST.pop();
-            __STACK_DEPTH_TEST.pop();
-            __STACK_PROGRAM.pop();
+            _stackBlend.pop();
+            _stackStencilTest.pop();
+            _stackDepthTest.pop();
+            _stackProgram.pop();
         });
     }
 
@@ -184,11 +185,11 @@ export class Target {
     ): void {
         const {
             dev: {
-                __STACK_VERTEX_ARRAY,
-                __STACK_PROGRAM,
-                __STACK_DEPTH_TEST,
-                __STACK_STENCIL_TEST,
-                __STACK_BLEND,
+                _stackVertexArray,
+                _stackProgram,
+                _stackDepthTest,
+                _stackStencilTest,
+                _stackBlend,
             },
         } = this;
         const {
@@ -206,10 +207,10 @@ export class Target {
 
         // Perform shared batch setup
 
-        __STACK_DEPTH_TEST.push(depthDescr);
-        __STACK_STENCIL_TEST.push(stencilDescr);
-        __STACK_BLEND.push(blendDescr);
-        __STACK_PROGRAM.push(glProgram);
+        _stackDepthTest.push(depthDescr);
+        _stackStencilTest.push(stencilDescr);
+        _stackBlend.push(blendDescr);
+        _stackProgram.push(glProgram);
 
         let iter = 0;
 
@@ -223,15 +224,15 @@ export class Target {
 
                 // Ensure the shared setup still holds
 
-                __STACK_DEPTH_TEST.push(depthDescr);
-                __STACK_STENCIL_TEST.push(stencilDescr);
-                __STACK_BLEND.push(blendDescr);
-                __STACK_PROGRAM.push(glProgram);
+                _stackDepthTest.push(depthDescr);
+                _stackStencilTest.push(stencilDescr);
+                _stackBlend.push(blendDescr);
+                _stackProgram.push(glProgram);
 
                 this.textures(textureAccessors, props, iter);
                 this.uniforms(uniformDescrs, props, iter);
 
-                __STACK_VERTEX_ARRAY.push(attrs.glVertexArray);
+                _stackVertexArray.push(attrs.glVertexArray);
 
                 if (attrs.indexed) {
                     this.drawElements(
@@ -250,19 +251,19 @@ export class Target {
                     );
                 }
 
-                __STACK_VERTEX_ARRAY.pop();
+                _stackVertexArray.pop();
 
-                __STACK_PROGRAM.pop();
-                __STACK_BLEND.pop();
-                __STACK_STENCIL_TEST.pop();
-                __STACK_DEPTH_TEST.pop();
+                _stackProgram.pop();
+                _stackBlend.pop();
+                _stackStencilTest.pop();
+                _stackDepthTest.pop();
             });
         });
 
-        __STACK_PROGRAM.pop();
-        __STACK_BLEND.pop();
-        __STACK_STENCIL_TEST.pop();
-        __STACK_DEPTH_TEST.pop();
+        _stackProgram.pop();
+        _stackBlend.pop();
+        _stackStencilTest.pop();
+        _stackDepthTest.pop();
     }
 
     private drawArrays(
@@ -271,7 +272,7 @@ export class Target {
         offset: number,
         instanceCount: number,
     ): void {
-        const gl = this.dev.gl;
+        const gl = this.dev._gl;
         if (instanceCount) {
             gl.drawArraysInstanced(
                 primitive,
@@ -291,7 +292,7 @@ export class Target {
         offset: number,
         instCount: number,
     ): void {
-        const gl = this.dev.gl;
+        const gl = this.dev._gl;
         if (instCount) {
             gl.drawElementsInstanced(
                 primitive,
@@ -315,7 +316,7 @@ export class Target {
         props: P,
         index: number,
     ): void {
-        const gl = this.dev.gl;
+        const gl = this.dev._gl;
         textureAccessors.forEach((accessor, i) => {
             const tex = access(props, index, accessor);
             gl.activeTexture(gl.TEXTURE0 + i);
@@ -328,7 +329,7 @@ export class Target {
         props: P,
         index: number,
     ): void {
-        const gl = this.dev.gl;
+        const gl = this.dev._gl;
         uniformDescrs.forEach(({
             identifier: ident,
             location: loc,

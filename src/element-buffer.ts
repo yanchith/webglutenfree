@@ -64,7 +64,7 @@ export class ElementBuffer<T extends ElementBufferType> {
         { usage = BufferUsage.DYNAMIC_DRAW }: ElementBufferOptions = {},
     ): ElementBuffer<T> {
         return new ElementBuffer(
-            dev.gl,
+            dev._gl,
             type,
             primitive,
             size,
@@ -121,7 +121,7 @@ export class ElementBuffer<T extends ElementBufferType> {
         { usage = BufferUsage.STATIC_DRAW }: ElementBufferOptions = {},
     ): ElementBuffer<T> {
         return new ElementBuffer(
-            dev.gl,
+            dev._gl,
             type,
             primitive,
             data.length,

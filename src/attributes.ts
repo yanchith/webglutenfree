@@ -225,12 +225,12 @@ export class Attributes {
      * to reinitialize vertex buffer and element buffer dependencies.
      */
     restore(): void {
-        const { dev: { gl }, glVertexArray, attributes, elementBuffer } = this;
+        const { dev: { _gl }, glVertexArray, attributes, elementBuffer } = this;
         if (elementBuffer) { elementBuffer.restore(); }
         attributes.forEach(attr => attr.buffer.restore());
         // If we have no attributes nor elements, there is no need to restore
         // any GPU state
-        if (!this.isEmpty() && !gl.isVertexArray(glVertexArray)) {
+        if (!this.isEmpty() && !_gl.isVertexArray(glVertexArray)) {
             this.init();
         }
     }
@@ -240,13 +240,13 @@ export class Attributes {
         if (this.isEmpty()) { return; }
 
         const {
-            dev: { gl, __STACK_VERTEX_ARRAY },
+            dev: { _gl, _stackVertexArray },
             attributes,
             elementBuffer,
         } = this;
-        const vao = gl.createVertexArray();
+        const vao = _gl.createVertexArray();
 
-        __STACK_VERTEX_ARRAY.push(vao);
+        _stackVertexArray.push(vao);
 
         attributes.forEach(({
             location,
@@ -257,13 +257,13 @@ export class Attributes {
             divisor,
         }) => {
             // Enable sending attribute arrays for location
-            gl.enableVertexAttribArray(location);
+            _gl.enableVertexAttribArray(location);
 
             // Send buffer
-            gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
+            _gl.bindBuffer(_gl.ARRAY_BUFFER, glBuffer);
             switch (type) {
                 case AttributeType.POINTER:
-                    gl.vertexAttribPointer(
+                    _gl.vertexAttribPointer(
                         location,
                         size,
                         glBufferType,
@@ -273,7 +273,7 @@ export class Attributes {
                     );
                     break;
                 case AttributeType.IPOINTER:
-                    gl.vertexAttribIPointer(
+                    _gl.vertexAttribIPointer(
                         location,
                         size,
                         glBufferType,
@@ -283,18 +283,18 @@ export class Attributes {
                     break;
                 default: assert.never(type);
             }
-            if (divisor) { gl.vertexAttribDivisor(location, divisor); }
+            if (divisor) { _gl.vertexAttribDivisor(location, divisor); }
         });
 
         if (elementBuffer) {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
+            _gl.bindBuffer(_gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
         }
 
-        __STACK_VERTEX_ARRAY.pop();
+        _stackVertexArray.pop();
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        _gl.bindBuffer(_gl.ARRAY_BUFFER, null);
         if (elementBuffer) {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+            _gl.bindBuffer(_gl.ELEMENT_ARRAY_BUFFER, null);
         }
 
         (this as any).glVertexArray = vao;

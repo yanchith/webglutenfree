@@ -62,7 +62,7 @@ export class VertexBuffer<T extends VertexBufferType> {
         { usage = BufferUsage.DYNAMIC_DRAW } = {},
     ): VertexBuffer<T> {
         return new VertexBuffer(
-            dev.gl,
+            dev._gl,
             type,
             size,
             size * sizeOf(type),
@@ -81,7 +81,7 @@ export class VertexBuffer<T extends VertexBufferType> {
         { usage = BufferUsage.STATIC_DRAW }: VertexBufferOptions = {},
     ): VertexBuffer<T> {
         return new VertexBuffer(
-            dev.gl,
+            dev._gl,
             type,
             data.length,
             data.length * sizeOf(type),
