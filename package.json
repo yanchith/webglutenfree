@@ -33,7 +33,7 @@
     "dist:umd:prod": "cross-env FMT=umd PROD=true rollup --config",
     "dist:es:prod:min": "cross-env FMT=es PROD=true MIN=true rollup --config",
     "dist:umd:prod:min": "cross-env FMT=umd PROD=true MIN=true rollup --config",
-    "dist:dts": "cp build/*.d.ts dist && mv dist/index.d.ts dist/webglutenfree.d.ts",
+    "dist:dts": "cpx \"build/**/*.d.ts\" dist && mv dist/index.d.ts dist/webglutenfree.d.ts",
     "predist:es:watch": "rimraf dist",
     "dist:es:watch": "cross-env FMT=es rollup --config --watch",
     "demolib": "yarn demolib:rm && yarn demolib:cp",
@@ -45,6 +45,7 @@
     "@types/webgl2": "^0.0.2"
   },
   "devDependencies": {
+    "cpx": "^1.5.0",
     "cross-env": "^5.1.3",
     "http-server": "^0.10.0",
     "rimraf": "^2.6.2",
