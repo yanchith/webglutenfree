@@ -2,7 +2,7 @@ import {
     Device,
     BufferBits,
     Command,
-    BlendFunc,
+    DepthFunc,
     Attributes,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
@@ -24,21 +24,30 @@ const cmd = Command.create(
         uniform mat4 u_projection, u_view, u_model;
 
         layout (location = 0) in vec3 a_position;
+        layout (location = 1) in vec3 a_normal;
+
+        out vec3 v_normal;
 
         void main() {
-            gl_Position = u_projection
-                * u_view
-                * u_model
-                * vec4(a_position, 1.0);
+            mat4 matrix = u_projection * u_view * u_model;
+            v_normal = transpose(inverse(mat3(matrix))) * a_normal;
+            gl_Position = matrix * vec4(a_position, 1.0);
         }
     `,
     `#version 300 es
         precision mediump float;
 
+        uniform vec3 u_light;
+
+        in vec3 v_normal;
+
         out vec4 f_color;
 
         void main() {
-            f_color = vec4(0.1, 1.0, 0.3, 1.0);
+            float brightness = dot(normalize(v_normal), normalize(u_light));
+            vec3 dark = vec3(0.3, 0.0, 0.3);
+            vec3 bright = vec3(1.0, 0.0, 0.8);
+            f_color = vec4(mix(dark, bright, brightness), 1.0);
         }
     `,
     {
@@ -65,8 +74,13 @@ const cmd = Command.create(
             u_model: {
                 type: "matrix4fv",
                 value: ({ matrix }) => matrix,
+            },
+            u_light: {
+                type: "3f",
+                value: [1, 0, 0],
             }
         },
+        depth: { func: DepthFunc.LESS },
     },
 );
 
@@ -80,10 +94,11 @@ const objs = models.map((m, i) => {
     mat4.scale(matrix, matrix, [scale, scale, scale]);
     return {
         matrix,
-        attrs: Attributes.withIndexedBuffers(
-            dev,
-            m.elements,
-            { 0: m.positions },
+        attrs: Attributes.withIndexedBuffers(dev, m.elements,
+            {
+                0: m.positions,
+                1: m.normals,
+            },
         ),
     };
 });
