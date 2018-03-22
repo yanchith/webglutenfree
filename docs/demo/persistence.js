@@ -1,5 +1,5 @@
 /**
- * Implemented straight from this excellent talk by Gregg Tavares:
+ * Persistence technique inspired by the excellent talk by Gregg Tavares:
  * https://www.youtube.com/watch?v=rfQ8rKGTVlg#t=31m42s
  */
 
@@ -7,10 +7,11 @@ import {
     Device,
     BufferBits,
     Command,
+    DepthFunc,
     Attributes,
     Primitive,
     Texture,
-    TextureInternalFormat,
+    TextureInternalFormat as TexIntFmt,
     Framebuffer,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
@@ -22,13 +23,20 @@ const PERSISTENCE_FACTOR = 0.8;
 const dev = Device.mount({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const newFrameTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
-const newFrameFbo = Framebuffer.withColor(dev, width, height, newFrameTex);
+const newFrameTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
+const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24);
+const newFrameFbo = Framebuffer.withColorDepth(
+    dev,
+    width,
+    height,
+    newFrameTex,
+    depthTex,
+);
 
-const pingTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const pingTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
 const pingFbo = Framebuffer.withColor(dev, width, height, pingTex);
 
-const pongTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const pongTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
 const pongFbo = Framebuffer.withColor(dev, width, height, pongTex);
 
 const view = mat4.create();
@@ -41,18 +49,30 @@ const cmdDraw = Command.create(
         uniform mat4 u_projection, u_view;
 
         layout (location = 0) in vec3 a_position;
+        layout (location = 1) in vec3 a_normal;
+
+        out vec3 v_normal;
 
         void main() {
-            gl_Position = u_projection * u_view * vec4(a_position, 1.0);
+            mat4 matrix = u_projection * u_view;
+            v_normal = transpose(inverse(mat3(matrix))) * a_normal;
+            gl_Position = matrix * vec4(a_position, 1.0);
         }
     `,
     `#version 300 es
         precision mediump float;
 
+        uniform vec3 u_light;
+
+        in vec3 v_normal;
+
         out vec4 f_color;
 
         void main() {
-            f_color = vec4(0.8, 0.3, 0.7, 1.0);
+            float brightness = dot(normalize(v_normal), normalize(u_light));
+            vec3 dark = vec3(0.3, 0.0, 0.3);
+            vec3 bright = vec3(1.0, 0.0, 0.8);
+            f_color = vec4(mix(dark, bright, brightness), 1.0);
         }
     `,
     {
@@ -76,7 +96,12 @@ const cmdDraw = Command.create(
                     [0, 1, 0]
                 ),
             },
+            u_light: {
+                type: "3f",
+                value: [1, 1, 0],
+            },
         },
+        depth: { func: DepthFunc.LESS },
     },
 );
 
@@ -142,7 +167,10 @@ const screenspaceAttrs = Attributes.create(dev, Primitive.TRIANGLES, 3);
 const bunnyAttrs = Attributes.withIndexedBuffers(
     dev,
     bunny.elements,
-    cmdDraw.locate({ a_position: bunny.positions }),
+    cmdDraw.locate({
+        a_position: bunny.positions,
+        a_normal: bunny.normals,
+    }),
 );
 
 
@@ -164,9 +192,9 @@ const loop = time => {
 
     */
 
-    // We first draw the scene to a "newFrame" fbo
+    // First draw the scene to a "newFrame" fbo
     newFrameFbo.target(rt => {
-        rt.clear(BufferBits.COLOR);
+        rt.clear(BufferBits.COLOR_DEPTH);
         rt.draw(cmdDraw, bunnyAttrs, { time });
     });
 
