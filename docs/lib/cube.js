@@ -11,19 +11,6 @@ export const positions = [
     [-1.0,  1.0, -1.0],
 ];
 
-export const colors = [
-    // front colors
-    [1.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0],
-    [0.0, 0.0, 1.0],
-    [1.0, 1.0, 1.0],
-    // back colors
-    [1.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0],
-    [0.0, 0.0, 1.0],
-    [1.0, 1.0, 1.0],
-];
-
 export const elements = [
     // front
     [0, 1, 2],
