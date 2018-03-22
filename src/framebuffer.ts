@@ -201,7 +201,7 @@ export class Framebuffer {
                 _gl.DRAW_FRAMEBUFFER,
                 depthOnly ? _gl.DEPTH_ATTACHMENT : _gl.DEPTH_STENCIL_ATTACHMENT,
                 _gl.TEXTURE_2D,
-                depthStencil,
+                depthStencil.glTexture,
                 0,
             );
         }

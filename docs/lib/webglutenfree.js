@@ -1876,7 +1876,7 @@ class Framebuffer {
             _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.COLOR_ATTACHMENT0 + i, _gl.TEXTURE_2D, buffer.glTexture, 0);
         });
         if (depthStencil) {
-            _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, depthOnly ? _gl.DEPTH_ATTACHMENT : _gl.DEPTH_STENCIL_ATTACHMENT, _gl.TEXTURE_2D, depthStencil, 0);
+            _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, depthOnly ? _gl.DEPTH_ATTACHMENT : _gl.DEPTH_STENCIL_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
         }
         const status = _gl.checkFramebufferStatus(_gl.DRAW_FRAMEBUFFER);
         _stackDrawFramebuffer.pop();
