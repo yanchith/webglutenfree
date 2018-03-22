@@ -133,15 +133,16 @@ const cmdDraw = Command.create(
     `#version 300 es
         precision mediump float;
 
+        uniform float u_glow_strength;
+
         in vec2 v_tex_coord;
 
         out vec4 f_color;
 
-        const vec3 u_color = vec3(0.1, 0.775, 0.189);
+        const vec3 u_color = vec3(0.1, 0.475, 0.811);
         const float u_edge_thickness = 2.0;
         const float u_edge_sharpness = 30.0;
         const float u_edge_subtract	= 0.3;
-        const float u_glow_strength = 10.0;
 
         void main() {
             vec2 uv = abs(v_tex_coord - 0.5) * u_edge_thickness;
@@ -175,6 +176,10 @@ const cmdDraw = Command.create(
                     1000.0,
                 ),
             },
+            u_glow_strength: {
+                type: "1f",
+                value: ({ time }) => 10 * (Math.cos(time / 2000) + 1),
+            }
         },
         depth: { func: DepthFunc.LESS },
     },
