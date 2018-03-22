@@ -1,3 +1,8 @@
+/**
+ * Kernel convolutions inspired by:
+ * https://webgl2fundamentals.org/webgl/lessons/webgl-image-processing.html
+ */
+
 import {
     Device,
     Command,
@@ -22,17 +27,17 @@ const kernels = {
     ],
     unsharpen: [
         -1, -1, -1,
-        -1, 9, -1,
+        -1,  9, -1,
         -1, -1, -1,
     ],
     emboss: [
-        -2, -1, 0,
-        -1, 1, 1,
-        0, 1, 2,
+        -2, -1,  0,
+        -1,  1,  1,
+         0,  1,  2,
     ],
     edgeDetect: [
         -1, -1, -1,
-        -1, 8, -1,
+        -1,  8, -1,
         -1, -1, -1,
     ],
 };
