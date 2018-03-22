@@ -3,95 +3,24 @@ import { Device as _Device } from "./device";
 import { Target } from "./target";
 import {
     Texture as _Texture,
-    TextureColorInternalFormat as TexColorFmt,
-    TextureDepthInternalFormat as TexDepthFmt,
-    TextureDepthStencilInternalFormat as TexDepthStencilFmt,
+    TextureInternalFormat as Fmt,
+    TextureColorInternalFormat as ColorFmt,
+    TextureDepthInternalFormat as DepthFmt,
+    TextureDepthStencilInternalFormat as DepthStencilFmt,
 } from "./texture";
 
 export class Framebuffer {
 
     /**
-     * Create a framebuffer containg one or more color buffers with given
-     * width and height.
-     */
-    static withColor(
-        dev: _Device,
-        width: number,
-        height: number,
-        color: _Texture<TexColorFmt> | _Texture<TexColorFmt>[],
-    ): Framebuffer {
-        const colors = Array.isArray(color) ? color : [color];
-        assert.nonEmpty(colors, "color");
-        colors.forEach(buffer => {
-            assert.equal(width, buffer.width, "width");
-            assert.equal(height, buffer.height, "height");
-        });
-
-        return new Framebuffer(dev, width, height, colors);
-    }
-
-    /**
-     * Create a framebuffer containg a depth buffer with given width and height.
-     */
-    static withDepth(
-        dev: _Device,
-        width: number,
-        height: number,
-        depth: _Texture<TexDepthFmt>,
-    ): Framebuffer {
-        assert.equal(width, depth.width, "width");
-        assert.equal(height, depth.height, "height");
-        return new Framebuffer(dev, width, height, [], depth, true);
-    }
-
-    /**
-     * Create a framebuffer containg a depth-stencil buffer with given
-     * width and height.
-     */
-    static withDepthStencil(
-        dev: _Device,
-        width: number,
-        height: number,
-        depthStencil: _Texture<TexDepthStencilFmt>,
-    ): Framebuffer {
-        assert.equal(width, depthStencil.width, "width");
-        assert.equal(height, depthStencil.height, "height");
-        return new Framebuffer(dev, width, height, [], depthStencil, false);
-    }
-
-    /**
-     * Create a framebuffer containg one or more color buffers and a depth
-     * buffer with given width and height.
-     */
-    static withColorDepth(
-        dev: _Device,
-        width: number,
-        height: number,
-        color: _Texture<TexColorFmt> | _Texture<TexColorFmt>[],
-        depth: _Texture<TexDepthFmt>,
-    ): Framebuffer {
-        const colorBuffers = Array.isArray(color) ? color : [color];
-        assert.nonEmpty(colorBuffers, "color");
-        colorBuffers.forEach(buffer => {
-            assert.equal(width, buffer.width, "width");
-            assert.equal(height, buffer.height, "height");
-        });
-        assert.equal(width, depth.width, "width");
-        assert.equal(height, depth.height, "height");
-
-        return new Framebuffer(dev, width, height, colorBuffers, depth, true);
-    }
-
-    /**
      * Create a framebuffer containg one or more color buffers and a
-     * depth-stencil buffer with given width and height.
+     * depth or depth-stencil buffer with given width and height.
      */
-    static withColorDepthStencil(
+    static create(
         dev: _Device,
         width: number,
         height: number,
-        color: _Texture<TexColorFmt> | _Texture<TexColorFmt>[],
-        depthStencil: _Texture<TexDepthStencilFmt>,
+        color: _Texture<ColorFmt> | _Texture<ColorFmt>[],
+        depthStencil?: _Texture<DepthFmt> | _Texture<DepthStencilFmt>,
     ): Framebuffer {
         const colors = Array.isArray(color) ? color : [color];
         assert.nonEmpty(colors, "color");
@@ -99,12 +28,14 @@ export class Framebuffer {
             assert.equal(width, buffer.width, "width");
             assert.equal(height, buffer.height, "height");
         });
-        assert.equal(width, depthStencil.width, "width");
-        assert.equal(height, depthStencil.height, "height");
 
-        return new Framebuffer(dev, width, height, colors, depthStencil, false);
+        if (depthStencil) {
+            assert.equal(width, depthStencil.width, "width");
+            assert.equal(height, depthStencil.height, "height");
+        }
+
+        return new Framebuffer(dev, width, height, colors, depthStencil);
     }
-
 
     readonly width: number;
     readonly height: number;
@@ -116,24 +47,21 @@ export class Framebuffer {
 
     private framebufferTarget: Target | null;
 
-    private colors: _Texture<TexColorFmt>[];
-    private depthStencil?: _Texture<TexDepthFmt> | _Texture<TexDepthStencilFmt>;
-    private depthOnly: boolean;
+    private colors: _Texture<ColorFmt>[];
+    private depthStencil?: _Texture<DepthFmt> | _Texture<DepthStencilFmt>;
 
-    private constructor(
+    constructor(
         dev: _Device,
         width: number,
         height: number,
-        colors: _Texture<TexColorFmt>[],
-        depthStencil?: _Texture<TexDepthFmt> | _Texture<TexDepthStencilFmt>,
-        depthOnly: boolean = true,
+        colors: _Texture<ColorFmt>[],
+        depthStencil?: _Texture<DepthFmt> | _Texture<DepthStencilFmt>,
     ) {
         this.dev = dev;
         this.width = width;
         this.height = height;
         this.colors = colors;
         this.depthStencil = depthStencil;
-        this.depthOnly = depthOnly;
         this.glColorAttachments = colors
             .map((_, i) => dev._gl.COLOR_ATTACHMENT0 + i);
         this.glFramebuffer = null;
@@ -179,7 +107,6 @@ export class Framebuffer {
             glColorAttachments,
             colors,
             depthStencil,
-            depthOnly,
         } = this;
 
         const fbo = _gl.createFramebuffer();
@@ -197,13 +124,30 @@ export class Framebuffer {
         });
 
         if (depthStencil) {
-            _gl.framebufferTexture2D(
-                _gl.DRAW_FRAMEBUFFER,
-                depthOnly ? _gl.DEPTH_ATTACHMENT : _gl.DEPTH_STENCIL_ATTACHMENT,
-                _gl.TEXTURE_2D,
-                depthStencil.glTexture,
-                0,
-            );
+            switch (depthStencil.format) {
+                case Fmt.DEPTH24_STENCIL8:
+                case Fmt.DEPTH32F_STENCIL8:
+                    _gl.framebufferTexture2D(
+                        _gl.DRAW_FRAMEBUFFER,
+                        _gl.DEPTH_STENCIL_ATTACHMENT,
+                        _gl.TEXTURE_2D,
+                        depthStencil.glTexture,
+                        0,
+                    );
+                    break;
+                case Fmt.DEPTH_COMPONENT16:
+                case Fmt.DEPTH_COMPONENT24:
+                case Fmt.DEPTH_COMPONENT32F:
+                    _gl.framebufferTexture2D(
+                        _gl.DRAW_FRAMEBUFFER,
+                        _gl.DEPTH_ATTACHMENT,
+                        _gl.TEXTURE_2D,
+                        depthStencil.glTexture,
+                        0,
+                    );
+                    break;
+                default: assert.never(depthStencil, "Unsupported attachment");
+            }
         }
 
         const status = _gl.checkFramebufferStatus(_gl.DRAW_FRAMEBUFFER);
@@ -212,7 +156,19 @@ export class Framebuffer {
 
         if (status !== _gl.FRAMEBUFFER_COMPLETE) {
             _gl.deleteFramebuffer(fbo);
-            throw new Error("Framebuffer not complete");
+            switch (status) {
+                case _gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+                case _gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+                case _gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
+                case _gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
+                case _gl.FRAMEBUFFER_UNSUPPORTED:
+                    throw new Error("FRAMEBUFFER_UNSUPPORTED");
+                default: throw new Error("Framebuffer incomplete");
+            }
         }
 
         (this as any).glFramebuffer = fbo;

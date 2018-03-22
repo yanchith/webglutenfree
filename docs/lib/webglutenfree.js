@@ -1769,72 +1769,28 @@ class Texture {
 
 class Framebuffer {
     /**
-     * Create a framebuffer containg one or more color buffers with given
-     * width and height.
-     */
-    static withColor(dev, width, height, color) {
-        const colors = Array.isArray(color) ? color : [color];
-        nonEmpty(colors, "color");
-        colors.forEach(buffer => {
-            equal(width, buffer.width, "width");
-            equal(height, buffer.height, "height");
-        });
-        return new Framebuffer(dev, width, height, colors);
-    }
-    /**
-     * Create a framebuffer containg a depth buffer with given width and height.
-     */
-    static withDepth(dev, width, height, depth) {
-        equal(width, depth.width, "width");
-        equal(height, depth.height, "height");
-        return new Framebuffer(dev, width, height, [], depth, true);
-    }
-    /**
-     * Create a framebuffer containg a depth-stencil buffer with given
-     * width and height.
-     */
-    static withDepthStencil(dev, width, height, depthStencil) {
-        equal(width, depthStencil.width, "width");
-        equal(height, depthStencil.height, "height");
-        return new Framebuffer(dev, width, height, [], depthStencil, false);
-    }
-    /**
-     * Create a framebuffer containg one or more color buffers and a depth
-     * buffer with given width and height.
-     */
-    static withColorDepth(dev, width, height, color, depth) {
-        const colorBuffers = Array.isArray(color) ? color : [color];
-        nonEmpty(colorBuffers, "color");
-        colorBuffers.forEach(buffer => {
-            equal(width, buffer.width, "width");
-            equal(height, buffer.height, "height");
-        });
-        equal(width, depth.width, "width");
-        equal(height, depth.height, "height");
-        return new Framebuffer(dev, width, height, colorBuffers, depth, true);
-    }
-    /**
      * Create a framebuffer containg one or more color buffers and a
-     * depth-stencil buffer with given width and height.
+     * depth or depth-stencil buffer with given width and height.
      */
-    static withColorDepthStencil(dev, width, height, color, depthStencil) {
+    static create(dev, width, height, color, depthStencil) {
         const colors = Array.isArray(color) ? color : [color];
         nonEmpty(colors, "color");
         colors.forEach(buffer => {
             equal(width, buffer.width, "width");
             equal(height, buffer.height, "height");
         });
-        equal(width, depthStencil.width, "width");
-        equal(height, depthStencil.height, "height");
-        return new Framebuffer(dev, width, height, colors, depthStencil, false);
+        if (depthStencil) {
+            equal(width, depthStencil.width, "width");
+            equal(height, depthStencil.height, "height");
+        }
+        return new Framebuffer(dev, width, height, colors, depthStencil);
     }
-    constructor(dev, width, height, colors, depthStencil, depthOnly = true) {
+    constructor(dev, width, height, colors, depthStencil) {
         this.dev = dev;
         this.width = width;
         this.height = height;
         this.colors = colors;
         this.depthStencil = depthStencil;
-        this.depthOnly = depthOnly;
         this.glColorAttachments = colors
             .map((_, i) => dev._gl.COLOR_ATTACHMENT0 + i);
         this.glFramebuffer = null;
@@ -1869,20 +1825,43 @@ class Framebuffer {
         }
     }
     init() {
-        const { width, height, dev, dev: { _gl, _stackDrawFramebuffer }, glColorAttachments, colors, depthStencil, depthOnly, } = this;
+        const { width, height, dev, dev: { _gl, _stackDrawFramebuffer }, glColorAttachments, colors, depthStencil, } = this;
         const fbo = _gl.createFramebuffer();
         _stackDrawFramebuffer.push(fbo);
         colors.forEach((buffer, i) => {
             _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.COLOR_ATTACHMENT0 + i, _gl.TEXTURE_2D, buffer.glTexture, 0);
         });
         if (depthStencil) {
-            _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, depthOnly ? _gl.DEPTH_ATTACHMENT : _gl.DEPTH_STENCIL_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
+            switch (depthStencil.format) {
+                case TextureInternalFormat.DEPTH24_STENCIL8:
+                case TextureInternalFormat.DEPTH32F_STENCIL8:
+                    _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.DEPTH_STENCIL_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
+                    break;
+                case TextureInternalFormat.DEPTH_COMPONENT16:
+                case TextureInternalFormat.DEPTH_COMPONENT24:
+                case TextureInternalFormat.DEPTH_COMPONENT32F:
+                    _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
+                    break;
+                default: never(depthStencil, "Unsupported attachment");
+            }
         }
         const status = _gl.checkFramebufferStatus(_gl.DRAW_FRAMEBUFFER);
         _stackDrawFramebuffer.pop();
         if (status !== _gl.FRAMEBUFFER_COMPLETE) {
             _gl.deleteFramebuffer(fbo);
-            throw new Error("Framebuffer not complete");
+            switch (status) {
+                case _gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+                case _gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+                case _gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
+                case _gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
+                case _gl.FRAMEBUFFER_UNSUPPORTED:
+                    throw new Error("FRAMEBUFFER_UNSUPPORTED");
+                default: throw new Error("Framebuffer incomplete");
+            }
         }
         this.glFramebuffer = fbo;
         if (fbo) {

@@ -52,13 +52,7 @@ const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24,
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
-const initialFbo = Framebuffer.withColorDepth(
-    dev,
-    width,
-    height,
-    initialTex,
-    depthTex,
-);
+const initialFbo = Framebuffer.create(dev, width, height, initialTex, depthTex);
 
 const splitColorTex = Texture.create(dev, width, height, TexIntFmt.RGBA8, {
     min: TextureFilter.LINEAR,
@@ -68,7 +62,7 @@ const splitBrightTex = Texture.create(dev, width, height, TexIntFmt.RGBA8, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
-const splitFbo = Framebuffer.withColor(dev, width, height, [
+const splitFbo = Framebuffer.create(dev, width, height, [
     splitColorTex,
     splitBrightTex,
 ]);
@@ -77,13 +71,13 @@ const bloomPingTex = Texture.create(dev, bWidth, bHeight, TexIntFmt.RGBA8, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
-const bloomPingFbo = Framebuffer.withColor(dev, bWidth, bHeight, bloomPingTex);
+const bloomPingFbo = Framebuffer.create(dev, bWidth, bHeight, bloomPingTex);
 
 const bloomPongTex = Texture.create(dev, bWidth, bHeight, TexIntFmt.RGBA8, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
-const bloomPongFbo = Framebuffer.withColor(dev, bWidth, bHeight, bloomPongTex);
+const bloomPongFbo = Framebuffer.create(dev, bWidth, bHeight, bloomPongTex);
 
 const view = mat4.create();
 

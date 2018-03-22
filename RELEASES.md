@@ -5,6 +5,11 @@
 
 -   Fix a bug in binding depth and depth-stencil framebuffer attachments
 
+#### Enhancements:
+
+-   Improve framebuffer attachment inference and slim down its constructors to
+    just `Framebuffer.create`
+
 
 ## v0.0.6 (22/02/2018)
 #### Fixes:

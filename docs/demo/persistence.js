@@ -25,19 +25,13 @@ const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const newFrameTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
 const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24);
-const newFrameFbo = Framebuffer.withColorDepth(
-    dev,
-    width,
-    height,
-    newFrameTex,
-    depthTex,
-);
+const newFrameFbo = Framebuffer.create(dev, width, height, newFrameTex, depthTex);
 
 const pingTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
-const pingFbo = Framebuffer.withColor(dev, width, height, pingTex);
+const pingFbo = Framebuffer.create(dev, width, height, pingTex);
 
 const pongTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
-const pongFbo = Framebuffer.withColor(dev, width, height, pongTex);
+const pongFbo = Framebuffer.create(dev, width, height, pongTex);
 
 const view = mat4.create();
 
