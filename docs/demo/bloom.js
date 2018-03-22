@@ -1,16 +1,23 @@
+/**
+ * Bloom technique inspired by https://learnopengl.com/Advanced-Lighting/Bloom
+ * Tron line shader inspired by https://www.youtube.com/watch?v=DI498yX-6XM
+ */
+
 import {
     Device,
     BufferBits,
     Command,
+    DepthFunc,
     Attributes,
     Primitive,
     Texture,
-    TextureInternalFormat,
+    TextureInternalFormat as TexIntFmt,
+    TextureFilter,
     Framebuffer,
 } from "./lib/webglutenfree.js";
 import { vec2, mat4 } from "./lib/gl-matrix-min.js";
 
-import * as teapot from "./lib/teapot.js"
+import * as uvCube from "./lib/uv-cube.js"
 
 const kernels = {
     blur3: [0.27901, 0.44198, 0.27901],
@@ -28,27 +35,55 @@ const kernels = {
     ],
 }
 
-const N_BLOOM_PASSES = 8;
+const N_BLOOM_PASSES = 4;
 const KERNEL = kernels.blur3;
 
 const dev = Device.mount();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const initialTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
-const initialFbo = Framebuffer.withColor(dev, width, height, initialTex);
+// We blur smaller textures for better performance
+const [bWidth, bHeight] = [width / 2, height / 2];
 
-const splitColorTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
-const splitBrightTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
+const initialTex = Texture.create(dev, width, height, TexIntFmt.RGBA8, {
+    min: TextureFilter.LINEAR,
+    mag: TextureFilter.LINEAR,
+});
+const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24, {
+    min: TextureFilter.LINEAR,
+    mag: TextureFilter.LINEAR,
+});
+const initialFbo = Framebuffer.withColorDepth(
+    dev,
+    width,
+    height,
+    initialTex,
+    depthTex,
+);
+
+const splitColorTex = Texture.create(dev, width, height, TexIntFmt.RGBA8, {
+    min: TextureFilter.LINEAR,
+    mag: TextureFilter.LINEAR,
+});
+const splitBrightTex = Texture.create(dev, width, height, TexIntFmt.RGBA8, {
+    min: TextureFilter.LINEAR,
+    mag: TextureFilter.LINEAR,
+});
 const splitFbo = Framebuffer.withColor(dev, width, height, [
     splitColorTex,
     splitBrightTex,
 ]);
 
-const bloomPingTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
-const bloomPingFbo = Framebuffer.withColor(dev, width, height, bloomPingTex);
+const bloomPingTex = Texture.create(dev, bWidth, bHeight, TexIntFmt.RGBA8, {
+    min: TextureFilter.LINEAR,
+    mag: TextureFilter.LINEAR,
+});
+const bloomPingFbo = Framebuffer.withColor(dev, bWidth, bHeight, bloomPingTex);
 
-const bloomPongTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);
-const bloomPongFbo = Framebuffer.withColor(dev, width, height, bloomPongTex);
+const bloomPongTex = Texture.create(dev, bWidth, bHeight, TexIntFmt.RGBA8, {
+    min: TextureFilter.LINEAR,
+    mag: TextureFilter.LINEAR,
+});
+const bloomPongFbo = Framebuffer.withColor(dev, bWidth, bHeight, bloomPongTex);
 
 const view = mat4.create();
 
@@ -83,8 +118,12 @@ const cmdDraw = Command.create(
         uniform mat4 u_projection, u_view, u_model;
 
         layout (location = 0) in vec3 a_position;
+        layout (location = 1) in vec2 a_tex_coord;
+
+        out vec2 v_tex_coord;
 
         void main() {
+            v_tex_coord = a_tex_coord;
             gl_Position = u_projection
                 * u_view
                 * u_model
@@ -94,23 +133,34 @@ const cmdDraw = Command.create(
     `#version 300 es
         precision mediump float;
 
+        in vec2 v_tex_coord;
+
         out vec4 f_color;
 
+        const vec3 u_color = vec3(0.1, 0.775, 0.189);
+        const float u_edge_thickness = 2.0;
+        const float u_edge_sharpness = 30.0;
+        const float u_edge_subtract	= 0.3;
+        const float u_glow_strength = 10.0;
+
         void main() {
-            f_color = vec4(0.9, 0.8, 0.9, 0.5);
+            vec2 uv = abs(v_tex_coord - 0.5) * u_edge_thickness;
+            uv = pow(uv, vec2(u_edge_sharpness)) - u_edge_subtract;
+            float c = clamp(uv.x + uv.y, 0.0, 1.0) * u_glow_strength;
+            f_color	= vec4(u_color * c, 1.0);
         }
     `,
     {
         uniforms: {
             u_model: {
                 type: "matrix4fv",
-                value: mat4.fromScaling(mat4.create(), [2, 2, 2]),
+                value: mat4.fromScaling(mat4.create(), [30, 30, 30]),
             },
             u_view: {
                 type: "matrix4fv",
                 value: ({ time }) => mat4.lookAt(
                     view,
-                    [200 * Math.cos(time / 1000), 5, 200 * Math.sin(time / 1000)],
+                    [200 * Math.cos(time / 9000), 200, 200 * Math.sin(time / 9000)],
                     [0, 0, 0],
                     [0, 1, 0]
                 ),
@@ -126,6 +176,7 @@ const cmdDraw = Command.create(
                 ),
             },
         },
+        depth: { func: DepthFunc.LESS },
     },
 );
 
@@ -175,14 +226,13 @@ const cmdBlur = Command.create(
         out vec4 color;
 
         void main() {
-            vec2 one_pixel = vec2(1) / vec2(textureSize(u_image, 0));
+            vec2 px_direction = vec2(1) / vec2(textureSize(u_image, 0))
+                * u_blur_direction;
             int half_length = (KERNEL_LENGTH - 1) / 2;
 
             vec4 color_sum = vec4(0.0);
             for (int i = 0; i < KERNEL_LENGTH; i++) {
-                vec2 offset_coord = one_pixel
-                    * vec2(i - half_length)
-                    * u_blur_direction;
+                vec2 offset_coord = px_direction * vec2(i - half_length);
                 color_sum += texture(u_image, v_tex_coord + offset_coord)
                     * u_kernel[i];
             }
@@ -205,7 +255,7 @@ const cmdBlur = Command.create(
     },
 );
 
-const cmdTonemap = Command.create(
+const cmdMerge = Command.create(
     dev,
     screenspaceVS,
     `#version 300 es
@@ -245,10 +295,10 @@ const cmdTonemap = Command.create(
 
 
 const screenspaceAttrs = Attributes.create(dev, Primitive.TRIANGLES, 3);
-const modelAttrs = Attributes.withIndexedBuffers(
-    dev,
-    teapot.elements,
-    { 0: teapot.positions },
+const modelAttrs = Attributes.withIndexedBuffers(dev, uvCube.elements, {
+        0: uvCube.positions,
+        1: uvCube.uvs,
+    },
 );
 
 
@@ -260,7 +310,7 @@ const VERTICAL = vec2.fromValues(0, 1);
 const loop = time => {
     // Render geometry into texture
     initialFbo.target(rt => {
-        rt.clear(BufferBits.COLOR);
+        rt.clear(BufferBits.COLOR_DEPTH);
         rt.draw(cmdDraw, modelAttrs, { time });
     });
 
@@ -301,7 +351,7 @@ const loop = time => {
 
     // Blend together blurred highlights with original color, perform tonemapping
     dev.target(rt => {
-        rt.draw(cmdTonemap, screenspaceAttrs);
+        rt.draw(cmdMerge, screenspaceAttrs);
     });
 
     window.requestAnimationFrame(loop);
