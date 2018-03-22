@@ -3,6 +3,7 @@ import {
     BufferBits,
     Command,
     BlendFunc,
+    DepthFunc,
     VertexBuffer,
     Attributes,
     BufferUsage,
@@ -114,6 +115,7 @@ const cmd = Command.create(
                 dst: BlendFunc.ONE_MINUS_SRC_ALPHA,
             },
         },
+        depth: { func: DepthFunc.LESS },
     },
 );
 
