@@ -19,15 +19,35 @@ const dev = Device.mount({
 });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const pingTexVal = Texture.create(dev, width, height, TextureInternalFormat.RG32F);
-const pingTexEsc = Texture.create(dev, width, height, TextureInternalFormat.R32F);
+const pingTexVal = Texture.create(
+    dev,
+    width,
+    height,
+    TextureInternalFormat.RG32F,
+);
+const pingTexEsc = Texture.create(
+    dev,
+    width,
+    height,
+    TextureInternalFormat.R32F,
+);
 const pingFbo = Framebuffer.create(dev, width, height, [
     pingTexVal,
     pingTexEsc,
 ]);
 
-const pongTexVal = Texture.create(dev, width, height, TextureInternalFormat.RG32F);
-const pongTexEsc = Texture.create(dev, width, height, TextureInternalFormat.R32F);
+const pongTexVal = Texture.create(
+    dev,
+    width,
+    height,
+    TextureInternalFormat.RG32F,
+);
+const pongTexEsc = Texture.create(
+    dev,
+    width,
+    height,
+    TextureInternalFormat.R32F,
+);
 const pongFbo = Framebuffer.create(dev, width, height, [
     pongTexVal,
     pongTexEsc,

@@ -24,8 +24,19 @@ const dev = Device.mount({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const newFrameTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
-const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24);
-const newFrameFbo = Framebuffer.create(dev, width, height, newFrameTex, depthTex);
+const depthTex = Texture.create(
+    dev,
+    width,
+    height,
+    TexIntFmt.DEPTH_COMPONENT24,
+);
+const newFrameFbo = Framebuffer.create(
+    dev,
+    width,
+    height,
+    newFrameTex,
+    depthTex,
+);
 
 const pingTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
 const pingFbo = Framebuffer.create(dev, width, height, pingTex);
@@ -85,7 +96,11 @@ const cmdDraw = Command.create(
                 type: "matrix4fv",
                 value: ({ time }) => mat4.lookAt(
                     view,
-                    [30 * Math.cos(time / 1000), 2.5, 30 * Math.sin(time / 1000)],
+                    [
+                        30 * Math.cos(time / 1000),
+                        2.5,
+                        30 * Math.sin(time / 1000),
+                    ],
                     [0, 2.5, 0],
                     [0, 1, 0]
                 ),

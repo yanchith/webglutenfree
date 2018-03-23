@@ -120,15 +120,15 @@ const cmd = Command.create(
 );
 
 
-const particlePositions = new Float32Array(N_PARTICLES * 3);
-for (let i = 0; i < particlePositions.length; i++) {
-    particlePositions[i] = Math.random() * 2 - 1;
+const positions = new Float32Array(N_PARTICLES * 3);
+for (let i = 0; i < positions.length; i++) {
+    positions[i] = Math.random() * 2 - 1;
 }
 
 const buffer = VertexBuffer.withTypedArray(
     dev,
     DataType.FLOAT,
-    particlePositions,
+    positions,
     { usage: BufferUsage.DYNAMIC_DRAW },
 );
 
@@ -141,7 +141,7 @@ const attrs = Attributes.withBuffers(
         a_position: {
             type: "pointer",
             buffer,
-            count: particlePositions.length / 3,  // 3 components per item
+            count: positions.length / 3,  // 3 components per item
             size: 3,  // 3 components per item
             divisor: 1,
         },
@@ -159,10 +159,10 @@ const attrs = Attributes.withBuffers(
 );
 
 const loop = time => {
-    for (let i = 0; i < particlePositions.length; i++) {
-        particlePositions[i] += Math.random() * WANDER_FACTOR - WANDER_FACTOR / 2;
+    for (let i = 0; i < positions.length; i++) {
+        positions[i] += Math.random() * WANDER_FACTOR - WANDER_FACTOR / 2;
     }
-    buffer.store(particlePositions);
+    buffer.store(positions);
 
     dev.target(rt => {
         rt.clear(BufferBits.COLOR);

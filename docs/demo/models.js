@@ -66,7 +66,11 @@ const cmd = Command.create(
                 type: "matrix4fv",
                 value: ({ time }) => mat4.lookAt(
                     view,
-                    [30 * Math.cos(time / 1000), 2.5, 30 * Math.sin(time / 1000)],
+                    [
+                        30 * Math.cos(time / 1000),
+                        2.5,
+                        30 * Math.sin(time / 1000),
+                    ],
                     [0, 2.5, 0],
                     [0, 1, 0]
                 ),

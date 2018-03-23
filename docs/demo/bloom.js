@@ -11,7 +11,7 @@ import {
     Attributes,
     Primitive,
     Texture,
-    TextureInternalFormat as TexIntFmt,
+    TextureInternalFormat as TexFmt,
     TextureFilter,
     Framebuffer,
 } from "./lib/webglutenfree.js";
@@ -44,21 +44,21 @@ const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 // We blur smaller textures for better performance
 const [bWidth, bHeight] = [width / 2, height / 2];
 
-const initialTex = Texture.create(dev, width, height, TexIntFmt.RGBA8, {
+const initialTex = Texture.create(dev, width, height, TexFmt.RGBA8, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
-const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24, {
+const depthTex = Texture.create(dev, width, height, TexFmt.DEPTH_COMPONENT24, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
 const initialFbo = Framebuffer.create(dev, width, height, initialTex, depthTex);
 
-const splitColorTex = Texture.create(dev, width, height, TexIntFmt.RGBA8, {
+const splitColorTex = Texture.create(dev, width, height, TexFmt.RGBA8, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
-const splitBrightTex = Texture.create(dev, width, height, TexIntFmt.RGBA8, {
+const splitBrightTex = Texture.create(dev, width, height, TexFmt.RGBA8, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
@@ -67,13 +67,13 @@ const splitFbo = Framebuffer.create(dev, width, height, [
     splitBrightTex,
 ]);
 
-const bloomPingTex = Texture.create(dev, bWidth, bHeight, TexIntFmt.RGBA8, {
+const bloomPingTex = Texture.create(dev, bWidth, bHeight, TexFmt.RGBA8, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
 const bloomPingFbo = Framebuffer.create(dev, bWidth, bHeight, bloomPingTex);
 
-const bloomPongTex = Texture.create(dev, bWidth, bHeight, TexIntFmt.RGBA8, {
+const bloomPongTex = Texture.create(dev, bWidth, bHeight, TexFmt.RGBA8, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
@@ -155,7 +155,11 @@ const cmdDraw = Command.create(
                 type: "matrix4fv",
                 value: ({ time }) => mat4.lookAt(
                     view,
-                    [200 * Math.cos(time / 9000), 200, 200 * Math.sin(time / 9000)],
+                    [
+                        200 * Math.cos(time / 9000),
+                        200,
+                        200 * Math.sin(time / 9000),
+                    ],
                     [0, 0, 0],
                     [0, 1, 0]
                 ),
@@ -348,7 +352,7 @@ const loop = time => {
         }
     }
 
-    // Blend together blurred highlights with original color, perform tonemapping
+    // Blend together blurred highlights with original color, tonemap
     dev.target(rt => {
         rt.draw(cmdMerge, screenspaceAttrs);
     });
