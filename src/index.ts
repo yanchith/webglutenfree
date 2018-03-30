@@ -3,9 +3,9 @@ export { BufferBits, BufferUsage, DataType, Primitive } from "./types";
 export {
     Device,
     Extension,
-    DeviceMountOptions,
-    DeviceFromCanvasOptions,
-    DeviceFromContextOptions,
+    DeviceCreateOptions,
+    DeviceWithCanvasOptions,
+    DeviceWithContextOptions,
 } from "./device";
 
 export { TargetClearOptions } from "./target";
@@ -68,7 +68,11 @@ export {
     ElementBufferStoreOptions,
 } from "./element-buffer";
 
-export { Attributes, AttributeType } from "./attributes";
+export {
+    Attributes,
+    AttributeType,
+    AttributesCreateOptions,
+} from "./attributes";
 
 export {
     Texture,

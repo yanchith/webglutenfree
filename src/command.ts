@@ -585,12 +585,12 @@ export class StencilDescriptor {
     ) {
         if (left === right) { return true; }
         if (!left || !right) { return false; }
-        if (left.fFunc !== right.fFunc) { return false; }
-        if (left.bFunc !== right.bFunc) { return false; }
-        if (left.fFuncRef !== right.fFuncRef) { return false; }
-        if (left.bFuncRef !== right.bFuncRef) { return false; }
-        if (left.fFuncMask !== right.fFuncMask) { return false; }
-        if (left.bFuncMask !== right.bFuncMask) { return false; }
+        if (left.fFn !== right.fFn) { return false; }
+        if (left.bFn !== right.bFn) { return false; }
+        if (left.fFnRef !== right.fFnRef) { return false; }
+        if (left.bFnRef !== right.bFnRef) { return false; }
+        if (left.fFnMask !== right.fFnMask) { return false; }
+        if (left.bFnMask !== right.bFnMask) { return false; }
         if (left.fMask !== right.fMask) { return false; }
         if (left.bMask !== right.bMask) { return false; }
         if (left.fOpFail !== right.fOpFail) { return false; }
@@ -603,12 +603,12 @@ export class StencilDescriptor {
     }
 
     constructor(
-        readonly fFunc: number,
-        readonly bFunc: number,
-        readonly fFuncRef: number,
-        readonly bFuncRef: number,
-        readonly fFuncMask: number,
-        readonly bFuncMask: number,
+        readonly fFn: number,
+        readonly bFn: number,
+        readonly fFnRef: number,
+        readonly bFnRef: number,
+        readonly fFnMask: number,
+        readonly bFnMask: number,
         readonly fMask: number,
         readonly bMask: number,
         readonly fOpFail: number,

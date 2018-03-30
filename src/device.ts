@@ -2,7 +2,7 @@ import { Stack } from "./util/stack";
 import { Target } from "./target";
 import { DepthDescriptor, StencilDescriptor, BlendDescriptor } from "./command";
 
-export interface DeviceMountOptions {
+export interface DeviceCreateOptions {
     element?: HTMLElement;
     alpha?: boolean;
     antialias?: boolean;
@@ -15,7 +15,7 @@ export interface DeviceMountOptions {
     viewport?: [number, number];
 }
 
-export interface DeviceFromCanvasOptions {
+export interface DeviceWithCanvasOptions {
     alpha?: boolean;
     antialias?: boolean;
     depth?: boolean;
@@ -27,7 +27,7 @@ export interface DeviceFromCanvasOptions {
     viewport?: [number, number];
 }
 
-export interface DeviceFromContextOptions {
+export interface DeviceWithContextOptions {
     extensions?: Extension[];
     debug?: boolean;
     pixelRatio?: number;
@@ -48,23 +48,23 @@ export class Device {
      * Create a new canvas and device (containing a gl context). Mount it on
      * `element` parameter (default is `document.body`).
      */
-    static mount(options: DeviceMountOptions = {}): Device {
+    static create(options: DeviceCreateOptions = {}): Device {
         const { element = document.body } = options;
         if (element instanceof HTMLCanvasElement) {
-            return Device.fromCanvas(element, options);
+            return Device.withCanvas(element, options);
         }
 
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        return Device.fromCanvas(canvas, options);
+        return Device.withCanvas(canvas, options);
     }
 
     /**
      * Create a new device (containing a gl context) from existing canvas.
      */
-    static fromCanvas(
+    static withCanvas(
         canvas: HTMLCanvasElement,
-        options: DeviceFromCanvasOptions = {},
+        options: DeviceWithCanvasOptions = {},
     ): Device {
         const {
             alpha = true,
@@ -81,20 +81,20 @@ export class Device {
             preserveDrawingBuffer,
         });
         if (!gl) { throw new Error("Could not get webgl2 context"); }
-        return Device.fromContext(gl, options);
+        return Device.withContext(gl, options);
     }
 
     /**
      * Create a new device from existing gl context.
      */
-    static fromContext(
+    static withContext(
         gl: WebGL2RenderingContext,
         {
             pixelRatio,
             viewport,
             extensions,
             debug,
-        }: DeviceFromContextOptions = {},
+        }: DeviceWithContextOptions = {},
     ): Device {
         if (extensions) {
             extensions.forEach(ext => {
@@ -182,12 +182,12 @@ export class Device {
                 if (!StencilDescriptor.equals(prev, val)) {
                     if (val) {
                         const {
-                            fFunc,
-                            bFunc,
-                            fFuncRef,
-                            bFuncRef,
-                            fFuncMask,
-                            bFuncMask,
+                            fFn,
+                            bFn,
+                            fFnRef,
+                            bFnRef,
+                            fFnMask,
+                            bFnMask,
                             fMask,
                             bMask,
                             fOpFail,
@@ -198,12 +198,22 @@ export class Device {
                             bOpZPass,
                         } = val;
                         gl.enable(gl.STENCIL_TEST);
-                        gl.stencilFuncSeparate(gl.FRONT, fFunc, fFuncRef, fFuncMask);
-                        gl.stencilFuncSeparate(gl.BACK, bFunc, bFuncRef, bFuncMask);
+                        gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
+                        gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
                         gl.stencilMaskSeparate(gl.FRONT, fMask);
                         gl.stencilMaskSeparate(gl.BACK, bMask);
-                        gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
-                        gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
+                        gl.stencilOpSeparate(
+                            gl.FRONT,
+                            fOpFail,
+                            fOpZFail,
+                            fOpZPass,
+                        );
+                        gl.stencilOpSeparate(
+                            gl.BACK,
+                            bOpFail,
+                            bOpZFail,
+                            bOpZPass,
+                        );
                     } else { gl.disable(gl.STENCIL_TEST); }
                 }
             },

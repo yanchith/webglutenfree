@@ -758,13 +758,13 @@ class DepthDescriptor {
     }
 }
 class StencilDescriptor {
-    constructor(fFunc, bFunc, fFuncRef, bFuncRef, fFuncMask, bFuncMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass) {
-        this.fFunc = fFunc;
-        this.bFunc = bFunc;
-        this.fFuncRef = fFuncRef;
-        this.bFuncRef = bFuncRef;
-        this.fFuncMask = fFuncMask;
-        this.bFuncMask = bFuncMask;
+    constructor(fFn, bFn, fFnRef, bFnRef, fFnMask, bFnMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass) {
+        this.fFn = fFn;
+        this.bFn = bFn;
+        this.fFnRef = fFnRef;
+        this.bFnRef = bFnRef;
+        this.fFnMask = fFnMask;
+        this.bFnMask = bFnMask;
         this.fMask = fMask;
         this.bMask = bMask;
         this.fOpFail = fOpFail;
@@ -781,22 +781,22 @@ class StencilDescriptor {
         if (!left || !right) {
             return false;
         }
-        if (left.fFunc !== right.fFunc) {
+        if (left.fFn !== right.fFn) {
             return false;
         }
-        if (left.bFunc !== right.bFunc) {
+        if (left.bFn !== right.bFn) {
             return false;
         }
-        if (left.fFuncRef !== right.fFuncRef) {
+        if (left.fFnRef !== right.fFnRef) {
             return false;
         }
-        if (left.bFuncRef !== right.bFuncRef) {
+        if (left.bFnRef !== right.bFnRef) {
             return false;
         }
-        if (left.fFuncMask !== right.fFuncMask) {
+        if (left.fFnMask !== right.fFnMask) {
             return false;
         }
-        if (left.bFuncMask !== right.bFuncMask) {
+        if (left.bFnMask !== right.bFnMask) {
             return false;
         }
         if (left.fMask !== right.fMask) {
@@ -1021,19 +1021,19 @@ class Device {
      * Create a new canvas and device (containing a gl context). Mount it on
      * `element` parameter (default is `document.body`).
      */
-    static mount(options = {}) {
+    static create(options = {}) {
         const { element = document.body } = options;
         if (element instanceof HTMLCanvasElement) {
-            return Device.fromCanvas(element, options);
+            return Device.withCanvas(element, options);
         }
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        return Device.fromCanvas(canvas, options);
+        return Device.withCanvas(canvas, options);
     }
     /**
      * Create a new device (containing a gl context) from existing canvas.
      */
-    static fromCanvas(canvas, options = {}) {
+    static withCanvas(canvas, options = {}) {
         const { alpha = true, antialias = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options;
         const gl = canvas.getContext("webgl2", {
             alpha,
@@ -1045,12 +1045,12 @@ class Device {
         if (!gl) {
             throw new Error("Could not get webgl2 context");
         }
-        return Device.fromContext(gl, options);
+        return Device.withContext(gl, options);
     }
     /**
      * Create a new device from existing gl context.
      */
-    static fromContext(gl, { pixelRatio, viewport, extensions, debug, } = {}) {
+    static withContext(gl, { pixelRatio, viewport, extensions, debug, } = {}) {
         if (extensions) {
             extensions.forEach(ext => {
                 // We currently do not have extensions with callable API
@@ -1099,10 +1099,10 @@ class Device {
         this._stackStencilTest = new Stack(null, (prev, val) => {
             if (!StencilDescriptor.equals(prev, val)) {
                 if (val) {
-                    const { fFunc, bFunc, fFuncRef, bFuncRef, fFuncMask, bFuncMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = val;
+                    const { fFn, bFn, fFnRef, bFnRef, fFnMask, bFnMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = val;
                     gl.enable(gl.STENCIL_TEST);
-                    gl.stencilFuncSeparate(gl.FRONT, fFunc, fFuncRef, fFuncMask);
-                    gl.stencilFuncSeparate(gl.BACK, bFunc, bFuncRef, bFuncMask);
+                    gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
+                    gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
                     gl.stencilMaskSeparate(gl.FRONT, fMask);
                     gl.stencilMaskSeparate(gl.BACK, bMask);
                     gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
