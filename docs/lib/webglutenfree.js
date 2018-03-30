@@ -1031,7 +1031,8 @@ class Device {
         return Device.withCanvas(canvas, options);
     }
     /**
-     * Create a new device (containing a gl context) from existing canvas.
+     * Create a new device from existing canvas. Does not take ownership of
+     * canvas.
      */
     static withCanvas(canvas, options = {}) {
         const { alpha = true, antialias = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options;
@@ -1048,7 +1049,9 @@ class Device {
         return Device.withContext(gl, options);
     }
     /**
-     * Create a new device from existing gl context.
+     * Create a new device from existing gl context. Does not take ownership of
+     * context, but concurrent usage of voids the warranty. Only use
+     * concurrently when absolutely necessary.
      */
     static withContext(gl, { pixelRatio, viewport, extensions, debug, } = {}) {
         if (extensions) {
@@ -1258,8 +1261,8 @@ class VertexBuffer {
         return new VertexBuffer(dev._gl, type, size, size * sizeOf(type), usage);
     }
     /**
-     * Create a new vertex buffer of given type with provided data. Data is
-     * referenced only for the duration of this call.
+     * Create a new vertex buffer of given type with provided data. Does not
+     * take ownership of data.
      */
     static withTypedArray(dev, type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
         return new VertexBuffer(dev._gl, type, data.length, data.length * sizeOf(type), usage).store(data);
@@ -1274,8 +1277,7 @@ class VertexBuffer {
         }
     }
     /**
-     * Upload new data to buffer. Data is referenced only for the duration of
-     * this call.
+     * Upload new data to buffer. Does not take ownership of data.
      */
     store(data, { offset = 0 } = {}) {
         const { type, gl, glBuffer } = this;
@@ -1339,8 +1341,7 @@ function ravel2(unraveled, shape) {
 }
 
 /**
- * Element buffers contain indices for accessing vertex buffer data. They are,
- * together with vertex buffers part of VertexArray objects.
+ * Element buffers contain indices for accessing vertex buffer data.
  */
 class ElementBuffer {
     constructor(gl, type, primitive, length, byteLength, usage) {
@@ -1365,7 +1366,7 @@ class ElementBuffer {
      *   number[] -> POINTS
      *   [number, number][] -> LINES
      *   [number, number, number][] -> TRIANGLES
-     * Array is referenced only for the duration of this call.
+     * Does not take ownership of data.
      */
     static withArray(dev, data, options) {
         if (isArray2(data)) {
@@ -1380,8 +1381,8 @@ class ElementBuffer {
         return ElementBuffer.withTypedArray(dev, DataType.UNSIGNED_INT, Primitive.POINTS, data, options);
     }
     /**
-     * Create a new element buffer of given type with provided data. Data is
-     * referenced only for the duration of this call.
+     * Create a new element buffer of given type with provided data. Does not
+     * take ownership of data.
      */
     static withTypedArray(dev, type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
         return new ElementBuffer(dev._gl, type, primitive, data.length, data.length * sizeOf(type), usage).store(data);
@@ -1396,8 +1397,7 @@ class ElementBuffer {
         }
     }
     /**
-     * Upload new data to buffer. Data is referenced only for the duration of
-     * this call.
+     * Upload new data to buffer. Does not take ownership of data.
      */
     store(data, { offset = 0 } = {}) {
         const { type, gl, glBuffer } = this;
@@ -1445,8 +1445,8 @@ var AttributeType;
     AttributeType["IPOINTER"] = "ipointer";
 })(AttributeType || (AttributeType = {}));
 /**
- * Vertex array objects store store vertex buffers, an index buffer,
- * and attributes with the vertex format for provided vertex buffers.
+ * Attributes store vertex buffers, an element buffer, and attributes with the
+ * vertex format for provided vertex buffers.
  */
 class Attributes {
     /**
@@ -1707,6 +1707,10 @@ var TextureFormat;
     // LUMINANCE
     // ALPHA
 })(TextureFormat || (TextureFormat = {}));
+/**
+ * Textures are images of 2D data, where each texel can contain multiple
+ * information channels of a certain type.
+ */
 class Texture {
     constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
         this.gl = gl;
@@ -1720,22 +1724,42 @@ class Texture {
         this.glTexture = null;
         this.init();
     }
+    /**
+     * Create a new texture with given width, height, and internal format.
+     * The internal format determines, what kind of data is possible to store.
+     */
     static create(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
         return new Texture(dev._gl, width, height, internalFormat, wrapS, wrapT, min, mag);
     }
+    /**
+     * Create a new texture with width and height equal to the given image, and
+     * store the image in the texture.
+     */
     static withImage(dev, image, options) {
         return Texture.withTypedArray(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureFormat.RGBA, DataType.UNSIGNED_BYTE, options);
     }
+    /**
+     * Create a new texture with given width, height, and internal format.
+     * The internal format determines, what kind of data is possible to store.
+     * Store data of given format and type contained in a typed array to the
+     * texture.
+     */
     static withTypedArray(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
         const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
         return new Texture(dev._gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
     }
+    /**
+     * Reinitialize invalid texture, eg. after context is lost.
+     */
     restore() {
         const { gl, glTexture } = this;
         if (!gl.isTexture(glTexture)) {
             this.init();
         }
     }
+    /**
+     * Upload new data to texture. Does not take ownership of data.
+     */
     store(data, format, type, { xOffset = 0, yOffset = 0, mipmap = false } = {}) {
         const { gl, glTexture, width, height } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
@@ -1752,6 +1776,9 @@ class Texture {
         gl.bindTexture(gl.TEXTURE_2D, null);
         return this;
     }
+    /**
+     * Generate mipmap levels for the current data.
+     */
     mipmap() {
         const { gl, glTexture } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
@@ -1772,10 +1799,18 @@ class Texture {
     }
 }
 
+/**
+ * Framebuffers store the list of attachments to write to during a draw
+ * operation. They can be a draw target via `framebuffer.target()`
+ */
 class Framebuffer {
     /**
      * Create a framebuffer containg one or more color buffers and a
      * depth or depth-stencil buffer with given width and height.
+     *
+     * Does not take ownership of provided attachments, only references them.
+     * It is still an error to use the attachments while they are written to
+     * via the framebuffer, however.
      */
     static create(dev, width, height, color, depthStencil) {
         const colors = Array.isArray(color) ? color : [color];

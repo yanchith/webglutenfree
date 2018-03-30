@@ -9,11 +9,19 @@ import {
     TextureDepthStencilInternalFormat as DepthStencilFmt,
 } from "./texture";
 
+/**
+ * Framebuffers store the list of attachments to write to during a draw
+ * operation. They can be a draw target via `framebuffer.target()`
+ */
 export class Framebuffer {
 
     /**
      * Create a framebuffer containg one or more color buffers and a
      * depth or depth-stencil buffer with given width and height.
+     *
+     * Does not take ownership of provided attachments, only references them.
+     * It is still an error to use the attachments while they are written to
+     * via the framebuffer, however.
      */
     static create(
         dev: _Device,
@@ -50,7 +58,7 @@ export class Framebuffer {
     private colors: _Texture<ColorFmt>[];
     private depthStencil?: _Texture<DepthFmt> | _Texture<DepthStencilFmt>;
 
-    constructor(
+    private constructor(
         dev: _Device,
         width: number,
         height: number,

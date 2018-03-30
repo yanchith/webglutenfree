@@ -393,8 +393,16 @@ export interface TextureStoreOptions {
     yOffset?: number;
 }
 
+/**
+ * Textures are images of 2D data, where each texel can contain multiple
+ * information channels of a certain type.
+ */
 export class Texture<F extends TextureInternalFormat> {
 
+    /**
+     * Create a new texture with given width, height, and internal format.
+     * The internal format determines, what kind of data is possible to store.
+     */
     static create<F extends TextureInternalFormat>(
         dev: _Device,
         width: number,
@@ -416,6 +424,10 @@ export class Texture<F extends TextureInternalFormat> {
         );
     }
 
+    /**
+     * Create a new texture with width and height equal to the given image, and
+     * store the image in the texture.
+     */
     static withImage(
         dev: _Device,
         image: ImageData,
@@ -433,6 +445,12 @@ export class Texture<F extends TextureInternalFormat> {
         );
     }
 
+    /**
+     * Create a new texture with given width, height, and internal format.
+     * The internal format determines, what kind of data is possible to store.
+     * Store data of given format and type contained in a typed array to the
+     * texture.
+     */
     static withTypedArray<F extends TextureInternalFormat>(
         dev: _Device,
         width: number,
@@ -493,11 +511,17 @@ export class Texture<F extends TextureInternalFormat> {
         this.init();
     }
 
+    /**
+     * Reinitialize invalid texture, eg. after context is lost.
+     */
     restore(): void {
         const { gl, glTexture } = this;
         if (!gl.isTexture(glTexture)) { this.init(); }
     }
 
+    /**
+     * Upload new data to texture. Does not take ownership of data.
+     */
     store(
         data: InternalFormatToTypedArray[F],
         format: InternalFormatToDataFormat[F],
@@ -529,6 +553,9 @@ export class Texture<F extends TextureInternalFormat> {
         return this;
     }
 
+    /**
+     * Generate mipmap levels for the current data.
+     */
     mipmap(): void {
         const { gl, glTexture } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);

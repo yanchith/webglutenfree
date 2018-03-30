@@ -71,8 +71,8 @@ export class VertexBuffer<T extends VertexBufferType> {
     }
 
     /**
-     * Create a new vertex buffer of given type with provided data. Data is
-     * referenced only for the duration of this call.
+     * Create a new vertex buffer of given type with provided data. Does not
+     * take ownership of data.
      */
     static withTypedArray<T extends VertexBufferType>(
         dev: _Device,
@@ -124,8 +124,7 @@ export class VertexBuffer<T extends VertexBufferType> {
     }
 
     /**
-     * Upload new data to buffer. Data is referenced only for the duration of
-     * this call.
+     * Upload new data to buffer. Does not take ownership of data.
      */
     store(
         data: VertexBufferTypeToTypedArray[T] | number[],

@@ -81,8 +81,8 @@ export interface AttributesCreateOptions {
 }
 
 /**
- * Vertex array objects store store vertex buffers, an index buffer,
- * and attributes with the vertex format for provided vertex buffers.
+ * Attributes store vertex buffers, an element buffer, and attributes with the
+ * vertex format for provided vertex buffers.
  */
 export class Attributes {
 

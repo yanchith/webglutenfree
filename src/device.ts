@@ -60,7 +60,8 @@ export class Device {
     }
 
     /**
-     * Create a new device (containing a gl context) from existing canvas.
+     * Create a new device from existing canvas. Does not take ownership of
+     * canvas.
      */
     static withCanvas(
         canvas: HTMLCanvasElement,
@@ -85,7 +86,9 @@ export class Device {
     }
 
     /**
-     * Create a new device from existing gl context.
+     * Create a new device from existing gl context. Does not take ownership of
+     * context, but concurrent usage of voids the warranty. Only use
+     * concurrently when absolutely necessary.
      */
     static withContext(
         gl: WebGL2RenderingContext,

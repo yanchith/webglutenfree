@@ -48,8 +48,7 @@ export interface ElementBufferStoreOptions {
 }
 
 /**
- * Element buffers contain indices for accessing vertex buffer data. They are,
- * together with vertex buffers part of VertexArray objects.
+ * Element buffers contain indices for accessing vertex buffer data.
  */
 export class ElementBuffer<T extends ElementBufferType> {
 
@@ -79,7 +78,7 @@ export class ElementBuffer<T extends ElementBufferType> {
      *   number[] -> POINTS
      *   [number, number][] -> LINES
      *   [number, number, number][] -> TRIANGLES
-     * Array is referenced only for the duration of this call.
+     * Does not take ownership of data.
      */
     static withArray(
         dev: _Device,
@@ -110,8 +109,8 @@ export class ElementBuffer<T extends ElementBufferType> {
     }
 
     /**
-     * Create a new element buffer of given type with provided data. Data is
-     * referenced only for the duration of this call.
+     * Create a new element buffer of given type with provided data. Does not
+     * take ownership of data.
      */
     static withTypedArray<T extends ElementBufferType>(
         dev: _Device,
@@ -168,8 +167,7 @@ export class ElementBuffer<T extends ElementBufferType> {
     }
 
     /**
-     * Upload new data to buffer. Data is referenced only for the duration of
-     * this call.
+     * Upload new data to buffer. Does not take ownership of data.
      */
     store(
         data: ElementBufferTypeToTypedArray[T] | number[],
