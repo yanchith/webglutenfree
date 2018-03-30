@@ -133,30 +133,26 @@ const buffer = VertexBuffer.withTypedArray(
 );
 
 const angle = Math.PI * 2 / 3;
-const attrs = Attributes.withBuffers(
-    dev,
-    Primitive.TRIANGLES,
-    cmd.locate({
-        // a_position is an instanced buffer containing the particles center
-        a_position: {
-            type: "pointer",
-            buffer,
-            count: positions.length / 3,  // 3 components per item
-            size: 3,  // 3 components per item
-            divisor: 1,
-        },
-        a_local_orig: [
-            [Math.sin(angle * 2 + Math.PI), Math.cos(angle * 2 + Math.PI), 0],
-            [Math.sin(angle + Math.PI), Math.cos(angle + Math.PI), 0],
-            [Math.sin(angle * 3 + Math.PI), Math.cos(angle * 3 + Math.PI), 0],
-        ],
-        a_local_flip: [
-            [Math.sin(angle * 2), Math.cos(angle * 2), 0],
-            [Math.sin(angle), Math.cos(angle), 0],
-            [Math.sin(angle * 3), Math.cos(angle * 3), 0],
-        ],
-    }),
-);
+const attrs = Attributes.create(dev, Primitive.TRIANGLES, cmd.locate({
+    // a_position is an instanced buffer containing the particles center
+    a_position: {
+        type: "pointer",
+        buffer,
+        count: positions.length / 3,  // 3 components per item
+        size: 3,  // 3 components per item
+        divisor: 1,
+    },
+    a_local_orig: [
+        [Math.sin(angle * 2 + Math.PI), Math.cos(angle * 2 + Math.PI), 0],
+        [Math.sin(angle + Math.PI), Math.cos(angle + Math.PI), 0],
+        [Math.sin(angle * 3 + Math.PI), Math.cos(angle * 3 + Math.PI), 0],
+    ],
+    a_local_flip: [
+        [Math.sin(angle * 2), Math.cos(angle * 2), 0],
+        [Math.sin(angle), Math.cos(angle), 0],
+        [Math.sin(angle * 3), Math.cos(angle * 3), 0],
+    ],
+}));
 
 const loop = time => {
     for (let i = 0; i < positions.length; i++) {

@@ -76,6 +76,10 @@ export interface AttributeIPointerConfig {
     divisor?: number;
 }
 
+export interface AttributesCreateOptions {
+    countLimit?: number;
+}
+
 /**
  * Vertex array objects store store vertex buffers, an index buffer,
  * and attributes with the vertex format for provided vertex buffers.
@@ -83,27 +87,30 @@ export interface AttributeIPointerConfig {
 export class Attributes {
 
     /**
-     * Create empty attributes of a given primitive. This actually performs no
-     * gl calls, only remembers the count for `gl.drawArrays()`
+     * Create new attributes with element and attribute definitions, and an
+     * optional count limit.
+     *
+     * Element definitions can either be a primitive definition, reference an
+     * existing element buffer, or have enough information to create an element
+     * buffer.
+     *
+     * Attribute definitions can either reference an existing vertex buffer,
+     * or have enough information to create a vertex buffer.
+     *
+     * Empty attribute definitions are valid. If no attributes nor elements
+     * given, there will be no underlying vertex array object created, only the
+     * count will be given to gl.drawArrays()
      */
     static create(
         dev: _Device,
-        primitive: Primitive,
-        count: number,
-    ): Attributes {
-        return new Attributes(dev, primitive, [], count, 0);
-    }
-
-    /**
-     * Create new attributes with primitive and attribute definitions.
-     * Attribute definitions can either reference an existing vertex buffer,
-     * or have enough information to create a vertex buffer.
-     */
-    static withBuffers(
-        dev: _Device,
-        primitive: Primitive,
+        elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>,
         attributes: AttributesConfig,
+        { countLimit }: AttributesCreateOptions = {},
     ): Attributes {
+        if (typeof countLimit === "number") {
+            assert.greater(countLimit, 0, "Count limit must be greater than 0");
+        }
+
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
                 if (!INT_PATTERN.test(locationStr)) {
@@ -113,54 +120,27 @@ export class Attributes {
                 return AttributeDescriptor.create(dev, location, definition);
             });
 
-        const count = attrs.length
-            ? attrs
-                .map(attr => attr.count)
-                .reduce((min, curr) => Math.min(min, curr))
-            : 0;
+        let primitive: Primitive;
+        let elementBuffer: ElementBuffer<ElementBufferType> | undefined;
+        if (typeof elements === "number") {
+            primitive = elements;
+        } else {
+            elementBuffer = elements instanceof ElementBuffer
+                ? elements
+                : ElementBuffer.withArray(dev, elements);
+            primitive = elementBuffer.primitive;
+        }
 
-        const instAttrs = attrs.filter(attr => !!attr.divisor);
-        const instanceCount = instAttrs.length
-            ? instAttrs
-                .map(attr => attr.count * attr.divisor)
-                .reduce((min, curr) => Math.min(min, curr))
-            : 0;
-
-        return new Attributes(dev, primitive, attrs, count, instanceCount);
-    }
-
-    /**
-     * Create new attributes with element and attribute definitions.
-     * Attribute definitions can either reference an existing vertex buffer,
-     * or have enough information to create a vertex buffer.
-     * Element definitions can either reference an existing element buffer,
-     * or have enough information to create an element buffer.
-     */
-    static withIndexedBuffers(
-        dev: _Device,
-        elements: ElementArray | ElementBuffer<ElementBufferType>,
-        attributes: AttributesConfig,
-    ): Attributes {
-        const attrs = Object.entries(attributes)
-            .map(([locationStr, definition]) => {
-                if (!INT_PATTERN.test(locationStr)) {
-                    throw new Error("Location not a number. Use Command#locate");
-                }
-                const location = parseInt(locationStr, 10);
-                return AttributeDescriptor.create(dev, location, definition);
-            });
-
-        const elementBuffer = elements && (elements instanceof ElementBuffer
-            ? elements
-            : ElementBuffer.withArray(dev, elements));
-
-        const count = elementBuffer
+        const inferredCount = elementBuffer
             ? elementBuffer.length
             : attrs.length
                 ? attrs
                     .map(attr => attr.count)
                     .reduce((min, curr) => Math.min(min, curr))
                 : 0;
+        const count = typeof countLimit === "number"
+            ? Math.min(countLimit, inferredCount)
+            : inferredCount;
 
         const instAttrs = attrs.filter(attr => !!attr.divisor);
         const instanceCount = instAttrs.length
@@ -171,12 +151,24 @@ export class Attributes {
 
         return new Attributes(
             dev,
-            elementBuffer.primitive,
+            primitive,
             attrs,
             count,
             instanceCount,
             elementBuffer,
         );
+    }
+
+    /**
+     * Create empty attributes of a given primitive. This actually performs no
+     * gl calls, only remembers the count for `gl.drawArrays()`
+     */
+    static empty(
+        dev: _Device,
+        primitive: Primitive,
+        count: number,
+    ): Attributes {
+        return new Attributes(dev, primitive, [], count, 0);
     }
 
     readonly primitive: Primitive;
@@ -230,14 +222,14 @@ export class Attributes {
         attributes.forEach(attr => attr.buffer.restore());
         // If we have no attributes nor elements, there is no need to restore
         // any GPU state
-        if (!this.isEmpty() && !_gl.isVertexArray(glVertexArray)) {
+        if (!this.hasAttribs() && !_gl.isVertexArray(glVertexArray)) {
             this.init();
         }
     }
 
     private init(): void {
         // Do not create the gl vao if there are no buffers to bind
-        if (this.isEmpty()) { return; }
+        if (this.hasAttribs()) { return; }
 
         const {
             dev: { _gl, _stackVertexArray },
@@ -300,7 +292,7 @@ export class Attributes {
         (this as any).glVertexArray = vao;
     }
 
-    private isEmpty(): boolean {
+    private hasAttribs(): boolean {
         // IF we have either attributes or elements, this geometry can not
         // longer be considered empty.
         return !this.elementBuffer && !this.attributes.length;

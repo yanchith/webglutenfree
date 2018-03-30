@@ -30,7 +30,7 @@ const cmd = Command.create(
     `,
 );
 
-const attrs = Attributes.withBuffers(dev, Primitive.TRIANGLES, {
+const attrs = Attributes.create(dev, Primitive.TRIANGLES, {
     0: [
         [-0.3, -0.5],
         [0.3, -0.5],

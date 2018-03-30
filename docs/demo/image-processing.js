@@ -27,17 +27,17 @@ const kernels = {
     ],
     unsharpen: [
         -1, -1, -1,
-        -1,  9, -1,
+        -1, 9, -1,
         -1, -1, -1,
     ],
     emboss: [
-        -2, -1,  0,
-        -1,  1,  1,
-         0,  1,  2,
+        -2, -1, 0,
+        -1, 1, 1,
+        0, 1, 2,
     ],
     edgeDetect: [
         -1, -1, -1,
-        -1,  8, -1,
+        -1, 8, -1,
         -1, -1, -1,
     ],
 };
@@ -128,14 +128,10 @@ async function run() {
         },
     );
 
-    const attrs = Attributes.withIndexedBuffers(
-        dev,
-        square.elements,
-        cmd.locate({
-            a_position: square.positions,
-            a_tex_coord: square.texCoords,
-        }),
-    );
+    const attrs = Attributes.create(dev, square.elements, cmd.locate({
+        a_position: square.positions,
+        a_tex_coord: square.texCoords,
+    }));
 
     dev.target(rt => {
         rt.draw(cmd, attrs);

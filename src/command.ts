@@ -264,38 +264,38 @@ export class Command<P> {
             blend,
         }: CommandOptions<P> = {},
     ): Command<P> {
-        assert.nonNull(vert, "vert");
+        assert.nonNull(vert, fmtAssertNonNull("vert"));
         assert.nonNull(frag, "frag");
         if (depth) {
-            assert.nonNull(depth.func, "depth.func");
+            assert.nonNull(depth.func, fmtAssertNonNull("depth.func"));
         }
         if (blend) {
-            assert.nonNull(blend.func, "blend.func");
-            assert.nonNull(blend.func.src, "blend.func.src");
-            assert.nonNull(blend.func.dst, "blend.func.dst");
+            assert.nonNull(blend.func, fmtAssertNonNull("blend.func"));
+            assert.nonNull(blend.func.src, fmtAssertNonNull("blend.func.src"));
+            assert.nonNull(blend.func.dst, fmtAssertNonNull("blend.func.dst"));
             if (typeof blend.func.src === "object") {
                 assert.nonNull(
                     blend.func.src.rgb,
-                    "blend.func.src.rgb",
+                    fmtAssertNonNull("blend.func.src.rgb"),
                 );
                 assert.nonNull(
                     blend.func.src.alpha,
-                    "blend.func.src.alpha",
+                    fmtAssertNonNull("blend.func.src.alpha"),
                 );
             }
             if (typeof blend.func.dst === "object") {
                 assert.nonNull(
                     blend.func.dst.rgb,
-                    "blend.func.dst.rgb",
+                    fmtAssertNonNull("blend.func.dst.rgb"),
                 );
                 assert.nonNull(
                     blend.func.dst.alpha,
-                    "blend.func.dst.alpha",
+                    fmtAssertNonNull("blend.func.dst.alpha"),
                 );
             }
         }
         if (stencil) {
-            assert.nonNull(stencil.func, "stencil.func");
+            assert.nonNull(stencil.func, fmtAssertNonNull("stencil.func"));
             // TODO: complete stencil validation... validation framework?
         }
 
@@ -815,4 +815,8 @@ function createShader(
         .map((l, i) => `${i + 1}: ${l}`)
         .join("\n");
     throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
+}
+
+function fmtAssertNonNull(name: string): string {
+    return `${name}`;
 }

@@ -23,15 +23,15 @@ export class Framebuffer {
         depthStencil?: _Texture<DepthFmt> | _Texture<DepthStencilFmt>,
     ): Framebuffer {
         const colors = Array.isArray(color) ? color : [color];
-        assert.nonEmpty(colors, "color");
+        assert.nonEmpty(colors, "color attachments must not be empty");
         colors.forEach(buffer => {
-            assert.equal(width, buffer.width, "width");
-            assert.equal(height, buffer.height, "height");
+            assert.equal(width, buffer.width, "widths must be equal");
+            assert.equal(height, buffer.height, "heights must be equal");
         });
 
         if (depthStencil) {
-            assert.equal(width, depthStencil.width, "width");
-            assert.equal(height, depthStencil.height, "height");
+            assert.equal(width, depthStencil.width, "widths must be equal");
+            assert.equal(height, depthStencil.height, "heights must be equal");
         }
 
         return new Framebuffer(dev, width, height, colors, depthStencil);
@@ -146,7 +146,7 @@ export class Framebuffer {
                         0,
                     );
                     break;
-                default: assert.never(depthStencil, "Unsupported attachment");
+                default: assert.never(depthStencil, "nsupported attachment");
             }
         }
 

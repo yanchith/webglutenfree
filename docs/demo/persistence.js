@@ -172,15 +172,11 @@ const cmdBlend = Command.create(
     },
 );
 
-const screenspaceAttrs = Attributes.create(dev, Primitive.TRIANGLES, 3);
-const bunnyAttrs = Attributes.withIndexedBuffers(
-    dev,
-    bunny.elements,
-    cmdDraw.locate({
-        a_position: bunny.positions,
-        a_normal: bunny.normals,
-    }),
-);
+const screenspaceAttrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
+const bunnyAttrs = Attributes.create(dev, bunny.elements, cmdDraw.locate({
+    a_position: bunny.positions,
+    a_normal: bunny.normals,
+}));
 
 
 let ping = {

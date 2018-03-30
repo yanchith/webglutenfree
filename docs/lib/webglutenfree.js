@@ -16,38 +16,45 @@ const process = {
         NODE_ENV: "development",
     },
 };
-function nonNull(p, name, msg) {
+function nonNull(p, msg) {
     if (process.env.NODE_ENV !== "production") {
         if (typeof p === "undefined" || typeof p === "object" && !p) {
-            throw new Error(msg || fmt(`object ${name || ""} ${p}`));
+            throw new Error(fmt(msg || `object is undefined or null`));
         }
     }
 }
-function nonEmpty(p, name, msg) {
+function nonEmpty(p, msg) {
     if (process.env.NODE_ENV !== "production") {
-        if (!p || !p.length) {
-            throw new Error(msg || fmt(`array ${name || ""} empty`));
+        if (!p.length) {
+            throw new Error(fmt(msg || `array is empty`));
         }
     }
 }
-function equal(p, val, name, msg) {
+function equal(p, expected, msg) {
     if (process.env.NODE_ENV !== "production") {
-        if (p !== val) {
-            throw new Error(msg || fmt(`${name || ""} values not equal: ${p} ${val}`));
+        if (p !== expected) {
+            throw new Error(fmt(msg || `values not equal, expected ${expected}, got ${p}`));
         }
     }
 }
-function range(p, start, end, name, msg) {
+function greater(p, low, msg) {
+    if (process.env.NODE_ENV !== "production") {
+        if (p <= low) {
+            throw new Error(fmt(msg || `value ${p} not greater than low`));
+        }
+    }
+}
+function range(p, start, end, msg) {
     if (process.env.NODE_ENV !== "production") {
         if (p < start || p > end) {
-            throw new Error(msg || fmt(`${name || ""} value ${p} not in [${start}, ${end}]`));
+            throw new Error(fmt(msg || `value ${p} not in [${start}, ${end}]`));
         }
     }
 }
 function never(p, msg) {
     // "never" can not be eliminated, as its "return value" is actually captured
     // at the callsites. It should never be invoked, though.
-    throw new Error(msg || fmt(`Unexpected object: ${p}`));
+    throw new Error((msg || `unexpected object: ${p}`));
 }
 function fmt(msg) {
     return `Assertion Failed: ${msg}`;
@@ -147,13 +154,13 @@ class Stack {
         this.s.push(value);
     }
     pop() {
-        nonEmpty(this.s, "Stack must not be empty for pop");
+        nonEmpty(this.s, "stack must not be empty for pop");
         const prevValue = this.s.pop();
         this.onChange(prevValue, this.peek(), "pop");
         return prevValue;
     }
     peek() {
-        nonEmpty(this.s, "Stack must never be empty for peek");
+        nonEmpty(this.s, "stack must never be empty for peek");
         return this.s[this.s.length - 1];
     }
 }
@@ -433,7 +440,7 @@ class Target {
                     gl.uniformMatrix4fv(loc, false, access(props, index, def.value));
                     break;
                 default:
-                    never(def, `Unknown uniform type: (${ident})`);
+                    never(def, `unknown uniform type: (${ident})`);
                     break;
             }
         });
@@ -517,26 +524,26 @@ class Command {
         this.init();
     }
     static create(dev, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
-        nonNull(vert, "vert");
+        nonNull(vert, fmtAssertNonNull("vert"));
         nonNull(frag, "frag");
         if (depth) {
-            nonNull(depth.func, "depth.func");
+            nonNull(depth.func, fmtAssertNonNull("depth.func"));
         }
         if (blend) {
-            nonNull(blend.func, "blend.func");
-            nonNull(blend.func.src, "blend.func.src");
-            nonNull(blend.func.dst, "blend.func.dst");
+            nonNull(blend.func, fmtAssertNonNull("blend.func"));
+            nonNull(blend.func.src, fmtAssertNonNull("blend.func.src"));
+            nonNull(blend.func.dst, fmtAssertNonNull("blend.func.dst"));
             if (typeof blend.func.src === "object") {
-                nonNull(blend.func.src.rgb, "blend.func.src.rgb");
-                nonNull(blend.func.src.alpha, "blend.func.src.alpha");
+                nonNull(blend.func.src.rgb, fmtAssertNonNull("blend.func.src.rgb"));
+                nonNull(blend.func.src.alpha, fmtAssertNonNull("blend.func.src.alpha"));
             }
             if (typeof blend.func.dst === "object") {
-                nonNull(blend.func.dst.rgb, "blend.func.dst.rgb");
-                nonNull(blend.func.dst.alpha, "blend.func.dst.alpha");
+                nonNull(blend.func.dst.rgb, fmtAssertNonNull("blend.func.dst.rgb"));
+                nonNull(blend.func.dst.alpha, fmtAssertNonNull("blend.func.dst.alpha"));
             }
         }
         if (stencil) {
-            nonNull(stencil.func, "stencil.func");
+            nonNull(stencil.func, fmtAssertNonNull("stencil.func"));
             // TODO: complete stencil validation... validation framework?
         }
         const depthDescr = parseDepth(depth);
@@ -997,6 +1004,9 @@ function createShader(gl, type, source) {
         .join("\n");
     throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
 }
+function fmtAssertNonNull(name) {
+    return `${name}`;
+}
 
 /**
  * Available extensions.
@@ -1301,7 +1311,7 @@ function createBuffer(type, arr) {
         case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
         case DataType.UNSIGNED_INT: return new Uint32Array(arr);
         case DataType.FLOAT: return new Float32Array(arr);
-        default: return never(type, `Invalid buffer type: ${type}`);
+        default: return never(type, `nvalid buffer type: ${type}`);
     }
 }
 
@@ -1360,7 +1370,7 @@ class ElementBuffer {
     static withArray(dev, data, options) {
         if (isArray2(data)) {
             const shape = shape2(data);
-            range(shape[1], 2, 3, "element tuple length");
+            range(shape[1], 2, 3, "elements must be 2-tuples or 3-tuples");
             const ravel = ravel2(data, shape);
             const primitive = shape[1] === 3
                 ? Primitive.TRIANGLES
@@ -1419,7 +1429,7 @@ function createBuffer$1(type, arr) {
         case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
         case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
         case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        default: return never(type, `Invalid buffer type: ${type}`);
+        default: return never(type, `invalid buffer type: ${type}`);
     }
 }
 
@@ -1440,18 +1450,24 @@ var AttributeType;
  */
 class Attributes {
     /**
-     * Create empty attributes of a given primitive. This actually performs no
-     * gl calls, only remembers the count for `gl.drawArrays()`
-     */
-    static create(dev, primitive, count) {
-        return new Attributes(dev, primitive, [], count, 0);
-    }
-    /**
-     * Create new attributes with primitive and attribute definitions.
+     * Create new attributes with element and attribute definitions, and an
+     * optional count limit.
+     *
+     * Element definitions can either be a primitive definition, reference an
+     * existing element buffer, or have enough information to create an element
+     * buffer.
+     *
      * Attribute definitions can either reference an existing vertex buffer,
      * or have enough information to create a vertex buffer.
+     *
+     * Empty attribute definitions are valid. If no attributes nor elements
+     * given, there will be no underlying vertex array object created, only the
+     * count will be given to gl.drawArrays()
      */
-    static withBuffers(dev, primitive, attributes) {
+    static create(dev, elements, attributes, { countLimit } = {}) {
+        if (typeof countLimit === "number") {
+            greater(countLimit, 0, "Count limit must be greater than 0");
+        }
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
             if (!INT_PATTERN$1.test(locationStr)) {
@@ -1460,52 +1476,41 @@ class Attributes {
             const location = parseInt(locationStr, 10);
             return AttributeDescriptor.create(dev, location, definition);
         });
-        const count = attrs.length
-            ? attrs
-                .map(attr => attr.count)
-                .reduce((min, curr) => Math.min(min, curr))
-            : 0;
-        const instAttrs = attrs.filter(attr => !!attr.divisor);
-        const instanceCount = instAttrs.length
-            ? instAttrs
-                .map(attr => attr.count * attr.divisor)
-                .reduce((min, curr) => Math.min(min, curr))
-            : 0;
-        return new Attributes(dev, primitive, attrs, count, instanceCount);
-    }
-    /**
-     * Create new attributes with element and attribute definitions.
-     * Attribute definitions can either reference an existing vertex buffer,
-     * or have enough information to create a vertex buffer.
-     * Element definitions can either reference an existing element buffer,
-     * or have enough information to create an element buffer.
-     */
-    static withIndexedBuffers(dev, elements, attributes) {
-        const attrs = Object.entries(attributes)
-            .map(([locationStr, definition]) => {
-            if (!INT_PATTERN$1.test(locationStr)) {
-                throw new Error("Location not a number. Use Command#locate");
-            }
-            const location = parseInt(locationStr, 10);
-            return AttributeDescriptor.create(dev, location, definition);
-        });
-        const elementBuffer = elements && (elements instanceof ElementBuffer
-            ? elements
-            : ElementBuffer.withArray(dev, elements));
-        const count = elementBuffer
+        let primitive;
+        let elementBuffer;
+        if (typeof elements === "number") {
+            primitive = elements;
+        }
+        else {
+            elementBuffer = elements instanceof ElementBuffer
+                ? elements
+                : ElementBuffer.withArray(dev, elements);
+            primitive = elementBuffer.primitive;
+        }
+        const inferredCount = elementBuffer
             ? elementBuffer.length
             : attrs.length
                 ? attrs
                     .map(attr => attr.count)
                     .reduce((min, curr) => Math.min(min, curr))
                 : 0;
+        const count = typeof countLimit === "number"
+            ? Math.min(countLimit, inferredCount)
+            : inferredCount;
         const instAttrs = attrs.filter(attr => !!attr.divisor);
         const instanceCount = instAttrs.length
             ? instAttrs
                 .map(attr => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
-        return new Attributes(dev, elementBuffer.primitive, attrs, count, instanceCount, elementBuffer);
+        return new Attributes(dev, primitive, attrs, count, instanceCount, elementBuffer);
+    }
+    /**
+     * Create empty attributes of a given primitive. This actually performs no
+     * gl calls, only remembers the count for `gl.drawArrays()`
+     */
+    static empty(dev, primitive, count) {
+        return new Attributes(dev, primitive, [], count, 0);
     }
     constructor(dev, primitive, attributes, count, instanceCount, elements) {
         this.dev = dev;
@@ -1536,13 +1541,13 @@ class Attributes {
         attributes.forEach(attr => attr.buffer.restore());
         // If we have no attributes nor elements, there is no need to restore
         // any GPU state
-        if (!this.isEmpty() && !_gl.isVertexArray(glVertexArray)) {
+        if (!this.hasAttribs() && !_gl.isVertexArray(glVertexArray)) {
             this.init();
         }
     }
     init() {
         // Do not create the gl vao if there are no buffers to bind
-        if (this.isEmpty()) {
+        if (this.hasAttribs()) {
             return;
         }
         const { dev: { _gl, _stackVertexArray }, attributes, elementBuffer, } = this;
@@ -1576,7 +1581,7 @@ class Attributes {
         }
         this.glVertexArray = vao;
     }
-    isEmpty() {
+    hasAttribs() {
         // IF we have either attributes or elements, this geometry can not
         // longer be considered empty.
         return !this.elementBuffer && !this.attributes.length;
@@ -1774,14 +1779,14 @@ class Framebuffer {
      */
     static create(dev, width, height, color, depthStencil) {
         const colors = Array.isArray(color) ? color : [color];
-        nonEmpty(colors, "color");
+        nonEmpty(colors, "color attachments must not be empty");
         colors.forEach(buffer => {
-            equal(width, buffer.width, "width");
-            equal(height, buffer.height, "height");
+            equal(width, buffer.width, "widths must be equal");
+            equal(height, buffer.height, "heights must be equal");
         });
         if (depthStencil) {
-            equal(width, depthStencil.width, "width");
-            equal(height, depthStencil.height, "height");
+            equal(width, depthStencil.width, "widths must be equal");
+            equal(height, depthStencil.height, "heights must be equal");
         }
         return new Framebuffer(dev, width, height, colors, depthStencil);
     }
@@ -1842,7 +1847,7 @@ class Framebuffer {
                 case TextureInternalFormat.DEPTH_COMPONENT32F:
                     _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
-                default: never(depthStencil, "Unsupported attachment");
+                default: never(depthStencil, "nsupported attachment");
             }
         }
         const status = _gl.checkFramebufferStatus(_gl.DRAW_FRAMEBUFFER);

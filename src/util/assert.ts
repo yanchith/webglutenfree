@@ -18,34 +18,35 @@ const process = {
     },
 };
 
-export function nonNull<T>(
-    p: T | null | undefined,
-    name?: string,
-    msg?: string,
-): void {
+export function nonNull<T>(p: T | null | undefined, msg?: string): void {
     if (process.env.NODE_ENV !== "production") {
         if (typeof p === "undefined" || typeof p === "object" && !p) {
-            throw new Error(msg || fmt(`object ${name || ""} ${p}`));
+            throw new Error(fmt(msg || `object is undefined or null`));
         }
     }
 }
 
-export function nonEmpty<T>(
-    p: T[] | null | undefined,
-    name?: string,
-    msg?: string,
-): void {
+export function nonEmpty<T>(p: T[], msg?: string): void {
     if (process.env.NODE_ENV !== "production") {
-        if (!p || !p.length) {
-            throw new Error(msg || fmt(`array ${name || ""} empty`));
+        if (!p.length) {
+            throw new Error(fmt(msg || `array is empty`));
         }
     }
 }
 
-export function equal<T>(p: T, val: T, name?: string, msg?: string): void {
+export function equal<T>(p: T, expected: T, msg?: string): void {
     if (process.env.NODE_ENV !== "production") {
-        if (p !== val) {
-            throw new Error(msg || fmt(`${name || ""} values not equal: ${p} ${val}`));
+        if (p !== expected) {
+            throw new Error(
+                fmt(msg || `values not equal, expected ${expected}, got ${p}`));
+        }
+    }
+}
+
+export function greater(p: number, low: number, msg?: string): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (p <= low) {
+            throw new Error(fmt(msg || `value ${p} not greater than low`));
         }
     }
 }
@@ -54,12 +55,11 @@ export function range(
     p: number,
     start: number,
     end: number,
-    name?: string,
     msg?: string,
 ): void {
     if (process.env.NODE_ENV !== "production") {
         if (p < start || p > end) {
-            throw new Error(msg || fmt(`${name || ""} value ${p} not in [${start}, ${end}]`));
+            throw new Error(fmt(msg || `value ${p} not in [${start}, ${end}]`));
         }
     }
 }
@@ -67,7 +67,7 @@ export function range(
 export function never(p: never, msg?: string): never {
     // "never" can not be eliminated, as its "return value" is actually captured
     // at the callsites. It should never be invoked, though.
-    throw new Error(msg || fmt(`Unexpected object: ${p}`));
+    throw new Error((msg || `unexpected object: ${p}`));
 }
 
 function fmt(msg: string): string {

@@ -30,7 +30,7 @@ const cmd = Command.create(
     `,
 );
 
-const attrs = Attributes.withIndexedBuffers(
+const attrs = Attributes.create(
     dev,
     [
         [0, 1],

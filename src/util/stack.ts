@@ -19,14 +19,14 @@ export class Stack<T> {
     }
 
     pop(): T {
-        assert.nonEmpty(this.s, "Stack must not be empty for pop");
+        assert.nonEmpty(this.s, "stack must not be empty for pop");
         const prevValue = this.s.pop()!;
         this.onChange(prevValue, this.peek(), "pop");
         return prevValue;
     }
 
     peek(): T {
-        assert.nonEmpty(this.s, "Stack must never be empty for peek");
+        assert.nonEmpty(this.s, "stack must never be empty for peek");
         return this.s[this.s.length - 1];
     }
 }

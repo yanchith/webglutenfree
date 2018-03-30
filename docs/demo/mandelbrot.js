@@ -212,7 +212,7 @@ const cmdDraw = Command.create(
     },
 );
 
-const attrs = Attributes.create(dev, Primitive.TRIANGLES, 3);
+const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
 
 let ping = {
     texVal: pingTexVal,

@@ -164,11 +164,7 @@ const objs = models.map((m, i) => {
     mat4.scale(matrix, matrix, [scale, scale, scale]);
     return {
         matrix,
-        attrs: Attributes.withIndexedBuffers(
-            dev,
-            m.elements,
-            { 0: m.positions },
-        ),
+        attrs: Attributes.create(dev, m.elements, { 0: m.positions }),
     };
 });
 

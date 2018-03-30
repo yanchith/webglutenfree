@@ -297,12 +297,11 @@ const cmdMerge = Command.create(
 );
 
 
-const screenspaceAttrs = Attributes.create(dev, Primitive.TRIANGLES, 3);
-const modelAttrs = Attributes.withIndexedBuffers(dev, uvCube.elements, {
-        0: uvCube.positions,
-        1: uvCube.uvs,
-    },
-);
+const screenspaceAttrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
+const modelAttrs = Attributes.create(dev, uvCube.elements, {
+    0: uvCube.positions,
+    1: uvCube.uvs,
+});
 
 
 const nBloomPasses = Math.max(0, N_BLOOM_PASSES);
