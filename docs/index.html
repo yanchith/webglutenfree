@@ -125,19 +125,58 @@
 
         const iframe = new IFrame("sandbox.html");
 
-        require.config({ paths: { 'vs': 'demolib/monaco/min/vs' } });
-        require(['vs/editor/editor.main'], function () {
+        require.config({ paths: { "vs": "demolib/monaco/min/vs" } });
+        require(["vs/editor/editor.main"], () => {
             const editor = monaco.editor.create(editorElem, {
                 value: "",
-                language: "javascript",
+                language: "typescript",
                 theme: "vs-dark",
+                contextmenu: false,
             });
 
-            editor.model.onDidChangeContent(debounce(1000, () => {
+            editor.model.onDidChangeContent(debounce(1000, async () => {
                 iframe.unmount();
                 iframe.mount(iframeElem);
-                iframe.postMessage({ code: editor.getValue() });
+                try {
+                    const code = await compile();
+                    if (code) {
+                        iframe.postMessage({ code });
+                    }
+                } catch (err) {
+                    console.error("Error ocurred while compiling", err);
+                }
             }));
+
+            async function compile() {
+                const uri = editor.getModel().uri.toString();
+
+                return monaco.languages.typescript.getTypeScriptWorker()
+                    .then(worker => worker(uri))
+                    .then(service => service.getEmitOutput(uri))
+                    .then(result => {
+                        if (result.emitSkipped) {
+                            return false;
+                        }
+
+                        if (!result.outputFiles || !result.outputFiles[0]) {
+                            return false;
+                        }
+
+                        return result.outputFiles[0].text;
+                    });
+                // const worker = await monaco.languages.typescript.getTypeScriptWorker();
+                // const service = await worker(uri);
+                // const result = await service.getEmitOutput(uri);
+                // if (result.emitSkipped) {
+                //     return false;
+                // }
+
+                // if (!result.outputFiles || !result.outputFiles[0]) {
+                //     return false;
+                // }
+
+                // return result.outputFiles[0].text;
+            }
 
             function navigate() {
                 const path = hashToPath(window.location.hash);
