@@ -126,10 +126,47 @@
         const iframe = new IFrame("sandbox.html");
 
         require.config({ paths: { "vs": "demolib/monaco/min/vs" } });
-        require(["vs/editor/editor.main"], () => {
+        require(["vs/editor/editor.main"], async () => {
+
+            const ts = monaco.languages.typescript;
+
+            const DTS = [
+                "webglutenfree.d.ts",
+                "command.d.ts",
+                "attributes.d.ts",
+                "device.d.ts",
+                "element-buffer.d.ts",
+                "framebuffer.d.ts",
+                "target.d.ts",
+                "texture.d.ts",
+                "types.d.ts",
+                "vertexbuffer.d.ts",
+            ];
+
+            const fetches = DTS.map(dts => {
+                return window.fetch(`./lib/${dts}`).then(res => res.text());
+            });
+            const declarations = await Promise.all(fetches);
+            declarations.forEach((decl, i) => {
+                ts.typescriptDefaults.addExtraLib(
+                    decl,
+                    monaco.Uri.parse(`inmemory://model/lib/${DTS[i]}`),
+                );
+            })
+
+            ts.typescriptDefaults.setCompilerOptions({
+                target: ts.ScriptTarget.ES2015,
+                allowNonTsExtensions: true,
+                moduleResolution: ts.ModuleResolutionKind.NodeJs,
+                module: ts.ModuleKind.ES2015,
+                // types: [DTS_URI]
+                // typeRoots: ["node_modules/@types"],
+            });
+
+
             const editor = monaco.editor.create(editorElem, {
                 value: "",
-                language: "javascript",
+                language: "typescript",
                 theme: "vs-dark",
                 contextmenu: false,
             });
@@ -148,23 +185,22 @@
             }));
 
             async function compile() {
-                // const uri = editor.getModel().uri.toString();
+                const uri = editor.getModel().uri.toString();
 
-                // return monaco.languages.typescript.getTypeScriptWorker()
-                //     .then(worker => worker(uri))
-                //     .then(service => service.getEmitOutput(uri))
-                //     .then(result => {
-                //         if (result.emitSkipped) {
-                //             return false;
-                //         }
+                return monaco.languages.typescript.getTypeScriptWorker()
+                    .then(worker => worker(uri))
+                    .then(service => service.getEmitOutput(uri))
+                    .then(result => {
+                        if (result.emitSkipped) {
+                            return false;
+                        }
 
-                //         if (!result.outputFiles || !result.outputFiles[0]) {
-                //             return false;
-                //         }
+                        if (!result.outputFiles || !result.outputFiles[0]) {
+                            return false;
+                        }
 
-                //         return result.outputFiles[0].text;
-                //     });
-                return Promise.resolve(editor.getValue());
+                        return result.outputFiles[0].text;
+                    });
             }
 
             function navigate() {
