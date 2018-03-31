@@ -38,7 +38,7 @@ const kernels = {
 const N_BLOOM_PASSES = 4;
 const KERNEL = kernels.blur3;
 
-const dev = Device.mount();
+const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 // We blur smaller textures for better performance

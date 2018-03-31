@@ -1,6 +1,6 @@
 import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.js";
 
-const dev = Device.mount();
+const dev = Device.create();
 
 const cmd = Command.create(
     dev,

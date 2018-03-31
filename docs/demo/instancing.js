@@ -8,7 +8,7 @@ import {
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
 
-const dev = Device.mount();
+const dev = Device.create();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
 const view = mat4.identity(mat4.create());
