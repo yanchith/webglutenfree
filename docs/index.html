@@ -36,14 +36,24 @@
             margin: 1px;
             padding: 0px;
             border: 1px solid green;
-            width: 640px;
+            width: 800px;
             height: calc(100% - 8px);
             opacity: 0.8;
             z-index: 1;
+            transition-property: right opacity;
+            transition-duration: 0.3s;
+            transition-delay: 0.1s;
+            transition-timing-function: ease;
         }
 
-        .cm-s-liquibyte.CodeMirror {
-            background-color: rgb(20, 20, 20) !important;
+        #editor.hidden {
+            right: -900px;
+            opacity: 0.0;
+        }
+
+
+        #editor-toggle {
+            text-align: center;
         }
 
         #menu {
@@ -88,6 +98,7 @@
     <iframe id="iframe" src="sandbox.html"></iframe>
     <div id="editor"></div>
     <div id="menu">
+        <div id="editor-toggle">&gt;&gt;</div>
         <div data-href="./demo/triangle.js" class="selected">triangle</div>
         <div data-href="./demo/line.js">line</div>
         <div data-href="./demo/models.js">models</div>
@@ -110,20 +121,19 @@
         const iframeElem = document.getElementById("iframe");
         const editorElem = document.getElementById("editor");
         const menuElem = document.getElementById("menu");
+        const editorToggleElem = document.getElementById("editor-toggle");
 
         const iframe = new IFrame("sandbox.html");
-        // iframe.mount(iframeElem);
 
         require.config({ paths: { 'vs': 'demolib/monaco/min/vs' } });
         require(['vs/editor/editor.main'], function () {
             const editor = monaco.editor.create(editorElem, {
                 value: "",
-                language: 'javascript'
+                language: "javascript",
+                theme: "vs-dark",
             });
 
             editor.model.onDidChangeContent(debounce(1000, () => {
-                console.log(iframe);
-                // iframe.remount();
                 iframe.unmount();
                 iframe.mount(iframeElem);
                 iframe.postMessage({ code: editor.getValue() });
@@ -165,6 +175,14 @@
             menuElem.addEventListener("click", ev => {
                 if (ev.target.dataset.href) {
                     window.location.hash = pathToHash(ev.target.dataset.href);
+                } else if (ev.target === editorToggleElem) {
+                    if (editorToggleElem.innerHTML === "&gt;&gt;") {
+                        editorToggleElem.innerHTML = "&lt;&lt;";
+                        editorElem.classList.add("hidden");
+                    } else {
+                        editorToggleElem.innerHTML = "&gt;&gt;";
+                        editorElem.classList.remove("hidden");
+                    }
                 }
                 ev.preventDefault();
             }, true);
