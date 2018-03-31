@@ -21,7 +21,7 @@ const FOV = Math.PI / 4;
 const Z_NEAR = 0.1;
 const Z_FAR = 1000000;
 
-const dev = Device.mount();
+const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const viewBuffer = mat4.create();

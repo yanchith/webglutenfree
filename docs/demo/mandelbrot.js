@@ -14,7 +14,7 @@ const ESCAPE_THRESHOLD = 2.0;
 const REAL_DOMAIN = [-1.20, -1];
 const IMAG_DOMAIN = [0.20, 0.35];
 
-const dev = Device.mount({
+const dev = Device.create({
     extensions: ["EXT_color_buffer_float"],
 });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];

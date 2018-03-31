@@ -20,7 +20,7 @@ import * as bunny from "./lib/bunny.js"
 
 const PERSISTENCE_FACTOR = 0.8;
 
-const dev = Device.mount({ antialias: false });
+const dev = Device.create({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const newFrameTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);

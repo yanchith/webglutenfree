@@ -26,7 +26,7 @@ const GAUSSIAN = [
     0.000229,
 ]
 
-const dev = Device.mount();
+const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const initialTex = Texture.create(dev, width, height, TextureInternalFormat.RGBA8);

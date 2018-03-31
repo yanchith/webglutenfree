@@ -44,7 +44,7 @@ const kernels = {
 
 const KERNEL = kernels.edgeDetect;
 
-const dev = Device.mount();
+const dev = Device.create();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
 async function run() {

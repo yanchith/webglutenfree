@@ -13,7 +13,7 @@ import * as cube from "./lib/cube.js";
 import * as bunny from "./lib/bunny.js";
 import * as teapot from "./lib/teapot.js";
 
-const dev = Device.mount();
+const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const projection = mat4.perspective(
