@@ -21,7 +21,7 @@
 
 <body>
     <script src="./demolib/stats.js"></script>
-    <script type="module">
+    <script>
         const stats = new Stats();
         document.body.appendChild(stats.dom);
         const fpsloop = () => {
@@ -30,8 +30,6 @@
         }
         window.requestAnimationFrame(fpsloop);
     </script>
-    <!-- webgl-debug does not have a module release -->
-    <!-- <script src="./lib/webgl-debug.js"></script> -->
     <script type="module">
         import { Channel } from "./demolib/sandbox/channel.js";
         const chan = new Channel(window);

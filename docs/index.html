@@ -63,28 +63,25 @@
             font-size: 1.2em;
         }
 
-        #menu > div {
+        #menu>div {
             margin: 5px;
             border: 1px solid grey;
             padding: 5px;
             cursor: pointer;
         }
 
-        #menu > div:hover {
+        #menu>div:hover {
             background-color: rgb(30, 30, 30);
         }
 
-        #menu > div:active {
+        #menu>div:active {
             color: red;
         }
 
-        #menu > div.selected {
+        #menu>div.selected {
             color: lawngreen;
         }
     </style>
-    <link rel="stylesheet" href="./demolib/codemirror/codemirror.css"></link>
-    <link rel="stylesheet" href="./demolib/codemirror/liquibyte.css"></link>
-    <link rel="stylesheet" href="./demolib/codemirror/solarized.css"></link>
 </head>
 
 <body>
@@ -105,8 +102,7 @@
         <div data-href="./demo/mandelbrot.js">mandelbrot</div>
     </div>
 
-    <script src="./demolib/codemirror/codemirror.js"></script>
-    <script src="./demolib/codemirror/javascript.js"></script>
+    <script src="./demolib/monaco/min/vs/loader.js"></script>
     <script type="module">
         import { IFrame } from "./demolib/sandbox/iframe.js";
         import { debounce } from "./demolib/sandbox/util.js";
@@ -116,60 +112,66 @@
         const menuElem = document.getElementById("menu");
 
         const iframe = new IFrame("sandbox.html");
-        iframe.mount(iframeElem);
+        // iframe.mount(iframeElem);
 
-        const editor = CodeMirror(editorElem, {
-            mode: "javascript",
-            theme: "liquibyte",
+        require.config({ paths: { 'vs': 'demolib/monaco/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            const editor = monaco.editor.create(editorElem, {
+                value: "",
+                language: 'javascript'
+            });
+
+            editor.model.onDidChangeContent(debounce(1000, () => {
+                console.log(iframe);
+                // iframe.remount();
+                iframe.unmount();
+                iframe.mount(iframeElem);
+                iframe.postMessage({ code: editor.getValue() });
+            }));
+
+            function navigate() {
+                const path = hashToPath(window.location.hash);
+                const elem = document.querySelector(`[data-href="${path}"]`);
+                if (elem) {
+                    selectElement(elem);
+                    fetchExample(path);
+                } else {
+                    fetchExample("./demo/triangle.js");
+                }
+            }
+
+            async function fetchExample(src) {
+                const resp = await window.fetch(src);
+                const code = await resp.text();
+                editor.setValue(code);
+            }
+
+            function selectElement(elem) {
+                document.querySelectorAll(".selected")
+                    .forEach(el => el.classList.remove("selected"))
+                elem.classList.add("selected");
+            }
+
+            function hashToPath(hash) {
+                return `./demo/${hash.substring(1)}.js`
+            }
+
+            function pathToHash(path) {
+                const trimDemo = path.substring("./demo/".length);
+                const trimJs = trimDemo.substring(0, trimDemo.length - ".js".length);
+                return `#${trimJs}`;
+            }
+
+            menuElem.addEventListener("click", ev => {
+                if (ev.target.dataset.href) {
+                    window.location.hash = pathToHash(ev.target.dataset.href);
+                }
+                ev.preventDefault();
+            }, true);
+
+            navigate();
+            window.addEventListener("hashchange", _ => navigate());
         });
-        editor.setSize("100%", "100%");
-        editor.on("change", debounce(500, () => {
-            iframe.remount();
-            iframe.postMessage({ code: editor.getValue() });
-        }));
-
-        function navigate() {
-            const path = hashToPath(window.location.hash);
-            const elem = document.querySelector(`[data-href="${path}"]`);
-            if (elem) {
-                selectElement(elem);
-                fetchExample(path);
-            } else {
-                fetchExample("./demo/triangle.js");
-            }
-        }
-
-        async function fetchExample(src) {
-            const resp = await window.fetch(src);
-            const code = await resp.text();
-            editor.setValue(code);
-        }
-
-        function selectElement(elem) {
-            document.querySelectorAll(".selected")
-                .forEach(el => el.classList.remove("selected"))
-            elem.classList.add("selected");
-        }
-
-        function hashToPath(hash) {
-            return `./demo/${hash.substring(1)}.js`
-        }
-
-        function pathToHash(path) {
-            const trimDemo = path.substring("./demo/".length);
-            const trimJs = trimDemo.substring(0, trimDemo.length - ".js".length);
-            return `#${trimJs}`;
-        }
-
-        menuElem.addEventListener("click", ev => {
-            if (ev.target.dataset.href) {
-                window.location.hash = pathToHash(ev.target.dataset.href);
-            }
-            ev.preventDefault();
-        }, true);
-
-        navigate();
-        window.addEventListener("hashchange", _ => navigate());
     </script>
 </body>
 
