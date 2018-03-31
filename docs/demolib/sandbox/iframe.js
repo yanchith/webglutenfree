@@ -84,16 +84,6 @@ export class IFrame {
         this._element.src = this._src;
     }
 
-    remount() {
-        if (this._element) {
-            const elem = this._element;
-            this.unmount();
-            this.mount(elem);
-        } else {
-            console.warn("Element not mounted");
-        }
-    }
-
     _send(message) {
         try {
             this._element.contentWindow.postMessage(
