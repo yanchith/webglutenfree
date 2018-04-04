@@ -87,4 +87,9 @@ export {
     TextureStoreOptions,
 } from "./texture";
 
-export { Framebuffer } from "./framebuffer";
+export {
+    Framebuffer,
+    TextureColorInternalFormat,
+    TextureDepthInternalFormat,
+    TextureDepthStencilInternalFormat,
+} from "./framebuffer";
