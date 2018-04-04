@@ -1,5 +1,6 @@
 import { DataType } from "./types";
-import { Device as _Device } from "./device";
+
+export type Device = import ("./device").Device;
 
 export enum TextureWrap {
     CLAMP_TO_EDGE = 0x812F,
@@ -125,68 +126,6 @@ export type TextureDataType =
     // | DataType.UNSIGNED_INT_10F_11F_11F_REV
 
     | DataType.FLOAT_32_UNSIGNED_INT_24_8_REV
-    ;
-
-export type TextureColorInternalFormat =
-
-    // RED
-    | TextureInternalFormat.R8
-    | TextureInternalFormat.R8_SNORM
-    | TextureInternalFormat.R8UI
-    | TextureInternalFormat.R8I
-    | TextureInternalFormat.R16UI
-    | TextureInternalFormat.R16I
-    | TextureInternalFormat.R32UI
-    | TextureInternalFormat.R32I
-    | TextureInternalFormat.R16F
-    | TextureInternalFormat.R32F
-
-    // RG
-    | TextureInternalFormat.RG8
-    | TextureInternalFormat.RG8_SNORM
-    | TextureInternalFormat.RG8UI
-    | TextureInternalFormat.RG8I
-    | TextureInternalFormat.RG16UI
-    | TextureInternalFormat.RG16I
-    | TextureInternalFormat.RG32UI
-    | TextureInternalFormat.RG32I
-    | TextureInternalFormat.RG16F
-    | TextureInternalFormat.RG32F
-
-    // RGB
-    | TextureInternalFormat.RGB8
-    | TextureInternalFormat.RGB8_SNORM
-    | TextureInternalFormat.RGB8UI
-    | TextureInternalFormat.RGB8I
-    | TextureInternalFormat.RGB16UI
-    | TextureInternalFormat.RGB16I
-    | TextureInternalFormat.RGB32UI
-    | TextureInternalFormat.RGB32I
-    | TextureInternalFormat.RGB16F
-    | TextureInternalFormat.RGB32F
-
-    // RGBA
-    | TextureInternalFormat.RGBA8
-    | TextureInternalFormat.RGBA8_SNORM
-    | TextureInternalFormat.RGBA8UI
-    | TextureInternalFormat.RGBA8I
-    | TextureInternalFormat.RGBA16UI
-    | TextureInternalFormat.RGBA16I
-    | TextureInternalFormat.RGBA32UI
-    | TextureInternalFormat.RGBA32I
-    | TextureInternalFormat.RGBA16F
-    | TextureInternalFormat.RGBA32F
-    ;
-
-export type TextureDepthInternalFormat =
-    | TextureInternalFormat.DEPTH_COMPONENT16
-    | TextureInternalFormat.DEPTH_COMPONENT24
-    | TextureInternalFormat.DEPTH_COMPONENT32F
-    ;
-
-export type TextureDepthStencilInternalFormat =
-    | TextureInternalFormat.DEPTH24_STENCIL8
-    | TextureInternalFormat.DEPTH32F_STENCIL8
     ;
 
 export interface InternalFormatToDataFormat {
@@ -404,7 +343,7 @@ export class Texture<F extends TextureInternalFormat> {
      * The internal format determines, what kind of data is possible to store.
      */
     static create<F extends TextureInternalFormat>(
-        dev: _Device,
+        dev: Device,
         width: number,
         height: number,
         internalFormat: F,
@@ -429,7 +368,7 @@ export class Texture<F extends TextureInternalFormat> {
      * store the image in the texture.
      */
     static withImage(
-        dev: _Device,
+        dev: Device,
         image: ImageData,
         options?: TextureOptions & TextureStoreOptions,
     ): Texture<TextureInternalFormat.RGBA8> {
@@ -452,7 +391,7 @@ export class Texture<F extends TextureInternalFormat> {
      * texture.
      */
     static withTypedArray<F extends TextureInternalFormat>(
-        dev: _Device,
+        dev: Device,
         width: number,
         height: number,
         internalFormat: F,

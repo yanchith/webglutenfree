@@ -1,13 +1,15 @@
 import * as assert from "./util/assert";
-import { Device as _Device } from "./device";
-import { AttributesConfig } from "./attributes";
-import { Texture as _Texture, TextureInternalFormat } from "./texture";
+import { TextureInternalFormat } from "./texture";
+
+export type Device = import ("./device").Device;
+export type Texture<T> = import ("./texture").Texture<T>;
+export type AttributesConfig = import ("./attributes").AttributesConfig;
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 
 export type Accessor<P, R> = R | ((props: P, index: number) => R);
-export type TextureAccessor<P> = Accessor<P, _Texture<TextureInternalFormat>>;
+export type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
 export interface Textures<P> { [name: string]: TextureAccessor<P>; }
 export interface Uniforms<P> { [name: string]: Uniform<P>; }
 
@@ -253,7 +255,7 @@ export enum BlendEquation {
 export class Command<P> {
 
     static create<P>(
-        dev: _Device,
+        dev: Device,
         vert: string,
         frag: string,
         {
@@ -322,14 +324,14 @@ export class Command<P> {
     readonly textureAccessors: TextureAccessor<P>[];
     readonly uniformDescrs: UniformDescriptor<P>[];
 
-    private dev: _Device;
+    private dev: Device;
     private vsSource: string;
     private fsSource: string;
     private textures: Textures<P>;
     private uniforms: Uniforms<P>;
 
     private constructor(
-        dev: _Device,
+        dev: Device,
         vsSource: string,
         fsSource: string,
         textures: Textures<P>,
