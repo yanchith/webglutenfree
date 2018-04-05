@@ -62,7 +62,7 @@ export class Target {
 
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
-     * choose, which buffers to blit.
+     * choose buffers to blit.
      */
     blit(source: Framebuffer, bits: BufferBits): void {
         const {
