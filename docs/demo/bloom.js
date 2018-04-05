@@ -5,6 +5,7 @@
 
 import {
     Device,
+    Extension,
     BufferBits,
     Command,
     DepthFunc,
@@ -39,7 +40,14 @@ const N_BLOOM_PASSES = 4;
 const BLUR_TEXTURE_SIZE_FACTOR = 0.5;
 const KERNEL = kernels.blur3;
 
-const dev = Device.create();
+// Use extensions so we can render to 32 bit float textures and use linear
+// filtering with them
+const dev = Device.create({
+    extensions: [
+        Extension.EXTColorBufferFloat,
+        Extension.OESTextureFloatLinear,
+    ],
+});
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 // We blur smaller textures for better performance
@@ -48,19 +56,19 @@ const [blurWidth, blurHeight] = [
     height * BLUR_TEXTURE_SIZE_FACTOR,
 ];
 
-const colorTex = Texture.create(dev, width, height, TexFmt.RGBA8, {
+const colorTex = Texture.create(dev, width, height, TexFmt.RGBA32F, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
 
 const depthTex = Texture.create(dev, width, height, TexFmt.DEPTH_COMPONENT24);
 
-const pingTex = Texture.create(dev, blurWidth, blurHeight, TexFmt.RGBA8, {
+const pingTex = Texture.create(dev, blurWidth, blurHeight, TexFmt.RGBA32F, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
 
-const pongTex = Texture.create(dev, blurWidth, blurHeight, TexFmt.RGBA8, {
+const pongTex = Texture.create(dev, blurWidth, blurHeight, TexFmt.RGBA32F, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
@@ -71,9 +79,7 @@ const pongFbo = Framebuffer.create(dev, blurWidth, blurHeight, pongTex);
 
 const view = mat4.create();
 
-/**
- * This vertex shader just renders one huge triangle to cover the screenspace.
- */
+// This vertex shader just renders one huge triangle to cover the screenspace.
 const screenspaceVS = `#version 300 es
 precision mediump float;
 
@@ -97,9 +103,7 @@ void main() {
 }
 `;
 
-/**
- * Draw the scene as usual
- */
+// Draw the scene as usual
 const cmdDraw = Command.create(
     dev,
     `#version 300 es
@@ -179,10 +183,8 @@ const cmdDraw = Command.create(
     },
 );
 
-/**
- * Separate btight pixels into a separate framebuffer. Bloom works by blurring
- * bright areas.
- */
+// Separate btight pixels into a separate framebuffer. Bloom works by blurring
+// bright areas.
 const cmdSep = Command.create(
     dev,
     screenspaceVS,
@@ -208,11 +210,9 @@ const cmdSep = Command.create(
     },
 );
 
-/**
- * Blur the input texture, write results to the output texture. Blur occurs
- * along one axis only to save performance. This has to be called twice to
- * achieve a full 2d blur.
- */
+// Blur the input texture, write results to the output texture. Blur occurs
+// along one axis only to save performance. This has to be called twice to
+// achieve a full 2d blur.
 const cmdBlur = Command.create(
     dev,
     screenspaceVS,
@@ -259,10 +259,8 @@ const cmdBlur = Command.create(
     },
 );
 
-/**
- * Merge the original renderd scene with the blurred highlights, performing
- * tonemapping along the way.
- */
+// Merge the original renderd scene with the blurred highlights, performing
+// tonemapping along the way.
 const cmdMerge = Command.create(
     dev,
     screenspaceVS,
@@ -309,8 +307,6 @@ const modelAttrs = Attributes.create(dev, uvCube.elements, {
 });
 
 
-const nBloomPasses = Math.max(0, N_BLOOM_PASSES);
-
 const HORIZONTAL = vec2.fromValues(1, 0);
 const VERTICAL = vec2.fromValues(0, 1);
 
@@ -325,7 +321,7 @@ const loop = time => {
     pingFbo.target(rt => rt.draw(cmdSep, screenspaceAttrs));
 
     // Repeat as many blur passes as wanted...
-    for (let i = 0; i < nBloomPasses; i++) {
+    for (let i = 0; i < N_BLOOM_PASSES; i++) {
         pongFbo.target(rt => {
             rt.draw(cmdBlur, screenspaceAttrs, {
                 source: pingTex,
