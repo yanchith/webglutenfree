@@ -21,19 +21,9 @@ import { vec2, mat4 } from "./lib/gl-matrix-min.js";
 import * as uvCube from "./lib/uv-cube.js"
 
 const kernels = {
-    blur3: [0.27901, 0.44198, 0.27901],
-    blur5: [0.06136, 0.24477, 0.38774, 0.24477, 0.06136],
-    blur9: [
-        0.000229,
-        0.005977,
-        0.060598,
-        0.241732,
-        0.382928,
-        0.241732,
-        0.060598,
-        0.005977,
-        0.000229,
-    ],
+    blur3: [0.44198, 0.27901],
+    blur5: [0.38774, 0.24477, 0.06136],
+    blur9: [0.382928, 0.241732, 0.060598, 0.005977, 0.000229],
 }
 
 const N_BLOOM_PASSES = 4;
@@ -223,25 +213,23 @@ const cmdBlur = Command.create(
 
         uniform sampler2D u_image;
         uniform float[KERNEL_LENGTH] u_kernel;
-        uniform vec2 u_blur_direction;
+        uniform vec2 u_direction;
 
         in vec2 v_tex_coord;
 
         layout (location = 0) out vec4 f_color;
 
         void main() {
-            vec2 px_direction = vec2(1) / vec2(textureSize(u_image, 0))
-                * u_blur_direction;
-            int half_length = (KERNEL_LENGTH - 1) / 2;
+            vec2 px_dir = u_direction * vec2(1) / vec2(textureSize(u_image, 0));
 
-            vec4 color_sum = vec4(0.0);
-            for (int i = 0; i < KERNEL_LENGTH; i++) {
-                vec2 offset_coord = px_direction * vec2(i - half_length);
-                color_sum += texture(u_image, v_tex_coord + offset_coord)
-                    * u_kernel[i];
+            vec4 color_sum = u_kernel[0] * texture(u_image, v_tex_coord);
+            for (int i = 1; i < KERNEL_LENGTH; i++) {
+                float k = u_kernel[i];
+                color_sum += k * texture(u_image,  px_dir * float(i) + v_tex_coord);
+                color_sum += k * texture(u_image, -px_dir * float(i) + v_tex_coord);
             }
 
-            f_color = vec4(color_sum.rgb, 1.0);
+            f_color = color_sum;
         }
     `,
     {
@@ -251,7 +239,7 @@ const cmdBlur = Command.create(
                 type: "1fv",
                 value: KERNEL,
             },
-            u_blur_direction: {
+            u_direction: {
                 type: "2f",
                 value: ({ direction }) => direction,
             },
