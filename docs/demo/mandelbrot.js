@@ -1,11 +1,12 @@
 import {
     Device,
+    Extension,
     BufferBits,
     Command,
     Attributes,
     Primitive,
     Texture,
-    TextureInternalFormat,
+    TextureInternalFormat as TexFmt,
     Framebuffer,
 } from "./lib/webglutenfree.js";
 
@@ -14,45 +15,19 @@ const ESCAPE_THRESHOLD = 2.0;
 const REAL_DOMAIN = [-1.20, -1];
 const IMAG_DOMAIN = [0.20, 0.35];
 
-const dev = Device.create({
-    extensions: ["EXT_color_buffer_float"],
-});
+// Use extensions so we can render to 32 bit float textures for values
+const dev = Device.create({ extensions: [Extension.EXTColorBufferFloat] });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const pingTexVal = Texture.create(
-    dev,
-    width,
-    height,
-    TextureInternalFormat.RG32F,
-);
-const pingTexEsc = Texture.create(
-    dev,
-    width,
-    height,
-    TextureInternalFormat.R32F,
-);
-const pingFbo = Framebuffer.create(dev, width, height, [
-    pingTexVal,
-    pingTexEsc,
-]);
+// Note: Even with extensions, RGB32F is not renderable (might be a bug),
+// so we use RGBA32F even when we only use 3 channels
+const pingTex = Texture.create(dev, width, height, TexFmt.RGBA32F);
+const pongTex = Texture.create(dev, width, height, TexFmt.RGBA32F);
 
-const pongTexVal = Texture.create(
-    dev,
-    width,
-    height,
-    TextureInternalFormat.RG32F,
-);
-const pongTexEsc = Texture.create(
-    dev,
-    width,
-    height,
-    TextureInternalFormat.R32F,
-);
-const pongFbo = Framebuffer.create(dev, width, height, [
-    pongTexVal,
-    pongTexEsc,
-]);
+const pingFbo = Framebuffer.create(dev, width, height, pingTex);
+const pongFbo = Framebuffer.create(dev, width, height, pongTex);
 
+// This vertex shader just renders one huge triangle to cover the screenspace.
 const screenspaceVS = `#version 300 es
 precision mediump float;
 
@@ -76,6 +51,11 @@ void main() {
 }
 `;
 
+// Performs a step by step simulation, whether a pixel converges or diverges.
+// The pixel is proven to diverge when its distance from (0,0) exceeds 2.
+// In the resulting framebuffer, xy is the current value and z marks the time
+// of us being certain of its divergence. This escape time is the value we
+// paint to the screen in the next command.
 const cmdCompute = Command.create(
     dev,
     screenspaceVS,
@@ -85,12 +65,11 @@ const cmdCompute = Command.create(
         uniform uint u_tick;
         uniform float u_escape_threshold;
         uniform vec2 u_re_domain, u_im_domain;
-        uniform sampler2D u_prev_val, u_prev_esc;
+        uniform sampler2D u_prev_val;
 
         in vec2 v_tex_coord;
 
-        layout (location = 0) out vec2 f_val;
-        layout (location = 1) out float f_esc;
+        layout (location = 0) out vec3 f_val;
 
         float remap(float value, vec2 source, vec2 dest) {
             return (((value - source.x)
@@ -121,14 +100,13 @@ const cmdCompute = Command.create(
         }
 
         void main() {
-            vec4 pix_prev_val = texture(u_prev_val, v_tex_coord);
-            vec4 pix_prev_esc = texture(u_prev_esc, v_tex_coord);
+            ivec2 dimensions = textureSize(u_prev_val, 0);
+            vec3 pix_prev_val = texture(u_prev_val, v_tex_coord).rgb;
 
             vec2 prev_val = pix_prev_val.xy;
-            uint prev_esc = uint(pix_prev_esc.x);
+            uint prev_esc = uint(pix_prev_val.z);
 
-            ivec2 dimensions = textureSize(u_prev_val, 0);
-
+            f_val = pix_prev_val;
             if (prev_esc == 0u) {
                 vec2 c = remap2(
                     gl_FragCoord.xy,
@@ -142,19 +120,12 @@ const cmdCompute = Command.create(
                 if (length(val) > u_escape_threshold) {
                     esc = u_tick;
                 }
-                f_val = val;
-                f_esc = float(esc);
-            } else {
-                f_val = prev_val;
-                f_esc = float(prev_esc);
+                f_val = vec3(val, esc);
             }
         }
     `,
     {
-        textures: {
-            u_prev_val: ({ ping }) => ping.texVal,
-            u_prev_esc: ({ ping }) => ping.texEsc,
-        },
+        textures: { u_prev_val: ({ ping }) => ping.tex },
         uniforms: {
             u_tick: {
                 type: "1ui",
@@ -176,6 +147,10 @@ const cmdCompute = Command.create(
     },
 );
 
+// Use the texture computed by the previous command to draw the progress.
+// Paint black for pixels that are not proven to diverge, and shades of gray
+// for divergent pixels. The brighter they are, the sooner they were proven
+// to diverge.
 const cmdDraw = Command.create(
     dev,
     screenspaceVS,
@@ -183,26 +158,25 @@ const cmdDraw = Command.create(
         precision mediump float;
 
         uniform float u_max_iters;
-        uniform sampler2D u_esc;
+        uniform sampler2D u_val;
 
         in vec2 v_tex_coord;
 
-        out vec4 f_color;
+        layout (location = 0) out vec4 f_color;
 
         void main() {
-            vec4 pix_esc = texture(u_esc, v_tex_coord);
-            float greyscale = pix_esc.x / u_max_iters;
-            if (greyscale < 0.00001) {
-                f_color = vec4(vec3(0), 1);
-            } else {
+            vec3 pix = texture(u_val, v_tex_coord).rgb;
+
+            float esc = pix.z;
+            float greyscale = esc / u_max_iters;
+            f_color = vec4(vec3(0), 1);
+            if (greyscale > 0.00001) {
                 f_color = vec4(vec3(1. - greyscale), 1);
             }
         }
     `,
     {
-        textures: {
-            u_esc: ({ pong }) => pong.texEsc,
-        },
+        textures: { u_val: ({ pong }) => pong.tex },
         uniforms: {
             u_max_iters: {
                 type: "1f",
@@ -214,17 +188,8 @@ const cmdDraw = Command.create(
 
 const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
 
-let ping = {
-    texVal: pingTexVal,
-    texEsc: pingTexEsc,
-    fbo: pingFbo,
-}
-
-let pong = {
-    texVal: pongTexVal,
-    texEsc: pongTexEsc,
-    fbo: pongFbo,
-}
+let ping = { tex: pingTex, fbo: pingFbo };
+let pong = { tex: pongTex, fbo: pongFbo };
 
 let tick = 0;
 
