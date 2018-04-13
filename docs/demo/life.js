@@ -31,7 +31,8 @@ const [lifeWidth, lifeHeight] = [
     Math.round(height / 4),
 ];
 
-// Use textures with only one channel
+// Use textures with only one channel. By using REPEAT in both directions, we
+// create a cyclic universe
 const pingTex = Texture.create(dev, lifeWidth, lifeHeight, TexIntFmt.R8, {
     wrapS: TextureWrap.REPEAT,
     wrapT: TextureWrap.REPEAT,
