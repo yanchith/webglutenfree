@@ -9,6 +9,7 @@
 
 -   Improve framebuffer attachment inference and slim down its constructors to
     just `Framebuffer.create`
+-   `texture.store()` now accepts additional options, width and height
 
 
 ## v0.0.6 (22/02/2018)

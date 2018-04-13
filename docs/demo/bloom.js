@@ -12,7 +12,7 @@ import {
     Attributes,
     Primitive,
     Texture,
-    TextureInternalFormat as TexFmt,
+    TextureInternalFormat as TexIntFmt,
     TextureFilter,
     Framebuffer,
 } from "./lib/webglutenfree.es.js";
@@ -46,19 +46,19 @@ const [blurWidth, blurHeight] = [
     height * BLUR_TEXTURE_SIZE_FACTOR,
 ];
 
-const colorTex = Texture.create(dev, width, height, TexFmt.RGBA32F, {
+const colorTex = Texture.create(dev, width, height, TexIntFmt.RGBA32F, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
 
-const depthTex = Texture.create(dev, width, height, TexFmt.DEPTH_COMPONENT24);
+const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24);
 
-const pingTex = Texture.create(dev, blurWidth, blurHeight, TexFmt.RGBA32F, {
+const pingTex = Texture.create(dev, blurWidth, blurHeight, TexIntFmt.RGBA32F, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
 
-const pongTex = Texture.create(dev, blurWidth, blurHeight, TexFmt.RGBA32F, {
+const pongTex = Texture.create(dev, blurWidth, blurHeight, TexIntFmt.RGBA32F, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });

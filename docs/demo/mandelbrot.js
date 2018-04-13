@@ -5,7 +5,7 @@ import {
     Attributes,
     Primitive,
     Texture,
-    TextureInternalFormat as TexFmt,
+    TextureInternalFormat as TexIntFmt,
     Framebuffer,
 } from "./lib/webglutenfree.es.js";
 
@@ -20,8 +20,8 @@ const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 // Note: Even with extensions, RGB32F is not renderable (might be a bug),
 // so we use RGBA32F even when we only use 3 channels
-const pingTex = Texture.create(dev, width, height, TexFmt.RGBA32F);
-const pongTex = Texture.create(dev, width, height, TexFmt.RGBA32F);
+const pingTex = Texture.create(dev, width, height, TexIntFmt.RGBA32F);
+const pongTex = Texture.create(dev, width, height, TexIntFmt.RGBA32F);
 
 const pingFbo = Framebuffer.create(dev, width, height, pingTex);
 const pongFbo = Framebuffer.create(dev, width, height, pongTex);
@@ -30,21 +30,16 @@ const pongFbo = Framebuffer.create(dev, width, height, pongTex);
 const screenspaceVS = `#version 300 es
 precision mediump float;
 
-out vec2 v_tex_coord;
-
 void main() {
     switch (gl_VertexID % 3) {
         case 0:
             gl_Position = vec4(-1, 3, 0, 1);
-            v_tex_coord = vec2(0, 2);
             break;
         case 1:
             gl_Position = vec4(-1, -1, 0, 1);
-            v_tex_coord = vec2(0, 0);
             break;
         case 2:
             gl_Position = vec4(3, -1, 0, 1);
-            v_tex_coord = vec2(2, 0);
             break;
     }
 }
@@ -64,9 +59,7 @@ const cmdCompute = Command.create(
         uniform uint u_tick;
         uniform float u_escape_threshold;
         uniform vec2 u_re_domain, u_im_domain;
-        uniform sampler2D u_prev_val;
-
-        in vec2 v_tex_coord;
+        uniform sampler2D u_prev;
 
         layout (location = 0) out vec3 f_val;
 
@@ -99,13 +92,13 @@ const cmdCompute = Command.create(
         }
 
         void main() {
-            ivec2 dimensions = textureSize(u_prev_val, 0);
-            vec3 pix_prev_val = texture(u_prev_val, v_tex_coord).rgb;
+            ivec2 dimensions = textureSize(u_prev, 0);
+            vec3 pix_prev = texelFetch(u_prev, ivec2(gl_FragCoord.xy), 0).rgb;
 
-            vec2 prev_val = pix_prev_val.xy;
-            uint prev_esc = uint(pix_prev_val.z);
+            vec2 prev_val = pix_prev.xy;
+            uint prev_esc = uint(pix_prev.z);
 
-            f_val = pix_prev_val;
+            f_val = pix_prev;
             if (prev_esc == 0u) {
                 vec2 c = remap2(
                     gl_FragCoord.xy,
@@ -124,7 +117,7 @@ const cmdCompute = Command.create(
         }
     `,
     {
-        textures: { u_prev_val: ({ ping }) => ping.tex },
+        textures: { u_prev: ({ ping }) => ping.tex },
         uniforms: {
             u_tick: {
                 type: "1ui",
@@ -159,12 +152,10 @@ const cmdDraw = Command.create(
         uniform float u_max_iters;
         uniform sampler2D u_val;
 
-        in vec2 v_tex_coord;
-
         layout (location = 0) out vec4 f_color;
 
         void main() {
-            vec3 pix = texture(u_val, v_tex_coord).rgb;
+            vec3 pix = texelFetch(u_val, ivec2(gl_FragCoord.xy), 0).rgb;
 
             float esc = pix.z;
             float greyscale = esc / u_max_iters;
