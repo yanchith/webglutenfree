@@ -330,6 +330,8 @@ export interface TextureStoreOptions {
     mipmap?: boolean;
     xOffset?: number;
     yOffset?: number;
+    width?: number;
+    height?: number;
 }
 
 /**
@@ -465,9 +467,15 @@ export class Texture<F extends TextureInternalFormat> {
         data: InternalFormatToTypedArray[F],
         format: InternalFormatToDataFormat[F],
         type: InternalFormatToDataType[F],
-        { xOffset = 0, yOffset = 0, mipmap = false }: TextureStoreOptions = {},
+        {
+            xOffset = 0,
+            yOffset = 0,
+            width = this.width,
+            height = this.height,
+            mipmap = false,
+        }: TextureStoreOptions = {},
     ): this {
-        const { gl, glTexture, width, height } = this;
+        const { gl, glTexture } = this;
 
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
 

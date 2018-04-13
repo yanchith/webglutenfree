@@ -1756,8 +1756,8 @@ class Texture {
     /**
      * Upload new data to texture. Does not take ownership of data.
      */
-    store(data, format, type, { xOffset = 0, yOffset = 0, mipmap = false } = {}) {
-        const { gl, glTexture, width, height } = this;
+    store(data, format, type, { xOffset = 0, yOffset = 0, width = this.width, height = this.height, mipmap = false, } = {}) {
+        const { gl, glTexture } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
         // This pixel row alignment is theoretically smaller than needed
         // TODO: find greatest correct unpack alignment for pixel rows
