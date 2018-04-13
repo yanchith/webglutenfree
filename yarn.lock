@@ -855,10 +855,6 @@ mkdirp@0.5.x, "mkdirp@>=0.5 0", mkdirp@^0.5.1:
   dependencies:
     minimist "0.0.8"
 
-monaco-editor@^0.11.1:
-  version "0.11.1"
-  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.11.1.tgz#17066de2e1399dcedb095045f5737b0f99f43750"
-
 ms@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"
@@ -1373,10 +1369,10 @@ tweetnacl@^0.14.3, tweetnacl@~0.14.0:
   resolved "https://registry.yarnpkg.com/tweetnacl/-/tweetnacl-0.14.5.tgz#5ae68177f192d4456269d108afa93ff8743f4f64"
 
 typescript@^2.9.0-dev.20180403:
-  version "2.9.0-dev.20180403"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.9.0-dev.20180403.tgz#bd53070924f7da6c087aa0d9f955e31b4231496b"
+  version "2.9.0-dev.20180412"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.9.0-dev.20180412.tgz#5380b2afb44b720b0d8164f844b90ebd81948a7e"
 
-uglify-es@^3.3.7, uglify-es@^3.3.8:
+uglify-es@^3.3.7:
   version "3.3.9"
   resolved "https://registry.yarnpkg.com/uglify-es/-/uglify-es-3.3.9.tgz#0c1c4f0700bed8dbc124cdb304d2592ca203e677"
   dependencies:

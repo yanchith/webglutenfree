@@ -9,7 +9,7 @@ import {
     BufferUsage,
     DataType,
     Primitive,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { mat3, mat4 } from "./lib/gl-matrix-min.js";
 
 const N_PARTICLES = 5000;

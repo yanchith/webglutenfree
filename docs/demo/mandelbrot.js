@@ -8,7 +8,7 @@ import {
     Texture,
     TextureInternalFormat as TexFmt,
     Framebuffer,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 
 const MAX_ITERS = 1 << 8;
 const ESCAPE_THRESHOLD = 2.0;

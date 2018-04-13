@@ -5,7 +5,7 @@ import {
     Attributes,
     VertexBuffer,
     DataType,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
 
 const dev = Device.create();

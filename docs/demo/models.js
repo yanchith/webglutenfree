@@ -4,7 +4,7 @@ import {
     Command,
     DepthFunc,
     Attributes,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
 
 import * as cube from "./lib/cube.js";

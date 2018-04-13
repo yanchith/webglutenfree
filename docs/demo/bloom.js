@@ -15,7 +15,7 @@ import {
     TextureInternalFormat as TexFmt,
     TextureFilter,
     Framebuffer,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { vec2, mat4 } from "./lib/gl-matrix-min.js";
 
 import * as uvCube from "./lib/uv-cube.js"

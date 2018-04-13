@@ -1,7 +1,7 @@
 /**
  * This file is an exercise in preprocessor voodoo.
  *
- * "process.env.NODE_ENV", gets suplied by the string replacer during a
+ * ""development"", gets suplied by the string replacer during a
  * custom build or our production build. If "production", constant evaluation
  * will eliminate the if blocks, making the functions no-ops, in turn eligible
  * for elimination from their callsites.
@@ -9,43 +9,36 @@
  * While cool, this disables us to return values from the asserts, which would
  * make for a slightly nice programming model: const checkedVal = truthy(val)
  */
-// This does not get replaced and serves as a default value. If all its uses
-// are eliminated, the value itself is pruned as well.
-const process = {
-    env: {
-        NODE_ENV: "development",
-    },
-};
 function nonNull(p, msg) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (typeof p === "undefined" || typeof p === "object" && !p) {
             throw new Error(fmt(msg || `object is undefined or null`));
         }
     }
 }
 function nonEmpty(p, msg) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (!p.length) {
             throw new Error(fmt(msg || `array is empty`));
         }
     }
 }
 function equal(p, expected, msg) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (p !== expected) {
             throw new Error(fmt(msg || `values not equal, expected ${expected}, got ${p}`));
         }
     }
 }
 function greater(p, low, msg) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (p <= low) {
             throw new Error(fmt(msg || `value ${p} not greater than low`));
         }
     }
 }
 function range(p, start, end, msg) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (p < start || p > end) {
             throw new Error(fmt(msg || `value ${p} not in [${start}, ${end}]`));
         }
@@ -196,7 +189,7 @@ class Target {
     }
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
-     * choose, which buffers to blit.
+     * choose buffers to blit.
      */
     blit(source, bits) {
         const { dev: { _gl, _stackReadFramebuffer }, width, height, } = this;
@@ -1132,6 +1125,9 @@ class Device {
                 }
             }
         });
+        // Note: DRAW_FRAMEBUFFER and READ_FRAMEBUFFER are handled separately
+        // to support blitting. In library code, gl.FRAMEBUFFER target must
+        // never be used, as it overwrites READ_FRAMEBUFFER and DRAW_FRAMEBUFFER
         this._stackDrawFramebuffer = new Stack(null, (prev, val) => prev === val
             ? void 0
             : gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
@@ -1211,7 +1207,7 @@ class Device {
      * gl.BACK target.
      *
      * Drawing should be done within the callback by
-     * calling `ratget.clear()` or `target.draw()` family of methods.
+     * calling `target.clear()` or `target.draw()` family of methods.
      *
      * Also see `framebuffer.target()`.
      */
@@ -1911,4 +1907,4 @@ class Framebuffer {
 }
 
 export { BufferBits, BufferUsage, DataType, Primitive, Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureFormat, Framebuffer };
-//# sourceMappingURL=webglutenfree.js.map
+//# sourceMappingURL=webglutenfree.es.js.map

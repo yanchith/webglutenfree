@@ -1,4 +1,4 @@
-import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.js";
+import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.es.js";
 
 const dev = Device.create();
 

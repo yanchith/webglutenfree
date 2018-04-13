@@ -13,7 +13,7 @@ import {
     Texture,
     TextureInternalFormat as TexIntFmt,
     Framebuffer,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
 
 import * as bunny from "./lib/bunny.js"
