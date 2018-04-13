@@ -1,7 +1,6 @@
 import {
     Device,
     Extension,
-    BufferBits,
     Command,
     Attributes,
     Primitive,
