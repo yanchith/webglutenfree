@@ -26,7 +26,7 @@ const kernels = {
     blur9: [0.382928, 0.241732, 0.060598, 0.005977, 0.000229],
 }
 
-const N_BLOOM_PASSES = 4;
+const N_BLOOM_PASSES = 2;
 const BLUR_TEXTURE_SIZE_FACTOR = 0.5;
 const KERNEL = kernels.blur3;
 
@@ -203,6 +203,10 @@ const cmdSep = Command.create(
 // Blur the input texture, write results to the output texture. Blur occurs
 // along one axis only to save performance. This has to be called twice to
 // achieve a full 2d blur.
+// Except for the 0-th pixel, we will sample the texture between pixels with
+// stride of 2 pixels. Linear sampling will provide interpolated values.
+// This extends the reach of blur without adversely affecting output too much,
+// allowing us to use fewer blur passes to the same effect.
 const cmdBlur = Command.create(
     dev,
     screenspaceVS,
@@ -220,13 +224,15 @@ const cmdBlur = Command.create(
         layout (location = 0) out vec4 f_color;
 
         void main() {
-            vec2 px_dir = u_direction * vec2(1) / vec2(textureSize(u_image, 0));
+            vec2 two_px = u_direction * vec2(2) / vec2(textureSize(u_image, 0));
+            vec2 half_px = two_px / 4.0;
 
             vec4 color_sum = u_kernel[0] * texture(u_image, v_tex_coord);
             for (int i = 1; i < KERNEL_LENGTH; i++) {
                 float k = u_kernel[i];
-                color_sum += k * texture(u_image,  px_dir * float(i) + v_tex_coord);
-                color_sum += k * texture(u_image, -px_dir * float(i) + v_tex_coord);
+                vec2 offset = two_px * float(i) - half_px;
+                color_sum += k * texture(u_image,  offset + v_tex_coord);
+                color_sum += k * texture(u_image, -offset + v_tex_coord);
             }
 
             f_color = color_sum;
