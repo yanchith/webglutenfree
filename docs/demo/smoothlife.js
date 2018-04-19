@@ -4,7 +4,6 @@
 
 import {
     Device,
-    Extension,
     DataType,
     BufferBits,
     Command,
@@ -29,18 +28,15 @@ const DEATH_HI = 0.445;
 const ALPHA_N = 0.028;
 const ALPHA_M = 0.147;
 
-const dev = Device.create({
-    antialias: false,
-    extensions: [Extension.EXTColorBufferFloat],
-});
+const dev = Device.create({ antialias: false });
 
 // Use textures with only one channel. By using REPEAT in both directions, we
 // create a cyclic universe
-const pingTex = Texture.create(dev, WIDTH, HEIGHT, TexIntFmt.RGBA32F, {
+const pingTex = Texture.create(dev, WIDTH, HEIGHT, TexIntFmt.RGBA8, {
     wrapS: TextureWrap.REPEAT,
     wrapT: TextureWrap.REPEAT,
 });
-const pongTex = Texture.create(dev, WIDTH, HEIGHT, TexIntFmt.RGBA32F, {
+const pongTex = Texture.create(dev, WIDTH, HEIGHT, TexIntFmt.RGBA8, {
     wrapS: TextureWrap.REPEAT,
     wrapT: TextureWrap.REPEAT,
 });
@@ -52,7 +48,7 @@ const effective_dims = [
 ];
 const lores = new Array(effective_dims[0] * effective_dims[1]);
 for(var i=0; i<lores.length; ++i) {
-    lores[i] = (Math.random() < 0.5) ? 0 : 1;
+    lores[i] = (Math.random() < 0.5) ? 0 : 255;
 }
 
 //Create initial conditions
@@ -80,9 +76,9 @@ ptr += 4;
 //     data[i] = Math.random() > 0.5 ? 1 : 0;
 // }
 pingTex.store(
-    new Float32Array(initial_state),
+    new Uint8Array(initial_state),
     TexFmt.RGBA,
-    DataType.FLOAT,
+    DataType.UNSIGNED_BYTE,
 );
 
 const pingFbo = Framebuffer.create(dev, WIDTH, HEIGHT, pingTex);
