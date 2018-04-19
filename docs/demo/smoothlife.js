@@ -1,5 +1,15 @@
 /**
- * TODO
+ * This example steps computation in SmoothLife, a modification to the Conway's
+ * Game of Life by Stephan Rafler. It is a port of a prior implementation
+ * by Mikola Lysenko (http://0fps.net).
+ *
+ * The example is very sensitive to initial data: using a standard random just
+ * leads to universe entropy in step 1. Using a smooth random could help,
+ * but here we just lower the random's resulution to a similar effect.
+ *
+ * Sources:
+ * https://arxiv.org/abs/1111.1567
+ * http://jsfiddle.net/CSyUb/
  */
 
 import {
@@ -16,8 +26,7 @@ import {
     Framebuffer,
 } from "./lib/webglutenfree.es.js";
 
-const WIDTH = 256;
-const HEIGHT = 256;
+const [WIDTH, HEIGHT] = [256, 256];
 const KERNEL_RADIUS = 23;
 const INNER_RADIUS = 7.0;
 const OUTER_RADIUS = 21.0;
@@ -30,8 +39,7 @@ const ALPHA_M = 0.147;
 
 const dev = Device.create({ antialias: false });
 
-// Use textures with only one channel. By using REPEAT in both directions, we
-// create a cyclic universe
+// By using REPEAT in both directions, we create a cyclic universe
 const pingTex = Texture.create(dev, WIDTH, HEIGHT, TexIntFmt.RGBA8, {
     wrapS: TextureWrap.REPEAT,
     wrapT: TextureWrap.REPEAT,
@@ -41,42 +49,9 @@ const pongTex = Texture.create(dev, WIDTH, HEIGHT, TexIntFmt.RGBA8, {
     wrapT: TextureWrap.REPEAT,
 });
 
-
-const effective_dims = [
-    Math.ceil(WIDTH / INNER_RADIUS),
-    Math.ceil(HEIGHT / INNER_RADIUS),
-];
-const lores = new Array(effective_dims[0] * effective_dims[1]);
-for(var i=0; i<lores.length; ++i) {
-    lores[i] = (Math.random() < 0.5) ? 0 : 255;
-}
-
-//Create initial conditions
-const initial_state = new Float32Array(WIDTH * HEIGHT * 4);
-var ptr = 0;
-for(var j=0; j<HEIGHT; ++j) {
-for(var i=0; i<WIDTH; ++i) {
-var x = Math.floor(i / INNER_RADIUS);
-var y = Math.floor(j / INNER_RADIUS);
-
-//initial_state[ptr]   = (100 < i && i < 114 && 100 < j && j < 114) ? 1 : 0;
-initial_state[ptr]   = lores[x + y * effective_dims[0]];
-initial_state[ptr+1] = 0;
-initial_state[ptr+2] = 0;
-initial_state[ptr+3] = 0;
-ptr += 4;
-}
-}
-
-
-// const dataLength = WIDTH * HEIGHT * 4;
-// const data = Array(dataLength);
-// for (let i = 0; i < dataLength; ++i) {
-//     // data[i] = Math.random();
-//     data[i] = Math.random() > 0.5 ? 1 : 0;
-// }
+// Store the initial state
 pingTex.store(
-    new Uint8Array(initial_state),
+    new Uint8Array(createData()),
     TexFmt.RGBA,
     DataType.UNSIGNED_BYTE,
 );
@@ -85,7 +60,8 @@ const pingFbo = Framebuffer.create(dev, WIDTH, HEIGHT, pingTex);
 const pongFbo = Framebuffer.create(dev, WIDTH, HEIGHT, pongTex);
 
 // Performs a step by step simulation by reading previous state of the
-// universe from one texture and writing the result to another.
+// universe from one texture and writing the result to another. Only RED channel
+// is read, but all RED, GREEN and BLUE channels are written for aesthetics.
 const cmd = Command.create(
     dev,
     `#version 300 es
@@ -186,7 +162,7 @@ const cmd = Command.create(
             float m = r1 / w1;
             float n = (r2 - r1) / (w2 - w1);
 
-            f_next_universe = vec4(S(n,m), m, n, 1);
+            f_next_universe = vec4(S(n, m), m, n, 1);
         }
     `,
     { textures: { u_universe: ({ ping }) => ping.tex } },
@@ -217,3 +193,33 @@ const loop = () => {
 }
 
 window.requestAnimationFrame(loop);
+
+// Create the initial data. Since the simulation is very sensitive to data,
+// We create the data in a lower resulution first, and then upscale it. Simplex
+// noise could be used instead.
+function createData() {
+    const [effectiveWidth, effectiveHeight] = [
+        Math.ceil(WIDTH / INNER_RADIUS),
+        Math.ceil(HEIGHT / INNER_RADIUS),
+    ];
+    const lowResolution = new Array(effectiveWidth * effectiveHeight);
+    for (let i = 0; i < lowResolution.length; ++i) {
+        lowResolution[i] = Math.random() < 0.5 ? 0 : 255;
+    }
+
+    const data = new Float32Array(WIDTH * HEIGHT * 4);
+    let ptr = 0;
+    for (let j = 0; j < HEIGHT; ++j) {
+        for (let i = 0; i < WIDTH; ++i) {
+            const x = Math.floor(i / INNER_RADIUS);
+            const y = Math.floor(j / INNER_RADIUS);
+
+            data[ptr] = lowResolution[x + y * effectiveWidth];
+            data[ptr + 1] = 0;
+            data[ptr + 2] = 0;
+            data[ptr + 3] = 0;
+            ptr += 4;
+        }
+    }
+    return data;
+}
