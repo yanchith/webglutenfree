@@ -1,3 +1,9 @@
+/**
+ * This example utilizes stencil testing to draw simplistic outlines around
+ * rendered objects. This technique only works well for convex objects, as is
+ * clearly visible on the bunny and teapot models.
+ */
+
 import {
     Device,
     BufferBits,

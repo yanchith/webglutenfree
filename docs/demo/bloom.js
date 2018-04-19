@@ -1,4 +1,6 @@
 /**
+ * This example demonstrates a common postprocessing technique called bloom.
+ *
  * Bloom technique inspired by https://learnopengl.com/Advanced-Lighting/Bloom
  * Tron line shader inspired by https://www.youtube.com/watch?v=DI498yX-6XM
  */

@@ -1,6 +1,18 @@
+/**
+ * This example steps computation of the Conway's Game of Life and draws it on
+ * the screen.
+ *
+ * Game of life simulates a grid world, where the state of each cell in time T + 1
+ * can be determined by rules applied to the cell's surroundings at time T.
+ * The rules are:
+ * - If the cell is alive and 2-3 surrounding cells are alive, the cell stays alive
+ * - If the cell is alive and 0-1 surrounding cells are alive, the cell dies
+ * - If the cell is alive and 4-8 surrounding cells are alive, the cell dies
+ * - If the cell is dead and 3 surrounding cells are alive, the cell comes to life
+ */
+
 import {
     Device,
-    Extension,
     DataType,
     BufferBits,
     Command,
@@ -12,17 +24,6 @@ import {
     TextureFormat as TexFmt,
     Framebuffer,
 } from "./lib/webglutenfree.es.js";
-
-/*
-Game of life simulates a grid world, where the state of each cell in time T + 1
-can be determined by rules applied to the cell's surroundings at time T.
-
-The rules are:
-- If the cell is alive and 2-3 surrounding cells are alive, the cell stays alive
-- If the cell is alive and 0-1 surrounding cells are alive, the cell dies
-- If the cell is alive and 4-8 surrounding cells are alive, the cell dies
-- If the cell is dead and 3 surrounding cells are alive, the cell comes to life
-*/
 
 const dev = Device.create({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -121,7 +122,6 @@ const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
 let ping = { tex: pingTex, fbo: pingFbo };
 let pong = { tex: pongTex, fbo: pongFbo };
 
-let tick = 0;
 const loop = () => {
     // Compute using previous values in ping, store to pong
     pong.fbo.target(rt => {

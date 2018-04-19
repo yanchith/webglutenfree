@@ -1,3 +1,8 @@
+/**
+ * This example loads some 3d models and draws them on the screen usgin goraud
+ * shading.
+ */
+
 import {
     Device,
     BufferBits,

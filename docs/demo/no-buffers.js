@@ -1,7 +1,15 @@
+/**
+ * This example demonstrates the possibility of drawing without using any vertex
+ * buffers at all and instead specifying the number of vertices to draw.
+ */
+
 import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.es.js";
 
 const dev = Device.create();
 
+// This command uses gl_VertexID to determine, which vertex are we drawing. We
+// can think of the vertex shader as a functino that maps the vertex id to
+// real vertex (created on demand).
 const cmd = Command.create(
     dev,
     `#version 300 es
@@ -36,6 +44,9 @@ const cmd = Command.create(
     `,
 );
 
+// Attributes.empty() specifies, that there are no attributes to read. We still
+// need to tell WebGL the type ond number of primitives to draw. Internally,
+// no WebGL resources are constructed for empty attributes.
 const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 150);
 
 dev.target(rt => {

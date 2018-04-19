@@ -1,3 +1,8 @@
+/**
+ * This example uses the graphics card to step computation of the mandelbrot set,
+ * and draws updates to the screen.
+ */
+
 import {
     Device,
     Extension,
@@ -183,7 +188,7 @@ let pong = { tex: pongTex, fbo: pongFbo };
 
 let tick = 0;
 
-const loop = time => {
+const loop = () => {
     tick++;
 
     // Compute using previous values in ping, store to pong
