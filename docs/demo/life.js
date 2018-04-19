@@ -51,7 +51,6 @@ pingTex.store(
     new Uint8Array(data),
     TexFmt.RED,
     DataType.UNSIGNED_BYTE,
-    { width: lifeWidth, height: lifeHeight },
 );
 
 const pingFbo = Framebuffer.create(dev, lifeWidth, lifeHeight, pingTex);
