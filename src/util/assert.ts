@@ -1,22 +1,17 @@
 /**
  * This file is an exercise in preprocessor voodoo.
  *
- * "process.env.NODE_ENV", gets suplied by the string replacer during a
- * custom build or our production build. If "production", constant evaluation
- * will eliminate the if blocks, making the functions no-ops, in turn eligible
- * for elimination from their callsites.
+ * "process.env.NODE_ENV", gets suplied by the string replacer during build.
+ * If "production", constant evaluation will eliminate the if blocks, making
+ * the functions no-ops, in turn eligible for elimination from their callsites.
  *
- * While cool, this disables us to return values from the asserts, which would
- * make for a slightly nice programming model: const checkedVal = truthy(val)
+ * It seems that newer versions of rollup no longer prune the functions away
+ * due to some pessimization.
  */
 
-// This does not get replaced and serves as a default value. If all its uses
-// are eliminated, the value itself is pruned as well.
-const process = {
-    env: {
-        NODE_ENV: "development",
-    },
-};
+// Declare "process.env.NODE_ENV" so everything typechecks.
+// Replacer plugin always provides "development" or "production".
+declare const process: { env: { NODE_ENV: string }};
 
 export function nonNull<T>(p: T | null | undefined, msg?: string): void {
     if (process.env.NODE_ENV !== "production") {
