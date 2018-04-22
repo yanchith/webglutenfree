@@ -110,11 +110,23 @@ export class Target {
     }
 
     /**
+     * Draw to this target with a void command and attributes.
+     */
+    draw(cmd: Command<void> | Command<undefined>, attrs: Attributes): void;
+    /**
      * Draw to this target with a command, attributes, and command properties.
      * The properties are passed to the command's uniform or texture callbacks,
      * if used.
      */
-    draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void {
+    draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void;
+    /**
+     * Draw to this target with a command, attributes, and command properties.
+     * The properties are passed to the command's uniform or texture callbacks,
+     * if used.
+     *
+     * This is a unified header to stisfy the typechecker.
+     */
+    draw(cmd: Command<any>, attrs: Attributes, props?: any): void {
         const {
             dev: {
                 _stackVertexArray,

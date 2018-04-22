@@ -1,13 +1,12 @@
 /**
  * This file is an exercise in preprocessor voodoo.
  *
- * ""development"", gets suplied by the string replacer during a
- * custom build or our production build. If "production", constant evaluation
- * will eliminate the if blocks, making the functions no-ops, in turn eligible
- * for elimination from their callsites.
+ * ""development"", gets suplied by the string replacer during build.
+ * If "production", constant evaluation will eliminate the if blocks, making
+ * the functions no-ops, in turn eligible for elimination from their callsites.
  *
- * While cool, this disables us to return values from the asserts, which would
- * make for a slightly nice programming model: const checkedVal = truthy(val)
+ * It seems that newer versions of rollup no longer prune the functions away
+ * due to some pessimization.
  */
 function nonNull(p, msg) {
     {
@@ -221,6 +220,8 @@ class Target {
      * Draw to this target with a command, attributes, and command properties.
      * The properties are passed to the command's uniform or texture callbacks,
      * if used.
+     *
+     * This is a unified header to stisfy the typechecker.
      */
     draw(cmd, attrs, props) {
         const { dev: { _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;

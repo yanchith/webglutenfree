@@ -254,7 +254,7 @@ export enum BlendEquation {
 
 export class Command<P> {
 
-    static create<P>(
+    static create<P = void>(
         dev: Device,
         vert: string,
         frag: string,
