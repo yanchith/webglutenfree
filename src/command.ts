@@ -548,7 +548,7 @@ export class Command<P> {
                     default: assert.never(u);
                 }
             } else {
-                // Store a descriptor for lazy values and textures for later use
+                // Store a descriptor for lazy values for later use
                 uniformDescrs.push(new UniformDescriptor(ident, loc, u));
             }
         });
