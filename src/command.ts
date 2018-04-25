@@ -820,5 +820,5 @@ function createShader(
 }
 
 function fmtAssertNonNull(name: string): string {
-    return `${name}`;
+    return `Missing parameter ${name}`;
 }
