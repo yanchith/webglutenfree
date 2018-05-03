@@ -88,7 +88,9 @@ export class ElementBuffer<T extends ElementBufferType> {
     ): ElementBuffer<DataType.UNSIGNED_INT> {
         if (array.isArray2(data)) {
             const shape = array.shape2(data);
-            assert.range(shape[1], 2, 3, "elements must be 2-tuples or 3-tuples");
+            assert.rangeInclusive(shape[1], 2, 3, (p) => {
+                return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;
+            });
             const ravel = array.ravel2(data, shape);
             const primitive = shape[1] === 3
                 ? Primitive.TRIANGLES
@@ -210,6 +212,6 @@ function createBuffer(
         case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
         case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
         case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        default: return assert.never(type, `invalid buffer type: ${type}`);
+        default: return assert.never(type, (p) => `invalid buffer type: ${p}`);
     }
 }

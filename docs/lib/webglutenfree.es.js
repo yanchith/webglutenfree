@@ -8,48 +8,73 @@
  * It seems that newer versions of rollup no longer prune the functions away
  * due to some pessimization.
  */
-function nonNull(p, msg) {
+function nonNull(p, fmt) {
     {
         if (typeof p === "undefined" || typeof p === "object" && !p) {
-            throw new Error(fmt(msg || `object is undefined or null`));
+            const msg = fmt
+                ? fmt(p)
+                : `Assertion failed: object is undefined or null`;
+            throw new Error(msg);
         }
     }
 }
-function nonEmpty(p, msg) {
+function nonEmpty(p, fmt) {
     {
         if (!p.length) {
-            throw new Error(fmt(msg || `array is empty`));
+            const msg = fmt
+                ? fmt(p)
+                : `Assertion failed: string or array is empty`;
+            throw new Error(msg);
         }
     }
 }
-function equal(p, expected, msg) {
+function equal(p, expected, fmt) {
     {
         if (p !== expected) {
-            throw new Error(fmt(msg || `values not equal, expected ${expected}, got ${p}`));
+            const msg = fmt
+                ? fmt(p, expected)
+                : `Assertion failed: values not equal. Expected ${expected}, got ${p}`;
+            throw new Error(msg);
         }
     }
 }
-function greater(p, low, msg) {
+function oneOf(p, expected, fmt) {
+    {
+        if (!expected.includes(p)) {
+            const msg = fmt
+                ? fmt(p, expected)
+                : `Assertion failed: Value ${p} is not one of expected ${expected}`;
+            throw new Error(msg);
+        }
+    }
+}
+function gt(p, low, fmt) {
     {
         if (p <= low) {
-            throw new Error(fmt(msg || `value ${p} not greater than low`));
+            const msg = fmt
+                ? fmt(p, low)
+                : `Assertion failed: Value ${p} is lower or equal than expected ${low}`;
+            throw new Error(msg);
         }
     }
 }
-function range(p, start, end, msg) {
+function rangeInclusive(p, low, high, fmt) {
     {
-        if (p < start || p > end) {
-            throw new Error(fmt(msg || `value ${p} not in [${start}, ${end}]`));
+        if (p < low || p > high) {
+            const msg = fmt
+                ? fmt(p, low, high)
+                : `Assertion failed: Value ${p} is not in inclusive range [${low}, ${high}]`;
+            throw new Error(msg);
         }
     }
 }
-function never(p, msg) {
+function never(p, fmt) {
     // "never" can not be eliminated, as its "return value" is actually captured
-    // at the callsites. It should never be invoked, though.
-    throw new Error((msg || `unexpected object: ${p}`));
-}
-function fmt(msg) {
-    return `Assertion Failed: ${msg}`;
+    // at the callsites for control-flow.
+    const msg = fmt
+        ? fmt(p)
+        : `Assertion failed: This branch should be unreachable`;
+    throw new Error(msg);
 }
 
 /**
@@ -104,6 +129,31 @@ var DataType;
     DataType[DataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
 })(DataType || (DataType = {}));
 /**
+ * Possible data types.
+ */
+var UniformType;
+(function (UniformType) {
+    UniformType[UniformType["FLOAT"] = 5126] = "FLOAT";
+    UniformType[UniformType["FLOAT_VEC2"] = 35664] = "FLOAT_VEC2";
+    UniformType[UniformType["FLOAT_VEC3"] = 35665] = "FLOAT_VEC3";
+    UniformType[UniformType["FLOAT_VEC4"] = 35666] = "FLOAT_VEC4";
+    UniformType[UniformType["INT"] = 5124] = "INT";
+    UniformType[UniformType["INT_VEC2"] = 35667] = "INT_VEC2";
+    UniformType[UniformType["INT_VEC3"] = 35668] = "INT_VEC3";
+    UniformType[UniformType["INT_VEC4"] = 35669] = "INT_VEC4";
+    UniformType[UniformType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
+    UniformType[UniformType["UNSIGNED_INT_VEC2"] = 36294] = "UNSIGNED_INT_VEC2";
+    UniformType[UniformType["UNSIGNED_INT_VEC3"] = 36295] = "UNSIGNED_INT_VEC3";
+    UniformType[UniformType["UNSIGNED_INT_VEC4"] = 36296] = "UNSIGNED_INT_VEC4";
+    UniformType[UniformType["FLOAT_MAT2"] = 35674] = "FLOAT_MAT2";
+    UniformType[UniformType["FLOAT_MAT3"] = 35675] = "FLOAT_MAT3";
+    UniformType[UniformType["FLOAT_MAT4"] = 35676] = "FLOAT_MAT4";
+    UniformType[UniformType["SAMPLER_2D"] = 35678] = "SAMPLER_2D";
+    UniformType[UniformType["SAMPLER_CUBE"] = 35680] = "SAMPLER_CUBE";
+    // TODO: support exotic types
+    // BOOL
+})(UniformType || (UniformType = {}));
+/**
  * Drawing primitives.
  */
 var Primitive;
@@ -146,13 +196,13 @@ class Stack {
         this.s.push(value);
     }
     pop() {
-        nonEmpty(this.s, "stack must not be empty for pop");
+        nonEmpty(this.s, () => "Stack must not be empty for pop");
         const prevValue = this.s.pop();
         this.onChange(prevValue, this.peek(), "pop");
         return prevValue;
     }
     peek() {
-        nonEmpty(this.s, "stack must never be empty for peek");
+        nonEmpty(this.s, () => "Stack must never be empty for peek");
         return this.s[this.s.length - 1];
     }
 }
@@ -434,7 +484,7 @@ class Target {
                     gl.uniformMatrix4fv(loc, false, access(props, index, def.value));
                     break;
                 default:
-                    never(def, `unknown uniform type: (${ident})`);
+                    never(def, () => `Unknown uniform: ${ident}`);
                     break;
             }
         });
@@ -518,26 +568,26 @@ class Command {
         this.init();
     }
     static create(dev, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
-        nonNull(vert, fmtAssertNonNull("vert"));
-        nonNull(frag, "frag");
+        nonNull(vert, fmtParamNonNull("vert"));
+        nonNull(frag, fmtParamNonNull("frag"));
         if (depth) {
-            nonNull(depth.func, fmtAssertNonNull("depth.func"));
+            nonNull(depth.func, fmtParamNonNull("depth.func"));
         }
         if (blend) {
-            nonNull(blend.func, fmtAssertNonNull("blend.func"));
-            nonNull(blend.func.src, fmtAssertNonNull("blend.func.src"));
-            nonNull(blend.func.dst, fmtAssertNonNull("blend.func.dst"));
+            nonNull(blend.func, fmtParamNonNull("blend.func"));
+            nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+            nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
             if (typeof blend.func.src === "object") {
-                nonNull(blend.func.src.rgb, fmtAssertNonNull("blend.func.src.rgb"));
-                nonNull(blend.func.src.alpha, fmtAssertNonNull("blend.func.src.alpha"));
+                nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
+                nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
             }
             if (typeof blend.func.dst === "object") {
-                nonNull(blend.func.dst.rgb, fmtAssertNonNull("blend.func.dst.rgb"));
-                nonNull(blend.func.dst.alpha, fmtAssertNonNull("blend.func.dst.alpha"));
+                nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
+                nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
             }
         }
         if (stencil) {
-            nonNull(stencil.func, fmtAssertNonNull("stencil.func"));
+            nonNull(stencil.func, fmtParamNonNull("stencil.func"));
             // TODO: complete stencil validation... validation framework?
         }
         const depthDescr = parseDepth(depth);
@@ -582,6 +632,14 @@ class Command {
         const prog = createProgram(_gl, vs, fs);
         _gl.deleteShader(vs);
         _gl.deleteShader(fs);
+        // Validation time! (only for nonproduction envs)
+        {
+            if (!prog) {
+                // ctx loss or not, we can panic all we want in nonprod env!
+                throw new Error("Program was not compiled, possible reason: context loss");
+            }
+            validateUniformDeclarations(_gl, prog, uniforms, textures);
+        }
         _stackProgram.push(prog);
         // Texture declarations are evaluated in two phases:
         // 1) Sampler location offsets are sent to the shader eagerly
@@ -712,7 +770,7 @@ class Command {
                 }
             }
             else {
-                // Store a descriptor for lazy values and textures for later use
+                // Store a descriptor for lazy values for later use
                 uniformDescrs.push(new UniformDescriptor(ident, loc, u));
             }
         });
@@ -998,8 +1056,160 @@ function createShader(gl, type, source) {
         .join("\n");
     throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
 }
-function fmtAssertNonNull(name) {
-    return `${name}`;
+/**
+ * Check whether the uniforms declared in shaders and command strictly match.
+ * There may be no missing or redundant uniforms on either side and types of
+ * provided uniforms must match exactly
+ */
+function validateUniformDeclarations(gl, prog, uniforms, textures) {
+    const nUniforms = gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS);
+    const progUniforms = new Map();
+    for (let i = 0; i < nUniforms; ++i) {
+        const info = gl.getActiveUniform(prog, i);
+        // Naming collision-wise, it is safe to trim "[0]"
+        // It only indicates an array uniform, which we can not validate too well
+        const key = info.name.includes("[0]")
+            ? info.name.substring(0, info.name.length - 3)
+            : info.name;
+        progUniforms.set(key, info);
+    }
+    // The "list" of uniforms left to check from the program's perspective
+    const toCheck = new Set(progUniforms.keys());
+    Object.entries(uniforms).map(([name, tyObj]) => {
+        const type = tyObj.type;
+        if (progUniforms.has(name)) {
+            const progUniform = progUniforms.get(name);
+            validateUniformDeclaration(gl, progUniform, type);
+        }
+        else {
+            throw new Error(`Redundant uniform [name = ${name}, type = ${type}]`);
+        }
+        toCheck.delete(name);
+    });
+    Object.keys(textures).map((name) => {
+        if (progUniforms.has(name)) {
+            const progUniform = progUniforms.get(name);
+            validateUniformDeclaration(gl, progUniform, "1i");
+        }
+        else {
+            throw new Error(`Redundant texture [name = ${name}]`);
+        }
+        toCheck.delete(name);
+    });
+    if (toCheck.size) {
+        const names = [...toCheck].join(", ");
+        throw new Error(`Missing uniforms: ${names}`);
+    }
+}
+function validateUniformDeclaration(gl, info, type) {
+    switch (type) {
+        case "1f":
+            equal(info.type, gl.FLOAT, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "1fv":
+            equal(info.type, gl.FLOAT, fmtTyMismatch(info.name));
+            break;
+        case "1i":
+            oneOf(info.type, [
+                gl.INT,
+                gl.SAMPLER_2D,
+            ], fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "1iv":
+            equal(info.type, gl.INT, fmtTyMismatch(info.name));
+            break;
+        case "1ui":
+            equal(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "1uiv":
+            equal(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
+            break;
+        case "2f":
+            equal(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "2fv":
+            equal(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
+            break;
+        case "2i":
+            equal(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "2iv":
+            equal(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
+            break;
+        case "2ui":
+            equal(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "2uiv":
+            equal(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
+            break;
+        case "3f":
+            equal(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "3fv":
+            equal(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
+            break;
+        case "3i":
+            equal(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "3iv":
+            equal(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
+            break;
+        case "3ui":
+            equal(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "3uiv":
+            equal(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
+            break;
+        case "4f":
+            equal(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "4fv":
+            equal(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
+            break;
+        case "4i":
+            equal(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "4iv":
+            equal(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
+            break;
+        case "4ui":
+            equal(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "4uiv":
+            equal(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
+            break;
+        case "matrix2fv":
+            equal(info.type, gl.FLOAT_MAT2, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "matrix3fv":
+            equal(info.type, gl.FLOAT_MAT3, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        case "matrix4fv":
+            equal(info.type, gl.FLOAT_MAT4, fmtTyMismatch(info.name));
+            equal(info.size, 1);
+            break;
+        default: never(type);
+    }
+}
+function fmtParamNonNull(name) {
+    return () => `Missing parameter ${name}`;
+}
+function fmtTyMismatch(name) {
+    return () => `Type mismatch for uniform field ${name}`;
 }
 
 /**
@@ -1049,7 +1259,7 @@ class Device {
      */
     static withContext(gl, { pixelRatio, viewport, extensions, debug, } = {}) {
         if (extensions) {
-            extensions.forEach(ext => {
+            extensions.forEach((ext) => {
                 // We currently do not have extensions with callable API
                 if (!gl.getExtension(ext)) {
                     throw new Error(`Could not get extension ${ext}`);
@@ -1310,7 +1520,7 @@ function createBuffer(type, arr) {
         case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
         case DataType.UNSIGNED_INT: return new Uint32Array(arr);
         case DataType.FLOAT: return new Float32Array(arr);
-        default: return never(type, `nvalid buffer type: ${type}`);
+        default: return never(type, (p) => `Invalid buffer type: ${p}`);
     }
 }
 
@@ -1368,7 +1578,9 @@ class ElementBuffer {
     static withArray(dev, data, options) {
         if (isArray2(data)) {
             const shape = shape2(data);
-            range(shape[1], 2, 3, "elements must be 2-tuples or 3-tuples");
+            rangeInclusive(shape[1], 2, 3, (p) => {
+                return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;
+            });
             const ravel = ravel2(data, shape);
             const primitive = shape[1] === 3
                 ? Primitive.TRIANGLES
@@ -1426,7 +1638,7 @@ function createBuffer$1(type, arr) {
         case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
         case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
         case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        default: return never(type, `invalid buffer type: ${type}`);
+        default: return never(type, (p) => `invalid buffer type: ${p}`);
     }
 }
 
@@ -1463,7 +1675,9 @@ class Attributes {
      */
     static create(dev, elements, attributes, { countLimit } = {}) {
         if (typeof countLimit === "number") {
-            greater(countLimit, 0, "Count limit must be greater than 0");
+            gt(countLimit, 0, (p) => {
+                return `Count limit must be greater than 0, got: ${p}`;
+            });
         }
         const attrs = Object.entries(attributes)
             .map(([locationStr, definition]) => {
@@ -1488,16 +1702,16 @@ class Attributes {
             ? elementBuffer.length
             : attrs.length
                 ? attrs
-                    .map(attr => attr.count)
+                    .map((attr) => attr.count)
                     .reduce((min, curr) => Math.min(min, curr))
                 : 0;
         const count = typeof countLimit === "number"
             ? Math.min(countLimit, inferredCount)
             : inferredCount;
-        const instAttrs = attrs.filter(attr => !!attr.divisor);
+        const instAttrs = attrs.filter((attr) => !!attr.divisor);
         const instanceCount = instAttrs.length
             ? instAttrs
-                .map(attr => attr.count * attr.divisor)
+                .map((attr) => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
         return new Attributes(dev, primitive, attrs, count, instanceCount, elementBuffer);
@@ -1535,7 +1749,7 @@ class Attributes {
         if (elementBuffer) {
             elementBuffer.restore();
         }
-        attributes.forEach(attr => attr.buffer.restore());
+        attributes.forEach((attr) => attr.buffer.restore());
         // If we have no attributes nor elements, there is no need to restore
         // any GPU state
         if (!this.hasAttribs() && !_gl.isVertexArray(glVertexArray)) {
@@ -1811,14 +2025,24 @@ class Framebuffer {
      */
     static create(dev, width, height, color, depthStencil) {
         const colors = Array.isArray(color) ? color : [color];
-        nonEmpty(colors, "color attachments must not be empty");
-        colors.forEach(buffer => {
-            equal(width, buffer.width, "widths must be equal");
-            equal(height, buffer.height, "heights must be equal");
+        nonEmpty(colors, () => {
+            return "Framebuffer color attachments must not be empty";
+        });
+        colors.forEach((buffer) => {
+            equal(width, buffer.width, (got, expected) => {
+                return `Expected attachment width ${expected}, got ${got}`;
+            });
+            equal(height, buffer.height, (got, expected) => {
+                return `Expected attachment height ${expected}, got ${got}`;
+            });
         });
         if (depthStencil) {
-            equal(width, depthStencil.width, "widths must be equal");
-            equal(height, depthStencil.height, "heights must be equal");
+            equal(width, depthStencil.width, (got, expected) => {
+                return `Expected attachment width ${expected}, got ${got}`;
+            });
+            equal(height, depthStencil.height, (got, expected) => {
+                return `Expected attachment height ${expected}, got ${got}`;
+            });
         }
         return new Framebuffer(dev, width, height, colors, depthStencil);
     }
@@ -1839,7 +2063,7 @@ class Framebuffer {
      */
     restore() {
         const { dev: { _gl }, glFramebuffer, colors, depthStencil, } = this;
-        colors.forEach(buffer => buffer.restore());
+        colors.forEach((buffer) => buffer.restore());
         if (depthStencil) {
             depthStencil.restore();
         }
@@ -1879,7 +2103,9 @@ class Framebuffer {
                 case TextureInternalFormat.DEPTH_COMPONENT32F:
                     _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
-                default: never(depthStencil, "nsupported attachment");
+                default: never(depthStencil, (p) => {
+                    return `Unsupported attachment: ${p}`;
+                });
             }
         }
         const status = _gl.checkFramebufferStatus(_gl.DRAW_FRAMEBUFFER);

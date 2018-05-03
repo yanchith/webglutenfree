@@ -459,7 +459,7 @@ export class Target {
                     );
                     break;
                 default:
-                    assert.never(def, `unknown uniform type: (${ident})`);
+                    assert.never(def, () => `Unknown uniform: ${ident}`);
                     break;
             }
         });

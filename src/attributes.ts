@@ -105,7 +105,9 @@ export class Attributes {
         { countLimit }: AttributesCreateOptions = {},
     ): Attributes {
         if (typeof countLimit === "number") {
-            assert.greater(countLimit, 0, "Count limit must be greater than 0");
+            assert.gt(countLimit, 0, (p) => {
+                return `Count limit must be greater than 0, got: ${p}`;
+            });
         }
 
         const attrs = Object.entries(attributes)
@@ -132,17 +134,17 @@ export class Attributes {
             ? elementBuffer.length
             : attrs.length
                 ? attrs
-                    .map(attr => attr.count)
+                    .map((attr) => attr.count)
                     .reduce((min, curr) => Math.min(min, curr))
                 : 0;
         const count = typeof countLimit === "number"
             ? Math.min(countLimit, inferredCount)
             : inferredCount;
 
-        const instAttrs = attrs.filter(attr => !!attr.divisor);
+        const instAttrs = attrs.filter((attr) => !!attr.divisor);
         const instanceCount = instAttrs.length
             ? instAttrs
-                .map(attr => attr.count * attr.divisor)
+                .map((attr) => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
 
@@ -216,7 +218,7 @@ export class Attributes {
     restore(): void {
         const { dev: { _gl }, glVertexArray, attributes, elementBuffer } = this;
         if (elementBuffer) { elementBuffer.restore(); }
-        attributes.forEach(attr => attr.buffer.restore());
+        attributes.forEach((attr) => attr.buffer.restore());
         // If we have no attributes nor elements, there is no need to restore
         // any GPU state
         if (!this.hasAttribs() && !_gl.isVertexArray(glVertexArray)) {

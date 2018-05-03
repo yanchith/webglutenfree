@@ -13,6 +13,8 @@
 -   Improve type signature of `target.draw()` by allowing skipping props for
     `Command<void>` types. Also change `Command.create()` to create `Command<void>`
     by default, unless explicit type parameter `P` is passed.
+-   Improve validation messages
+-   Validate uniform shapes and types in development mode
 
 
 ## v0.0.6 (22/02/2018)
