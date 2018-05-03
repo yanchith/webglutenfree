@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+
+-   (None yet)
+
+## v0.0.7 (02/05/2018)
 #### Fixes:
 
 -   Fix a bug in binding depth and depth-stencil framebuffer attachments
