@@ -85,19 +85,33 @@ export class Framebuffer {
         dev: Device,
         width: number,
         height: number,
-        color: Texture<TextureColorInternalFormat> | Texture<TextureColorInternalFormat>[],
-        depthStencil?: Texture<TextureDepthInternalFormat> | Texture<TextureDepthStencilInternalFormat>,
+        color:
+            | Texture<TextureColorInternalFormat>
+            | Texture<TextureColorInternalFormat>[],
+        depthStencil?:
+            | Texture<TextureDepthInternalFormat>
+            | Texture<TextureDepthStencilInternalFormat>,
     ): Framebuffer {
         const colors = Array.isArray(color) ? color : [color];
-        assert.nonEmpty(colors, "color attachments must not be empty");
-        colors.forEach(buffer => {
-            assert.equal(width, buffer.width, "widths must be equal");
-            assert.equal(height, buffer.height, "heights must be equal");
+        assert.nonEmpty(colors, () => {
+            return "Framebuffer color attachments must not be empty";
+        });
+        colors.forEach((buffer) => {
+            assert.equal(width, buffer.width, (got, expected) => {
+                return `Expected attachment width ${expected}, got ${got}`;
+            });
+            assert.equal(height, buffer.height, (got, expected) => {
+                return `Expected attachment height ${expected}, got ${got}`;
+            });
         });
 
         if (depthStencil) {
-            assert.equal(width, depthStencil.width, "widths must be equal");
-            assert.equal(height, depthStencil.height, "heights must be equal");
+            assert.equal(width, depthStencil.width, (got, expected) => {
+                return `Expected attachment width ${expected}, got ${got}`;
+            });
+            assert.equal(height, depthStencil.height, (got, expected) => {
+                return `Expected attachment height ${expected}, got ${got}`;
+            });
         }
 
         return new Framebuffer(dev, width, height, colors, depthStencil);
@@ -146,7 +160,7 @@ export class Framebuffer {
             colors,
             depthStencil,
         } = this;
-        colors.forEach(buffer => buffer.restore());
+        colors.forEach((buffer) => buffer.restore());
         if (depthStencil) { depthStencil.restore(); }
         if (!_gl.isFramebuffer(glFramebuffer)) { this.init(); }
     }
@@ -212,7 +226,9 @@ export class Framebuffer {
                         0,
                     );
                     break;
-                default: assert.never(depthStencil, "nsupported attachment");
+                default: assert.never(depthStencil, (p) => {
+                    return `Unsupported attachment: ${p}`;
+                });
             }
         }
 

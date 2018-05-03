@@ -25,7 +25,7 @@
     "build": "tsc --outDir build",
     "prebuild:watch": "rimraf build",
     "build:watch": "tsc --outDir build --watch",
-    "tslint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
+    "lint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
     "predist": "rimraf dist",
     "dist": "yarn dist:es && yarn dist:umd && yarn dist:es:prod:min && yarn dist:umd:prod:min && yarn dist:dts",
     "dist:es": "cross-env FMT=es rollup --config",
@@ -56,6 +56,6 @@
     "rollup-plugin-replace": "^2.0.0",
     "rollup-plugin-uglify": "^3.0.0",
     "tslint": "^5.9.1",
-    "typescript": "^2.9.0-dev.20180403"
+    "typescript": "^2.9.0-dev.20180502"
   }
 }

@@ -100,7 +100,7 @@ export class Device {
         }: DeviceWithContextOptions = {},
     ): Device {
         if (extensions) {
-            extensions.forEach(ext => {
+            extensions.forEach((ext) => {
                 // We currently do not have extensions with callable API
                 if (!gl.getExtension(ext)) {
                     throw new Error(`Could not get extension ${ext}`);
