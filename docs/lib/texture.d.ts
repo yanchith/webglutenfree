@@ -1,9 +1,9 @@
 import { DataType } from "./types";
-import { Device as _Device } from "./device";
+export declare type Device = import("./device").Device;
 export declare enum TextureWrap {
     CLAMP_TO_EDGE = 33071,
     REPEAT = 10497,
-    MIRRORED_REPEAT = 33648,
+    MIRRORED_REPEAT = 33648
 }
 export declare enum TextureFilter {
     NEAREST = 9728,
@@ -11,7 +11,7 @@ export declare enum TextureFilter {
     NEAREST_MIPMAP_NEAREST = 9984,
     LINEAR_MIPMAP_NEAREST = 9985,
     NEAREST_MIPMAP_LINEAR = 9986,
-    LINEAR_MIPMAP_LINEAR = 9987,
+    LINEAR_MIPMAP_LINEAR = 9987
 }
 export declare type TextureMinFilter = TextureFilter;
 export declare type TextureMagFilter = TextureFilter.NEAREST | TextureFilter.LINEAR;
@@ -60,7 +60,7 @@ export declare enum TextureInternalFormat {
     DEPTH_COMPONENT24 = 33190,
     DEPTH_COMPONENT32F = 36012,
     DEPTH24_STENCIL8 = 35056,
-    DEPTH32F_STENCIL8 = 36013,
+    DEPTH32F_STENCIL8 = 36013
 }
 export declare enum TextureFormat {
     RED = 6403,
@@ -72,12 +72,9 @@ export declare enum TextureFormat {
     RGB_INTEGER = 36248,
     RGBA_INTEGER = 36249,
     DEPTH_COMPONENT = 6402,
-    DEPTH_STENCIL = 34041,
+    DEPTH_STENCIL = 34041
 }
 export declare type TextureDataType = DataType.BYTE | DataType.UNSIGNED_BYTE | DataType.SHORT | DataType.UNSIGNED_SHORT | DataType.INT | DataType.UNSIGNED_INT | DataType.FLOAT | DataType.HALF_FLOAT | DataType.UNSIGNED_INT_24_8 | DataType.FLOAT_32_UNSIGNED_INT_24_8_REV;
-export declare type TextureColorInternalFormat = TextureInternalFormat.R8 | TextureInternalFormat.R8_SNORM | TextureInternalFormat.R8UI | TextureInternalFormat.R8I | TextureInternalFormat.R16UI | TextureInternalFormat.R16I | TextureInternalFormat.R32UI | TextureInternalFormat.R32I | TextureInternalFormat.R16F | TextureInternalFormat.R32F | TextureInternalFormat.RG8 | TextureInternalFormat.RG8_SNORM | TextureInternalFormat.RG8UI | TextureInternalFormat.RG8I | TextureInternalFormat.RG16UI | TextureInternalFormat.RG16I | TextureInternalFormat.RG32UI | TextureInternalFormat.RG32I | TextureInternalFormat.RG16F | TextureInternalFormat.RG32F | TextureInternalFormat.RGB8 | TextureInternalFormat.RGB8_SNORM | TextureInternalFormat.RGB8UI | TextureInternalFormat.RGB8I | TextureInternalFormat.RGB16UI | TextureInternalFormat.RGB16I | TextureInternalFormat.RGB32UI | TextureInternalFormat.RGB32I | TextureInternalFormat.RGB16F | TextureInternalFormat.RGB32F | TextureInternalFormat.RGBA8 | TextureInternalFormat.RGBA8_SNORM | TextureInternalFormat.RGBA8UI | TextureInternalFormat.RGBA8I | TextureInternalFormat.RGBA16UI | TextureInternalFormat.RGBA16I | TextureInternalFormat.RGBA32UI | TextureInternalFormat.RGBA32I | TextureInternalFormat.RGBA16F | TextureInternalFormat.RGBA32F;
-export declare type TextureDepthInternalFormat = TextureInternalFormat.DEPTH_COMPONENT16 | TextureInternalFormat.DEPTH_COMPONENT24 | TextureInternalFormat.DEPTH_COMPONENT32F;
-export declare type TextureDepthStencilInternalFormat = TextureInternalFormat.DEPTH24_STENCIL8 | TextureInternalFormat.DEPTH32F_STENCIL8;
 export interface InternalFormatToDataFormat {
     [TextureInternalFormat.R8]: TextureFormat.RED;
     [TextureInternalFormat.R8_SNORM]: TextureFormat.RED;
@@ -232,6 +229,8 @@ export interface TextureStoreOptions {
     mipmap?: boolean;
     xOffset?: number;
     yOffset?: number;
+    width?: number;
+    height?: number;
 }
 /**
  * Textures are images of 2D data, where each texel can contain multiple
@@ -242,19 +241,19 @@ export declare class Texture<F extends TextureInternalFormat> {
      * Create a new texture with given width, height, and internal format.
      * The internal format determines, what kind of data is possible to store.
      */
-    static create<F extends TextureInternalFormat>(dev: _Device, width: number, height: number, internalFormat: F, {min, mag, wrapS, wrapT}?: TextureOptions): Texture<F>;
+    static create<F extends TextureInternalFormat>(dev: Device, width: number, height: number, internalFormat: F, { min, mag, wrapS, wrapT, }?: TextureOptions): Texture<F>;
     /**
      * Create a new texture with width and height equal to the given image, and
      * store the image in the texture.
      */
-    static withImage(dev: _Device, image: ImageData, options?: TextureOptions & TextureStoreOptions): Texture<TextureInternalFormat.RGBA8>;
+    static withImage(dev: Device, image: ImageData, options?: TextureOptions & TextureStoreOptions): Texture<TextureInternalFormat.RGBA8>;
     /**
      * Create a new texture with given width, height, and internal format.
      * The internal format determines, what kind of data is possible to store.
      * Store data of given format and type contained in a typed array to the
      * texture.
      */
-    static withTypedArray<F extends TextureInternalFormat>(dev: _Device, width: number, height: number, internalFormat: F, data: InternalFormatToTypedArray[F], dataFormat: InternalFormatToDataFormat[F], dataType: InternalFormatToDataType[F], options?: TextureOptions & TextureStoreOptions): Texture<F>;
+    static withTypedArray<F extends TextureInternalFormat>(dev: Device, width: number, height: number, internalFormat: F, data: InternalFormatToTypedArray[F], dataFormat: InternalFormatToDataFormat[F], dataType: InternalFormatToDataType[F], options?: TextureOptions & TextureStoreOptions): Texture<F>;
     readonly width: number;
     readonly height: number;
     readonly format: F;
@@ -272,10 +271,10 @@ export declare class Texture<F extends TextureInternalFormat> {
     /**
      * Upload new data to texture. Does not take ownership of data.
      */
-    store(data: InternalFormatToTypedArray[F], format: InternalFormatToDataFormat[F], type: InternalFormatToDataType[F], {xOffset, yOffset, mipmap}?: TextureStoreOptions): this;
+    store(data: InternalFormatToTypedArray[F], format: InternalFormatToDataFormat[F], type: InternalFormatToDataType[F], { xOffset, yOffset, width, height, mipmap, }?: TextureStoreOptions): this;
     /**
      * Generate mipmap levels for the current data.
      */
     mipmap(): void;
-    private init();
+    private init;
 }

@@ -1,5 +1,5 @@
 import { BufferUsage, DataType } from "./types";
-import { Device as _Device } from "./device";
+export declare type Device = import("./device").Device;
 /**
  * Possible data types of vertex buffers.
  */
@@ -29,14 +29,14 @@ export declare class VertexBuffer<T extends VertexBufferType> {
     /**
      * Create a new vertex buffer with given type and of given size.
      */
-    static create<T extends VertexBufferType>(dev: _Device, type: T, size: number, {usage}?: {
+    static create<T extends VertexBufferType>(dev: Device, type: T, size: number, { usage }?: {
         usage?: BufferUsage;
     }): VertexBuffer<T>;
     /**
      * Create a new vertex buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    static withTypedArray<T extends VertexBufferType>(dev: _Device, type: T, data: VertexBufferTypeToTypedArray[T] | number[], {usage}?: VertexBufferOptions): VertexBuffer<T>;
+    static withTypedArray<T extends VertexBufferType>(dev: Device, type: T, data: VertexBufferTypeToTypedArray[T] | number[], { usage }?: VertexBufferOptions): VertexBuffer<T>;
     readonly type: T;
     readonly length: number;
     readonly byteLength: number;
@@ -51,6 +51,6 @@ export declare class VertexBuffer<T extends VertexBufferType> {
     /**
      * Upload new data to buffer. Does not take ownership of data.
      */
-    store(data: VertexBufferTypeToTypedArray[T] | number[], {offset}?: VertexBufferStoreOptions): this;
-    private init();
+    store(data: VertexBufferTypeToTypedArray[T] | number[], { offset }?: VertexBufferStoreOptions): this;
+    private init;
 }

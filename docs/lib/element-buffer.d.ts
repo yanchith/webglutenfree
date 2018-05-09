@@ -1,5 +1,5 @@
 import { BufferUsage, DataType, Primitive } from "./types";
-import { Device as _Device } from "./device";
+export declare type Device = import("./device").Device;
 export declare type ElementArray = number[] | [number, number][] | [number, number, number][] | number[][];
 /**
  * Possible data types of element buffers.
@@ -25,7 +25,7 @@ export declare class ElementBuffer<T extends ElementBufferType> {
     /**
      * Create a new element buffer with given type, primitive, and size.
      */
-    static create<T extends ElementBufferType>(dev: _Device, type: T, primitive: Primitive, size: number, {usage}?: ElementBufferOptions): ElementBuffer<T>;
+    static create<T extends ElementBufferType>(dev: Device, type: T, primitive: Primitive, size: number, { usage }?: ElementBufferOptions): ElementBuffer<T>;
     /**
      * Create a new element buffer from potentially nested array. Infers
      * Primitive from the array's shape:
@@ -34,12 +34,12 @@ export declare class ElementBuffer<T extends ElementBufferType> {
      *   [number, number, number][] -> TRIANGLES
      * Does not take ownership of data.
      */
-    static withArray(dev: _Device, data: ElementArray, options?: ElementBufferOptions): ElementBuffer<DataType.UNSIGNED_INT>;
+    static withArray(dev: Device, data: ElementArray, options?: ElementBufferOptions): ElementBuffer<DataType.UNSIGNED_INT>;
     /**
      * Create a new element buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    static withTypedArray<T extends ElementBufferType>(dev: _Device, type: T, primitive: Primitive, data: ElementBufferTypeToTypedArray[T] | number[], {usage}?: ElementBufferOptions): ElementBuffer<T>;
+    static withTypedArray<T extends ElementBufferType>(dev: Device, type: T, primitive: Primitive, data: ElementBufferTypeToTypedArray[T] | number[], { usage }?: ElementBufferOptions): ElementBuffer<T>;
     readonly type: T;
     readonly length: number;
     readonly byteLength: number;
@@ -55,6 +55,6 @@ export declare class ElementBuffer<T extends ElementBufferType> {
     /**
      * Upload new data to buffer. Does not take ownership of data.
      */
-    store(data: ElementBufferTypeToTypedArray[T] | number[], {offset}?: ElementBufferStoreOptions): this;
-    private init();
+    store(data: ElementBufferTypeToTypedArray[T] | number[], { offset }?: ElementBufferStoreOptions): this;
+    private init;
 }

@@ -1,8 +1,8 @@
 /// <reference types="webgl2" />
 import { Primitive, DataType } from "./types";
-import { Device as _Device } from "./device";
 import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
 import { ElementBuffer, ElementBufferType, ElementArray } from "./element-buffer";
+export declare type Device = import("./device").Device;
 /**
  * Attribute type for reading vertex buffers. POINTER provides normalization
  * options for converting integer values to floats. IPOINTER always retains
@@ -10,7 +10,7 @@ import { ElementBuffer, ElementBufferType, ElementArray } from "./element-buffer
  */
 export declare enum AttributeType {
     POINTER = "pointer",
-    IPOINTER = "ipointer",
+    IPOINTER = "ipointer"
 }
 export interface AttributesConfig {
     [name: string]: AttributeConfig;
@@ -58,12 +58,12 @@ export declare class Attributes {
      * given, there will be no underlying vertex array object created, only the
      * count will be given to gl.drawArrays()
      */
-    static create(dev: _Device, elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>, attributes: AttributesConfig, {countLimit}?: AttributesCreateOptions): Attributes;
+    static create(dev: Device, elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>, attributes: AttributesConfig, { countLimit }?: AttributesCreateOptions): Attributes;
     /**
      * Create empty attributes of a given primitive. This actually performs no
      * gl calls, only remembers the count for `gl.drawArrays()`
      */
-    static empty(dev: _Device, primitive: Primitive, count: number): Attributes;
+    static empty(dev: Device, primitive: Primitive, count: number): Attributes;
     readonly primitive: Primitive;
     readonly count: number;
     readonly elementCount: number;
@@ -80,6 +80,6 @@ export declare class Attributes {
      * to reinitialize vertex buffer and element buffer dependencies.
      */
     restore(): void;
-    private init();
-    private hasAttribs();
+    private init;
+    private hasAttribs;
 }

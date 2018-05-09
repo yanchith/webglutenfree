@@ -1,8 +1,9 @@
-import { Device as _Device } from "./device";
-import { AttributesConfig } from "./attributes";
-import { Texture as _Texture, TextureInternalFormat } from "./texture";
+import { TextureInternalFormat } from "./texture";
+export declare type Device = import("./device").Device;
+export declare type Texture<T> = import("./texture").Texture<T>;
+export declare type AttributesConfig = import("./attributes").AttributesConfig;
 export declare type Accessor<P, R> = R | ((props: P, index: number) => R);
-export declare type TextureAccessor<P> = Accessor<P, _Texture<TextureInternalFormat>>;
+export declare type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
 export interface Textures<P> {
     [name: string]: TextureAccessor<P>;
 }
@@ -164,7 +165,7 @@ export declare enum DepthFunc {
     LESS = 513,
     LEQUAL = 515,
     GREATER = 516,
-    GEQUAL = 518,
+    GEQUAL = 518
 }
 export declare enum StencilFunc {
     ALWAYS = 519,
@@ -174,7 +175,7 @@ export declare enum StencilFunc {
     LESS = 513,
     LEQUAL = 515,
     GREATER = 516,
-    GEQUAL = 518,
+    GEQUAL = 518
 }
 export declare enum StencilOp {
     KEEP = 7680,
@@ -184,7 +185,7 @@ export declare enum StencilOp {
     INCR_WRAP = 34055,
     DECR = 7683,
     DECR_WRAP = 34056,
-    INVERT = 5386,
+    INVERT = 5386
 }
 export declare enum BlendFunc {
     ZERO = 0,
@@ -200,17 +201,17 @@ export declare enum BlendFunc {
     CONSTANT_COLOR = 32769,
     CONSTANT_ALPHA = 32771,
     ONE_MINUS_CONSTANT_COLOR = 32770,
-    ONE_MINUS_CONSTANT_ALPHA = 32772,
+    ONE_MINUS_CONSTANT_ALPHA = 32772
 }
 export declare enum BlendEquation {
     FUNC_ADD = 32774,
     FUNC_SUBTRACT = 32778,
     FUNC_REVERSE_SUBTRACT = 32779,
     MIN = 32775,
-    MAX = 32776,
+    MAX = 32776
 }
 export declare class Command<P> {
-    static create<P>(dev: _Device, vert: string, frag: string, {textures, uniforms, depth, stencil, blend}?: CommandOptions<P>): Command<P>;
+    static create<P = void>(dev: Device, vert: string, frag: string, { textures, uniforms, depth, stencil, blend, }?: CommandOptions<P>): Command<P>;
     readonly glProgram: WebGLProgram | null;
     readonly depthDescr: DepthDescriptor | null;
     readonly stencilDescr: StencilDescriptor | null;
@@ -232,7 +233,7 @@ export declare class Command<P> {
      * actual attribute locations for the program in this command.
      */
     locate(attributes: AttributesConfig): AttributesConfig;
-    private init();
+    private init;
 }
 export declare class DepthDescriptor {
     readonly func: number;
@@ -267,7 +268,7 @@ export declare class BlendDescriptor {
     readonly dstAlpha: number;
     readonly eqnRGB: number;
     readonly eqnAlpha: number;
-    readonly color: [number, number, number, number] | undefined;
+    readonly color?: [number, number, number, number] | undefined;
     static equals(left: BlendDescriptor | null, right: BlendDescriptor | null): boolean;
     constructor(srcRGB: number, srcAlpha: number, dstRGB: number, dstAlpha: number, eqnRGB: number, eqnAlpha: number, color?: [number, number, number, number] | undefined);
 }

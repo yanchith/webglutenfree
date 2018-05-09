@@ -36,7 +36,7 @@ export interface DeviceWithContextOptions {
  */
 export declare enum Extension {
     EXTColorBufferFloat = "EXT_color_buffer_float",
-    OESTextureFloatLinear = "OES_texture_float_linear",
+    OESTextureFloatLinear = "OES_texture_float_linear"
 }
 export declare class Device {
     /**
@@ -54,7 +54,7 @@ export declare class Device {
      * context, but concurrent usage of voids the warranty. Only use
      * concurrently when absolutely necessary.
      */
-    static withContext(gl: WebGL2RenderingContext, {pixelRatio, viewport, extensions, debug}?: DeviceWithContextOptions): Device;
+    static withContext(gl: WebGL2RenderingContext, { pixelRatio, viewport, extensions, debug, }?: DeviceWithContextOptions): Device;
     readonly _gl: WebGL2RenderingContext;
     readonly _canvas: HTMLCanvasElement;
     readonly _stackVertexArray: Stack<WebGLVertexArrayObject | null>;
@@ -109,7 +109,7 @@ export declare class Device {
      * gl.BACK target.
      *
      * Drawing should be done within the callback by
-     * calling `ratget.clear()` or `target.draw()` family of methods.
+     * calling `target.clear()` or `target.draw()` family of methods.
      *
      * Also see `framebuffer.target()`.
      */

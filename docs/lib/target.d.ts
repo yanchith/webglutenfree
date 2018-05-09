@@ -1,8 +1,10 @@
 import { BufferBits } from "./types";
-import { Device as _Device } from "./device";
-import { Command as _Command } from "./command";
-import { Attributes as _Attributes } from "./attributes";
-import { Framebuffer as _Framebuffer } from "./framebuffer";
+export declare type Device = import("./device").Device;
+export declare type Command<P> = import("./command").Command<P>;
+export declare type UniformDescriptor<P> = import("./command").UniformDescriptor<P>;
+export declare type TextureAccessor<P> = import("./command").TextureAccessor<P>;
+export declare type Attributes = import("./attributes").Attributes;
+export declare type Framebuffer = import("./framebuffer").Framebuffer;
 export interface TargetClearOptions {
     r?: number;
     g?: number;
@@ -19,9 +21,9 @@ export declare class Target {
     private dev;
     readonly glDrawBuffers: number[];
     readonly glFramebuffer: WebGLFramebuffer | null;
-    readonly width: number | undefined;
-    readonly height: number | undefined;
-    constructor(dev: _Device, glDrawBuffers: number[], glFramebuffer: WebGLFramebuffer | null, width?: number | undefined, height?: number | undefined);
+    readonly width?: number | undefined;
+    readonly height?: number | undefined;
+    constructor(dev: Device, glDrawBuffers: number[], glFramebuffer: WebGLFramebuffer | null, width?: number | undefined, height?: number | undefined);
     /**
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
@@ -32,19 +34,23 @@ export declare class Target {
     with(cb: (rt: Target) => void): void;
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
-     * choose, which buffers to blit.
+     * choose buffers to blit.
      */
-    blit(source: _Framebuffer, bits: BufferBits): void;
+    blit(source: Framebuffer, bits: BufferBits): void;
     /**
      * Clear selected buffers to provided values.
      */
-    clear(bits: BufferBits, {r, g, b, a, depth, stencil}?: TargetClearOptions): void;
+    clear(bits: BufferBits, { r, g, b, a, depth, stencil, }?: TargetClearOptions): void;
+    /**
+     * Draw to this target with a void command and attributes.
+     */
+    draw(cmd: Command<void> | Command<undefined>, attrs: Attributes): void;
     /**
      * Draw to this target with a command, attributes, and command properties.
      * The properties are passed to the command's uniform or texture callbacks,
      * if used.
      */
-    draw<P>(cmd: _Command<P>, attrs: _Attributes, props: P): void;
+    draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void;
     /**
      * Perform multiple draws to this target with the same command, but multiple
      * attributes and command properties. The properties are passed to the
@@ -53,9 +59,9 @@ export declare class Target {
      * All drawing should be performed within the callback to prevent
      * unnecesasry rebinding.
      */
-    batch<P>(cmd: _Command<P>, cb: (draw: (attrs: _Attributes, props: P) => void) => void): void;
-    private drawArrays(primitive, count, offset, instanceCount);
-    private drawElements(primitive, count, type, offset, instCount);
-    private textures<P>(textureAccessors, props, index);
-    private uniforms<P>(uniformDescrs, props, index);
+    batch<P>(cmd: Command<P>, cb: (draw: (attrs: Attributes, props: P) => void) => void): void;
+    private drawArrays;
+    private drawElements;
+    private textures;
+    private uniforms;
 }
