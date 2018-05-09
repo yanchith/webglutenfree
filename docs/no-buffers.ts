@@ -3,7 +3,7 @@
  * buffers at all and instead specifying the number of vertices to draw.
  */
 
-import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.es.js";
+import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.js";
 
 const dev = Device.create();
 
@@ -49,6 +49,6 @@ const cmd = Command.create(
 // no WebGL resources are constructed for empty attributes.
 const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 150);
 
-dev.target(rt => {
+dev.target((rt) => {
     rt.draw(cmd, attrs);
 });

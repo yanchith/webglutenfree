@@ -12,12 +12,12 @@ import {
     DepthFunc,
     StencilFunc,
     StencilOp,
-} from "./lib/webglutenfree.es.js";
-import { mat4 } from "./lib/gl-matrix-min.js";
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./libx/gl-matrix.js";
 
-import * as cube from "./lib/cube.js";
-import * as bunny from "./lib/bunny.js";
-import * as teapot from "./lib/teapot.js";
+import * as cube from "./libx/cube.js";
+import * as bunny from "./libx/bunny.js";
+import * as teapot from "./libx/teapot.js";
 
 const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -32,7 +32,12 @@ const projection = mat4.perspective(
 
 const view = mat4.create();
 
-const cmdDraw = Command.create(
+interface CmdDrawProps {
+    time: number;
+    matrix: mat4;
+}
+
+const cmdDraw = Command.create<CmdDrawProps>(
     dev,
     `#version 300 es
         precision mediump float;
@@ -102,7 +107,12 @@ const cmdDraw = Command.create(
     },
 );
 
-const cmdDrawOutlines = Command.create(
+interface CmdDrawOutlinesProps {
+    time: number;
+    matrix: mat4;
+}
+
+const cmdDrawOutlines = Command.create<CmdDrawOutlinesProps>(
     dev,
     `#version 300 es
         precision mediump float;
@@ -174,28 +184,26 @@ const objs = models.map((m, i) => {
     };
 });
 
-const outlineObjs = objs.map(obj => {
-    return {
-        matrix: mat4.scale(mat4.create(), obj.matrix, [1.04, 1.04, 1.04]),
-        attrs: obj.attrs,
-    }
-});
+const outlineObjs = objs.map((obj) => ({
+    matrix: mat4.scale(mat4.create(), obj.matrix, [1.04, 1.04, 1.04]),
+    attrs: obj.attrs,
+}));
 
-const loop = time => {
-    dev.target(rt => {
+const loop = (time) => {
+    dev.target((rt) => {
         rt.clear(BufferBits.COLOR_DEPTH_STENCIL);
-        rt.batch(cmdDraw, draw => {
+        rt.batch(cmdDraw, (draw) => {
             objs.forEach(({ attrs, matrix }) => {
                 draw(attrs, { time, matrix });
             });
         });
-        rt.batch(cmdDrawOutlines, draw => {
+        rt.batch(cmdDrawOutlines, (draw) => {
             outlineObjs.forEach(({ attrs, matrix }) => {
                 draw(attrs, { time, matrix });
             });
         });
     });
     window.requestAnimationFrame(loop);
-}
+};
 
 window.requestAnimationFrame(loop);

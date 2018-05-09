@@ -9,19 +9,24 @@ import {
     Command,
     DepthFunc,
     Attributes,
-} from "./lib/webglutenfree.es.js";
-import { mat4 } from "./lib/gl-matrix-min.js";
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./libx/gl-matrix.js";
 
-import * as cube from "./lib/cube.js";
-import * as bunny from "./lib/bunny.js";
-import * as teapot from "./lib/teapot.js";
+import * as cube from "./libx/cube.js";
+import * as bunny from "./libx/bunny.js";
+import * as teapot from "./libx/teapot.js";
 
 const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const view = mat4.create();
 
-const cmd = Command.create(
+interface CmdProps {
+    time: number;
+    matrix: mat4;
+}
+
+const cmd = Command.create<CmdProps>(
     dev,
     `#version 300 es
         precision mediump float;
@@ -77,7 +82,7 @@ const cmd = Command.create(
                         30 * Math.sin(time / 1000),
                     ],
                     [0, 2.5, 0],
-                    [0, 1, 0]
+                    [0, 1, 0],
                 ),
             },
             u_model: {
@@ -87,7 +92,7 @@ const cmd = Command.create(
             u_light: {
                 type: "3f",
                 value: [1, 0, 0],
-            }
+            },
         },
         depth: { func: DepthFunc.LESS },
     },
@@ -110,16 +115,16 @@ const objs = models.map((m, i) => {
     };
 });
 
-const loop = time => {
-    dev.target(rt => {
+const loop = (time) => {
+    dev.target((rt) => {
         rt.clear(BufferBits.COLOR);
-        rt.batch(cmd, draw => {
+        rt.batch(cmd, (draw) => {
             objs.forEach(({ attrs, matrix }) => {
                 draw(attrs, { time, matrix });
             });
         });
     });
     window.requestAnimationFrame(loop);
-}
+};
 
 window.requestAnimationFrame(loop);

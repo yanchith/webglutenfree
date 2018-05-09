@@ -4,7 +4,7 @@
  * happening at every step.
  */
 
-import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.es.js";
+import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.js";
 
 // The device is the entry point to the API, analogous to a WebGL context.
 // It has multiple constructors, Device.create() being the most convenient, as
@@ -74,7 +74,7 @@ const attrs = Attributes.create(dev, Primitive.TRIANGLES, {
 // such as clearing or copying/blitting subrects. It is important to first ask
 // for a render target and then draw to it in batch, as switching framebuffers
 // can be fairly costly on some hardware/drivers.
-dev.target(rt => {
+dev.target((rt) => {
     // The target is ready for drawing
     rt.draw(cmd, attrs);
-})
+});

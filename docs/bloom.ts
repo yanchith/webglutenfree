@@ -17,16 +17,16 @@ import {
     TextureInternalFormat as TexIntFmt,
     TextureFilter,
     Framebuffer,
-} from "./lib/webglutenfree.es.js";
-import { vec2, mat4 } from "./lib/gl-matrix-min.js";
+} from "./lib/webglutenfree.js";
+import { vec2, mat4 } from "./libx/gl-matrix.js";
 
-import * as uvCube from "./lib/uv-cube.js"
+import * as uvCube from "./libx/uv-cube.js";
 
 const kernels = {
     blur3: [0.44198, 0.27901],
     blur5: [0.38774, 0.24477, 0.06136],
     blur9: [0.382928, 0.241732, 0.060598, 0.005977, 0.000229],
-}
+};
 
 const N_BLOOM_PASSES = 2;
 const BLUR_TEXTURE_SIZE_FACTOR = 0.5;
@@ -95,8 +95,12 @@ void main() {
 }
 `;
 
+interface CmdDrawProps {
+    time: number;
+}
+
 // Draw the scene as usual
-const cmdDraw = Command.create(
+const cmdDraw = Command.create<CmdDrawProps>(
     dev,
     `#version 300 es
         precision mediump float;
@@ -153,7 +157,7 @@ const cmdDraw = Command.create(
                         200 * Math.sin(time / 9000),
                     ],
                     [0, 0, 0],
-                    [0, 1, 0]
+                    [0, 1, 0],
                 ),
             },
             u_projection: {
@@ -169,7 +173,7 @@ const cmdDraw = Command.create(
             u_glow_strength: {
                 type: "1f",
                 value: ({ time }) => 10 * (Math.cos(time / 2000) + 1),
-            }
+            },
         },
         depth: { func: DepthFunc.LESS },
     },
@@ -209,7 +213,13 @@ const cmdSep = Command.create(
 // stride of 2 pixels. Linear sampling will provide interpolated values.
 // This extends the reach of blur without adversely affecting output too much,
 // allowing us to use fewer blur passes to the same effect.
-const cmdBlur = Command.create(
+
+interface CmdBlurProps {
+    source: Texture<TexIntFmt>;
+    direction: vec2;
+}
+
+const cmdBlur = Command.create<CmdBlurProps>(
     dev,
     screenspaceVS,
     `#version 300 es
@@ -306,25 +316,25 @@ const modelAttrs = Attributes.create(dev, uvCube.elements, {
 const HORIZONTAL = vec2.fromValues(1, 0);
 const VERTICAL = vec2.fromValues(0, 1);
 
-const loop = time => {
+const loop = (time) => {
     // Render geometry into texture
-    sceneFbo.target(rt => {
+    sceneFbo.target((rt) => {
         rt.clear(BufferBits.COLOR_DEPTH);
         rt.draw(cmdDraw, modelAttrs, { time });
     });
 
     // separate bright colors to ping texture
-    pingFbo.target(rt => rt.draw(cmdSep, screenspaceAttrs));
+    pingFbo.target((rt) => rt.draw(cmdSep, screenspaceAttrs));
 
     // Repeat as many blur passes as wanted...
     for (let i = 0; i < N_BLOOM_PASSES; i++) {
-        pongFbo.target(rt => {
+        pongFbo.target((rt) => {
             rt.draw(cmdBlur, screenspaceAttrs, {
                 source: pingTex,
                 direction: HORIZONTAL,
             });
         });
-        pingFbo.target(rt => {
+        pingFbo.target((rt) => {
             rt.draw(cmdBlur, screenspaceAttrs, {
                 source: pongTex,
                 direction: VERTICAL,
@@ -334,11 +344,11 @@ const loop = time => {
 
     // Blend together blurred highlights with original color, tonemap
     // Since textures are sampled, they can be of different sizes
-    dev.target(rt => {
+    dev.target((rt) => {
         rt.draw(cmdMerge, screenspaceAttrs);
     });
 
     window.requestAnimationFrame(loop);
-}
+};
 
 window.requestAnimationFrame(loop);

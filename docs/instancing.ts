@@ -15,10 +15,11 @@ import {
     BufferBits,
     Command,
     Attributes,
+    AttributeType,
     VertexBuffer,
     DataType,
-} from "./lib/webglutenfree.es.js";
-import { mat4 } from "./lib/gl-matrix-min.js";
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./libx/gl-matrix.js";
 
 const dev = Device.create();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
@@ -108,7 +109,7 @@ const attrs = Attributes.create(
         ],
         // Position offset attributes
         1: {
-            type: "pointer",
+            type: AttributeType.POINTER,
             buffer: VertexBuffer.withTypedArray(dev, DataType.FLOAT, [
                 3, 3,
                 0, 3,
@@ -125,7 +126,7 @@ const attrs = Attributes.create(
         },
         // Color attributes
         2: {
-            type: "pointer",
+            type: AttributeType.POINTER,
             buffer: VertexBuffer.withTypedArray(dev, DataType.UNSIGNED_BYTE, [
                 255, 0, 0, 255,
                 0, 255, 0, 255,
@@ -145,11 +146,11 @@ const attrs = Attributes.create(
 );
 
 const loop = () => {
-    dev.target(rt => {
+    dev.target((rt) => {
         rt.clear(BufferBits.COLOR);
         rt.draw(cmd, attrs);
     });
     window.requestAnimationFrame(loop);
-}
+};
 
 window.requestAnimationFrame(loop);

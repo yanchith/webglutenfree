@@ -12,7 +12,7 @@ import {
     Texture,
     TextureInternalFormat as TexIntFmt,
     Framebuffer,
-} from "./lib/webglutenfree.es.js";
+} from "./lib/webglutenfree.js";
 
 const MAX_ITERS = 1 << 8;
 const ESCAPE_THRESHOLD = 2.0;
@@ -55,7 +55,13 @@ void main() {
 // In the resulting framebuffer, xy is the current value and z marks the time
 // of us being certain of its divergence. This escape time is the value we
 // paint to the screen in the next command.
-const cmdCompute = Command.create(
+
+interface CmdComputeProps {
+    tex: Texture<TexIntFmt>;
+    tick: number;
+}
+
+const cmdCompute = Command.create<CmdComputeProps>(
     dev,
     screenspaceVS,
     `#version 300 es
@@ -122,7 +128,7 @@ const cmdCompute = Command.create(
         }
     `,
     {
-        textures: { u_prev: ({ ping }) => ping.tex },
+        textures: { u_prev: ({ tex }) => tex },
         uniforms: {
             u_tick: {
                 type: "1ui",
@@ -148,7 +154,12 @@ const cmdCompute = Command.create(
 // Paint black for pixels that are not proven to diverge, and shades of gray
 // for divergent pixels. The brighter they are, the sooner they were proven
 // to diverge.
-const cmdDraw = Command.create(
+
+interface CmdDrawProps {
+    tex: Texture<TexIntFmt>;
+}
+
+const cmdDraw = Command.create<CmdDrawProps>(
     dev,
     screenspaceVS,
     `#version 300 es
@@ -171,7 +182,7 @@ const cmdDraw = Command.create(
         }
     `,
     {
-        textures: { u_val: ({ pong }) => pong.tex },
+        textures: { u_val: ({ tex }) => tex },
         uniforms: {
             u_max_iters: {
                 type: "1f",
@@ -186,19 +197,19 @@ const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
 let ping = { tex: pingTex, fbo: pingFbo };
 let pong = { tex: pongTex, fbo: pongFbo };
 
-let tick = 0;
+let t = 0;
 
 const loop = () => {
-    tick++;
+    t++;
 
     // Compute using previous values in ping, store to pong
-    pong.fbo.target(rt => {
-        rt.draw(cmdCompute, attrs, { tick, ping });
+    pong.fbo.target((rt) => {
+        rt.draw(cmdCompute, attrs, { tick: t, tex: ping.tex });
     });
 
     // Update canvas based on pong
-    dev.target(rt => {
-        rt.draw(cmdDraw, attrs, { pong });
+    dev.target((rt) => {
+        rt.draw(cmdDraw, attrs, { tex: pong.tex });
     });
 
     // ... and swap the pingpong
@@ -206,9 +217,9 @@ const loop = () => {
     ping = pong;
     pong = tmp;
 
-    if (tick < MAX_ITERS) {
+    if (t < MAX_ITERS) {
         window.requestAnimationFrame(loop);
     }
-}
+};
 
 window.requestAnimationFrame(loop);
