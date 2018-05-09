@@ -184,7 +184,7 @@
                 }
             }));
 
-            async function compile() {
+            function compile() {
                 const uri = editor.getModel().uri.toString();
 
                 return monaco.languages.typescript.getTypeScriptWorker()
