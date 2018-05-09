@@ -11,6 +11,7 @@ import {
     DepthFunc,
     VertexBuffer,
     Attributes,
+    AttributeType,
     BufferUsage,
     DataType,
     Primitive,
@@ -28,9 +29,13 @@ const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const viewBuffer = mat4.create();
-let tick = 0;
 
-const cmd = Command.create(
+interface CmdProps {
+    time: number;
+    tick: number;
+}
+
+const cmd = Command.create<CmdProps>(
     dev,
     `#version 300 es
         precision mediump float;
@@ -139,7 +144,7 @@ const angle = Math.PI * 2 / 3;
 const attrs = Attributes.create(dev, Primitive.TRIANGLES, cmd.locate({
     // a_position is an instanced buffer containing the particles center
     a_position: {
-        type: "pointer",
+        type: AttributeType.POINTER,
         buffer,
         count: positions.length / 3,  // 3 components per item
         size: 3,  // 3 components per item
@@ -157,19 +162,22 @@ const attrs = Attributes.create(dev, Primitive.TRIANGLES, cmd.locate({
     ],
 }));
 
-const loop = time => {
+let t = 0;
+
+
+const loop = (time) => {
     for (let i = 0; i < positions.length; i++) {
         positions[i] += Math.random() * WANDER_FACTOR - WANDER_FACTOR / 2;
     }
     buffer.store(positions);
 
-    dev.target(rt => {
+    dev.target((rt) => {
         rt.clear(BufferBits.COLOR);
-        rt.draw(cmd, attrs, { time, tick });
+        rt.draw(cmd, attrs, { time, tick: t });
     });
 
-    tick++;
+    t++;
     window.requestAnimationFrame(loop);
-}
+};
 
 window.requestAnimationFrame(loop);

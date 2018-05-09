@@ -58,7 +58,12 @@ const pongFbo = Framebuffer.create(dev, lifeWidth, lifeHeight, pongTex);
 
 // Performs a step by step simulation by reading previous state of the
 // universe from one texture and writing the result to another.
-const cmd = Command.create(
+
+interface CmdProps {
+    tex: Texture<TexIntFmt>;
+}
+
+const cmd = Command.create<CmdProps>(
     dev,
     `#version 300 es
         precision mediump float;
@@ -119,7 +124,7 @@ const cmd = Command.create(
             }
         }
     `,
-    { textures: { u_universe: ({ ping }) => ping.tex } },
+    { textures: { u_universe: ({ tex }) => tex } },
 );
 
 const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
@@ -129,12 +134,12 @@ let pong = { tex: pongTex, fbo: pongFbo };
 
 const loop = () => {
     // Compute using previous values in ping, store to pong
-    pong.fbo.target(rt => {
-        rt.draw(cmd, attrs, { ping });
+    pong.fbo.target((rt) => {
+        rt.draw(cmd, attrs, { tex: ping.tex });
     });
 
     // Update canvas based on pong
-    dev.target(rt => {
+    dev.target((rt) => {
         rt.blit(pong.fbo, BufferBits.COLOR);
     });
 
@@ -144,6 +149,6 @@ const loop = () => {
     pong = tmp;
 
     window.requestAnimationFrame(loop);
-}
+};
 
 window.requestAnimationFrame(loop);

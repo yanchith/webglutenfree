@@ -49,6 +49,6 @@ const cmd = Command.create(
 // no WebGL resources are constructed for empty attributes.
 const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 150);
 
-dev.target(rt => {
+dev.target((rt) => {
     rt.draw(cmd, attrs);
 });

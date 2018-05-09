@@ -15,7 +15,7 @@ import {
 import { mat4 } from "./libx/gl-matrix.js";
 import { loadImage } from "./libx/load-image.js";
 
-import * as square from "./libx/square.js"
+import * as square from "./libx/square.js";
 
 const kernels = {
     identity: [
@@ -62,12 +62,12 @@ async function run() {
             uniform mat4 u_projection, u_model;
 
             layout (location = 0) in vec2 a_position;
-            layout (location = 1) in vec2 a_tex_coord;
+            layout (location = 1) in vec2 a_uv;
 
             out vec2 v_tex_coord;
 
             void main() {
-                v_tex_coord = a_tex_coord;
+                v_tex_coord = a_uv;
                 gl_Position = u_projection
                     * u_model
                     * vec4(a_position, 0.0, 1.0);
@@ -133,12 +133,12 @@ async function run() {
 
     const attrs = Attributes.create(dev, square.elements, cmd.locate({
         a_position: square.positions,
-        a_tex_coord: square.texCoords,
+        a_uv: square.uvs,
     }));
 
-    dev.target(rt => {
+    dev.target((rt) => {
         rt.draw(cmd, attrs);
-    })
+    });
 }
 
 run();

@@ -99,18 +99,18 @@
     <div id="editor"></div>
     <div id="menu">
         <div id="editor-toggle">&gt;&gt;</div>
-        <div data-href="./demo/triangle.js" class="selected">triangle</div>
-        <div data-href="./demo/models.js">models</div>
-        <div data-href="./demo/no-buffers.js">no buffers</div>
-        <div data-href="./demo/instancing.js">instancing</div>
-        <div data-href="./demo/stencil.js">stencil</div>
-        <div data-href="./demo/particles.js">particles</div>
-        <div data-href="./demo/image-processing.js">image processing</div>
-        <div data-href="./demo/persistence.js">persistence</div>
-        <div data-href="./demo/bloom.js">bloom</div>
-        <div data-href="./demo/mandelbrot.js">mandelbrot</div>
-        <div data-href="./demo/life.js">life</div>
-        <div data-href="./demo/smoothlife.js">smoothlife</div>
+        <div data-href="./triangle.ts" class="selected">triangle</div>
+        <div data-href="./models.ts">models</div>
+        <div data-href="./no-buffers.ts">no buffers</div>
+        <div data-href="./instancing.ts">instancing</div>
+        <div data-href="./stencil.ts">stencil</div>
+        <div data-href="./particles.ts">particles</div>
+        <div data-href="./image-processing.ts">image processing</div>
+        <div data-href="./persistence.ts">persistence</div>
+        <div data-href="./bloom.ts">bloom</div>
+        <div data-href="./mandelbrot.ts">mandelbrot</div>
+        <div data-href="./life.ts">life</div>
+        <div data-href="./smoothlife.ts">smoothlife</div>
     </div>
 
     <script src="./demolib/monaco/min/vs/loader.js"></script>
@@ -140,7 +140,9 @@
                 "./lib/target.d.ts",
                 "./lib/texture.d.ts",
                 "./lib/types.d.ts",
-                "./lib/vertexbuffer.d.ts",
+                "./lib/vertex-buffer.d.ts",
+                "./libx/gl-matrix.d.ts",
+                "./libx/load-image.d.ts",
                 "./libx/bunny.d.ts",
                 "./libx/cube.d.ts",
                 "./libx/spiral.d.ts",
@@ -214,7 +216,7 @@
                     selectElement(elem);
                     fetchExample(path);
                 } else {
-                    fetchExample("./demo/triangle.js");
+                    fetchExample("./triangle.ts");
                 }
             }
 
@@ -231,13 +233,13 @@
             }
 
             function hashToPath(hash) {
-                return `./demo/${hash.substring(1)}.js`
+                return `./${hash.substring(1)}.ts`
             }
 
             function pathToHash(path) {
-                const trimDemo = path.substring("./demo/".length);
-                const trimJs = trimDemo.substring(0, trimDemo.length - ".js".length);
-                return `#${trimJs}`;
+                const trimPath = path.substring("./".length);
+                const trimExt = trimPath.substring(0, trimPath.length - ".ts".length);
+                return `#${trimExt}`;
             }
 
             menuElem.addEventListener("click", ev => {

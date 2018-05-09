@@ -18,7 +18,7 @@ import {
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 
-import * as bunny from "./libx/bunny.js"
+import * as bunny from "./libx/bunny.js";
 
 const PERSISTENCE_FACTOR = 0.8;
 
@@ -37,7 +37,11 @@ const pongFbo = Framebuffer.create(dev, width, height, pongTex);
 
 const view = mat4.create();
 
-const cmdDraw = Command.create(
+interface CmdDrawProps {
+    time: number;
+}
+
+const cmdDraw = Command.create<CmdDrawProps>(
     dev,
     `#version 300 es
         precision mediump float;
@@ -93,7 +97,7 @@ const cmdDraw = Command.create(
                         30 * Math.sin(time / 1000),
                     ],
                     [0, 2.5, 0],
-                    [0, 1, 0]
+                    [0, 1, 0],
                 ),
             },
             u_light: {
@@ -105,7 +109,12 @@ const cmdDraw = Command.create(
     },
 );
 
-const cmdBlend = Command.create(
+interface CmdBlendProps {
+    newFrame: Texture<TexIntFmt>;
+    prevFrame: Texture<TexIntFmt>;
+}
+
+const cmdBlend = Command.create<CmdBlendProps>(
     dev,
     `#version 300 es
         precision mediump float;
@@ -132,7 +141,7 @@ const cmdBlend = Command.create(
     `#version 300 es
         precision mediump float;
 
-        uniform sampler2D u_new_frame, u_ping;
+        uniform sampler2D u_new_frame, u_prev_frame;
         uniform float u_blend_factor;
 
         in vec2 v_tex_coord;
@@ -145,20 +154,20 @@ const cmdBlend = Command.create(
 
         void main() {
             vec4 c1 = texture(u_new_frame, v_tex_coord);
-            vec4 c2 = texture(u_ping, v_tex_coord);
+            vec4 c2 = texture(u_prev_frame, v_tex_coord);
             f_color = blend_alpha(c2, c1, u_blend_factor);
         }
     `,
     {
         textures: {
             u_new_frame: ({ newFrame }) => newFrame,
-            u_ping: ({ ping }) => ping,
+            u_prev_frame: ({ prevFrame }) => prevFrame,
         },
         uniforms: {
             u_blend_factor: {
                 type: "1f",
                 value: PERSISTENCE_FACTOR,
-            }
+            },
         },
     },
 );
@@ -173,34 +182,34 @@ const bunnyAttrs = Attributes.create(dev, bunny.elements, cmdDraw.locate({
 let ping = {
     tex: pingTex,
     fbo: pingFbo,
-}
+};
 
 let pong = {
     tex: pongTex,
     fbo: pongFbo,
-}
+};
 
-const loop = time => {
+const loop = (time) => {
     // By repeating the following process, we gain a buildup of past frame memory
     // in our ping/pong buffers, with an exponential falloff.
 
     // First draw the scene to a "newFrame" fbo
-    newFrameFbo.target(rt => {
+    newFrameFbo.target((rt) => {
         rt.clear(BufferBits.COLOR_DEPTH);
         rt.draw(cmdDraw, bunnyAttrs, { time });
     });
 
     // Then blend newFrame and ping to pong proportionate to PERSISTENCE_FACTOR
-    pong.fbo.target(rt => {
+    pong.fbo.target((rt) => {
         rt.draw(
             cmdBlend,
             screenspaceAttrs,
-            { newFrame: newFrameTex, ping: ping.tex },
+            { newFrame: newFrameTex, prevFrame: ping.tex },
         );
     });
 
     // Lastly copy the contents of pong to canvas
-    dev.target(rt => {
+    dev.target((rt) => {
         rt.blit(pong.fbo, BufferBits.COLOR);
     });
 
@@ -210,6 +219,6 @@ const loop = time => {
     pong = tmp;
 
     window.requestAnimationFrame(loop);
-}
+};
 
 window.requestAnimationFrame(loop);
