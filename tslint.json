@@ -6,7 +6,6 @@
     "jsRules": {},
     "rules": {
         "array-type": [true, "array"],
-        "arrow-parens": [true, "ban-single-arg-parens"],
         "interface-name": [true, "never-prefix"],
         "max-classes-per-file": false,
         "member-access": [true, "no-public"],

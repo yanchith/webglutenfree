@@ -1,13 +1,71 @@
 import * as assert from "./util/assert";
-import { Device as _Device } from "./device";
 import { Target } from "./target";
-import {
-    Texture as _Texture,
-    TextureInternalFormat as Fmt,
-    TextureColorInternalFormat as ColorFmt,
-    TextureDepthInternalFormat as DepthFmt,
-    TextureDepthStencilInternalFormat as DepthStencilFmt,
-} from "./texture";
+import { TextureInternalFormat } from "./texture";
+
+export type Device = import ("./device").Device;
+export type Texture<F> = import ("./texture").Texture<F>;
+
+export type TextureColorInternalFormat =
+
+    // RED
+    | TextureInternalFormat.R8
+    | TextureInternalFormat.R8_SNORM
+    | TextureInternalFormat.R8UI
+    | TextureInternalFormat.R8I
+    | TextureInternalFormat.R16UI
+    | TextureInternalFormat.R16I
+    | TextureInternalFormat.R32UI
+    | TextureInternalFormat.R32I
+    | TextureInternalFormat.R16F
+    | TextureInternalFormat.R32F
+
+    // RG
+    | TextureInternalFormat.RG8
+    | TextureInternalFormat.RG8_SNORM
+    | TextureInternalFormat.RG8UI
+    | TextureInternalFormat.RG8I
+    | TextureInternalFormat.RG16UI
+    | TextureInternalFormat.RG16I
+    | TextureInternalFormat.RG32UI
+    | TextureInternalFormat.RG32I
+    | TextureInternalFormat.RG16F
+    | TextureInternalFormat.RG32F
+
+    // RGB
+    | TextureInternalFormat.RGB8
+    | TextureInternalFormat.RGB8_SNORM
+    | TextureInternalFormat.RGB8UI
+    | TextureInternalFormat.RGB8I
+    | TextureInternalFormat.RGB16UI
+    | TextureInternalFormat.RGB16I
+    | TextureInternalFormat.RGB32UI
+    | TextureInternalFormat.RGB32I
+    | TextureInternalFormat.RGB16F
+    | TextureInternalFormat.RGB32F
+
+    // RGBA
+    | TextureInternalFormat.RGBA8
+    | TextureInternalFormat.RGBA8_SNORM
+    | TextureInternalFormat.RGBA8UI
+    | TextureInternalFormat.RGBA8I
+    | TextureInternalFormat.RGBA16UI
+    | TextureInternalFormat.RGBA16I
+    | TextureInternalFormat.RGBA32UI
+    | TextureInternalFormat.RGBA32I
+    | TextureInternalFormat.RGBA16F
+    | TextureInternalFormat.RGBA32F
+    ;
+
+export type TextureDepthInternalFormat =
+    | TextureInternalFormat.DEPTH_COMPONENT16
+    | TextureInternalFormat.DEPTH_COMPONENT24
+    | TextureInternalFormat.DEPTH_COMPONENT32F
+    ;
+
+export type TextureDepthStencilInternalFormat =
+    | TextureInternalFormat.DEPTH24_STENCIL8
+    | TextureInternalFormat.DEPTH32F_STENCIL8
+    ;
 
 /**
  * Framebuffers store the list of attachments to write to during a draw
@@ -24,22 +82,36 @@ export class Framebuffer {
      * via the framebuffer, however.
      */
     static create(
-        dev: _Device,
+        dev: Device,
         width: number,
         height: number,
-        color: _Texture<ColorFmt> | _Texture<ColorFmt>[],
-        depthStencil?: _Texture<DepthFmt> | _Texture<DepthStencilFmt>,
+        color:
+            | Texture<TextureColorInternalFormat>
+            | Texture<TextureColorInternalFormat>[],
+        depthStencil?:
+            | Texture<TextureDepthInternalFormat>
+            | Texture<TextureDepthStencilInternalFormat>,
     ): Framebuffer {
         const colors = Array.isArray(color) ? color : [color];
-        assert.nonEmpty(colors, "color attachments must not be empty");
-        colors.forEach(buffer => {
-            assert.equal(width, buffer.width, "widths must be equal");
-            assert.equal(height, buffer.height, "heights must be equal");
+        assert.nonEmpty(colors, () => {
+            return "Framebuffer color attachments must not be empty";
+        });
+        colors.forEach((buffer) => {
+            assert.equal(width, buffer.width, (got, expected) => {
+                return `Expected attachment width ${expected}, got ${got}`;
+            });
+            assert.equal(height, buffer.height, (got, expected) => {
+                return `Expected attachment height ${expected}, got ${got}`;
+            });
         });
 
         if (depthStencil) {
-            assert.equal(width, depthStencil.width, "widths must be equal");
-            assert.equal(height, depthStencil.height, "heights must be equal");
+            assert.equal(width, depthStencil.width, (got, expected) => {
+                return `Expected attachment width ${expected}, got ${got}`;
+            });
+            assert.equal(height, depthStencil.height, (got, expected) => {
+                return `Expected attachment height ${expected}, got ${got}`;
+            });
         }
 
         return new Framebuffer(dev, width, height, colors, depthStencil);
@@ -50,20 +122,20 @@ export class Framebuffer {
 
     readonly glFramebuffer: WebGLFramebuffer | null;
 
-    private dev: _Device;
+    private dev: Device;
     private glColorAttachments: number[];
 
     private framebufferTarget: Target | null;
 
-    private colors: _Texture<ColorFmt>[];
-    private depthStencil?: _Texture<DepthFmt> | _Texture<DepthStencilFmt>;
+    private colors: Texture<TextureColorInternalFormat>[];
+    private depthStencil?: Texture<TextureDepthInternalFormat> | Texture<TextureDepthStencilInternalFormat>;
 
     private constructor(
-        dev: _Device,
+        dev: Device,
         width: number,
         height: number,
-        colors: _Texture<ColorFmt>[],
-        depthStencil?: _Texture<DepthFmt> | _Texture<DepthStencilFmt>,
+        colors: Texture<TextureColorInternalFormat>[],
+        depthStencil?: Texture<TextureDepthInternalFormat> | Texture<TextureDepthStencilInternalFormat>,
     ) {
         this.dev = dev;
         this.width = width;
@@ -88,7 +160,7 @@ export class Framebuffer {
             colors,
             depthStencil,
         } = this;
-        colors.forEach(buffer => buffer.restore());
+        colors.forEach((buffer) => buffer.restore());
         if (depthStencil) { depthStencil.restore(); }
         if (!_gl.isFramebuffer(glFramebuffer)) { this.init(); }
     }
@@ -133,8 +205,8 @@ export class Framebuffer {
 
         if (depthStencil) {
             switch (depthStencil.format) {
-                case Fmt.DEPTH24_STENCIL8:
-                case Fmt.DEPTH32F_STENCIL8:
+                case TextureInternalFormat.DEPTH24_STENCIL8:
+                case TextureInternalFormat.DEPTH32F_STENCIL8:
                     _gl.framebufferTexture2D(
                         _gl.DRAW_FRAMEBUFFER,
                         _gl.DEPTH_STENCIL_ATTACHMENT,
@@ -143,9 +215,9 @@ export class Framebuffer {
                         0,
                     );
                     break;
-                case Fmt.DEPTH_COMPONENT16:
-                case Fmt.DEPTH_COMPONENT24:
-                case Fmt.DEPTH_COMPONENT32F:
+                case TextureInternalFormat.DEPTH_COMPONENT16:
+                case TextureInternalFormat.DEPTH_COMPONENT24:
+                case TextureInternalFormat.DEPTH_COMPONENT32F:
                     _gl.framebufferTexture2D(
                         _gl.DRAW_FRAMEBUFFER,
                         _gl.DEPTH_ATTACHMENT,
@@ -154,7 +226,9 @@ export class Framebuffer {
                         0,
                     );
                     break;
-                default: assert.never(depthStencil, "nsupported attachment");
+                default: assert.never(depthStencil, (p) => {
+                    return `Unsupported attachment: ${p}`;
+                });
             }
         }
 

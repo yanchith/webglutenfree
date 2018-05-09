@@ -1,3 +1,15 @@
+/**
+ * This example demonstrates the use of instancing - using a single draw
+ * call to render multiple similar objects.
+ *
+ * Instancing in WebGL is done using instanced attributes. These are set up to
+ * read the underlying buffer elements more than once, causing more objects to
+ * be drawn.
+ *
+ * In this example, there is a single attribute containing the geometry, and
+ * two instanced atributes containing instance position offsets and colors.
+ */
+
 import {
     Device,
     BufferBits,
@@ -5,7 +17,7 @@ import {
     Attributes,
     VertexBuffer,
     DataType,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
 
 const dev = Device.create();
@@ -13,6 +25,8 @@ const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
 const view = mat4.identity(mat4.create());
 
+// There is nothing special about this draw command. It uses 3 attributes and
+// does not actually know, that two of those are instanced.
 const cmd = Command.create(
     dev,
     `#version 300 es
@@ -73,6 +87,11 @@ const cmd = Command.create(
     },
 );
 
+// Instancing setup happens here. To have instanced attributes, we need to use
+// the complete attribute syntax, describing all of its aspects (type, count,
+// size, ...). Instancing is turned on by adding the "divisor" field, which
+// means: use a value from this attribute N times for each of the non-instanced
+// attributes, before moving on to the next value.
 const attrs = Attributes.create(
     dev,
     [
@@ -80,12 +99,14 @@ const attrs = Attributes.create(
         [1, 3, 0],
     ],
     {
+        // The quad geometry
         0: [
             [1, 1],
             [-1, 1],
             [1, -1],
             [-1, -1],
         ],
+        // Position offset attributes
         1: {
             type: "pointer",
             buffer: VertexBuffer.withTypedArray(dev, DataType.FLOAT, [
@@ -99,8 +120,10 @@ const attrs = Attributes.create(
             ]),
             count: 7,
             size: 2,
+            // Setting the divisor to 1 makes this an instanced attribute
             divisor: 1,
         },
+        // Color attributes
         2: {
             type: "pointer",
             buffer: VertexBuffer.withTypedArray(dev, DataType.UNSIGNED_BYTE, [
@@ -115,6 +138,7 @@ const attrs = Attributes.create(
             count: 7,
             size: 4,
             normalized: true,
+            // Setting the divisor to 1 makes this an instanced attribute
             divisor: 1,
         },
     },

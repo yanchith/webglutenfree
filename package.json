@@ -1,6 +1,6 @@
 {
   "name": "webglutenfree",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "We serve your draw calls type-safe and gluten-free",
   "keywords": [
     "webgl",
@@ -16,7 +16,8 @@
   "author": "yanchith",
   "license": "MIT",
   "main": "dist/webglutenfree.umd.js",
-  "module": "dist/webglutenfree.js",
+  "module": "dist/webglutenfree.es.js",
+  "jsnext:main": "dist/webglutenfree.es.js",
   "types": "dist/webglutenfree.d.ts",
   "scripts": {
     "serve": "http-server docs -p 8000",
@@ -24,21 +25,21 @@
     "build": "tsc --outDir build",
     "prebuild:watch": "rimraf build",
     "build:watch": "tsc --outDir build --watch",
-    "tslint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
+    "lint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
     "predist": "rimraf dist",
-    "dist": "yarn dist:es && yarn dist:es:prod:min && yarn dist:umd:prod:min && yarn dist:dts",
+    "dist": "yarn dist:es && yarn dist:umd && yarn dist:es:prod:min && yarn dist:umd:prod:min && yarn dist:dts",
     "dist:es": "cross-env FMT=es rollup --config",
     "dist:umd": "cross-env FMT=umd rollup --config",
-    "dist:es:prod": "cross-env FMT=es PROD=true rollup --config",
-    "dist:umd:prod": "cross-env FMT=umd PROD=true rollup --config",
-    "dist:es:prod:min": "cross-env FMT=es PROD=true MIN=true rollup --config",
-    "dist:umd:prod:min": "cross-env FMT=umd PROD=true MIN=true rollup --config",
+    "dist:es:prod": "cross-env FMT=es ENV=p rollup --config",
+    "dist:umd:prod": "cross-env FMT=umd ENV=p rollup --config",
+    "dist:es:prod:min": "cross-env FMT=es ENV=p MIN=true rollup --config",
+    "dist:umd:prod:min": "cross-env FMT=umd ENV=p MIN=true rollup --config",
     "dist:dts": "cpx \"build/**/*.d.ts\" dist && mv dist/index.d.ts dist/webglutenfree.d.ts",
     "predist:es:watch": "rimraf dist",
     "dist:es:watch": "cross-env FMT=es rollup --config --watch",
     "demolib": "yarn demolib:rm && yarn demolib:cp",
-    "demolib:rm": "rm docs/lib/{webglutenfree.js,webglutenfree.js.map,*.d.ts}",
-    "demolib:cp": "cp dist/{webglutenfree.js,webglutenfree.js.map,*.d.ts} docs/lib",
+    "demolib:rm": "rm docs/lib/webglutenfree.{es.js,es.js.map,d.ts}",
+    "demolib:cp": "cp dist/webglutenfree.{es.js,es.js.map,d.ts} docs/lib",
     "clean": "rimraf build && rimraf dist"
   },
   "dependencies": {
@@ -48,7 +49,6 @@
     "cpx": "^1.5.0",
     "cross-env": "^5.1.4",
     "http-server": "^0.11.1",
-    "monaco-editor": "^0.11.1",
     "normals": "^1.1.0",
     "parse-obj": "^0.0.0",
     "rimraf": "^2.6.2",
@@ -56,7 +56,6 @@
     "rollup-plugin-replace": "^2.0.0",
     "rollup-plugin-uglify": "^3.0.0",
     "tslint": "^5.9.1",
-    "typescript": "^2.8.1",
-    "uglify-es": "^3.3.8"
+    "typescript": "^2.9.0-dev.20180502"
   }
 }

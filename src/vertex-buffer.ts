@@ -1,6 +1,7 @@
 import * as assert from "./util/assert";
 import { BufferUsage, DataType, sizeOf } from "./types";
-import { Device as _Device } from "./device";
+
+export type Device = import ("./device").Device;
 
 /**
  * Possible data types of vertex buffers.
@@ -56,7 +57,7 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Create a new vertex buffer with given type and of given size.
      */
     static create<T extends VertexBufferType>(
-        dev: _Device,
+        dev: Device,
         type: T,
         size: number,
         { usage = BufferUsage.DYNAMIC_DRAW } = {},
@@ -75,7 +76,7 @@ export class VertexBuffer<T extends VertexBufferType> {
      * take ownership of data.
      */
     static withTypedArray<T extends VertexBufferType>(
-        dev: _Device,
+        dev: Device,
         type: T,
         data: VertexBufferTypeToTypedArray[T] | number[],
         { usage = BufferUsage.STATIC_DRAW }: VertexBufferOptions = {},
@@ -169,6 +170,6 @@ function createBuffer(
         case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
         case DataType.UNSIGNED_INT: return new Uint32Array(arr);
         case DataType.FLOAT: return new Float32Array(arr);
-        default: return assert.never(type, `nvalid buffer type: ${type}`);
+        default: return assert.never(type, (p) => `Invalid buffer type: ${p}`);
     }
 }

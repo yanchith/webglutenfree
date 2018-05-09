@@ -1,10 +1,15 @@
+/**
+ * This example loads some 3d models and draws them on the screen usgin goraud
+ * shading.
+ */
+
 import {
     Device,
     BufferBits,
     Command,
     DepthFunc,
     Attributes,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
 
 import * as cube from "./lib/cube.js";

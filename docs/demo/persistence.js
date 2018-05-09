@@ -1,4 +1,6 @@
 /**
+ * This example demonstrates a CRT persistence postprocessing effect.
+ *
  * Persistence technique inspired by the excellent talk by Gregg Tavares:
  * https://www.youtube.com/watch?v=rfQ8rKGTVlg#t=31m42s
  */
@@ -13,7 +15,7 @@ import {
     Texture,
     TextureInternalFormat as TexIntFmt,
     Framebuffer,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
 
 import * as bunny from "./lib/bunny.js"
@@ -24,19 +26,8 @@ const dev = Device.create({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const newFrameTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
-const depthTex = Texture.create(
-    dev,
-    width,
-    height,
-    TexIntFmt.DEPTH_COMPONENT24,
-);
-const newFrameFbo = Framebuffer.create(
-    dev,
-    width,
-    height,
-    newFrameTex,
-    depthTex,
-);
+const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24);
+const newFrameFbo = Framebuffer.create(dev, width, height, newFrameTex, depthTex);
 
 const pingTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
 const pingFbo = Framebuffer.create(dev, width, height, pingTex);
@@ -190,12 +181,8 @@ let pong = {
 }
 
 const loop = time => {
-    /*
-
-    By repeating the following process, we gain a buildup of past frame memory
-    in our ping/pong buffers, with an exponential falloff.
-
-    */
+    // By repeating the following process, we gain a buildup of past frame memory
+    // in our ping/pong buffers, with an exponential falloff.
 
     // First draw the scene to a "newFrame" fbo
     newFrameFbo.target(rt => {

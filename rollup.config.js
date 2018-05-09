@@ -1,23 +1,20 @@
 import pluginReplace from "rollup-plugin-replace";
 import pluginUglify from "rollup-plugin-uglify";
-import { minify } from "uglify-es";
 
-const FMT = process.env.FMT;
-const PROD = process.env.PROD === "true";
-const MIN = process.env.MIN === "true";
+const FMT = process.env.FMT || "umd";
+const ENV = typeof process.env.ENV === "string" && process.env.ENV.startsWith("p")
+    ? "production"
+    : "development";
 
-const plugins = [];
+const MIN = typeof process.env.MIN === "string" && process.env.MIN.startsWith("t");
 
-if (PROD) {
-    plugins.push(pluginReplace({
-        values: { "process.env.NODE_ENV": JSON.stringify("production") },
-    }));
-}
-if (MIN) { plugins.push(pluginUglify({}, minify)); }
+const plugins = [
+    pluginReplace({ "process.env.NODE_ENV": JSON.stringify(ENV) }),
+    MIN ? pluginUglify() : null,
+].filter(plugin => !!plugin);
 
-
-const prodPart = PROD ? ".production" : "";
-const fmtPart = FMT === "umd" ? ".umd" : "";
+const fmtPart = `.${FMT}`;
+const prodPart = ENV === "production" ? ".prod" : "";
 const minPart = MIN ? ".min" : "";
 
 export default {

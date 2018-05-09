@@ -1,13 +1,10 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
 import { Primitive, DataType } from "./types";
-import { Device as _Device } from "./device";
 import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
-import {
-    ElementBuffer,
-    ElementBufferType,
-    ElementArray,
-} from "./element-buffer";
+import { ElementBuffer, ElementBufferType, ElementArray } from "./element-buffer";
+
+export type Device = import ("./device").Device;
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 
@@ -102,13 +99,15 @@ export class Attributes {
      * count will be given to gl.drawArrays()
      */
     static create(
-        dev: _Device,
+        dev: Device,
         elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>,
         attributes: AttributesConfig,
         { countLimit }: AttributesCreateOptions = {},
     ): Attributes {
         if (typeof countLimit === "number") {
-            assert.greater(countLimit, 0, "Count limit must be greater than 0");
+            assert.gt(countLimit, 0, (p) => {
+                return `Count limit must be greater than 0, got: ${p}`;
+            });
         }
 
         const attrs = Object.entries(attributes)
@@ -135,17 +134,17 @@ export class Attributes {
             ? elementBuffer.length
             : attrs.length
                 ? attrs
-                    .map(attr => attr.count)
+                    .map((attr) => attr.count)
                     .reduce((min, curr) => Math.min(min, curr))
                 : 0;
         const count = typeof countLimit === "number"
             ? Math.min(countLimit, inferredCount)
             : inferredCount;
 
-        const instAttrs = attrs.filter(attr => !!attr.divisor);
+        const instAttrs = attrs.filter((attr) => !!attr.divisor);
         const instanceCount = instAttrs.length
             ? instAttrs
-                .map(attr => attr.count * attr.divisor)
+                .map((attr) => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
 
@@ -164,7 +163,7 @@ export class Attributes {
      * gl calls, only remembers the count for `gl.drawArrays()`
      */
     static empty(
-        dev: _Device,
+        dev: Device,
         primitive: Primitive,
         count: number,
     ): Attributes {
@@ -178,14 +177,14 @@ export class Attributes {
 
     readonly glVertexArray: WebGLVertexArrayObject | null;
 
-    private dev: _Device;
+    private dev: Device;
 
     // The buffers
     private attributes: AttributeDescriptor[];
     private elementBuffer?: ElementBuffer<ElementBufferType>;
 
     private constructor(
-        dev: _Device,
+        dev: Device,
         primitive: Primitive,
         attributes: AttributeDescriptor[],
         count: number,
@@ -219,7 +218,7 @@ export class Attributes {
     restore(): void {
         const { dev: { _gl }, glVertexArray, attributes, elementBuffer } = this;
         if (elementBuffer) { elementBuffer.restore(); }
-        attributes.forEach(attr => attr.buffer.restore());
+        attributes.forEach((attr) => attr.buffer.restore());
         // If we have no attributes nor elements, there is no need to restore
         // any GPU state
         if (!this.hasAttribs() && !_gl.isVertexArray(glVertexArray)) {
@@ -304,7 +303,7 @@ export class Attributes {
 class AttributeDescriptor {
 
     static create(
-        dev: _Device,
+        dev: Device,
         location: number,
         props: AttributeConfig,
     ): AttributeDescriptor {

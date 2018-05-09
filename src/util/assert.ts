@@ -1,75 +1,109 @@
 /**
  * This file is an exercise in preprocessor voodoo.
  *
- * "process.env.NODE_ENV", gets suplied by the string replacer during a
- * custom build or our production build. If "production", constant evaluation
- * will eliminate the if blocks, making the functions no-ops, in turn eligible
- * for elimination from their callsites.
+ * "process.env.NODE_ENV", gets suplied by the string replacer during build.
+ * If "production", constant evaluation will eliminate the if blocks, making
+ * the functions no-ops, in turn eligible for elimination from their callsites.
  *
- * While cool, this disables us to return values from the asserts, which would
- * make for a slightly nice programming model: const checkedVal = truthy(val)
+ * It seems that newer versions of rollup no longer prune the functions away
+ * due to some pessimization.
  */
 
-// This does not get replaced and serves as a default value. If all its uses
-// are eliminated, the value itself is pruned as well.
-const process = {
-    env: {
-        NODE_ENV: "development",
-    },
-};
+// Declare "process.env.NODE_ENV" so everything typechecks.
+// Replacer plugin always provides "development" or "production".
+declare const process: { env: { NODE_ENV: string } };
 
-export function nonNull<T>(p: T | null | undefined, msg?: string): void {
+export function nonNull(p: any, fmt?: (got: string) => string): void {
     if (process.env.NODE_ENV !== "production") {
         if (typeof p === "undefined" || typeof p === "object" && !p) {
-            throw new Error(fmt(msg || `object is undefined or null`));
+            const msg = fmt
+                ? fmt(p)
+                : `Assertion failed: object is undefined or null`;
+            throw new Error(msg);
         }
     }
 }
 
-export function nonEmpty<T>(p: T[], msg?: string): void {
-    if (process.env.NODE_ENV !== "production") {
-        if (!p.length) {
-            throw new Error(fmt(msg || `array is empty`));
-        }
-    }
-}
-
-export function equal<T>(p: T, expected: T, msg?: string): void {
-    if (process.env.NODE_ENV !== "production") {
-        if (p !== expected) {
-            throw new Error(
-                fmt(msg || `values not equal, expected ${expected}, got ${p}`));
-        }
-    }
-}
-
-export function greater(p: number, low: number, msg?: string): void {
-    if (process.env.NODE_ENV !== "production") {
-        if (p <= low) {
-            throw new Error(fmt(msg || `value ${p} not greater than low`));
-        }
-    }
-}
-
-export function range(
-    p: number,
-    start: number,
-    end: number,
-    msg?: string,
+export function nonEmpty(
+    p: string | any[],
+    fmt?: (got: string | any[]) => string,
 ): void {
     if (process.env.NODE_ENV !== "production") {
-        if (p < start || p > end) {
-            throw new Error(fmt(msg || `value ${p} not in [${start}, ${end}]`));
+        if (!p.length) {
+            const msg = fmt
+                ? fmt(p)
+                : `Assertion failed: string or array is empty`;
+            throw new Error(msg);
         }
     }
 }
 
-export function never(p: never, msg?: string): never {
-    // "never" can not be eliminated, as its "return value" is actually captured
-    // at the callsites. It should never be invoked, though.
-    throw new Error((msg || `unexpected object: ${p}`));
+export function equal<T>(
+    p: T,
+    expected: T,
+    fmt?: (got: T, expected: T) => string,
+): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (p !== expected) {
+            const msg = fmt
+                ? fmt(p, expected)
+                : `Assertion failed: values not equal. Expected ${expected}, got ${p}`;
+            throw new Error(msg);
+        }
+    }
 }
 
-function fmt(msg: string): string {
-    return `Assertion Failed: ${msg}`;
+export function oneOf<T>(
+    p: T,
+    expected: T[],
+    fmt?: (got: T, expected: T[]) => string,
+): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (!expected.includes(p)) {
+            const msg = fmt
+                ? fmt(p, expected)
+                : `Assertion failed: Value ${p} is not one of expected ${expected}`;
+            throw new Error(msg);
+        }
+    }
+}
+
+export function gt(
+    p: number,
+    low: number,
+    fmt?: (got: number, low: number) => string,
+): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (p <= low) {
+            const msg = fmt
+                ? fmt(p, low)
+                : `Assertion failed: Value ${p} is lower or equal than expected ${low}`;
+            throw new Error(msg);
+        }
+    }
+}
+
+export function rangeInclusive(
+    p: number,
+    low: number,
+    high: number,
+    fmt?: (got: number, low: number, high: number) => string,
+): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (p < low || p > high) {
+            const msg = fmt
+                ? fmt(p, low, high)
+                : `Assertion failed: Value ${p} is not in inclusive range [${low}, ${high}]`;
+            throw new Error(msg);
+        }
+    }
+}
+
+export function never(p: never, fmt?: (p: any) => string): never {
+    // "never" can not be eliminated, as its "return value" is actually captured
+    // at the callsites for control-flow.
+    const msg = fmt
+        ? fmt(p)
+        : `Assertion failed: This branch should be unreachable`;
+    throw new Error(msg);
 }

@@ -1,13 +1,17 @@
 import * as assert from "./util/assert";
-import { Device as _Device } from "./device";
-import { AttributesConfig } from "./attributes";
-import { Texture as _Texture, TextureInternalFormat } from "./texture";
+import { TextureInternalFormat } from "./texture";
+
+declare const process: { env: { NODE_ENV: string } };
+
+export type Device = import ("./device").Device;
+export type Texture<T> = import ("./texture").Texture<T>;
+export type AttributesConfig = import ("./attributes").AttributesConfig;
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 
 export type Accessor<P, R> = R | ((props: P, index: number) => R);
-export type TextureAccessor<P> = Accessor<P, _Texture<TextureInternalFormat>>;
+export type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
 export interface Textures<P> { [name: string]: TextureAccessor<P>; }
 export interface Uniforms<P> { [name: string]: Uniform<P>; }
 
@@ -252,8 +256,8 @@ export enum BlendEquation {
 
 export class Command<P> {
 
-    static create<P>(
-        dev: _Device,
+    static create<P = void>(
+        dev: Device,
         vert: string,
         frag: string,
         {
@@ -264,38 +268,38 @@ export class Command<P> {
             blend,
         }: CommandOptions<P> = {},
     ): Command<P> {
-        assert.nonNull(vert, fmtAssertNonNull("vert"));
-        assert.nonNull(frag, "frag");
+        assert.nonNull(vert, fmtParamNonNull("vert"));
+        assert.nonNull(frag, fmtParamNonNull("frag"));
         if (depth) {
-            assert.nonNull(depth.func, fmtAssertNonNull("depth.func"));
+            assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
         }
         if (blend) {
-            assert.nonNull(blend.func, fmtAssertNonNull("blend.func"));
-            assert.nonNull(blend.func.src, fmtAssertNonNull("blend.func.src"));
-            assert.nonNull(blend.func.dst, fmtAssertNonNull("blend.func.dst"));
+            assert.nonNull(blend.func, fmtParamNonNull("blend.func"));
+            assert.nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+            assert.nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
             if (typeof blend.func.src === "object") {
                 assert.nonNull(
                     blend.func.src.rgb,
-                    fmtAssertNonNull("blend.func.src.rgb"),
+                    fmtParamNonNull("blend.func.src.rgb"),
                 );
                 assert.nonNull(
                     blend.func.src.alpha,
-                    fmtAssertNonNull("blend.func.src.alpha"),
+                    fmtParamNonNull("blend.func.src.alpha"),
                 );
             }
             if (typeof blend.func.dst === "object") {
                 assert.nonNull(
                     blend.func.dst.rgb,
-                    fmtAssertNonNull("blend.func.dst.rgb"),
+                    fmtParamNonNull("blend.func.dst.rgb"),
                 );
                 assert.nonNull(
                     blend.func.dst.alpha,
-                    fmtAssertNonNull("blend.func.dst.alpha"),
+                    fmtParamNonNull("blend.func.dst.alpha"),
                 );
             }
         }
         if (stencil) {
-            assert.nonNull(stencil.func, fmtAssertNonNull("stencil.func"));
+            assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
             // TODO: complete stencil validation... validation framework?
         }
 
@@ -322,14 +326,14 @@ export class Command<P> {
     readonly textureAccessors: TextureAccessor<P>[];
     readonly uniformDescrs: UniformDescriptor<P>[];
 
-    private dev: _Device;
+    private dev: Device;
     private vsSource: string;
     private fsSource: string;
     private textures: Textures<P>;
     private uniforms: Uniforms<P>;
 
     private constructor(
-        dev: _Device,
+        dev: Device,
         vsSource: string,
         fsSource: string,
         textures: Textures<P>,
@@ -400,6 +404,16 @@ export class Command<P> {
 
         _gl.deleteShader(vs);
         _gl.deleteShader(fs);
+
+        // Validation time! (only for nonproduction envs)
+
+        if (process.env.NODE_ENV !== "production") {
+            if (!prog) {
+                // ctx loss or not, we can panic all we want in nonprod env!
+                throw new Error("Program was not compiled, possible reason: context loss");
+            }
+            validateUniformDeclarations(_gl, prog, uniforms, textures);
+        }
 
         _stackProgram.push(prog);
 
@@ -546,7 +560,7 @@ export class Command<P> {
                     default: assert.never(u);
                 }
             } else {
-                // Store a descriptor for lazy values and textures for later use
+                // Store a descriptor for lazy values for later use
                 uniformDescrs.push(new UniformDescriptor(ident, loc, u));
             }
         });
@@ -817,6 +831,182 @@ function createShader(
     throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
 }
 
-function fmtAssertNonNull(name: string): string {
-    return `${name}`;
+type UniformTypeDeclaration = Uniform<any>["type"];
+interface UniformTypeDeclarations {
+    [name: string]: { type: UniformTypeDeclaration };
+}
+interface TextureDeclarations {
+    [name: string]: any;
+}
+
+/**
+ * Check whether the uniforms declared in shaders and command strictly match.
+ * There may be no missing or redundant uniforms on either side and types of
+ * provided uniforms must match exactly
+ */
+function validateUniformDeclarations(
+    gl: WebGL2RenderingContext,
+    prog: WebGLProgram,
+    uniforms: UniformTypeDeclarations,
+    textures: TextureDeclarations,
+): void {
+    const nUniforms = gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS);
+    const progUniforms = new Map<string, WebGLActiveInfo>();
+    for (let i = 0; i < nUniforms; ++i) {
+        const info = gl.getActiveUniform(prog, i)!;
+        // Naming collision-wise, it is safe to trim "[0]"
+        // It only indicates an array uniform, which we can not validate too well
+        const key = info.name.includes("[0]")
+            ? info.name.substring(0, info.name.length - 3)
+            : info.name;
+        progUniforms.set(key, info);
+    }
+
+    // The "list" of uniforms left to check from the program's perspective
+    const toCheck = new Set(progUniforms.keys());
+
+    Object.entries(uniforms).map(([name, tyObj]) => {
+        const type = tyObj.type;
+        if (progUniforms.has(name)) {
+            const progUniform = progUniforms.get(name)!;
+            validateUniformDeclaration(gl, progUniform, type);
+        } else {
+            throw new Error(`Redundant uniform [name = ${name}, type = ${type}]`);
+        }
+        toCheck.delete(name);
+    });
+
+    Object.keys(textures).map((name) => {
+        if (progUniforms.has(name)) {
+            const progUniform = progUniforms.get(name)!;
+            validateUniformDeclaration(gl, progUniform, "1i");
+        } else {
+            throw new Error(`Redundant texture [name = ${name}]`);
+        }
+        toCheck.delete(name);
+    });
+
+    if (toCheck.size) {
+        const names = [...toCheck].join(", ");
+        throw new Error(`Missing uniforms: ${names}`);
+    }
+}
+
+
+function validateUniformDeclaration(
+    gl: WebGL2RenderingContext,
+    info: WebGLActiveInfo,
+    type: UniformTypeDeclaration,
+): void {
+    switch (type) {
+        case "1f":
+            assert.equal(info.type, gl.FLOAT, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "1fv":
+            assert.equal(info.type, gl.FLOAT, fmtTyMismatch(info.name));
+            break;
+        case "1i":
+            assert.oneOf(info.type, [
+                gl.INT,
+                gl.SAMPLER_2D,
+                // gl.SAMPLER_CUBE,
+            ], fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "1iv":
+            assert.equal(info.type, gl.INT, fmtTyMismatch(info.name));
+            break;
+        case "1ui":
+            assert.equal(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "1uiv":
+            assert.equal(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
+            break;
+        case "2f":
+            assert.equal(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "2fv":
+            assert.equal(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
+            break;
+        case "2i":
+            assert.equal(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "2iv":
+            assert.equal(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
+            break;
+        case "2ui":
+            assert.equal(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "2uiv":
+            assert.equal(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
+            break;
+        case "3f":
+            assert.equal(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "3fv":
+            assert.equal(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
+            break;
+        case "3i":
+            assert.equal(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "3iv":
+            assert.equal(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
+            break;
+        case "3ui":
+            assert.equal(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "3uiv":
+            assert.equal(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
+            break;
+        case "4f":
+            assert.equal(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "4fv":
+            assert.equal(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
+            break;
+        case "4i":
+            assert.equal(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "4iv":
+            assert.equal(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
+            break;
+        case "4ui":
+            assert.equal(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "4uiv":
+            assert.equal(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
+            break;
+        case "matrix2fv":
+            assert.equal(info.type, gl.FLOAT_MAT2, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "matrix3fv":
+            assert.equal(info.type, gl.FLOAT_MAT3, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        case "matrix4fv":
+            assert.equal(info.type, gl.FLOAT_MAT4, fmtTyMismatch(info.name));
+            assert.equal(info.size, 1);
+            break;
+        default: assert.never(type);
+    }
+}
+
+function fmtParamNonNull(name: string): () => string {
+    return () => `Missing parameter ${name}`;
+}
+
+function fmtTyMismatch(name: string): () => string {
+    return () => `Type mismatch for uniform field ${name}`;
 }

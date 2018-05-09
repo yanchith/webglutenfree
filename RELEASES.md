@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+
+-   (None yet)
+
+## v0.0.7 (02/05/2018)
 #### Fixes:
 
 -   Fix a bug in binding depth and depth-stencil framebuffer attachments
@@ -9,6 +13,12 @@
 
 -   Improve framebuffer attachment inference and slim down its constructors to
     just `Framebuffer.create`
+-   `texture.store()` now accepts additional options, width and height
+-   Improve type signature of `target.draw()` by allowing skipping props for
+    `Command<void>` types. Also change `Command.create()` to create `Command<void>`
+    by default, unless explicit type parameter `P` is passed.
+-   Improve validation messages
+-   Validate uniform shapes and types in development mode
 
 
 ## v0.0.6 (22/02/2018)

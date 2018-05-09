@@ -1,86 +1,77 @@
 /**
+ * This example demonstrates a common postprocessing technique called bloom.
+ *
  * Bloom technique inspired by https://learnopengl.com/Advanced-Lighting/Bloom
  * Tron line shader inspired by https://www.youtube.com/watch?v=DI498yX-6XM
  */
 
 import {
     Device,
+    Extension,
     BufferBits,
     Command,
     DepthFunc,
     Attributes,
     Primitive,
     Texture,
-    TextureInternalFormat as TexFmt,
+    TextureInternalFormat as TexIntFmt,
     TextureFilter,
     Framebuffer,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { vec2, mat4 } from "./lib/gl-matrix-min.js";
 
 import * as uvCube from "./lib/uv-cube.js"
 
 const kernels = {
-    blur3: [0.27901, 0.44198, 0.27901],
-    blur5: [0.06136, 0.24477, 0.38774, 0.24477, 0.06136],
-    blur9: [
-        0.000229,
-        0.005977,
-        0.060598,
-        0.241732,
-        0.382928,
-        0.241732,
-        0.060598,
-        0.005977,
-        0.000229,
-    ],
+    blur3: [0.44198, 0.27901],
+    blur5: [0.38774, 0.24477, 0.06136],
+    blur9: [0.382928, 0.241732, 0.060598, 0.005977, 0.000229],
 }
 
-const N_BLOOM_PASSES = 4;
+const N_BLOOM_PASSES = 2;
+const BLUR_TEXTURE_SIZE_FACTOR = 0.5;
 const KERNEL = kernels.blur3;
 
-const dev = Device.create();
+// Use extensions so we can render to 32 bit float textures and use linear
+// filtering with them
+const dev = Device.create({
+    extensions: [
+        Extension.EXTColorBufferFloat,
+        Extension.OESTextureFloatLinear,
+    ],
+});
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 // We blur smaller textures for better performance
-const [bWidth, bHeight] = [width / 2, height / 2];
+const [blurWidth, blurHeight] = [
+    width * BLUR_TEXTURE_SIZE_FACTOR,
+    height * BLUR_TEXTURE_SIZE_FACTOR,
+];
 
-const initialTex = Texture.create(dev, width, height, TexFmt.RGBA8, {
+const colorTex = Texture.create(dev, width, height, TexIntFmt.RGBA32F, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
-const depthTex = Texture.create(dev, width, height, TexFmt.DEPTH_COMPONENT24, {
-    min: TextureFilter.LINEAR,
-    mag: TextureFilter.LINEAR,
-});
-const initialFbo = Framebuffer.create(dev, width, height, initialTex, depthTex);
 
-const splitColorTex = Texture.create(dev, width, height, TexFmt.RGBA8, {
-    min: TextureFilter.LINEAR,
-    mag: TextureFilter.LINEAR,
-});
-const splitBrightTex = Texture.create(dev, width, height, TexFmt.RGBA8, {
-    min: TextureFilter.LINEAR,
-    mag: TextureFilter.LINEAR,
-});
-const splitFbo = Framebuffer.create(dev, width, height, [
-    splitColorTex,
-    splitBrightTex,
-]);
+const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24);
 
-const bloomPingTex = Texture.create(dev, bWidth, bHeight, TexFmt.RGBA8, {
+const pingTex = Texture.create(dev, blurWidth, blurHeight, TexIntFmt.RGBA32F, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
-const bloomPingFbo = Framebuffer.create(dev, bWidth, bHeight, bloomPingTex);
 
-const bloomPongTex = Texture.create(dev, bWidth, bHeight, TexFmt.RGBA8, {
+const pongTex = Texture.create(dev, blurWidth, blurHeight, TexIntFmt.RGBA32F, {
     min: TextureFilter.LINEAR,
     mag: TextureFilter.LINEAR,
 });
-const bloomPongFbo = Framebuffer.create(dev, bWidth, bHeight, bloomPongTex);
+
+const sceneFbo = Framebuffer.create(dev, width, height, colorTex, depthTex);
+const pingFbo = Framebuffer.create(dev, blurWidth, blurHeight, pingTex);
+const pongFbo = Framebuffer.create(dev, blurWidth, blurHeight, pongTex);
 
 const view = mat4.create();
 
+// This vertex shader just renders one huge triangle to cover the screenspace.
 const screenspaceVS = `#version 300 es
 precision mediump float;
 
@@ -104,6 +95,7 @@ void main() {
 }
 `;
 
+// Draw the scene as usual
 const cmdDraw = Command.create(
     dev,
     `#version 300 es
@@ -131,7 +123,7 @@ const cmdDraw = Command.create(
 
         in vec2 v_tex_coord;
 
-        out vec4 f_color;
+        layout (location = 0) out vec4 f_color;
 
         const vec3 u_color = vec3(0.1, 0.475, 0.811);
         const float u_edge_thickness = 2.0;
@@ -157,7 +149,7 @@ const cmdDraw = Command.create(
                     view,
                     [
                         200 * Math.cos(time / 9000),
-                        200,
+                        155,
                         200 * Math.sin(time / 9000),
                     ],
                     [0, 0, 0],
@@ -183,7 +175,9 @@ const cmdDraw = Command.create(
     },
 );
 
-const cmdSplit = Command.create(
+// Separate btight pixels into a separate framebuffer. Bloom works by blurring
+// bright areas.
+const cmdSep = Command.create(
     dev,
     screenspaceVS,
     `#version 300 es
@@ -193,25 +187,28 @@ const cmdSplit = Command.create(
 
         in vec2 v_tex_coord;
 
-        // Set explicit locations for Framebuffer attachments
         layout (location = 0) out vec4 f_color;
-        layout (location = 1) out vec4 f_bright;
 
         void main() {
             vec4 color = texture(u_image, v_tex_coord);
 
             // Convert to grayscale and compute brightness
             float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-
-            f_color = color;
-            f_bright = brightness > 0.7 ? color : vec4(0.0, 0.0, 0.0, 1.0);
+            f_color = brightness > 0.7 ? color : vec4(0.0, 0.0, 0.0, 1.0);
         }
     `,
     {
-        textures: { u_image: initialTex },
+        textures: { u_image: colorTex },
     },
 );
 
+// Blur the input texture, write results to the output texture. Blur occurs
+// along one axis only to save performance. This has to be called twice to
+// achieve a full 2d blur.
+// Except for the 0-th pixel, we will sample the texture between pixels with
+// stride of 2 pixels. Linear sampling will provide interpolated values.
+// This extends the reach of blur without adversely affecting output too much,
+// allowing us to use fewer blur passes to the same effect.
 const cmdBlur = Command.create(
     dev,
     screenspaceVS,
@@ -222,25 +219,25 @@ const cmdBlur = Command.create(
 
         uniform sampler2D u_image;
         uniform float[KERNEL_LENGTH] u_kernel;
-        uniform vec2 u_blur_direction;
+        uniform vec2 u_direction;
 
         in vec2 v_tex_coord;
 
-        out vec4 color;
+        layout (location = 0) out vec4 f_color;
 
         void main() {
-            vec2 px_direction = vec2(1) / vec2(textureSize(u_image, 0))
-                * u_blur_direction;
-            int half_length = (KERNEL_LENGTH - 1) / 2;
+            vec2 two_px = u_direction * vec2(2) / vec2(textureSize(u_image, 0));
+            vec2 half_px = two_px / 4.0;
 
-            vec4 color_sum = vec4(0.0);
-            for (int i = 0; i < KERNEL_LENGTH; i++) {
-                vec2 offset_coord = px_direction * vec2(i - half_length);
-                color_sum += texture(u_image, v_tex_coord + offset_coord)
-                    * u_kernel[i];
+            vec4 color_sum = u_kernel[0] * texture(u_image, v_tex_coord);
+            for (int i = 1; i < KERNEL_LENGTH; i++) {
+                float k = u_kernel[i];
+                vec2 offset = two_px * float(i) - half_px;
+                color_sum += k * texture(u_image,  offset + v_tex_coord);
+                color_sum += k * texture(u_image, -offset + v_tex_coord);
             }
 
-            color = vec4(color_sum.rgb, 1.0);
+            f_color = color_sum;
         }
     `,
     {
@@ -250,7 +247,7 @@ const cmdBlur = Command.create(
                 type: "1fv",
                 value: KERNEL,
             },
-            u_blur_direction: {
+            u_direction: {
                 type: "2f",
                 value: ({ direction }) => direction,
             },
@@ -258,6 +255,8 @@ const cmdBlur = Command.create(
     },
 );
 
+// Merge the original renderd scene with the blurred highlights, performing
+// tonemapping along the way.
 const cmdMerge = Command.create(
     dev,
     screenspaceVS,
@@ -290,8 +289,8 @@ const cmdMerge = Command.create(
     `,
     {
         textures: {
-            u_image_color: splitColorTex,
-            u_image_bloom: bloomPingTex,
+            u_image_color: colorTex,
+            u_image_bloom: pingTex,
         },
     },
 );
@@ -304,54 +303,37 @@ const modelAttrs = Attributes.create(dev, uvCube.elements, {
 });
 
 
-const nBloomPasses = Math.max(0, N_BLOOM_PASSES);
-
 const HORIZONTAL = vec2.fromValues(1, 0);
 const VERTICAL = vec2.fromValues(0, 1);
 
 const loop = time => {
     // Render geometry into texture
-    initialFbo.target(rt => {
+    sceneFbo.target(rt => {
         rt.clear(BufferBits.COLOR_DEPTH);
         rt.draw(cmdDraw, modelAttrs, { time });
     });
 
-    // Split color and brightness to 2 textures (splitColor, splitBright)
-    splitFbo.target(rt => rt.draw(cmdSplit, screenspaceAttrs));
+    // separate bright colors to ping texture
+    pingFbo.target(rt => rt.draw(cmdSep, screenspaceAttrs));
 
-    if (nBloomPasses) {
-        // Do first 2 bloom passes: splitBright -> bloomPong -> bloomPing
-        bloomPongFbo.target(rt => {
+    // Repeat as many blur passes as wanted...
+    for (let i = 0; i < N_BLOOM_PASSES; i++) {
+        pongFbo.target(rt => {
             rt.draw(cmdBlur, screenspaceAttrs, {
-                source: splitBrightTex,
+                source: pingTex,
                 direction: HORIZONTAL,
             });
         });
-        bloomPingFbo.target(rt => {
+        pingFbo.target(rt => {
             rt.draw(cmdBlur, screenspaceAttrs, {
-                source: bloomPongTex,
+                source: pongTex,
                 direction: VERTICAL,
             });
         });
-
-        // Loop additional bloom passes: bloomRead -> bloomWrite -> bloomRead
-        for (let i = 1; i < nBloomPasses; i++) {
-            bloomPongFbo.target(rt => {
-                rt.draw(cmdBlur, screenspaceAttrs, {
-                    source: bloomPingTex,
-                    direction: HORIZONTAL,
-                });
-            });
-            bloomPingFbo.target(rt => {
-                rt.draw(cmdBlur, screenspaceAttrs, {
-                    source: bloomPongTex,
-                    direction: VERTICAL,
-                });
-            });
-        }
     }
 
     // Blend together blurred highlights with original color, tonemap
+    // Since textures are sampled, they can be of different sizes
     dev.target(rt => {
         rt.draw(cmdMerge, screenspaceAttrs);
     });

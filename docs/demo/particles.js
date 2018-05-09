@@ -1,3 +1,8 @@
+/**
+ * This example demonstrates a simple particle system using instancing and
+ * per-frame buffer updates.
+ */
+
 import {
     Device,
     BufferBits,
@@ -9,7 +14,7 @@ import {
     BufferUsage,
     DataType,
     Primitive,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { mat3, mat4 } from "./lib/gl-matrix-min.js";
 
 const N_PARTICLES = 5000;
@@ -18,8 +23,6 @@ const CAMERA_DISTANCE = 10000;
 const SCALE = 1000;
 const PARTICLE_SCALE = 0.015;
 const FOV = Math.PI / 4;
-const Z_NEAR = 0.1;
-const Z_FAR = 1000000;
 
 const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -75,8 +78,8 @@ const cmd = Command.create(
                     mat4.create(),
                     FOV,
                     width / height,
-                    Z_NEAR,
-                    Z_FAR,
+                    0.1,
+                    100000,
                 ),
             },
             u_view: {

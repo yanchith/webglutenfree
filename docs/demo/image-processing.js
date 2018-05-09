@@ -1,4 +1,7 @@
 /**
+ * This example shows how we can process images in a data-driven fashion by
+ * exchanging kernels.
+ *
  * Kernel convolutions inspired by:
  * https://webgl2fundamentals.org/webgl/lessons/webgl-image-processing.html
  */
@@ -8,14 +11,14 @@ import {
     Command,
     Attributes,
     Texture,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
 import { loadImage } from "./lib/load-image.js";
 
 import * as square from "./lib/square.js"
 
 const kernels = {
-    normal: [
+    identity: [
         0, 0, 0,
         0, 1, 0,
         0, 0, 0,
@@ -82,18 +85,18 @@ async function run() {
             out vec4 f_color;
 
             void main() {
-                vec2 pix = vec2(1) / vec2(textureSize(u_image, 0));
+                vec2 px = vec2(1) / vec2(textureSize(u_image, 0));
                 float[9] k = u_kernel;
                 vec4 color_sum =
-                    texture(u_image, v_tex_coord + pix * vec2(-1, -1)) * k[0] +
-                    texture(u_image, v_tex_coord + pix * vec2( 0, -1)) * k[1] +
-                    texture(u_image, v_tex_coord + pix * vec2( 1, -1)) * k[2] +
-                    texture(u_image, v_tex_coord + pix * vec2(-1,  0)) * k[3] +
-                    texture(u_image, v_tex_coord + pix * vec2( 0,  0)) * k[4] +
-                    texture(u_image, v_tex_coord + pix * vec2( 1,  0)) * k[5] +
-                    texture(u_image, v_tex_coord + pix * vec2(-1,  1)) * k[6] +
-                    texture(u_image, v_tex_coord + pix * vec2( 0,  1)) * k[7] +
-                    texture(u_image, v_tex_coord + pix * vec2( 1,  1)) * k[8] ;
+                    texture(u_image, px * vec2(-1, -1) + v_tex_coord) * k[0] +
+                    texture(u_image, px * vec2( 0, -1) + v_tex_coord) * k[1] +
+                    texture(u_image, px * vec2( 1, -1) + v_tex_coord) * k[2] +
+                    texture(u_image, px * vec2(-1,  0) + v_tex_coord) * k[3] +
+                    texture(u_image, px * vec2( 0,  0) + v_tex_coord) * k[4] +
+                    texture(u_image, px * vec2( 1,  0) + v_tex_coord) * k[5] +
+                    texture(u_image, px * vec2(-1,  1) + v_tex_coord) * k[6] +
+                    texture(u_image, px * vec2( 0,  1) + v_tex_coord) * k[7] +
+                    texture(u_image, px * vec2( 1,  1) + v_tex_coord) * k[8] ;
                 f_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
             }
         `,

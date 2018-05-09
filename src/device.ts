@@ -100,7 +100,7 @@ export class Device {
         }: DeviceWithContextOptions = {},
     ): Device {
         if (extensions) {
-            extensions.forEach(ext => {
+            extensions.forEach((ext) => {
                 // We currently do not have extensions with callable API
                 if (!gl.getExtension(ext)) {
                     throw new Error(`Could not get extension ${ext}`);
@@ -128,6 +128,21 @@ export class Device {
     readonly _gl: WebGL2RenderingContext;
     readonly _canvas: HTMLCanvasElement;
 
+    // To manage state, we use multiple stacks of various state bits.
+    // Disregarding outside interference, the stack head should always be bound
+    // with the GL context - this is implemented with the change callbacks in
+    // device constructor. The callbacks also diff the current and previous
+    // values, so pushing a value a second time is a NOOP from WebGL perspective.
+    // This allows nested target drawing (since the API does not prevent it,
+    // we should at least do the correct thing, if not the fast one) by first
+    // pushing a stack value before the callback, and ensuring the value just
+    // before drawing.
+    //
+    // fbo.target(fbort => {
+    //   dev.target(rt => rt.draw(...));
+    //   fbort.draw(,,,);
+    // });
+
     readonly _stackVertexArray: Stack<WebGLVertexArrayObject | null>;
     readonly _stackProgram: Stack<WebGLProgram | null>;
     readonly _stackDepthTest: Stack<DepthDescriptor | null>;
@@ -141,7 +156,6 @@ export class Device {
     private explicitViewport?: [number, number];
 
     private backbufferTarget: Target;
-
 
     private constructor(
         gl: WebGL2RenderingContext,
@@ -247,6 +261,10 @@ export class Device {
             },
         );
 
+        // Note: DRAW_FRAMEBUFFER and READ_FRAMEBUFFER are handled separately
+        // to support blitting. In library code, gl.FRAMEBUFFER target must
+        // never be used, as it overwrites READ_FRAMEBUFFER and DRAW_FRAMEBUFFER
+
         this._stackDrawFramebuffer = new Stack<WebGLFramebuffer | null>(
             null,
             (prev, val) => prev === val
@@ -342,7 +360,7 @@ export class Device {
      * gl.BACK target.
      *
      * Drawing should be done within the callback by
-     * calling `ratget.clear()` or `target.draw()` family of methods.
+     * calling `target.clear()` or `target.draw()` family of methods.
      *
      * Also see `framebuffer.target()`.
      */

@@ -1,13 +1,12 @@
 import * as assert from "./util/assert";
 import { BufferBits, Primitive } from "./types";
-import { Device as _Device } from "./device";
-import {
-    Command as _Command,
-    UniformDescriptor as _UniformDescriptor,
-    TextureAccessor,
-} from "./command";
-import { Attributes as _Attributes } from "./attributes";
-import { Framebuffer as _Framebuffer } from "./framebuffer";
+
+export type Device = import ("./device").Device;
+export type Command<P> = import ("./command").Command<P>;
+export type UniformDescriptor<P> = import ("./command").UniformDescriptor<P>;
+export type TextureAccessor<P> = import ("./command").TextureAccessor<P>;
+export type Attributes = import ("./attributes").Attributes;
+export type Framebuffer = import ("./framebuffer").Framebuffer;
 
 export interface TargetClearOptions {
     r?: number;
@@ -25,7 +24,7 @@ export interface TargetClearOptions {
 export class Target {
 
     constructor(
-        private dev: _Device,
+        private dev: Device,
         readonly glDrawBuffers: number[],
         readonly glFramebuffer: WebGLFramebuffer | null,
         readonly width?: number,
@@ -63,9 +62,9 @@ export class Target {
 
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
-     * choose, which buffers to blit.
+     * choose buffers to blit.
      */
-    blit(source: _Framebuffer, bits: BufferBits): void {
+    blit(source: Framebuffer, bits: BufferBits): void {
         const {
             dev: { _gl, _stackReadFramebuffer },
             width,
@@ -111,11 +110,23 @@ export class Target {
     }
 
     /**
+     * Draw to this target with a void command and attributes.
+     */
+    draw(cmd: Command<void> | Command<undefined>, attrs: Attributes): void;
+    /**
      * Draw to this target with a command, attributes, and command properties.
      * The properties are passed to the command's uniform or texture callbacks,
      * if used.
      */
-    draw<P>(cmd: _Command<P>, attrs: _Attributes, props: P): void {
+    draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void;
+    /**
+     * Draw to this target with a command, attributes, and command properties.
+     * The properties are passed to the command's uniform or texture callbacks,
+     * if used.
+     *
+     * This is a unified header to stisfy the typechecker.
+     */
+    draw(cmd: Command<any>, attrs: Attributes, props?: any): void {
         const {
             dev: {
                 _stackVertexArray,
@@ -180,8 +191,8 @@ export class Target {
      * unnecesasry rebinding.
      */
     batch<P>(
-        cmd: _Command<P>,
-        cb: (draw: (attrs: _Attributes, props: P) => void) => void,
+        cmd: Command<P>,
+        cb: (draw: (attrs: Attributes, props: P) => void) => void,
     ): void {
         const {
             dev: {
@@ -214,7 +225,7 @@ export class Target {
 
         let iter = 0;
 
-        cb((attrs: _Attributes, props: P) => {
+        cb((attrs: Attributes, props: P) => {
             // with() ensures the original target is still bound
             this.with(() => {
                 iter++;
@@ -325,7 +336,7 @@ export class Target {
     }
 
     private uniforms<P>(
-        uniformDescrs: _UniformDescriptor<P>[],
+        uniformDescrs: UniformDescriptor<P>[],
         props: P,
         index: number,
     ): void {
@@ -448,7 +459,7 @@ export class Target {
                     );
                     break;
                 default:
-                    assert.never(def, `unknown uniform type: (${ident})`);
+                    assert.never(def, () => `Unknown uniform: ${ident}`);
                     break;
             }
         });

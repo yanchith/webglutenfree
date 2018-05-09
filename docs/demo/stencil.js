@@ -1,3 +1,9 @@
+/**
+ * This example utilizes stencil testing to draw simplistic outlines around
+ * rendered objects. This technique only works well for convex objects, as is
+ * clearly visible on the bunny and teapot models.
+ */
+
 import {
     Device,
     BufferBits,
@@ -6,7 +12,7 @@ import {
     DepthFunc,
     StencilFunc,
     StencilOp,
-} from "./lib/webglutenfree.js";
+} from "./lib/webglutenfree.es.js";
 import { mat4 } from "./lib/gl-matrix-min.js";
 
 import * as cube from "./lib/cube.js";
