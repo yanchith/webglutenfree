@@ -1,4 +1,4 @@
-declare export const positions: [number, number, number][];
-declare export const normals: [number, number, number][];
-declare export const elements: [number, number, number][];
+export declare const positions: [number, number, number][];
+export declare const normals: [number, number, number][];
+export declare const elements: [number, number, number][];
 
