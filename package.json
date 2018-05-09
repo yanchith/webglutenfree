@@ -38,8 +38,8 @@
     "predist:es:watch": "rimraf dist",
     "dist:es:watch": "cross-env FMT=es rollup --config --watch",
     "demolib": "yarn demolib:rm && yarn demolib:cp",
-    "demolib:rm": "rm docs/lib/webglutenfree.{es.js,es.js.map,d.ts}",
-    "demolib:cp": "cp dist/webglutenfree.{es.js,es.js.map,d.ts} docs/lib",
+    "demolib:rm": "rm docs/lib/{webglutenfree.es.js,webglutenfree.es.js.map,*.d.ts}",
+    "demolib:cp": "cp dist/{webglutenfree.es.js,webglutenfree.es.js.map,*.d.ts} docs/lib",
     "clean": "rimraf build && rimraf dist"
   },
   "dependencies": {
