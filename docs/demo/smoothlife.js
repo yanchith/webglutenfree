@@ -24,7 +24,7 @@ import {
     TextureInternalFormat as TexIntFmt,
     TextureFormat as TexFmt,
     Framebuffer,
-} from "./lib/webglutenfree.es.js";
+} from "./lib/webglutenfree.js";
 
 const [WIDTH, HEIGHT] = [256, 256];
 const KERNEL_RADIUS = 23;

@@ -11,11 +11,11 @@ import {
     Command,
     Attributes,
     Texture,
-} from "./lib/webglutenfree.es.js";
-import { mat4 } from "./lib/gl-matrix-min.js";
-import { loadImage } from "./lib/load-image.js";
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./libx/gl-matrix.js";
+import { loadImage } from "./libx/load-image.js";
 
-import * as square from "./lib/square.js"
+import * as square from "./libx/square.js"
 
 const kernels = {
     identity: [

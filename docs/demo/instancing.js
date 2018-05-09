@@ -17,8 +17,8 @@ import {
     Attributes,
     VertexBuffer,
     DataType,
-} from "./lib/webglutenfree.es.js";
-import { mat4 } from "./lib/gl-matrix-min.js";
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./libx/gl-matrix.js";
 
 const dev = Device.create();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];

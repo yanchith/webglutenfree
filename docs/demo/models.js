@@ -9,12 +9,12 @@ import {
     Command,
     DepthFunc,
     Attributes,
-} from "./lib/webglutenfree.es.js";
-import { mat4 } from "./lib/gl-matrix-min.js";
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./libx/gl-matrix.js";
 
-import * as cube from "./lib/cube.js";
-import * as bunny from "./lib/bunny.js";
-import * as teapot from "./lib/teapot.js";
+import * as cube from "./libx/cube.js";
+import * as bunny from "./libx/bunny.js";
+import * as teapot from "./libx/teapot.js";
 
 const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];

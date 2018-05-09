@@ -14,8 +14,8 @@ import {
     BufferUsage,
     DataType,
     Primitive,
-} from "./lib/webglutenfree.es.js";
-import { mat3, mat4 } from "./lib/gl-matrix-min.js";
+} from "./lib/webglutenfree.js";
+import { mat3, mat4 } from "./libx/gl-matrix.js";
 
 const N_PARTICLES = 5000;
 const WANDER_FACTOR = 0.005;

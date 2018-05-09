@@ -4,7 +4,7 @@
  * happening at every step.
  */
 
-import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.es.js";
+import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.js";
 
 // The device is the entry point to the API, analogous to a WebGL context.
 // It has multiple constructors, Device.create() being the most convenient, as

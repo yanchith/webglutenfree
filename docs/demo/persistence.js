@@ -15,10 +15,10 @@ import {
     Texture,
     TextureInternalFormat as TexIntFmt,
     Framebuffer,
-} from "./lib/webglutenfree.es.js";
-import { mat4 } from "./lib/gl-matrix-min.js";
+} from "./lib/webglutenfree.js";
+import { mat4 } from "./libx/gl-matrix.js";
 
-import * as bunny from "./lib/bunny.js"
+import * as bunny from "./libx/bunny.js"
 
 const PERSISTENCE_FACTOR = 0.8;
 

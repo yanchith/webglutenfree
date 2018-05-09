@@ -13,7 +13,7 @@ const plugins = [
     MIN ? pluginUglify() : null,
 ].filter(plugin => !!plugin);
 
-const fmtPart = `.${FMT}`;
+const fmtPart = FMT === "es" ? "" : `.${FMT}`;
 const prodPart = ENV === "production" ? ".prod" : "";
 const minPart = MIN ? ".min" : "";
 

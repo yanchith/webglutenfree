@@ -16,8 +16,8 @@
   "author": "yanchith",
   "license": "MIT",
   "main": "dist/webglutenfree.umd.js",
-  "module": "dist/webglutenfree.es.js",
-  "jsnext:main": "dist/webglutenfree.es.js",
+  "module": "dist/webglutenfree.js",
+  "jsnext:main": "dist/webglutenfree.js",
   "types": "dist/webglutenfree.d.ts",
   "scripts": {
     "serve": "http-server docs -p 8000",
@@ -38,8 +38,8 @@
     "predist:es:watch": "rimraf dist",
     "dist:es:watch": "cross-env FMT=es rollup --config --watch",
     "demolib": "yarn demolib:rm && yarn demolib:cp",
-    "demolib:rm": "rm docs/lib/{webglutenfree.es.js,webglutenfree.es.js.map,*.d.ts}",
-    "demolib:cp": "cp dist/{webglutenfree.es.js,webglutenfree.es.js.map,*.d.ts} docs/lib",
+    "demolib:rm": "rm docs/lib/{webglutenfree.js,webglutenfree.js.map,*.d.ts}",
+    "demolib:cp": "cp dist/{webglutenfree.js,webglutenfree.js.map,*.d.ts} docs/lib",
     "clean": "rimraf build && rimraf dist"
   },
   "dependencies": {
@@ -49,8 +49,6 @@
     "cpx": "^1.5.0",
     "cross-env": "^5.1.4",
     "http-server": "^0.11.1",
-    "normals": "^1.1.0",
-    "parse-obj": "^0.0.0",
     "rimraf": "^2.6.2",
     "rollup": "^0.57.1",
     "rollup-plugin-replace": "^2.0.0",

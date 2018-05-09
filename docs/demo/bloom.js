@@ -17,10 +17,10 @@ import {
     TextureInternalFormat as TexIntFmt,
     TextureFilter,
     Framebuffer,
-} from "./lib/webglutenfree.es.js";
-import { vec2, mat4 } from "./lib/gl-matrix-min.js";
+} from "./lib/webglutenfree.js";
+import { vec2, mat4 } from "./libx/gl-matrix.js";
 
-import * as uvCube from "./lib/uv-cube.js"
+import * as uvCube from "./libx/uv-cube.js"
 
 const kernels = {
     blur3: [0.44198, 0.27901],

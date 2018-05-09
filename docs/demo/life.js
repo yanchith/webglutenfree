@@ -23,7 +23,7 @@ import {
     TextureInternalFormat as TexIntFmt,
     TextureFormat as TexFmt,
     Framebuffer,
-} from "./lib/webglutenfree.es.js";
+} from "./lib/webglutenfree.js";
 
 const dev = Device.create({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];

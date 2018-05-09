@@ -131,26 +131,32 @@
             const ts = monaco.languages.typescript;
 
             const DTS = [
-                "webglutenfree.d.ts",
-                "command.d.ts",
-                "attributes.d.ts",
-                "device.d.ts",
-                "element-buffer.d.ts",
-                "framebuffer.d.ts",
-                "target.d.ts",
-                "texture.d.ts",
-                "types.d.ts",
-                "vertexbuffer.d.ts",
+                "./lib/webglutenfree.d.ts",
+                "./lib/command.d.ts",
+                "./lib/attributes.d.ts",
+                "./lib/device.d.ts",
+                "./lib/element-buffer.d.ts",
+                "./lib/framebuffer.d.ts",
+                "./lib/target.d.ts",
+                "./lib/texture.d.ts",
+                "./lib/types.d.ts",
+                "./lib/vertexbuffer.d.ts",
+                "./libx/bunny.d.ts",
+                "./libx/cube.d.ts",
+                "./libx/spiral.d.ts",
+                "./libx/square.d.ts",
+                "./libx/teapot.d.ts",
+                "./libx/uv-cube.d.ts",
             ];
 
             const fetches = DTS.map(dts => {
-                return window.fetch(`./lib/${dts}`).then(res => res.text());
+                return window.fetch(dts).then(res => res.text());
             });
             const declarations = await Promise.all(fetches);
             declarations.forEach((decl, i) => {
                 ts.typescriptDefaults.addExtraLib(
                     decl,
-                    monaco.Uri.parse(`inmemory://model/lib/${DTS[i]}`),
+                    monaco.Uri.parse(`inmemory://model/${DTS[i]}`),
                 );
             })
 
@@ -159,8 +165,6 @@
                 allowNonTsExtensions: true,
                 moduleResolution: ts.ModuleResolutionKind.NodeJs,
                 module: ts.ModuleKind.ES2015,
-                // types: [DTS_URI]
-                // typeRoots: ["node_modules/@types"],
             });
 
 

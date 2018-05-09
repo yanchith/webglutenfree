@@ -3,7 +3,7 @@
  * buffers at all and instead specifying the number of vertices to draw.
  */
 
-import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.es.js";
+import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.js";
 
 const dev = Device.create();
 
