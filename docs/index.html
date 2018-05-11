@@ -151,10 +151,8 @@
                 "./libx/uv-cube.d.ts",
             ];
 
-            const fetches = DTS.map(dts => {
-                return window.fetch(dts).then(res => res.text());
-            });
-            const declarations = await Promise.all(fetches);
+            const declarations = await Promise.all(DTS.map(fetchText));
+
             declarations.forEach((decl, i) => {
                 ts.typescriptDefaults.addExtraLib(
                     decl,
@@ -169,7 +167,6 @@
                 module: ts.ModuleKind.ES2015,
             });
 
-
             const editor = monaco.editor.create(editorElem, {
                 value: "",
                 language: "typescript",
@@ -178,11 +175,11 @@
             });
 
             editor.model.onDidChangeContent(debounce(1000, async () => {
-                iframe.unmount();
-                iframe.mount(iframeElem);
                 try {
                     const code = await compile();
                     if (code) {
+                        iframe.unmount();
+                        iframe.mount(iframeElem);
                         iframe.postMessage({ code });
                     }
                 } catch (err) {
@@ -190,9 +187,10 @@
                 }
             }));
 
-            function compile() {
+            const compile = () => {
                 const uri = editor.getModel().uri.toString();
 
+                // This code reacts badly to async/await for some reason
                 return monaco.languages.typescript.getTypeScriptWorker()
                     .then(worker => worker(uri))
                     .then(service => service.getEmitOutput(uri))
@@ -209,40 +207,25 @@
                     });
             }
 
-            function navigate() {
-                const path = hashToPath(window.location.hash);
+            const navigate = async (path) => {
                 const elem = document.querySelector(`[data-href="${path}"]`);
                 if (elem) {
                     selectElement(elem);
-                    fetchExample(path);
+                    const code = await fetchText(path);
+                    editor.setValue(code);
                 } else {
-                    fetchExample("./triangle.ts");
+                    const code = await fetchText("./triangle.ts");
+                    editor.setValue(code);
                 }
             }
 
-            async function fetchExample(src) {
-                const resp = await window.fetch(src);
-                const code = await resp.text();
-                editor.setValue(code);
-            }
-
-            function selectElement(elem) {
+            const selectElement = (elem) => {
                 document.querySelectorAll(".selected")
                     .forEach(el => el.classList.remove("selected"))
                 elem.classList.add("selected");
             }
 
-            function hashToPath(hash) {
-                return `./${hash.substring(1)}.ts`
-            }
-
-            function pathToHash(path) {
-                const trimPath = path.substring("./".length);
-                const trimExt = trimPath.substring(0, trimPath.length - ".ts".length);
-                return `#${trimExt}`;
-            }
-
-            menuElem.addEventListener("click", ev => {
+            menuElem.addEventListener("click", (ev) => {
                 if (ev.target.dataset.href) {
                     window.location.hash = pathToHash(ev.target.dataset.href);
                 } else if (ev.target === editorToggleElem) {
@@ -257,9 +240,26 @@
                 ev.preventDefault();
             }, true);
 
-            navigate();
-            window.addEventListener("hashchange", _ => navigate());
+            window.addEventListener("hashchange", () => {
+                navigate(hashToPath(window.location.hash))
+            });
+            navigate(hashToPath(window.location.hash));
         });
+
+        const fetchText = async (src) => {
+            const resp = await window.fetch(src);
+            return resp.text();
+        }
+
+        const hashToPath = (hash) => {
+            return `./${hash.substring(1)}.ts`
+        }
+
+        const pathToHash = (path) => {
+            const trimPath = path.substring("./".length);
+            const trimExt = trimPath.substring(0, trimPath.length - ".ts".length);
+            return `#${trimExt}`;
+        }
     </script>
 </body>
 
