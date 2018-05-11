@@ -1,6 +1,12 @@
 # Changelog
 
 ## Unreleased
+#### Fixes:
+
+-   Allow users to envify `process.env.NODE_ENV` (again). Provide shim for
+    `process.env.NODE_ENV` in case they don't
+
+#### Enhancements:
 
 -   (None yet)
 

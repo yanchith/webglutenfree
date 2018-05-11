@@ -1,15 +1,9 @@
-/**
- * This file is an exercise in preprocessor voodoo.
- *
- * ""development"", gets suplied by the string replacer during build.
- * If "production", constant evaluation will eliminate the if blocks, making
- * the functions no-ops, in turn eligible for elimination from their callsites.
- *
- * It seems that newer versions of rollup no longer prune the functions away
- * due to some pessimization.
- */
+// Shim NODE_ENV. Our production build replaces all usages and it gets DCEd.
+// Downstream users can use replacers or envifiers achieve the same.
+var process = { env: { NODE_ENV: "development" } };
+
 function nonNull(p, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (typeof p === "undefined" || typeof p === "object" && !p) {
             const msg = fmt
                 ? fmt(p)
@@ -19,7 +13,7 @@ function nonNull(p, fmt) {
     }
 }
 function nonEmpty(p, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (!p.length) {
             const msg = fmt
                 ? fmt(p)
@@ -29,7 +23,7 @@ function nonEmpty(p, fmt) {
     }
 }
 function equal(p, expected, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (p !== expected) {
             const msg = fmt
                 ? fmt(p, expected)
@@ -39,7 +33,7 @@ function equal(p, expected, fmt) {
     }
 }
 function oneOf(p, expected, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (!expected.includes(p)) {
             const msg = fmt
                 ? fmt(p, expected)
@@ -49,7 +43,7 @@ function oneOf(p, expected, fmt) {
     }
 }
 function gt(p, low, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (p <= low) {
             const msg = fmt
                 ? fmt(p, low)
@@ -59,7 +53,7 @@ function gt(p, low, fmt) {
     }
 }
 function rangeInclusive(p, low, high, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (p < low || p > high) {
             const msg = fmt
                 ? fmt(p, low, high)
@@ -633,7 +627,7 @@ class Command {
         _gl.deleteShader(vs);
         _gl.deleteShader(fs);
         // Validation time! (only for nonproduction envs)
-        {
+        if (process.env.NODE_ENV !== "production") {
             if (!prog) {
                 // ctx loss or not, we can panic all we want in nonprod env!
                 throw new Error("Program was not compiled, possible reason: context loss");

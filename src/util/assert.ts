@@ -1,17 +1,4 @@
-/**
- * This file is an exercise in preprocessor voodoo.
- *
- * "process.env.NODE_ENV", gets suplied by the string replacer during build.
- * If "production", constant evaluation will eliminate the if blocks, making
- * the functions no-ops, in turn eligible for elimination from their callsites.
- *
- * It seems that newer versions of rollup no longer prune the functions away
- * due to some pessimization.
- */
-
-// Declare "process.env.NODE_ENV" so everything typechecks.
-// Replacer plugin always provides "development" or "production".
-declare const process: { env: { NODE_ENV: string } };
+import process from "./process-shim";
 
 export function nonNull(p: any, fmt?: (got: string) => string): void {
     if (process.env.NODE_ENV !== "production") {

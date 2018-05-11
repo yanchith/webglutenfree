@@ -1,7 +1,6 @@
+import process from "./util/process-shim";
 import * as assert from "./util/assert";
 import { TextureInternalFormat } from "./texture";
-
-declare const process: { env: { NODE_ENV: string } };
 
 export type Device = import ("./device").Device;
 export type Texture<T> = import ("./texture").Texture<T>;
