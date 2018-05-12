@@ -119,21 +119,21 @@ const cmdBlend = Command.create<CmdBlendProps>(
     `#version 300 es
         precision mediump float;
 
-        out vec2 v_tex_coord;
+        out vec2 v_uv;
 
         void main() {
             switch (gl_VertexID % 3) {
                 case 0:
                     gl_Position = vec4(-1, 3, 0, 1);
-                    v_tex_coord = vec2(0, 2);
+                    v_uv = vec2(0, 2);
                     break;
                 case 1:
                     gl_Position = vec4(-1, -1, 0, 1);
-                    v_tex_coord = vec2(0, 0);
+                    v_uv = vec2(0, 0);
                     break;
                 case 2:
                     gl_Position = vec4(3, -1, 0, 1);
-                    v_tex_coord = vec2(2, 0);
+                    v_uv = vec2(2, 0);
                     break;
             }
         }
@@ -144,7 +144,7 @@ const cmdBlend = Command.create<CmdBlendProps>(
         uniform sampler2D u_new_frame, u_prev_frame;
         uniform float u_blend_factor;
 
-        in vec2 v_tex_coord;
+        in vec2 v_uv;
 
         out vec4 f_color;
 
@@ -153,8 +153,8 @@ const cmdBlend = Command.create<CmdBlendProps>(
         }
 
         void main() {
-            vec4 c1 = texture(u_new_frame, v_tex_coord);
-            vec4 c2 = texture(u_prev_frame, v_tex_coord);
+            vec4 c1 = texture(u_new_frame, v_uv);
+            vec4 c2 = texture(u_prev_frame, v_uv);
             f_color = blend_alpha(c2, c1, u_blend_factor);
         }
     `,

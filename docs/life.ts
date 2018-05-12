@@ -68,21 +68,21 @@ const cmd = Command.create<CmdProps>(
     `#version 300 es
         precision mediump float;
 
-        out vec2 v_tex_coord;
+        out vec2 v_uv;
 
         void main() {
             switch (gl_VertexID % 3) {
                 case 0:
                     gl_Position = vec4(-1, 3, 0, 1);
-                    v_tex_coord = vec2(0, 2);
+                    v_uv = vec2(0, 2);
                     break;
                 case 1:
                     gl_Position = vec4(-1, -1, 0, 1);
-                    v_tex_coord = vec2(0, 0);
+                    v_uv = vec2(0, 0);
                     break;
                 case 2:
                     gl_Position = vec4(3, -1, 0, 1);
-                    v_tex_coord = vec2(2, 0);
+                    v_uv = vec2(2, 0);
                     break;
             }
         }
@@ -92,24 +92,24 @@ const cmd = Command.create<CmdProps>(
 
         uniform sampler2D u_universe;
 
-        in vec2 v_tex_coord;
+        in vec2 v_uv;
 
         layout (location = 0) out float f_next_universe;
 
         void main() {
             vec2 px = vec2(1) / vec2(textureSize(u_universe, 0));
 
-            float current = texture(u_universe, v_tex_coord).r;
+            float current = texture(u_universe, v_uv).r;
             float neighbors = 0.0;
 
-            neighbors += texture(u_universe, px * vec2( 1,  1) + v_tex_coord).r;
-            neighbors += texture(u_universe, px * vec2( 0,  1) + v_tex_coord).r;
-            neighbors += texture(u_universe, px * vec2(-1,  1) + v_tex_coord).r;
-            neighbors += texture(u_universe, px * vec2(-1,  0) + v_tex_coord).r;
-            neighbors += texture(u_universe, px * vec2(-1, -1) + v_tex_coord).r;
-            neighbors += texture(u_universe, px * vec2( 0, -1) + v_tex_coord).r;
-            neighbors += texture(u_universe, px * vec2( 1, -1) + v_tex_coord).r;
-            neighbors += texture(u_universe, px * vec2( 1,  0) + v_tex_coord).r;
+            neighbors += texture(u_universe, px * vec2( 1,  1) + v_uv).r;
+            neighbors += texture(u_universe, px * vec2( 0,  1) + v_uv).r;
+            neighbors += texture(u_universe, px * vec2(-1,  1) + v_uv).r;
+            neighbors += texture(u_universe, px * vec2(-1,  0) + v_uv).r;
+            neighbors += texture(u_universe, px * vec2(-1, -1) + v_uv).r;
+            neighbors += texture(u_universe, px * vec2( 0, -1) + v_uv).r;
+            neighbors += texture(u_universe, px * vec2( 1, -1) + v_uv).r;
+            neighbors += texture(u_universe, px * vec2( 1,  0) + v_uv).r;
 
             if (current == 0.0) {
                 f_next_universe = neighbors == 3.0 ? 1.0 : 0.0;

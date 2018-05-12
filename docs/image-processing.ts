@@ -64,10 +64,10 @@ async function run() {
             layout (location = 0) in vec2 a_position;
             layout (location = 1) in vec2 a_uv;
 
-            out vec2 v_tex_coord;
+            out vec2 v_uv;
 
             void main() {
-                v_tex_coord = a_uv;
+                v_uv = a_uv;
                 gl_Position = u_projection
                     * u_model
                     * vec4(a_position, 0.0, 1.0);
@@ -80,7 +80,7 @@ async function run() {
             uniform float[9] u_kernel;
             uniform float u_kernel_weight;
 
-            in vec2 v_tex_coord;
+            in vec2 v_uv;
 
             out vec4 f_color;
 
@@ -88,15 +88,15 @@ async function run() {
                 vec2 px = vec2(1) / vec2(textureSize(u_image, 0));
                 float[9] k = u_kernel;
                 vec4 color_sum =
-                    texture(u_image, px * vec2(-1, -1) + v_tex_coord) * k[0] +
-                    texture(u_image, px * vec2( 0, -1) + v_tex_coord) * k[1] +
-                    texture(u_image, px * vec2( 1, -1) + v_tex_coord) * k[2] +
-                    texture(u_image, px * vec2(-1,  0) + v_tex_coord) * k[3] +
-                    texture(u_image, px * vec2( 0,  0) + v_tex_coord) * k[4] +
-                    texture(u_image, px * vec2( 1,  0) + v_tex_coord) * k[5] +
-                    texture(u_image, px * vec2(-1,  1) + v_tex_coord) * k[6] +
-                    texture(u_image, px * vec2( 0,  1) + v_tex_coord) * k[7] +
-                    texture(u_image, px * vec2( 1,  1) + v_tex_coord) * k[8] ;
+                    texture(u_image, px * vec2(-1, -1) + v_uv) * k[0] +
+                    texture(u_image, px * vec2( 0, -1) + v_uv) * k[1] +
+                    texture(u_image, px * vec2( 1, -1) + v_uv) * k[2] +
+                    texture(u_image, px * vec2(-1,  0) + v_uv) * k[3] +
+                    texture(u_image, px * vec2( 0,  0) + v_uv) * k[4] +
+                    texture(u_image, px * vec2( 1,  0) + v_uv) * k[5] +
+                    texture(u_image, px * vec2(-1,  1) + v_uv) * k[6] +
+                    texture(u_image, px * vec2( 0,  1) + v_uv) * k[7] +
+                    texture(u_image, px * vec2( 1,  1) + v_uv) * k[8] ;
                 f_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
             }
         `,

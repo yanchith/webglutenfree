@@ -72,21 +72,21 @@ const cmd = Command.create<CmdProps>(
     `#version 300 es
         precision mediump float;
 
-        out vec2 v_tex_coord;
+        out vec2 v_uv;
 
         void main() {
             switch (gl_VertexID % 3) {
                 case 0:
                     gl_Position = vec4(-1, 3, 0, 1);
-                    v_tex_coord = vec2(0, 2);
+                    v_uv = vec2(0, 2);
                     break;
                 case 1:
                     gl_Position = vec4(-1, -1, 0, 1);
-                    v_tex_coord = vec2(0, 0);
+                    v_uv = vec2(0, 0);
                     break;
                 case 2:
                     gl_Position = vec4(3, -1, 0, 1);
-                    v_tex_coord = vec2(2, 0);
+                    v_uv = vec2(2, 0);
                     break;
             }
         }
@@ -108,12 +108,12 @@ const cmd = Command.create<CmdProps>(
 
         uniform sampler2D u_universe;
 
-        in vec2 v_tex_coord;
+        in vec2 v_uv;
 
         layout (location = 0) out vec4 f_next_universe;
 
         float f(vec2 c) {
-            return texture(u_universe, v_tex_coord + (c / vec2(WIDTH, HEIGHT))).r;
+            return texture(u_universe, v_uv + (c / vec2(WIDTH, HEIGHT))).r;
         }
 
         float sigma_1(float x, float a, float alpha) {

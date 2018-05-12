@@ -75,21 +75,21 @@ const view = mat4.create();
 const screenspaceVS = `#version 300 es
 precision mediump float;
 
-out vec2 v_tex_coord;
+out vec2 v_uv;
 
 void main() {
     switch (gl_VertexID % 3) {
         case 0:
             gl_Position = vec4(-1, 3, 0, 1);
-            v_tex_coord = vec2(0, 2);
+            v_uv = vec2(0, 2);
             break;
         case 1:
             gl_Position = vec4(-1, -1, 0, 1);
-            v_tex_coord = vec2(0, 0);
+            v_uv = vec2(0, 0);
             break;
         case 2:
             gl_Position = vec4(3, -1, 0, 1);
-            v_tex_coord = vec2(2, 0);
+            v_uv = vec2(2, 0);
             break;
     }
 }
@@ -108,12 +108,12 @@ const cmdDraw = Command.create<CmdDrawProps>(
         uniform mat4 u_projection, u_view, u_model;
 
         layout (location = 0) in vec3 a_position;
-        layout (location = 1) in vec2 a_tex_coord;
+        layout (location = 1) in vec2 a_uv;
 
-        out vec2 v_tex_coord;
+        out vec2 v_uv;
 
         void main() {
-            v_tex_coord = a_tex_coord;
+            v_uv = a_uv;
             gl_Position = u_projection
                 * u_view
                 * u_model
@@ -125,7 +125,7 @@ const cmdDraw = Command.create<CmdDrawProps>(
 
         uniform float u_glow_strength;
 
-        in vec2 v_tex_coord;
+        in vec2 v_uv;
 
         layout (location = 0) out vec4 f_color;
 
@@ -135,7 +135,7 @@ const cmdDraw = Command.create<CmdDrawProps>(
         const float u_edge_subtract	= 0.3;
 
         void main() {
-            vec2 uv = abs(v_tex_coord - 0.5) * u_edge_thickness;
+            vec2 uv = abs(v_uv - 0.5) * u_edge_thickness;
             uv = pow(uv, vec2(u_edge_sharpness)) - u_edge_subtract;
             float c = clamp(uv.x + uv.y, 0.0, 1.0) * u_glow_strength;
             f_color	= vec4(u_color * c, 1.0);
@@ -189,12 +189,12 @@ const cmdSep = Command.create(
 
         uniform sampler2D u_image;
 
-        in vec2 v_tex_coord;
+        in vec2 v_uv;
 
         layout (location = 0) out vec4 f_color;
 
         void main() {
-            vec4 color = texture(u_image, v_tex_coord);
+            vec4 color = texture(u_image, v_uv);
 
             // Convert to grayscale and compute brightness
             float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
@@ -231,7 +231,7 @@ const cmdBlur = Command.create<CmdBlurProps>(
         uniform float[KERNEL_LENGTH] u_kernel;
         uniform vec2 u_direction;
 
-        in vec2 v_tex_coord;
+        in vec2 v_uv;
 
         layout (location = 0) out vec4 f_color;
 
@@ -239,12 +239,12 @@ const cmdBlur = Command.create<CmdBlurProps>(
             vec2 two_px = u_direction * vec2(2) / vec2(textureSize(u_image, 0));
             vec2 half_px = two_px / 4.0;
 
-            vec4 color_sum = u_kernel[0] * texture(u_image, v_tex_coord);
+            vec4 color_sum = u_kernel[0] * texture(u_image, v_uv);
             for (int i = 1; i < KERNEL_LENGTH; i++) {
                 float k = u_kernel[i];
                 vec2 offset = two_px * float(i) - half_px;
-                color_sum += k * texture(u_image,  offset + v_tex_coord);
-                color_sum += k * texture(u_image, -offset + v_tex_coord);
+                color_sum += k * texture(u_image,  offset + v_uv);
+                color_sum += k * texture(u_image, -offset + v_uv);
             }
 
             f_color = color_sum;
@@ -276,13 +276,13 @@ const cmdMerge = Command.create(
         uniform sampler2D u_image_color;
         uniform sampler2D u_image_bloom;
 
-        in vec2 v_tex_coord;
+        in vec2 v_uv;
 
         out vec4 f_color;
 
         void main() {
-            vec3 color = texture(u_image_color, v_tex_coord).rgb;
-            vec3 bloom = texture(u_image_bloom, v_tex_coord).rgb;
+            vec3 color = texture(u_image_color, v_uv).rgb;
+            vec3 bloom = texture(u_image_bloom, v_uv).rgb;
             const float gamma = 2.2;
 
             // Additive blending
