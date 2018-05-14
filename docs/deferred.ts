@@ -17,7 +17,7 @@ import { mat4 } from "./libx/gl-matrix.js";
 
 import * as sponza from "./libx/sponza.js";
 
-const dev = Device.create({ antialias: false });
+const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 const colorTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
@@ -84,12 +84,12 @@ const cmdDraw = Command.create<number>(
                 type: "matrix4fv",
                 value: (time) => mat4.lookAt(
                     view,
-                    [
-                        5000 * Math.cos(time / 10000),
-                        4000,
-                        5000 * Math.sin(time / 10000),
-                    ],
                     [0, 2.5, 0],
+                    [
+                        5 * Math.cos(time / 10000),
+                        2.5,
+                        5 * Math.sin(time / 10000),
+                    ],
                     [0, 1, 0],
                 ),
             },
