@@ -30,7 +30,7 @@ const fbo = Framebuffer.create(dev, width, height, [
 
 const view = mat4.create();
 const NEAR = 0.1;
-const FAR = 10000.1;
+const FAR = 50;
 
 const cmdDraw = Command.create<number>(
     dev,
@@ -130,8 +130,8 @@ const cmdDeferred = Command.create(
 
         out vec4 f_color;
 
-        const float NEAR = ${NEAR};
-        const float FAR = ${FAR};
+        const float NEAR = float(${NEAR});
+        const float FAR = float(${FAR});
 
         float linear_depth2(float depth) {
             return (2.0 * NEAR) / (FAR + NEAR - depth * (FAR - NEAR));
