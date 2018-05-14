@@ -7,8 +7,6 @@ global.THREE = THREE;
 // This enriches the global THREE with OBJLoader
 require("three/examples/js/loaders/OBJLoader");
 
-console.log(THREE.OBJLoader);
-
 const loader = new THREE.OBJLoader();
 const keys = ["position", "normal", "uv"];
 const roundNumber = (num, base) => {
@@ -18,7 +16,7 @@ const roundNumber = (num, base) => {
 
 const infilename = process.argv.length > 2 && process.argv[2];
 if (!infilename) {
-    console.log("No file provided");
+    console.log("USAGE: node parseobj.js path/to/infile [path/to/outfile]");
     process.exit();
 }
 
