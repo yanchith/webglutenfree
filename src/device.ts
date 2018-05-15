@@ -179,6 +179,9 @@ export class Device {
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewportWidth = explicitViewportWidth;
         this.explicitViewportHeight = explicitViewportHeight;
+
+        this.update();
+
         this.backbufferTarget = new Target(
             this,
             [gl.BACK],
@@ -187,7 +190,6 @@ export class Device {
             gl.drawingBufferHeight,
         );
 
-        this.update();
 
         this._stackVertexArray = new Stack<WebGLVertexArrayObject | null>(
             null,

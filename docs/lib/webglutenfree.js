@@ -1404,8 +1404,8 @@ class Device {
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewportWidth = explicitViewportWidth;
         this.explicitViewportHeight = explicitViewportHeight;
-        this.backbufferTarget = new Target(this, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
         this.update();
+        this.backbufferTarget = new Target(this, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
         this._stackVertexArray = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindVertexArray(val));
         this._stackProgram = new Stack(null, (prev, val) => prev !== val, (val) => gl.useProgram(val));
         this._stackDepthTest = new Stack(null, (prev, val) => !DepthDescriptor.equals(prev, val), (val) => {
@@ -2149,5 +2149,5 @@ class Framebuffer {
     }
 }
 
-export { BufferBits, BufferUsage, DataType, InternalFormat, Format, Filter, Wrap, Primitive, Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, Framebuffer };
+export { BufferBits, BufferUsage, DataType, InternalFormat, Format, Filter, Wrap, Primitive, Device, Extension, Viewport, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, Framebuffer };
 //# sourceMappingURL=webglutenfree.js.map
