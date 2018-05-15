@@ -5,10 +5,10 @@
 
 import {
     Device,
-    BufferBits,
     Command,
     DepthFunc,
     Attributes,
+    BufferBits,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 

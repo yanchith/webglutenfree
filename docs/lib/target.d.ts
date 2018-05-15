@@ -1,4 +1,4 @@
-import { BufferBits } from "./types";
+import { BufferBits, Filter } from "./types";
 export declare type Device = import("./device").Device;
 export declare type Command<P> = import("./command").Command<P>;
 export declare type UniformDescriptor<P> = import("./command").UniformDescriptor<P>;
@@ -13,17 +13,32 @@ export interface TargetClearOptions {
     depth?: number;
     stencil?: number;
 }
+export declare type BlitFilter = Filter.NEAREST | Filter.LINEAR;
+export interface TargetBlitOptions {
+    xOffset?: number;
+    yOffset?: number;
+    width?: number;
+    height?: number;
+    filter?: BlitFilter;
+}
+export declare class Viewport {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+    static equals(left: Viewport, right: Viewport): boolean;
+    constructor(x: number, y: number, width: number, height: number);
+}
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
  */
 export declare class Target {
+    readonly viewport: Viewport;
     private dev;
-    readonly glDrawBuffers: number[];
-    readonly glFramebuffer: WebGLFramebuffer | null;
-    readonly width?: number | undefined;
-    readonly height?: number | undefined;
-    constructor(dev: Device, glDrawBuffers: number[], glFramebuffer: WebGLFramebuffer | null, width?: number | undefined, height?: number | undefined);
+    private glDrawBuffers;
+    private glFramebuffer;
+    constructor(dev: Device, glDrawBuffers: number[], glFramebuffer: WebGLFramebuffer | null, width?: number, height?: number);
     /**
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
@@ -33,14 +48,14 @@ export declare class Target {
      */
     with(cb: (rt: Target) => void): void;
     /**
-     * Blit source framebuffer onto this render target. Use buffer bits to
-     * choose buffers to blit.
-     */
-    blit(source: Framebuffer, bits: BufferBits): void;
-    /**
      * Clear selected buffers to provided values.
      */
     clear(bits: BufferBits, { r, g, b, a, depth, stencil, }?: TargetClearOptions): void;
+    /**
+     * Blit source framebuffer onto this render target. Use buffer bits to
+     * choose buffers to blit.
+     */
+    blit(source: Framebuffer, bits: BufferBits, { xOffset, yOffset, width, height, filter, }?: TargetBlitOptions): void;
     /**
      * Draw to this target with a void command and attributes.
      */

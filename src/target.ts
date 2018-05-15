@@ -1,5 +1,5 @@
 import * as assert from "./util/assert";
-import { BufferBits, Primitive } from "./types";
+import { BufferBits, Filter, Primitive } from "./types";
 
 export type Device = import ("./device").Device;
 export type Command<P> = import ("./command").Command<P>;
@@ -17,19 +17,58 @@ export interface TargetClearOptions {
     stencil?: number;
 }
 
+export type BlitFilter = Filter.NEAREST | Filter.LINEAR;
+
+export interface TargetBlitOptions {
+    xOffset?: number;
+    yOffset?: number;
+    width?: number;
+    height?: number;
+    filter?: BlitFilter;
+}
+
+export class Viewport {
+    static equals(left: Viewport, right: Viewport) {
+        if (left === right) { return true; }
+        if (left.x !== right.x) { return false; }
+        if (left.y !== right.y) { return false; }
+        if (left.width !== right.width) { return false; }
+        if (left.height !== right.height) { return false; }
+        return true;
+    }
+
+    constructor(
+        readonly x: number,
+        readonly y: number,
+        readonly width: number,
+        readonly height: number,
+    ) { }
+}
+
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
  */
 export class Target {
 
+    readonly viewport: Viewport;
+
+    private dev: Device;
+    private glDrawBuffers: number[];
+    private glFramebuffer: WebGLFramebuffer | null;
+
     constructor(
-        private dev: Device,
-        readonly glDrawBuffers: number[],
-        readonly glFramebuffer: WebGLFramebuffer | null,
-        readonly width?: number,
-        readonly height?: number,
-    ) { }
+        dev: Device,
+        glDrawBuffers: number[],
+        glFramebuffer: WebGLFramebuffer | null,
+        width: number = dev._gl.drawingBufferWidth,
+        height: number = dev._gl.drawingBufferHeight,
+    ) {
+        this.dev = dev;
+        this.glDrawBuffers = glDrawBuffers;
+        this.glFramebuffer = glFramebuffer;
+        this.viewport = new Viewport(0, 0, width, height);
+    }
 
     /**
      * Run the callback with the target bound. This is called automatically,
@@ -40,50 +79,25 @@ export class Target {
      */
     with(cb: (rt: Target) => void): void {
         const {
-            dev: { _gl, _stackDrawBuffers, _stackDrawFramebuffer },
+            dev: {
+                _stackDrawBuffers,
+                _stackDrawFramebuffer,
+                _stackViewport,
+            },
             glFramebuffer,
             glDrawBuffers,
-        } = this;
-        const {
-            width = _gl.drawingBufferWidth,
-            height = _gl.drawingBufferHeight,
+            viewport,
         } = this;
 
         _stackDrawFramebuffer.push(glFramebuffer);
         _stackDrawBuffers.push(glDrawBuffers);
-
-        _gl.viewport(0, 0, width, height);
+        _stackViewport.push(viewport);
 
         cb(this);
 
+        _stackViewport.pop();
         _stackDrawFramebuffer.pop();
         _stackDrawBuffers.pop();
-    }
-
-    /**
-     * Blit source framebuffer onto this render target. Use buffer bits to
-     * choose buffers to blit.
-     */
-    blit(source: Framebuffer, bits: BufferBits): void {
-        const {
-            dev: { _gl, _stackReadFramebuffer },
-            width,
-            height,
-        } = this;
-
-        this.with(() => {
-            _stackReadFramebuffer.push(source.glFramebuffer);
-            _gl.blitFramebuffer(
-                0, 0,
-                source.width, source.height,
-                0, 0,
-                width || _gl.drawingBufferWidth,
-                height || _gl.drawingBufferHeight,
-                bits,
-                _gl.NEAREST,
-            );
-            _stackReadFramebuffer.pop();
-        });
     }
 
     /**
@@ -106,6 +120,42 @@ export class Target {
             if (bits & BufferBits.DEPTH) { gl.clearDepth(depth); }
             if (bits & BufferBits.STENCIL) { gl.clearStencil(stencil); }
             gl.clear(bits);
+        });
+    }
+
+
+    /**
+     * Blit source framebuffer onto this render target. Use buffer bits to
+     * choose buffers to blit.
+     */
+    blit(
+        source: Framebuffer,
+        bits: BufferBits,
+        {
+            xOffset = 0,
+            yOffset = 0,
+            width = source.width,
+            height = source.height,
+            filter = Filter.NEAREST,
+        }: TargetBlitOptions = {},
+    ): void {
+        const { dev: { _gl, _stackReadFramebuffer } } = this;
+
+        this.with(() => {
+            _stackReadFramebuffer.push(source.glFramebuffer);
+            _gl.blitFramebuffer(
+                xOffset,
+                yOffset,
+                width,
+                height,
+                this.viewport.x,
+                this.viewport.y,
+                this.viewport.width,
+                this.viewport.height,
+                bits,
+                filter,
+            );
+            _stackReadFramebuffer.pop();
         });
     }
 

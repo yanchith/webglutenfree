@@ -1,4 +1,13 @@
-export { BufferBits, BufferUsage, DataType, Primitive } from "./types";
+export {
+    BufferBits,
+    BufferUsage,
+    DataType,
+    InternalFormat,
+    Format,
+    Filter,
+    Wrap,
+    Primitive,
+} from "./types";
 
 export {
     Device,
@@ -8,7 +17,7 @@ export {
     DeviceWithContextOptions,
 } from "./device";
 
-export { TargetClearOptions } from "./target";
+export { TargetClearOptions, TargetBlitOptions } from "./target";
 
 export {
     Command,
@@ -76,7 +85,6 @@ export {
 
 export {
     Texture,
-    TextureFilter,
     TextureMinFilter,
     TextureMagFilter,
     TextureWrap,

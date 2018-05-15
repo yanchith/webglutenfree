@@ -1,6 +1,6 @@
 import * as assert from "./util/assert";
+import { InternalFormat } from "./types";
 import { Target } from "./target";
-import { TextureInternalFormat } from "./texture";
 
 export type Device = import ("./device").Device;
 export type Texture<F> = import ("./texture").Texture<F>;
@@ -8,63 +8,63 @@ export type Texture<F> = import ("./texture").Texture<F>;
 export type TextureColorInternalFormat =
 
     // RED
-    | TextureInternalFormat.R8
-    | TextureInternalFormat.R8_SNORM
-    | TextureInternalFormat.R8UI
-    | TextureInternalFormat.R8I
-    | TextureInternalFormat.R16UI
-    | TextureInternalFormat.R16I
-    | TextureInternalFormat.R32UI
-    | TextureInternalFormat.R32I
-    | TextureInternalFormat.R16F
-    | TextureInternalFormat.R32F
+    | InternalFormat.R8
+    | InternalFormat.R8_SNORM
+    | InternalFormat.R8UI
+    | InternalFormat.R8I
+    | InternalFormat.R16UI
+    | InternalFormat.R16I
+    | InternalFormat.R32UI
+    | InternalFormat.R32I
+    | InternalFormat.R16F
+    | InternalFormat.R32F
 
     // RG
-    | TextureInternalFormat.RG8
-    | TextureInternalFormat.RG8_SNORM
-    | TextureInternalFormat.RG8UI
-    | TextureInternalFormat.RG8I
-    | TextureInternalFormat.RG16UI
-    | TextureInternalFormat.RG16I
-    | TextureInternalFormat.RG32UI
-    | TextureInternalFormat.RG32I
-    | TextureInternalFormat.RG16F
-    | TextureInternalFormat.RG32F
+    | InternalFormat.RG8
+    | InternalFormat.RG8_SNORM
+    | InternalFormat.RG8UI
+    | InternalFormat.RG8I
+    | InternalFormat.RG16UI
+    | InternalFormat.RG16I
+    | InternalFormat.RG32UI
+    | InternalFormat.RG32I
+    | InternalFormat.RG16F
+    | InternalFormat.RG32F
 
     // RGB
-    | TextureInternalFormat.RGB8
-    | TextureInternalFormat.RGB8_SNORM
-    | TextureInternalFormat.RGB8UI
-    | TextureInternalFormat.RGB8I
-    | TextureInternalFormat.RGB16UI
-    | TextureInternalFormat.RGB16I
-    | TextureInternalFormat.RGB32UI
-    | TextureInternalFormat.RGB32I
-    | TextureInternalFormat.RGB16F
-    | TextureInternalFormat.RGB32F
+    | InternalFormat.RGB8
+    | InternalFormat.RGB8_SNORM
+    | InternalFormat.RGB8UI
+    | InternalFormat.RGB8I
+    | InternalFormat.RGB16UI
+    | InternalFormat.RGB16I
+    | InternalFormat.RGB32UI
+    | InternalFormat.RGB32I
+    | InternalFormat.RGB16F
+    | InternalFormat.RGB32F
 
     // RGBA
-    | TextureInternalFormat.RGBA8
-    | TextureInternalFormat.RGBA8_SNORM
-    | TextureInternalFormat.RGBA8UI
-    | TextureInternalFormat.RGBA8I
-    | TextureInternalFormat.RGBA16UI
-    | TextureInternalFormat.RGBA16I
-    | TextureInternalFormat.RGBA32UI
-    | TextureInternalFormat.RGBA32I
-    | TextureInternalFormat.RGBA16F
-    | TextureInternalFormat.RGBA32F
+    | InternalFormat.RGBA8
+    | InternalFormat.RGBA8_SNORM
+    | InternalFormat.RGBA8UI
+    | InternalFormat.RGBA8I
+    | InternalFormat.RGBA16UI
+    | InternalFormat.RGBA16I
+    | InternalFormat.RGBA32UI
+    | InternalFormat.RGBA32I
+    | InternalFormat.RGBA16F
+    | InternalFormat.RGBA32F
     ;
 
 export type TextureDepthInternalFormat =
-    | TextureInternalFormat.DEPTH_COMPONENT16
-    | TextureInternalFormat.DEPTH_COMPONENT24
-    | TextureInternalFormat.DEPTH_COMPONENT32F
+    | InternalFormat.DEPTH_COMPONENT16
+    | InternalFormat.DEPTH_COMPONENT24
+    | InternalFormat.DEPTH_COMPONENT32F
     ;
 
 export type TextureDepthStencilInternalFormat =
-    | TextureInternalFormat.DEPTH24_STENCIL8
-    | TextureInternalFormat.DEPTH32F_STENCIL8
+    | InternalFormat.DEPTH24_STENCIL8
+    | InternalFormat.DEPTH32F_STENCIL8
     ;
 
 /**
@@ -205,8 +205,8 @@ export class Framebuffer {
 
         if (depthStencil) {
             switch (depthStencil.format) {
-                case TextureInternalFormat.DEPTH24_STENCIL8:
-                case TextureInternalFormat.DEPTH32F_STENCIL8:
+                case InternalFormat.DEPTH24_STENCIL8:
+                case InternalFormat.DEPTH32F_STENCIL8:
                     _gl.framebufferTexture2D(
                         _gl.DRAW_FRAMEBUFFER,
                         _gl.DEPTH_STENCIL_ATTACHMENT,
@@ -215,9 +215,9 @@ export class Framebuffer {
                         0,
                     );
                     break;
-                case TextureInternalFormat.DEPTH_COMPONENT16:
-                case TextureInternalFormat.DEPTH_COMPONENT24:
-                case TextureInternalFormat.DEPTH_COMPONENT32F:
+                case InternalFormat.DEPTH_COMPONENT16:
+                case InternalFormat.DEPTH_COMPONENT24:
+                case InternalFormat.DEPTH_COMPONENT32F:
                     _gl.framebufferTexture2D(
                         _gl.DRAW_FRAMEBUFFER,
                         _gl.DEPTH_ATTACHMENT,

@@ -8,10 +8,10 @@ import {
     Extension,
     Command,
     Attributes,
-    Primitive,
     Texture,
-    TextureInternalFormat as TexIntFmt,
     Framebuffer,
+    Primitive,
+    InternalFormat,
 } from "./lib/webglutenfree.js";
 
 const MAX_ITERS = 1 << 8;
@@ -25,8 +25,8 @@ const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 // Note: Even with extensions, RGB32F is not renderable (might be a bug),
 // so we use RGBA32F even when we only use 3 channels
-const pingTex = Texture.create(dev, width, height, TexIntFmt.RGBA32F);
-const pongTex = Texture.create(dev, width, height, TexIntFmt.RGBA32F);
+const pingTex = Texture.create(dev, width, height, InternalFormat.RGBA32F);
+const pongTex = Texture.create(dev, width, height, InternalFormat.RGBA32F);
 
 const pingFbo = Framebuffer.create(dev, width, height, pingTex);
 const pongFbo = Framebuffer.create(dev, width, height, pongTex);
@@ -57,7 +57,7 @@ void main() {
 // paint to the screen in the next command.
 
 interface CmdComputeProps {
-    tex: Texture<TexIntFmt>;
+    tex: Texture<InternalFormat>;
     tick: number;
 }
 
@@ -156,7 +156,7 @@ const cmdCompute = Command.create<CmdComputeProps>(
 // to diverge.
 
 interface CmdDrawProps {
-    tex: Texture<TexIntFmt>;
+    tex: Texture<InternalFormat>;
 }
 
 const cmdDraw = Command.create<CmdDrawProps>(

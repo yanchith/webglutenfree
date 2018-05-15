@@ -7,14 +7,14 @@
 
 import {
     Device,
-    BufferBits,
     Command,
     DepthFunc,
     Attributes,
-    Primitive,
     Texture,
-    TextureInternalFormat as TexIntFmt,
     Framebuffer,
+    BufferBits,
+    Primitive,
+    InternalFormat,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 
@@ -25,14 +25,14 @@ const PERSISTENCE_FACTOR = 0.8;
 const dev = Device.create({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const newFrameTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
-const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24);
+const newFrameTex = Texture.create(dev, width, height, InternalFormat.RGBA8);
+const depthTex = Texture.create(dev, width, height, InternalFormat.DEPTH_COMPONENT24);
 const newFrameFbo = Framebuffer.create(dev, width, height, newFrameTex, depthTex);
 
-const pingTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
+const pingTex = Texture.create(dev, width, height, InternalFormat.RGBA8);
 const pingFbo = Framebuffer.create(dev, width, height, pingTex);
 
-const pongTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
+const pongTex = Texture.create(dev, width, height, InternalFormat.RGBA8);
 const pongFbo = Framebuffer.create(dev, width, height, pongTex);
 
 const view = mat4.create();
@@ -110,8 +110,8 @@ const cmdDraw = Command.create<CmdDrawProps>(
 );
 
 interface CmdBlendProps {
-    newFrame: Texture<TexIntFmt>;
-    prevFrame: Texture<TexIntFmt>;
+    newFrame: Texture<InternalFormat>;
+    prevFrame: Texture<InternalFormat>;
 }
 
 const cmdBlend = Command.create<CmdBlendProps>(

@@ -6,12 +6,12 @@
 
 import {
     Device,
-    BufferBits,
     Command,
     Attributes,
     DepthFunc,
     StencilFunc,
     StencilOp,
+    BufferBits,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 

@@ -14,16 +14,16 @@
 
 import {
     Device,
-    DataType,
-    BufferBits,
     Command,
     Attributes,
-    Primitive,
     Texture,
-    TextureWrap,
-    TextureInternalFormat as TexIntFmt,
-    TextureFormat as TexFmt,
     Framebuffer,
+    BufferBits,
+    Primitive,
+    DataType,
+    InternalFormat,
+    Format,
+    Wrap,
 } from "./lib/webglutenfree.js";
 
 const [WIDTH, HEIGHT] = [256, 256];
@@ -40,19 +40,19 @@ const ALPHA_M = 0.147;
 const dev = Device.create({ antialias: false });
 
 // By using REPEAT in both directions, we create a cyclic universe
-const pingTex = Texture.create(dev, WIDTH, HEIGHT, TexIntFmt.RGBA8, {
-    wrapS: TextureWrap.REPEAT,
-    wrapT: TextureWrap.REPEAT,
+const pingTex = Texture.create(dev, WIDTH, HEIGHT, InternalFormat.RGBA8, {
+    wrapS: Wrap.REPEAT,
+    wrapT: Wrap.REPEAT,
 });
-const pongTex = Texture.create(dev, WIDTH, HEIGHT, TexIntFmt.RGBA8, {
-    wrapS: TextureWrap.REPEAT,
-    wrapT: TextureWrap.REPEAT,
+const pongTex = Texture.create(dev, WIDTH, HEIGHT, InternalFormat.RGBA8, {
+    wrapS: Wrap.REPEAT,
+    wrapT: Wrap.REPEAT,
 });
 
 // Store the initial state
 pingTex.store(
     new Uint8Array(createData()),
-    TexFmt.RGBA,
+    Format.RGBA,
     DataType.UNSIGNED_BYTE,
 );
 
@@ -64,7 +64,7 @@ const pongFbo = Framebuffer.create(dev, WIDTH, HEIGHT, pongTex);
 // is read, but all RED, GREEN and BLUE channels are written for aesthetics.
 
 interface CmdProps {
-    tex: Texture<TexIntFmt>;
+    tex: Texture<InternalFormat>;
 }
 
 const cmd = Command.create<CmdProps>(
