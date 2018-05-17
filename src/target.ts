@@ -37,8 +37,8 @@ export class Target {
         private dev: Device,
         private glDrawBuffers: number[],
         private glFramebuffer: WebGLFramebuffer | null,
-        private viewportWidth?: number,
-        private viewportHeight?: number,
+        private surfaceWidth?: number,
+        private surfaceHeight?: number,
     ) {}
 
     /**
@@ -57,15 +57,14 @@ export class Target {
             },
             glFramebuffer,
             glDrawBuffers,
-            viewportWidth = gl.drawingBufferWidth,
-            viewportHeight = gl.drawingBufferHeight,
+            surfaceWidth = gl.drawingBufferWidth,
+            surfaceHeight = gl.drawingBufferHeight,
         } = this;
 
         _stackDrawFramebuffer.push(glFramebuffer);
         _stackDrawBuffers.push(glDrawBuffers);
 
-        // Setting the viewport is a relatively cheap operation that can be done
-        gl.viewport(0, 0, viewportWidth, viewportHeight);
+        gl.viewport(0, 0, surfaceWidth, surfaceHeight);
 
         cb(this);
 
@@ -115,8 +114,8 @@ export class Target {
         const gl = this.dev._gl;
         const {
             dev: { _stackReadFramebuffer },
-            viewportWidth = gl.drawingBufferWidth,
-            viewportHeight = gl.drawingBufferHeight,
+            surfaceWidth = gl.drawingBufferWidth,
+            surfaceHeight = gl.drawingBufferHeight,
         } = this;
 
         this.with(() => {
@@ -128,8 +127,8 @@ export class Target {
                 height,
                 0,
                 0,
-                viewportWidth,
-                viewportHeight,
+                surfaceWidth,
+                surfaceHeight,
                 bits,
                 filter,
             );
@@ -251,15 +250,12 @@ export class Target {
         _stackBlend.push(blendDescr);
         _stackProgram.push(glProgram);
 
-        let iter = 0;
+        let i = 0;
 
         cb((attrs: Attributes, props: P) => {
             // with() ensures the original target is still bound
             this.with(() => {
-                iter++;
-
-                // TODO: find a way to restore vertex array rebinding
-                // optimization
+                i++;
 
                 // Ensure the shared setup still holds
 
@@ -268,8 +264,8 @@ export class Target {
                 _stackBlend.push(blendDescr);
                 _stackProgram.push(glProgram);
 
-                this.textures(textureAccessors, props, iter);
-                this.uniforms(uniformDescrs, props, iter);
+                this.textures(textureAccessors, props, i);
+                this.uniforms(uniformDescrs, props, i);
 
                 _stackVertexArray.push(attrs.glVertexArray);
 

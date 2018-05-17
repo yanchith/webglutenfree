@@ -305,12 +305,12 @@ class Stack {
  * `device.target()` or `framebuffer.target()`.
  */
 class Target {
-    constructor(dev, glDrawBuffers, glFramebuffer, viewportWidth, viewportHeight) {
+    constructor(dev, glDrawBuffers, glFramebuffer, surfaceWidth, surfaceHeight) {
         this.dev = dev;
         this.glDrawBuffers = glDrawBuffers;
         this.glFramebuffer = glFramebuffer;
-        this.viewportWidth = viewportWidth;
-        this.viewportHeight = viewportHeight;
+        this.surfaceWidth = surfaceWidth;
+        this.surfaceHeight = surfaceHeight;
     }
     /**
      * Run the callback with the target bound. This is called automatically,
@@ -321,11 +321,10 @@ class Target {
      */
     with(cb) {
         const gl = this.dev._gl;
-        const { dev: { _stackDrawBuffers, _stackDrawFramebuffer, }, glFramebuffer, glDrawBuffers, viewportWidth = gl.drawingBufferWidth, viewportHeight = gl.drawingBufferHeight, } = this;
+        const { dev: { _stackDrawBuffers, _stackDrawFramebuffer, }, glFramebuffer, glDrawBuffers, surfaceWidth = gl.drawingBufferWidth, surfaceHeight = gl.drawingBufferHeight, } = this;
         _stackDrawFramebuffer.push(glFramebuffer);
         _stackDrawBuffers.push(glDrawBuffers);
-        // Setting the viewport is a relatively cheap operation that can be done
-        gl.viewport(0, 0, viewportWidth, viewportHeight);
+        gl.viewport(0, 0, surfaceWidth, surfaceHeight);
         cb(this);
         _stackDrawFramebuffer.pop();
         _stackDrawBuffers.pop();
@@ -354,10 +353,10 @@ class Target {
      */
     blit(source, bits, { xOffset = 0, yOffset = 0, width = source.width, height = source.height, filter = Filter.NEAREST, } = {}) {
         const gl = this.dev._gl;
-        const { dev: { _stackReadFramebuffer }, viewportWidth = gl.drawingBufferWidth, viewportHeight = gl.drawingBufferHeight, } = this;
+        const { dev: { _stackReadFramebuffer }, surfaceWidth = gl.drawingBufferWidth, surfaceHeight = gl.drawingBufferHeight, } = this;
         this.with(() => {
             _stackReadFramebuffer.push(source.glFramebuffer);
-            gl.blitFramebuffer(xOffset, yOffset, width, height, 0, 0, viewportWidth, viewportHeight, bits, filter);
+            gl.blitFramebuffer(xOffset, yOffset, width, height, 0, 0, surfaceWidth, surfaceHeight, bits, filter);
             _stackReadFramebuffer.pop();
         });
     }
@@ -414,20 +413,18 @@ class Target {
         _stackStencilTest.push(stencilDescr);
         _stackBlend.push(blendDescr);
         _stackProgram.push(glProgram);
-        let iter = 0;
+        let i = 0;
         cb((attrs, props) => {
             // with() ensures the original target is still bound
             this.with(() => {
-                iter++;
-                // TODO: find a way to restore vertex array rebinding
-                // optimization
+                i++;
                 // Ensure the shared setup still holds
                 _stackDepthTest.push(depthDescr);
                 _stackStencilTest.push(stencilDescr);
                 _stackBlend.push(blendDescr);
                 _stackProgram.push(glProgram);
-                this.textures(textureAccessors, props, iter);
-                this.uniforms(uniformDescrs, props, iter);
+                this.textures(textureAccessors, props, i);
+                this.uniforms(uniformDescrs, props, i);
                 _stackVertexArray.push(attrs.glVertexArray);
                 if (attrs.indexed) {
                     this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
@@ -658,33 +655,11 @@ class Command {
         this.stencilDescr = stencilDescr || null;
         this.blendDescr = blendDescr || null;
         this.glProgram = null;
-        this.textureAccessors = [];
-        this.uniformDescrs = [];
         this.init();
     }
     static create(dev, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
         nonNull(vert, fmtParamNonNull("vert"));
         nonNull(frag, fmtParamNonNull("frag"));
-        if (depth) {
-            nonNull(depth.func, fmtParamNonNull("depth.func"));
-        }
-        if (blend) {
-            nonNull(blend.func, fmtParamNonNull("blend.func"));
-            nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
-            nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
-            if (typeof blend.func.src === "object") {
-                nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
-                nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
-            }
-            if (typeof blend.func.dst === "object") {
-                nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
-                nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
-            }
-        }
-        if (stencil) {
-            nonNull(stencil.func, fmtParamNonNull("stencil.func"));
-            // TODO: complete stencil validation... validation framework?
-        }
         const depthDescr = parseDepth(depth);
         const stencilDescr = parseStencil(stencil);
         const blendDescr = parseBlend(blend);
@@ -1040,12 +1015,15 @@ function parseDepth(depth) {
     if (!depth) {
         return undefined;
     }
+    nonNull(depth.func, fmtParamNonNull("depth.func"));
     return new DepthDescriptor(depth.func || DepthFunc.LESS, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
 }
 function parseStencil(stencil) {
     if (!stencil) {
         return undefined;
     }
+    nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+    // TODO: complete stencil validation... validation framework?
     return new StencilDescriptor(typeof stencil.func.func === "object"
         ? stencil.func.func.front
         : stencil.func.func, typeof stencil.func.func === "object"
@@ -1103,6 +1081,17 @@ function parseStencil(stencil) {
 function parseBlend(blend) {
     if (!blend) {
         return undefined;
+    }
+    nonNull(blend.func, fmtParamNonNull("blend.func"));
+    nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+    nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+    if (typeof blend.func.src === "object") {
+        nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
+        nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
+    }
+    if (typeof blend.func.dst === "object") {
+        nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
+        nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
     }
     return new BlendDescriptor(typeof blend.func.src === "object"
         ? blend.func.src.rgb

@@ -29,9 +29,9 @@ export declare class Target {
     private dev;
     private glDrawBuffers;
     private glFramebuffer;
-    private viewportWidth?;
-    private viewportHeight?;
-    constructor(dev: Device, glDrawBuffers: number[], glFramebuffer: WebGLFramebuffer | null, viewportWidth?: number | undefined, viewportHeight?: number | undefined);
+    private surfaceWidth?;
+    private surfaceHeight?;
+    constructor(dev: Device, glDrawBuffers: number[], glFramebuffer: WebGLFramebuffer | null, surfaceWidth?: number | undefined, surfaceHeight?: number | undefined);
     /**
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
