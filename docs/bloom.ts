@@ -8,15 +8,15 @@
 import {
     Device,
     Extension,
-    BufferBits,
     Command,
     DepthFunc,
     Attributes,
     Primitive,
     Texture,
-    TextureInternalFormat as TexIntFmt,
-    TextureFilter,
     Framebuffer,
+    BufferBits,
+    InternalFormat,
+    Filter,
 } from "./lib/webglutenfree.js";
 import { vec2, mat4 } from "./libx/gl-matrix.js";
 
@@ -48,21 +48,21 @@ const [blurWidth, blurHeight] = [
     height * BLUR_TEXTURE_SIZE_FACTOR,
 ];
 
-const colorTex = Texture.create(dev, width, height, TexIntFmt.RGBA32F, {
-    min: TextureFilter.LINEAR,
-    mag: TextureFilter.LINEAR,
+const colorTex = Texture.create(dev, width, height, InternalFormat.RGBA32F, {
+    min: Filter.LINEAR,
+    mag: Filter.LINEAR,
 });
 
-const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24);
+const depthTex = Texture.create(dev, width, height, InternalFormat.DEPTH_COMPONENT24);
 
-const pingTex = Texture.create(dev, blurWidth, blurHeight, TexIntFmt.RGBA32F, {
-    min: TextureFilter.LINEAR,
-    mag: TextureFilter.LINEAR,
+const pingTex = Texture.create(dev, blurWidth, blurHeight, InternalFormat.RGBA32F, {
+    min: Filter.LINEAR,
+    mag: Filter.LINEAR,
 });
 
-const pongTex = Texture.create(dev, blurWidth, blurHeight, TexIntFmt.RGBA32F, {
-    min: TextureFilter.LINEAR,
-    mag: TextureFilter.LINEAR,
+const pongTex = Texture.create(dev, blurWidth, blurHeight, InternalFormat.RGBA32F, {
+    min: Filter.LINEAR,
+    mag: Filter.LINEAR,
 });
 
 const sceneFbo = Framebuffer.create(dev, width, height, colorTex, depthTex);
@@ -215,7 +215,7 @@ const cmdSep = Command.create(
 // allowing us to use fewer blur passes to the same effect.
 
 interface CmdBlurProps {
-    source: Texture<TexIntFmt>;
+    source: Texture<InternalFormat>;
     direction: vec2;
 }
 

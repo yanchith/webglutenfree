@@ -1,5 +1,5 @@
 import * as assert from "./util/assert";
-import { BufferBits, Primitive } from "./types";
+import { BufferBits, Filter, Primitive } from "./types";
 
 export type Device = import ("./device").Device;
 export type Command<P> = import ("./command").Command<P>;
@@ -15,6 +15,38 @@ export interface TargetClearOptions {
     a?: number;
     depth?: number;
     stencil?: number;
+    scissorX?: number;
+    scissorY?: number;
+    scissorWidth?: number;
+    scissorHeight?: number;
+}
+
+export type BlitFilter = Filter.NEAREST | Filter.LINEAR;
+export interface TargetBlitOptions {
+    srcX?: number;
+    srcY?: number;
+    srcWidth?: number;
+    srcHeight?: number;
+    dstX?: number;
+    dstY?: number;
+    dstWidth?: number;
+    dstHeight?: number;
+    filter?: BlitFilter;
+    scissorX?: number;
+    scissorY?: number;
+    scissorWidth?: number;
+    scissorHeight?: number;
+}
+
+export interface TargetDrawOptions {
+    viewportX?: number;
+    viewportY?: number;
+    viewportWidth?: number;
+    viewportHeight?: number;
+    scissorX?: number;
+    scissorY?: number;
+    scissorWidth?: number;
+    scissorHeight?: number;
 }
 
 /**
@@ -25,10 +57,10 @@ export class Target {
 
     constructor(
         private dev: Device,
-        readonly glDrawBuffers: number[],
-        readonly glFramebuffer: WebGLFramebuffer | null,
-        readonly width?: number,
-        readonly height?: number,
+        private glDrawBuffers: number[],
+        private glFramebuffer: WebGLFramebuffer | null,
+        private surfaceWidth?: number,
+        private surfaceHeight?: number,
     ) { }
 
     /**
@@ -40,50 +72,21 @@ export class Target {
      */
     with(cb: (rt: Target) => void): void {
         const {
-            dev: { _gl, _stackDrawBuffers, _stackDrawFramebuffer },
+            dev: {
+                _stackDrawBuffers,
+                _stackDrawFramebuffer,
+            },
             glFramebuffer,
             glDrawBuffers,
-        } = this;
-        const {
-            width = _gl.drawingBufferWidth,
-            height = _gl.drawingBufferHeight,
         } = this;
 
         _stackDrawFramebuffer.push(glFramebuffer);
         _stackDrawBuffers.push(glDrawBuffers);
 
-        _gl.viewport(0, 0, width, height);
-
         cb(this);
 
         _stackDrawFramebuffer.pop();
         _stackDrawBuffers.pop();
-    }
-
-    /**
-     * Blit source framebuffer onto this render target. Use buffer bits to
-     * choose buffers to blit.
-     */
-    blit(source: Framebuffer, bits: BufferBits): void {
-        const {
-            dev: { _gl, _stackReadFramebuffer },
-            width,
-            height,
-        } = this;
-
-        this.with(() => {
-            _stackReadFramebuffer.push(source.glFramebuffer);
-            _gl.blitFramebuffer(
-                0, 0,
-                source.width, source.height,
-                0, 0,
-                width || _gl.drawingBufferWidth,
-                height || _gl.drawingBufferHeight,
-                bits,
-                _gl.NEAREST,
-            );
-            _stackReadFramebuffer.pop();
-        });
     }
 
     /**
@@ -98,14 +101,77 @@ export class Target {
             a = 1,
             depth = 1,
             stencil = 0,
+            scissorX = 0,
+            scissorY = 0,
+            scissorWidth = this.surfaceWidth === void 0
+                ? this.dev._gl.drawingBufferWidth
+                : this.surfaceWidth,
+            scissorHeight = this.surfaceHeight === void 0
+                ? this.dev._gl.drawingBufferHeight
+                : this.surfaceHeight,
         }: TargetClearOptions = {},
     ): void {
         this.with(() => {
             const gl = this.dev._gl;
+
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+
             if (bits & BufferBits.COLOR) { gl.clearColor(r, g, b, a); }
             if (bits & BufferBits.DEPTH) { gl.clearDepth(depth); }
             if (bits & BufferBits.STENCIL) { gl.clearStencil(stencil); }
             gl.clear(bits);
+        });
+    }
+
+
+    /**
+     * Blit source framebuffer onto this render target. Use buffer bits to
+     * choose buffers to blit.
+     */
+    blit(
+        source: Framebuffer,
+        bits: BufferBits,
+        {
+            srcX = 0,
+            srcY = 0,
+            srcWidth = source.width,
+            srcHeight = source.height,
+            dstX = 0,
+            dstY = 0,
+            dstWidth = this.surfaceWidth === void 0
+                ? this.dev._gl.drawingBufferWidth
+                : this.surfaceWidth,
+            dstHeight = this.surfaceHeight === void 0
+                ? this.dev._gl.drawingBufferHeight
+                : this.surfaceHeight,
+            filter = Filter.NEAREST,
+            scissorX = dstX,
+            scissorY = dstY,
+            scissorWidth = dstWidth,
+            scissorHeight = dstHeight,
+        }: TargetBlitOptions = {},
+    ): void {
+        const { dev: { _gl: gl, _stackReadFramebuffer } } = this;
+
+        this.with(() => {
+            _stackReadFramebuffer.push(source.glFramebuffer);
+
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+
+            gl.blitFramebuffer(
+                srcX,
+                srcY,
+                srcWidth,
+                srcHeight,
+                dstX,
+                dstY,
+                dstWidth,
+                dstHeight,
+                bits,
+                filter,
+            );
+
+            _stackReadFramebuffer.pop();
         });
     }
 
@@ -118,7 +184,12 @@ export class Target {
      * The properties are passed to the command's uniform or texture callbacks,
      * if used.
      */
-    draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void;
+    draw<P>(
+        cmd: Command<P>,
+        attrs: Attributes,
+        props: P,
+        opts?: TargetDrawOptions,
+    ): void;
     /**
      * Draw to this target with a command, attributes, and command properties.
      * The properties are passed to the command's uniform or texture callbacks,
@@ -126,9 +197,28 @@ export class Target {
      *
      * This is a unified header to stisfy the typechecker.
      */
-    draw(cmd: Command<any>, attrs: Attributes, props?: any): void {
+    draw(
+        cmd: Command<any>,
+        attrs: Attributes,
+        props?: any,
+        {
+            viewportX = 0,
+            viewportY = 0,
+            viewportWidth = this.surfaceWidth === void 0
+                ? this.dev._gl.drawingBufferWidth
+                : this.surfaceWidth,
+            viewportHeight = this.surfaceHeight === void 0
+                ? this.dev._gl.drawingBufferHeight
+                : this.surfaceHeight,
+            scissorX = viewportX,
+            scissorY = viewportY,
+            scissorWidth = viewportWidth,
+            scissorHeight = viewportHeight,
+        }: TargetDrawOptions = {},
+    ): void {
         const {
             dev: {
+                _gl: gl,
                 _stackVertexArray,
                 _stackProgram,
                 _stackDepthTest,
@@ -156,6 +246,10 @@ export class Target {
 
             // Note that attrs.glVertexArray may be null for empty attrs -> ok
             _stackVertexArray.push(attrs.glVertexArray);
+
+            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+
             if (attrs.indexed) {
                 this.drawElements(
                     attrs.primitive,
@@ -193,9 +287,24 @@ export class Target {
     batch<P>(
         cmd: Command<P>,
         cb: (draw: (attrs: Attributes, props: P) => void) => void,
+        {
+            viewportX = 0,
+            viewportY = 0,
+            viewportWidth = this.surfaceWidth === void 0
+                ? this.dev._gl.drawingBufferWidth
+                : this.surfaceWidth,
+            viewportHeight = this.surfaceHeight === void 0
+                ? this.dev._gl.drawingBufferHeight
+                : this.surfaceHeight,
+            scissorX = viewportX,
+            scissorY = viewportY,
+            scissorWidth = viewportWidth,
+            scissorHeight = viewportHeight,
+        }: TargetDrawOptions = {},
     ): void {
         const {
             dev: {
+                _gl: gl,
                 _stackVertexArray,
                 _stackProgram,
                 _stackDepthTest,
@@ -223,15 +332,12 @@ export class Target {
         _stackBlend.push(blendDescr);
         _stackProgram.push(glProgram);
 
-        let iter = 0;
+        let i = 0;
 
         cb((attrs: Attributes, props: P) => {
             // with() ensures the original target is still bound
             this.with(() => {
-                iter++;
-
-                // TODO: find a way to restore vertex array rebinding
-                // optimization
+                i++;
 
                 // Ensure the shared setup still holds
 
@@ -240,10 +346,13 @@ export class Target {
                 _stackBlend.push(blendDescr);
                 _stackProgram.push(glProgram);
 
-                this.textures(textureAccessors, props, iter);
-                this.uniforms(uniformDescrs, props, iter);
+                this.textures(textureAccessors, props, i);
+                this.uniforms(uniformDescrs, props, i);
 
                 _stackVertexArray.push(attrs.glVertexArray);
+
+                gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+                gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
                 if (attrs.indexed) {
                     this.drawElements(

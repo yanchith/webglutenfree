@@ -1,4 +1,13 @@
-export { BufferBits, BufferUsage, DataType, Primitive } from "./types";
+export {
+    BufferBits,
+    BufferUsage,
+    DataType,
+    InternalFormat,
+    Format,
+    Filter,
+    Wrap,
+    Primitive,
+} from "./types";
 
 export {
     Device,
@@ -8,7 +17,11 @@ export {
     DeviceWithContextOptions,
 } from "./device";
 
-export { TargetClearOptions } from "./target";
+export {
+    TargetClearOptions,
+    TargetBlitOptions,
+    TargetDrawOptions,
+} from "./target";
 
 export {
     Command,
@@ -18,8 +31,8 @@ export {
     StencilOp,
     BlendFunc,
     BlendEquation,
-    StencilOrSeparate,
-    BlendOrSeparate,
+    SingleOrSeparateFrontBack,
+    SingleOrSeparateRgbAlpha,
     Accessor,
     Uniform1f,
     Uniform1fv,
@@ -76,7 +89,6 @@ export {
 
 export {
     Texture,
-    TextureFilter,
     TextureMinFilter,
     TextureMagFilter,
     TextureWrap,

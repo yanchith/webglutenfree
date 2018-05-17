@@ -5,16 +5,16 @@
 
 import {
     Device,
-    BufferBits,
     Command,
     BlendFunc,
     DepthFunc,
     VertexBuffer,
     Attributes,
     AttributeType,
+    BufferBits,
     BufferUsage,
-    DataType,
     Primitive,
+    DataType,
 } from "./lib/webglutenfree.js";
 import { mat3, mat4 } from "./libx/gl-matrix.js";
 

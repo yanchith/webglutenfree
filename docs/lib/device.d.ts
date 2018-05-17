@@ -12,7 +12,8 @@ export interface DeviceCreateOptions {
     extensions?: Extension[];
     debug?: boolean;
     pixelRatio?: number;
-    viewport?: [number, number];
+    viewportWidth?: number;
+    viewportHeight?: number;
 }
 export interface DeviceWithCanvasOptions {
     alpha?: boolean;
@@ -23,13 +24,15 @@ export interface DeviceWithCanvasOptions {
     extensions?: Extension[];
     debug?: boolean;
     pixelRatio?: number;
-    viewport?: [number, number];
+    viewportWidth?: number;
+    viewportHeight?: number;
 }
 export interface DeviceWithContextOptions {
     extensions?: Extension[];
     debug?: boolean;
     pixelRatio?: number;
-    viewport?: [number, number];
+    viewportWidth?: number;
+    viewportHeight?: number;
 }
 /**
  * Available extensions.
@@ -54,7 +57,7 @@ export declare class Device {
      * context, but concurrent usage of voids the warranty. Only use
      * concurrently when absolutely necessary.
      */
-    static withContext(gl: WebGL2RenderingContext, { pixelRatio, viewport, extensions, debug, }?: DeviceWithContextOptions): Device;
+    static withContext(gl: WebGL2RenderingContext, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, }?: DeviceWithContextOptions): Device;
     readonly _gl: WebGL2RenderingContext;
     readonly _canvas: HTMLCanvasElement;
     readonly _stackVertexArray: Stack<WebGLVertexArrayObject | null>;
@@ -66,7 +69,8 @@ export declare class Device {
     readonly _stackReadFramebuffer: Stack<WebGLFramebuffer | null>;
     readonly _stackDrawBuffers: Stack<number[]>;
     private explicitPixelRatio?;
-    private explicitViewport?;
+    private explicitViewportWidth?;
+    private explicitViewportHeight?;
     private backbufferTarget;
     private constructor();
     /**

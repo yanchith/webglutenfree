@@ -100,6 +100,19 @@ var BufferUsage;
     BufferUsage[BufferUsage["STREAM_COPY"] = 35042] = "STREAM_COPY";
 })(BufferUsage || (BufferUsage = {}));
 /**
+ * Drawing primitives.
+ */
+var Primitive;
+(function (Primitive) {
+    Primitive[Primitive["POINTS"] = 0] = "POINTS";
+    Primitive[Primitive["LINES"] = 1] = "LINES";
+    Primitive[Primitive["LINE_LOOP"] = 2] = "LINE_LOOP";
+    Primitive[Primitive["LINE_STRIP"] = 3] = "LINE_STRIP";
+    Primitive[Primitive["TRIANGLES"] = 4] = "TRIANGLES";
+    Primitive[Primitive["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
+    Primitive[Primitive["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
+})(Primitive || (Primitive = {}));
+/**
  * Possible data types.
  */
 var DataType;
@@ -122,6 +135,97 @@ var DataType;
     // UNSIGNED_INT_10F_11F_11F_REV
     DataType[DataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
 })(DataType || (DataType = {}));
+var InternalFormat;
+(function (InternalFormat) {
+    // RED
+    InternalFormat[InternalFormat["R8"] = 33321] = "R8";
+    InternalFormat[InternalFormat["R8_SNORM"] = 36756] = "R8_SNORM";
+    InternalFormat[InternalFormat["R8UI"] = 33330] = "R8UI";
+    InternalFormat[InternalFormat["R8I"] = 33329] = "R8I";
+    InternalFormat[InternalFormat["R16UI"] = 33332] = "R16UI";
+    InternalFormat[InternalFormat["R16I"] = 33331] = "R16I";
+    InternalFormat[InternalFormat["R32UI"] = 33334] = "R32UI";
+    InternalFormat[InternalFormat["R32I"] = 33333] = "R32I";
+    InternalFormat[InternalFormat["R16F"] = 33325] = "R16F";
+    InternalFormat[InternalFormat["R32F"] = 33326] = "R32F";
+    // RG
+    InternalFormat[InternalFormat["RG8"] = 33323] = "RG8";
+    InternalFormat[InternalFormat["RG8_SNORM"] = 36757] = "RG8_SNORM";
+    InternalFormat[InternalFormat["RG8UI"] = 33336] = "RG8UI";
+    InternalFormat[InternalFormat["RG8I"] = 33335] = "RG8I";
+    InternalFormat[InternalFormat["RG16UI"] = 33338] = "RG16UI";
+    InternalFormat[InternalFormat["RG16I"] = 33337] = "RG16I";
+    InternalFormat[InternalFormat["RG32UI"] = 33340] = "RG32UI";
+    InternalFormat[InternalFormat["RG32I"] = 33339] = "RG32I";
+    InternalFormat[InternalFormat["RG16F"] = 33327] = "RG16F";
+    InternalFormat[InternalFormat["RG32F"] = 33328] = "RG32F";
+    // RGB
+    InternalFormat[InternalFormat["RGB8"] = 32849] = "RGB8";
+    InternalFormat[InternalFormat["RGB8_SNORM"] = 36758] = "RGB8_SNORM";
+    InternalFormat[InternalFormat["RGB8UI"] = 36221] = "RGB8UI";
+    InternalFormat[InternalFormat["RGB8I"] = 36239] = "RGB8I";
+    InternalFormat[InternalFormat["RGB16UI"] = 36215] = "RGB16UI";
+    InternalFormat[InternalFormat["RGB16I"] = 36233] = "RGB16I";
+    InternalFormat[InternalFormat["RGB32UI"] = 36209] = "RGB32UI";
+    InternalFormat[InternalFormat["RGB32I"] = 36227] = "RGB32I";
+    InternalFormat[InternalFormat["RGB16F"] = 34843] = "RGB16F";
+    InternalFormat[InternalFormat["RGB32F"] = 34837] = "RGB32F";
+    // RGBA
+    InternalFormat[InternalFormat["RGBA8"] = 32856] = "RGBA8";
+    InternalFormat[InternalFormat["RGBA8_SNORM"] = 36759] = "RGBA8_SNORM";
+    InternalFormat[InternalFormat["RGBA8UI"] = 36220] = "RGBA8UI";
+    InternalFormat[InternalFormat["RGBA8I"] = 36238] = "RGBA8I";
+    InternalFormat[InternalFormat["RGBA16UI"] = 36214] = "RGBA16UI";
+    InternalFormat[InternalFormat["RGBA16I"] = 36232] = "RGBA16I";
+    InternalFormat[InternalFormat["RGBA32UI"] = 36208] = "RGBA32UI";
+    InternalFormat[InternalFormat["RGBA32I"] = 36226] = "RGBA32I";
+    InternalFormat[InternalFormat["RGBA16F"] = 34842] = "RGBA16F";
+    InternalFormat[InternalFormat["RGBA32F"] = 34836] = "RGBA32F";
+    // TODO: support exotic formats
+    // DEPTH
+    InternalFormat[InternalFormat["DEPTH_COMPONENT16"] = 33189] = "DEPTH_COMPONENT16";
+    InternalFormat[InternalFormat["DEPTH_COMPONENT24"] = 33190] = "DEPTH_COMPONENT24";
+    InternalFormat[InternalFormat["DEPTH_COMPONENT32F"] = 36012] = "DEPTH_COMPONENT32F";
+    // DEPTH STENCIL
+    InternalFormat[InternalFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
+    InternalFormat[InternalFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
+    // ~LUMINANCE ALPHA
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+})(InternalFormat || (InternalFormat = {}));
+var Format;
+(function (Format) {
+    Format[Format["RED"] = 6403] = "RED";
+    Format[Format["RG"] = 33319] = "RG";
+    Format[Format["RGB"] = 6407] = "RGB";
+    Format[Format["RGBA"] = 6408] = "RGBA";
+    Format[Format["RED_INTEGER"] = 36244] = "RED_INTEGER";
+    Format[Format["RG_INTEGER"] = 33320] = "RG_INTEGER";
+    Format[Format["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
+    Format[Format["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
+    // TODO: support exotic formats
+    Format[Format["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
+    Format[Format["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+})(Format || (Format = {}));
+var Filter;
+(function (Filter) {
+    Filter[Filter["NEAREST"] = 9728] = "NEAREST";
+    Filter[Filter["LINEAR"] = 9729] = "LINEAR";
+    Filter[Filter["NEAREST_MIPMAP_NEAREST"] = 9984] = "NEAREST_MIPMAP_NEAREST";
+    Filter[Filter["LINEAR_MIPMAP_NEAREST"] = 9985] = "LINEAR_MIPMAP_NEAREST";
+    Filter[Filter["NEAREST_MIPMAP_LINEAR"] = 9986] = "NEAREST_MIPMAP_LINEAR";
+    Filter[Filter["LINEAR_MIPMAP_LINEAR"] = 9987] = "LINEAR_MIPMAP_LINEAR";
+})(Filter || (Filter = {}));
+var Wrap;
+(function (Wrap) {
+    Wrap[Wrap["CLAMP_TO_EDGE"] = 33071] = "CLAMP_TO_EDGE";
+    Wrap[Wrap["REPEAT"] = 10497] = "REPEAT";
+    Wrap[Wrap["MIRRORED_REPEAT"] = 33648] = "MIRRORED_REPEAT";
+})(Wrap || (Wrap = {}));
 /**
  * Possible data types.
  */
@@ -147,19 +251,6 @@ var UniformType;
     // TODO: support exotic types
     // BOOL
 })(UniformType || (UniformType = {}));
-/**
- * Drawing primitives.
- */
-var Primitive;
-(function (Primitive) {
-    Primitive[Primitive["POINTS"] = 0] = "POINTS";
-    Primitive[Primitive["LINES"] = 1] = "LINES";
-    Primitive[Primitive["LINE_LOOP"] = 2] = "LINE_LOOP";
-    Primitive[Primitive["LINE_STRIP"] = 3] = "LINE_STRIP";
-    Primitive[Primitive["TRIANGLES"] = 4] = "TRIANGLES";
-    Primitive[Primitive["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
-    Primitive[Primitive["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
-})(Primitive || (Primitive = {}));
 function sizeOf(type) {
     switch (type) {
         case DataType.BYTE:
@@ -181,18 +272,26 @@ function sizeOf(type) {
 }
 
 class Stack {
-    constructor(initialValue, onChange) {
+    constructor(initialValue, onChangeDiff, onChangeApply) {
         this.s = [initialValue];
-        this.onChange = onChange;
+        this.onChangeDiff = onChangeDiff;
+        this.onChangeApply = onChangeApply;
+        onChangeApply(initialValue, "init");
     }
     push(value) {
-        this.onChange(this.peek(), value, "push");
+        const top = this.peek();
+        if (this.onChangeDiff(top, value, "push")) {
+            this.onChangeApply(value, "push");
+        }
         this.s.push(value);
     }
     pop() {
         nonEmpty(this.s, () => "Stack must not be empty for pop");
         const prevValue = this.s.pop();
-        this.onChange(prevValue, this.peek(), "pop");
+        const top = this.peek();
+        if (this.onChangeDiff(prevValue, top, "pop")) {
+            this.onChangeApply(top, "push");
+        }
         return prevValue;
     }
     peek() {
@@ -206,12 +305,12 @@ class Stack {
  * `device.target()` or `framebuffer.target()`.
  */
 class Target {
-    constructor(dev, glDrawBuffers, glFramebuffer, width, height) {
+    constructor(dev, glDrawBuffers, glFramebuffer, surfaceWidth, surfaceHeight) {
         this.dev = dev;
         this.glDrawBuffers = glDrawBuffers;
         this.glFramebuffer = glFramebuffer;
-        this.width = width;
-        this.height = height;
+        this.surfaceWidth = surfaceWidth;
+        this.surfaceHeight = surfaceHeight;
     }
     /**
      * Run the callback with the target bound. This is called automatically,
@@ -221,33 +320,24 @@ class Target {
      * unnecessary rebinding.
      */
     with(cb) {
-        const { dev: { _gl, _stackDrawBuffers, _stackDrawFramebuffer }, glFramebuffer, glDrawBuffers, } = this;
-        const { width = _gl.drawingBufferWidth, height = _gl.drawingBufferHeight, } = this;
+        const { dev: { _stackDrawBuffers, _stackDrawFramebuffer, }, glFramebuffer, glDrawBuffers, } = this;
         _stackDrawFramebuffer.push(glFramebuffer);
         _stackDrawBuffers.push(glDrawBuffers);
-        _gl.viewport(0, 0, width, height);
         cb(this);
         _stackDrawFramebuffer.pop();
         _stackDrawBuffers.pop();
     }
     /**
-     * Blit source framebuffer onto this render target. Use buffer bits to
-     * choose buffers to blit.
-     */
-    blit(source, bits) {
-        const { dev: { _gl, _stackReadFramebuffer }, width, height, } = this;
-        this.with(() => {
-            _stackReadFramebuffer.push(source.glFramebuffer);
-            _gl.blitFramebuffer(0, 0, source.width, source.height, 0, 0, width || _gl.drawingBufferWidth, height || _gl.drawingBufferHeight, bits, _gl.NEAREST);
-            _stackReadFramebuffer.pop();
-        });
-    }
-    /**
      * Clear selected buffers to provided values.
      */
-    clear(bits, { r = 0, g = 0, b = 0, a = 1, depth = 1, stencil = 0, } = {}) {
+    clear(bits, { r = 0, g = 0, b = 0, a = 1, depth = 1, stencil = 0, scissorX = 0, scissorY = 0, scissorWidth = this.surfaceWidth === void 0
+        ? this.dev._gl.drawingBufferWidth
+        : this.surfaceWidth, scissorHeight = this.surfaceHeight === void 0
+        ? this.dev._gl.drawingBufferHeight
+        : this.surfaceHeight, } = {}) {
         this.with(() => {
             const gl = this.dev._gl;
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
             if (bits & BufferBits.COLOR) {
                 gl.clearColor(r, g, b, a);
             }
@@ -261,14 +351,35 @@ class Target {
         });
     }
     /**
+     * Blit source framebuffer onto this render target. Use buffer bits to
+     * choose buffers to blit.
+     */
+    blit(source, bits, { srcX = 0, srcY = 0, srcWidth = source.width, srcHeight = source.height, dstX = 0, dstY = 0, dstWidth = this.surfaceWidth === void 0
+        ? this.dev._gl.drawingBufferWidth
+        : this.surfaceWidth, dstHeight = this.surfaceHeight === void 0
+        ? this.dev._gl.drawingBufferHeight
+        : this.surfaceHeight, filter = Filter.NEAREST, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
+        const { dev: { _gl: gl, _stackReadFramebuffer } } = this;
+        this.with(() => {
+            _stackReadFramebuffer.push(source.glFramebuffer);
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+            gl.blitFramebuffer(srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, bits, filter);
+            _stackReadFramebuffer.pop();
+        });
+    }
+    /**
      * Draw to this target with a command, attributes, and command properties.
      * The properties are passed to the command's uniform or texture callbacks,
      * if used.
      *
      * This is a unified header to stisfy the typechecker.
      */
-    draw(cmd, attrs, props) {
-        const { dev: { _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
+    draw(cmd, attrs, props, { viewportX = 0, viewportY = 0, viewportWidth = this.surfaceWidth === void 0
+        ? this.dev._gl.drawingBufferWidth
+        : this.surfaceWidth, viewportHeight = this.surfaceHeight === void 0
+        ? this.dev._gl.drawingBufferHeight
+        : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
+        const { dev: { _gl: gl, _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         this.with(() => {
             _stackDepthTest.push(depthDescr);
@@ -279,6 +390,8 @@ class Target {
             this.uniforms(uniformDescrs, props, 0);
             // Note that attrs.glVertexArray may be null for empty attrs -> ok
             _stackVertexArray.push(attrs.glVertexArray);
+            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
             if (attrs.indexed) {
                 this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
                 attrs.instanceCount);
@@ -302,8 +415,12 @@ class Target {
      * All drawing should be performed within the callback to prevent
      * unnecesasry rebinding.
      */
-    batch(cmd, cb) {
-        const { dev: { _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
+    batch(cmd, cb, { viewportX = 0, viewportY = 0, viewportWidth = this.surfaceWidth === void 0
+        ? this.dev._gl.drawingBufferWidth
+        : this.surfaceWidth, viewportHeight = this.surfaceHeight === void 0
+        ? this.dev._gl.drawingBufferHeight
+        : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
+        const { dev: { _gl: gl, _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch, unless API
@@ -313,21 +430,21 @@ class Target {
         _stackStencilTest.push(stencilDescr);
         _stackBlend.push(blendDescr);
         _stackProgram.push(glProgram);
-        let iter = 0;
+        let i = 0;
         cb((attrs, props) => {
             // with() ensures the original target is still bound
             this.with(() => {
-                iter++;
-                // TODO: find a way to restore vertex array rebinding
-                // optimization
+                i++;
                 // Ensure the shared setup still holds
                 _stackDepthTest.push(depthDescr);
                 _stackStencilTest.push(stencilDescr);
                 _stackBlend.push(blendDescr);
                 _stackProgram.push(glProgram);
-                this.textures(textureAccessors, props, iter);
-                this.uniforms(uniformDescrs, props, iter);
+                this.textures(textureAccessors, props, i);
+                this.uniforms(uniformDescrs, props, i);
                 _stackVertexArray.push(attrs.glVertexArray);
+                gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+                gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
                 if (attrs.indexed) {
                     this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
                     attrs.instanceCount);
@@ -557,33 +674,11 @@ class Command {
         this.stencilDescr = stencilDescr || null;
         this.blendDescr = blendDescr || null;
         this.glProgram = null;
-        this.textureAccessors = [];
-        this.uniformDescrs = [];
         this.init();
     }
     static create(dev, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
         nonNull(vert, fmtParamNonNull("vert"));
         nonNull(frag, fmtParamNonNull("frag"));
-        if (depth) {
-            nonNull(depth.func, fmtParamNonNull("depth.func"));
-        }
-        if (blend) {
-            nonNull(blend.func, fmtParamNonNull("blend.func"));
-            nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
-            nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
-            if (typeof blend.func.src === "object") {
-                nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
-                nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
-            }
-            if (typeof blend.func.dst === "object") {
-                nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
-                nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
-            }
-        }
-        if (stencil) {
-            nonNull(stencil.func, fmtParamNonNull("stencil.func"));
-            // TODO: complete stencil validation... validation framework?
-        }
         const depthDescr = parseDepth(depth);
         const stencilDescr = parseStencil(stencil);
         const blendDescr = parseBlend(blend);
@@ -939,12 +1034,15 @@ function parseDepth(depth) {
     if (!depth) {
         return undefined;
     }
+    nonNull(depth.func, fmtParamNonNull("depth.func"));
     return new DepthDescriptor(depth.func || DepthFunc.LESS, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
 }
 function parseStencil(stencil) {
     if (!stencil) {
         return undefined;
     }
+    nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+    // TODO: complete stencil validation... validation framework?
     return new StencilDescriptor(typeof stencil.func.func === "object"
         ? stencil.func.func.front
         : stencil.func.func, typeof stencil.func.func === "object"
@@ -1002,6 +1100,17 @@ function parseStencil(stencil) {
 function parseBlend(blend) {
     if (!blend) {
         return undefined;
+    }
+    nonNull(blend.func, fmtParamNonNull("blend.func"));
+    nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+    nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+    if (typeof blend.func.src === "object") {
+        nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
+        nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
+    }
+    if (typeof blend.func.dst === "object") {
+        nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
+        nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
     }
     return new BlendDescriptor(typeof blend.func.src === "object"
         ? blend.func.src.rgb
@@ -1251,7 +1360,7 @@ class Device {
      * context, but concurrent usage of voids the warranty. Only use
      * concurrently when absolutely necessary.
      */
-    static withContext(gl, { pixelRatio, viewport, extensions, debug, } = {}) {
+    static withContext(gl, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, } = {}) {
         if (extensions) {
             extensions.forEach((ext) => {
                 // We currently do not have extensions with callable API
@@ -1272,76 +1381,68 @@ class Device {
             }
             gl = wrapper;
         }
-        const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
-        dev.update();
-        return dev;
+        return new Device(gl, gl.canvas, pixelRatio, viewportWidth, viewportHeight);
     }
-    constructor(gl, canvas, explicitPixelRatio, explicitViewport) {
+    constructor(gl, canvas, explicitPixelRatio, explicitViewportWidth, explicitViewportHeight) {
         this._gl = gl;
         this._canvas = canvas;
         this.explicitPixelRatio = explicitPixelRatio;
-        this.explicitViewport = explicitViewport;
-        this.backbufferTarget = new Target(this, [gl.BACK], null);
-        this._stackVertexArray = new Stack(null, (prev, val) => prev === val ? void 0 : gl.bindVertexArray(val));
-        this._stackProgram = new Stack(null, (prev, val) => prev === val ? void 0 : gl.useProgram(val));
-        this._stackDepthTest = new Stack(null, (prev, val) => {
-            if (!DepthDescriptor.equals(prev, val)) {
-                if (val) {
-                    gl.enable(gl.DEPTH_TEST);
-                    gl.depthFunc(val.func);
-                    gl.depthMask(val.mask);
-                    gl.depthRange(val.rangeStart, val.rangeEnd);
-                }
-                else {
-                    gl.disable(gl.DEPTH_TEST);
-                }
+        this.explicitViewportWidth = explicitViewportWidth;
+        this.explicitViewportHeight = explicitViewportHeight;
+        this.update();
+        this.backbufferTarget = new Target(this, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        this._stackVertexArray = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindVertexArray(val));
+        this._stackProgram = new Stack(null, (prev, val) => prev !== val, (val) => gl.useProgram(val));
+        this._stackDepthTest = new Stack(null, (prev, val) => !DepthDescriptor.equals(prev, val), (val) => {
+            if (val) {
+                gl.enable(gl.DEPTH_TEST);
+                gl.depthFunc(val.func);
+                gl.depthMask(val.mask);
+                gl.depthRange(val.rangeStart, val.rangeEnd);
+            }
+            else {
+                gl.disable(gl.DEPTH_TEST);
             }
         });
-        this._stackStencilTest = new Stack(null, (prev, val) => {
-            if (!StencilDescriptor.equals(prev, val)) {
-                if (val) {
-                    const { fFn, bFn, fFnRef, bFnRef, fFnMask, bFnMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = val;
-                    gl.enable(gl.STENCIL_TEST);
-                    gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
-                    gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
-                    gl.stencilMaskSeparate(gl.FRONT, fMask);
-                    gl.stencilMaskSeparate(gl.BACK, bMask);
-                    gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
-                    gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
-                }
-                else {
-                    gl.disable(gl.STENCIL_TEST);
-                }
+        this._stackStencilTest = new Stack(null, (prev, val) => !StencilDescriptor.equals(prev, val), (val) => {
+            if (val) {
+                const { fFn, bFn, fFnRef, bFnRef, fFnMask, bFnMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = val;
+                gl.enable(gl.STENCIL_TEST);
+                gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
+                gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
+                gl.stencilMaskSeparate(gl.FRONT, fMask);
+                gl.stencilMaskSeparate(gl.BACK, bMask);
+                gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
+                gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
+            }
+            else {
+                gl.disable(gl.STENCIL_TEST);
             }
         });
-        this._stackBlend = new Stack(null, (prev, val) => {
-            if (!BlendDescriptor.equals(prev, val)) {
-                if (val) {
-                    gl.enable(gl.BLEND);
-                    gl.blendFuncSeparate(val.srcRGB, val.dstRGB, val.srcAlpha, val.dstAlpha);
-                    gl.blendEquationSeparate(val.eqnRGB, val.eqnAlpha);
-                    if (val.color) {
-                        const [r, g, b, a] = val.color;
-                        gl.blendColor(r, g, b, a);
-                    }
+        this._stackBlend = new Stack(null, (prev, val) => !BlendDescriptor.equals(prev, val), (val) => {
+            if (val) {
+                gl.enable(gl.BLEND);
+                gl.blendFuncSeparate(val.srcRGB, val.dstRGB, val.srcAlpha, val.dstAlpha);
+                gl.blendEquationSeparate(val.eqnRGB, val.eqnAlpha);
+                if (val.color) {
+                    const [r, g, b, a] = val.color;
+                    gl.blendColor(r, g, b, a);
                 }
-                else {
-                    gl.disable(gl.BLEND);
-                }
+            }
+            else {
+                gl.disable(gl.BLEND);
             }
         });
         // Note: DRAW_FRAMEBUFFER and READ_FRAMEBUFFER are handled separately
         // to support blitting. In library code, gl.FRAMEBUFFER target must
         // never be used, as it overwrites READ_FRAMEBUFFER and DRAW_FRAMEBUFFER
-        this._stackDrawFramebuffer = new Stack(null, (prev, val) => prev === val
-            ? void 0
-            : gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
-        this._stackReadFramebuffer = new Stack(null, (prev, val) => prev === val
-            ? void 0
-            : gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
-        this._stackDrawBuffers = new Stack([gl.BACK], (prev, val) => eqNumberArrays(prev, val)
-            ? void 0
-            : gl.drawBuffers(val));
+        this._stackDrawFramebuffer = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
+        this._stackReadFramebuffer = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
+        this._stackDrawBuffers = new Stack([gl.BACK], (prev, val) => !eqNumberArrays(prev, val), (val) => gl.drawBuffers(val));
+        // Enable scissor test globally. Practically everywhere you would want
+        // it disbled you can pass explicit scissor box instead. The impact on
+        // perf is negligent
+        gl.enable(gl.SCISSOR_TEST);
     }
     /**
      * Return width of the gl drawing buffer.
@@ -1394,12 +1495,12 @@ class Device {
     update() {
         const dpr = this.pixelRatio;
         const canvas = this._canvas;
-        const width = this.explicitViewport
-            && this.explicitViewport[0]
-            || canvas.clientWidth * dpr;
-        const height = this.explicitViewport
-            && this.explicitViewport[1]
-            || canvas.clientHeight * dpr;
+        const width = typeof this.explicitViewportWidth !== "undefined"
+            ? this.explicitViewportWidth
+            : canvas.clientWidth * dpr;
+        const height = typeof this.explicitViewportHeight !== "undefined"
+            ? this.explicitViewportHeight
+            : canvas.clientHeight * dpr;
         if (width !== canvas.width) {
             canvas.width = width;
         }
@@ -1821,97 +1922,6 @@ class AttributeDescriptor {
     }
 }
 
-var TextureWrap;
-(function (TextureWrap) {
-    TextureWrap[TextureWrap["CLAMP_TO_EDGE"] = 33071] = "CLAMP_TO_EDGE";
-    TextureWrap[TextureWrap["REPEAT"] = 10497] = "REPEAT";
-    TextureWrap[TextureWrap["MIRRORED_REPEAT"] = 33648] = "MIRRORED_REPEAT";
-})(TextureWrap || (TextureWrap = {}));
-var TextureFilter;
-(function (TextureFilter) {
-    TextureFilter[TextureFilter["NEAREST"] = 9728] = "NEAREST";
-    TextureFilter[TextureFilter["LINEAR"] = 9729] = "LINEAR";
-    TextureFilter[TextureFilter["NEAREST_MIPMAP_NEAREST"] = 9984] = "NEAREST_MIPMAP_NEAREST";
-    TextureFilter[TextureFilter["LINEAR_MIPMAP_NEAREST"] = 9985] = "LINEAR_MIPMAP_NEAREST";
-    TextureFilter[TextureFilter["NEAREST_MIPMAP_LINEAR"] = 9986] = "NEAREST_MIPMAP_LINEAR";
-    TextureFilter[TextureFilter["LINEAR_MIPMAP_LINEAR"] = 9987] = "LINEAR_MIPMAP_LINEAR";
-})(TextureFilter || (TextureFilter = {}));
-var TextureInternalFormat;
-(function (TextureInternalFormat) {
-    // RED
-    TextureInternalFormat[TextureInternalFormat["R8"] = 33321] = "R8";
-    TextureInternalFormat[TextureInternalFormat["R8_SNORM"] = 36756] = "R8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["R8UI"] = 33330] = "R8UI";
-    TextureInternalFormat[TextureInternalFormat["R8I"] = 33329] = "R8I";
-    TextureInternalFormat[TextureInternalFormat["R16UI"] = 33332] = "R16UI";
-    TextureInternalFormat[TextureInternalFormat["R16I"] = 33331] = "R16I";
-    TextureInternalFormat[TextureInternalFormat["R32UI"] = 33334] = "R32UI";
-    TextureInternalFormat[TextureInternalFormat["R32I"] = 33333] = "R32I";
-    TextureInternalFormat[TextureInternalFormat["R16F"] = 33325] = "R16F";
-    TextureInternalFormat[TextureInternalFormat["R32F"] = 33326] = "R32F";
-    // RG
-    TextureInternalFormat[TextureInternalFormat["RG8"] = 33323] = "RG8";
-    TextureInternalFormat[TextureInternalFormat["RG8_SNORM"] = 36757] = "RG8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["RG8UI"] = 33336] = "RG8UI";
-    TextureInternalFormat[TextureInternalFormat["RG8I"] = 33335] = "RG8I";
-    TextureInternalFormat[TextureInternalFormat["RG16UI"] = 33338] = "RG16UI";
-    TextureInternalFormat[TextureInternalFormat["RG16I"] = 33337] = "RG16I";
-    TextureInternalFormat[TextureInternalFormat["RG32UI"] = 33340] = "RG32UI";
-    TextureInternalFormat[TextureInternalFormat["RG32I"] = 33339] = "RG32I";
-    TextureInternalFormat[TextureInternalFormat["RG16F"] = 33327] = "RG16F";
-    TextureInternalFormat[TextureInternalFormat["RG32F"] = 33328] = "RG32F";
-    // RGB
-    TextureInternalFormat[TextureInternalFormat["RGB8"] = 32849] = "RGB8";
-    TextureInternalFormat[TextureInternalFormat["RGB8_SNORM"] = 36758] = "RGB8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["RGB8UI"] = 36221] = "RGB8UI";
-    TextureInternalFormat[TextureInternalFormat["RGB8I"] = 36239] = "RGB8I";
-    TextureInternalFormat[TextureInternalFormat["RGB16UI"] = 36215] = "RGB16UI";
-    TextureInternalFormat[TextureInternalFormat["RGB16I"] = 36233] = "RGB16I";
-    TextureInternalFormat[TextureInternalFormat["RGB32UI"] = 36209] = "RGB32UI";
-    TextureInternalFormat[TextureInternalFormat["RGB32I"] = 36227] = "RGB32I";
-    TextureInternalFormat[TextureInternalFormat["RGB16F"] = 34843] = "RGB16F";
-    TextureInternalFormat[TextureInternalFormat["RGB32F"] = 34837] = "RGB32F";
-    // RGBA
-    TextureInternalFormat[TextureInternalFormat["RGBA8"] = 32856] = "RGBA8";
-    TextureInternalFormat[TextureInternalFormat["RGBA8_SNORM"] = 36759] = "RGBA8_SNORM";
-    TextureInternalFormat[TextureInternalFormat["RGBA8UI"] = 36220] = "RGBA8UI";
-    TextureInternalFormat[TextureInternalFormat["RGBA8I"] = 36238] = "RGBA8I";
-    TextureInternalFormat[TextureInternalFormat["RGBA16UI"] = 36214] = "RGBA16UI";
-    TextureInternalFormat[TextureInternalFormat["RGBA16I"] = 36232] = "RGBA16I";
-    TextureInternalFormat[TextureInternalFormat["RGBA32UI"] = 36208] = "RGBA32UI";
-    TextureInternalFormat[TextureInternalFormat["RGBA32I"] = 36226] = "RGBA32I";
-    TextureInternalFormat[TextureInternalFormat["RGBA16F"] = 34842] = "RGBA16F";
-    TextureInternalFormat[TextureInternalFormat["RGBA32F"] = 34836] = "RGBA32F";
-    // TODO: support exotic formats
-    // DEPTH
-    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT16"] = 33189] = "DEPTH_COMPONENT16";
-    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT24"] = 33190] = "DEPTH_COMPONENT24";
-    TextureInternalFormat[TextureInternalFormat["DEPTH_COMPONENT32F"] = 36012] = "DEPTH_COMPONENT32F";
-    // DEPTH STENCIL
-    TextureInternalFormat[TextureInternalFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
-    TextureInternalFormat[TextureInternalFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
-    // ~LUMINANCE ALPHA
-    // LUMINANCE_ALPHA
-    // LUMINANCE
-    // ALPHA
-})(TextureInternalFormat || (TextureInternalFormat = {}));
-var TextureFormat;
-(function (TextureFormat) {
-    TextureFormat[TextureFormat["RED"] = 6403] = "RED";
-    TextureFormat[TextureFormat["RG"] = 33319] = "RG";
-    TextureFormat[TextureFormat["RGB"] = 6407] = "RGB";
-    TextureFormat[TextureFormat["RGBA"] = 6408] = "RGBA";
-    TextureFormat[TextureFormat["RED_INTEGER"] = 36244] = "RED_INTEGER";
-    TextureFormat[TextureFormat["RG_INTEGER"] = 33320] = "RG_INTEGER";
-    TextureFormat[TextureFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
-    TextureFormat[TextureFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
-    // TODO: support exotic formats
-    TextureFormat[TextureFormat["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
-    TextureFormat[TextureFormat["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
-    // LUMINANCE_ALPHA
-    // LUMINANCE
-    // ALPHA
-})(TextureFormat || (TextureFormat = {}));
 /**
  * Textures are images of 2D data, where each texel can contain multiple
  * information channels of a certain type.
@@ -1933,7 +1943,7 @@ class Texture {
      * Create a new texture with given width, height, and internal format.
      * The internal format determines, what kind of data is possible to store.
      */
-    static create(dev, width, height, internalFormat, { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
+    static create(dev, width, height, internalFormat, { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = {}) {
         return new Texture(dev._gl, width, height, internalFormat, wrapS, wrapT, min, mag);
     }
     /**
@@ -1941,7 +1951,7 @@ class Texture {
      * store the image in the texture.
      */
     static withImage(dev, image, options) {
-        return Texture.withTypedArray(dev, image.width, image.height, TextureInternalFormat.RGBA8, image.data, TextureFormat.RGBA, DataType.UNSIGNED_BYTE, options);
+        return Texture.withTypedArray(dev, image.width, image.height, InternalFormat.RGBA8, image.data, Format.RGBA, DataType.UNSIGNED_BYTE, options);
     }
     /**
      * Create a new texture with given width, height, and internal format.
@@ -1950,7 +1960,7 @@ class Texture {
      * texture.
      */
     static withTypedArray(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
-        const { min = TextureFilter.NEAREST, mag = TextureFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
+        const { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = options;
         return new Texture(dev._gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
     }
     /**
@@ -2088,13 +2098,13 @@ class Framebuffer {
         });
         if (depthStencil) {
             switch (depthStencil.format) {
-                case TextureInternalFormat.DEPTH24_STENCIL8:
-                case TextureInternalFormat.DEPTH32F_STENCIL8:
+                case InternalFormat.DEPTH24_STENCIL8:
+                case InternalFormat.DEPTH32F_STENCIL8:
                     _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.DEPTH_STENCIL_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
-                case TextureInternalFormat.DEPTH_COMPONENT16:
-                case TextureInternalFormat.DEPTH_COMPONENT24:
-                case TextureInternalFormat.DEPTH_COMPONENT32F:
+                case InternalFormat.DEPTH_COMPONENT16:
+                case InternalFormat.DEPTH_COMPONENT24:
+                case InternalFormat.DEPTH_COMPONENT32F:
                     _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
                 default: never(depthStencil, (p) => {
@@ -2127,5 +2137,5 @@ class Framebuffer {
     }
 }
 
-export { BufferBits, BufferUsage, DataType, Primitive, Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, TextureFilter, TextureWrap, TextureInternalFormat, TextureFormat, Framebuffer };
+export { BufferBits, BufferUsage, DataType, InternalFormat, Format, Filter, Wrap, Primitive, Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, Framebuffer };
 //# sourceMappingURL=webglutenfree.js.map

@@ -10,11 +10,11 @@ export interface Textures<P> {
 export interface Uniforms<P> {
     [name: string]: Uniform<P>;
 }
-export declare type StencilOrSeparate<T> = T | {
+export declare type SingleOrSeparateFrontBack<T> = T | {
     front: T;
     back: T;
 };
-export declare type BlendOrSeparate<T> = T | {
+export declare type SingleOrSeparateRgbAlpha<T> = T | {
     rgb: T;
     alpha: T;
 };
@@ -28,23 +28,23 @@ export interface CommandOptions<P> {
     };
     stencil?: {
         func: {
-            func: StencilOrSeparate<StencilFunc>;
-            ref?: StencilOrSeparate<number>;
-            mask?: StencilOrSeparate<number>;
+            func: SingleOrSeparateFrontBack<StencilFunc>;
+            ref?: SingleOrSeparateFrontBack<number>;
+            mask?: SingleOrSeparateFrontBack<number>;
         };
-        mask?: StencilOrSeparate<number>;
+        mask?: SingleOrSeparateFrontBack<number>;
         op?: {
-            fail: StencilOrSeparate<StencilOp>;
-            zfail: StencilOrSeparate<StencilOp>;
-            zpass: StencilOrSeparate<StencilOp>;
+            fail: SingleOrSeparateFrontBack<StencilOp>;
+            zfail: SingleOrSeparateFrontBack<StencilOp>;
+            zpass: SingleOrSeparateFrontBack<StencilOp>;
         };
     };
     blend?: {
         func: {
-            src: BlendOrSeparate<BlendFunc>;
-            dst: BlendOrSeparate<BlendFunc>;
+            src: SingleOrSeparateRgbAlpha<BlendFunc>;
+            dst: SingleOrSeparateRgbAlpha<BlendFunc>;
         };
-        equation?: BlendOrSeparate<BlendEquation>;
+        equation?: SingleOrSeparateRgbAlpha<BlendEquation>;
         color?: [number, number, number, number];
     };
 }

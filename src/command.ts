@@ -11,11 +11,12 @@ const UNKNOWN_ATTRIB_LOCATION = -1;
 
 export type Accessor<P, R> = R | ((props: P, index: number) => R);
 export type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
+
 export interface Textures<P> { [name: string]: TextureAccessor<P>; }
 export interface Uniforms<P> { [name: string]: Uniform<P>; }
 
-export type StencilOrSeparate<T> = T | { front: T, back: T };
-export type BlendOrSeparate<T> = T | { rgb: T, alpha: T };
+export type SingleOrSeparateFrontBack<T> = T | { front: T, back: T };
+export type SingleOrSeparateRgbAlpha<T> = T | { rgb: T, alpha: T };
 
 export interface CommandOptions<P> {
     textures?: Textures<P>;
@@ -27,23 +28,23 @@ export interface CommandOptions<P> {
     };
     stencil?: {
         func: {
-            func: StencilOrSeparate<StencilFunc>;
-            ref?: StencilOrSeparate<number>;
-            mask?: StencilOrSeparate<number>;
+            func: SingleOrSeparateFrontBack<StencilFunc>;
+            ref?: SingleOrSeparateFrontBack<number>;
+            mask?: SingleOrSeparateFrontBack<number>;
         };
-        mask?: StencilOrSeparate<number>;
+        mask?: SingleOrSeparateFrontBack<number>;
         op?: {
-            fail: StencilOrSeparate<StencilOp>;
-            zfail: StencilOrSeparate<StencilOp>;
-            zpass: StencilOrSeparate<StencilOp>;
+            fail: SingleOrSeparateFrontBack<StencilOp>;
+            zfail: SingleOrSeparateFrontBack<StencilOp>;
+            zpass: SingleOrSeparateFrontBack<StencilOp>;
         };
     };
     blend?: {
         func: {
-            src: BlendOrSeparate<BlendFunc>;
-            dst: BlendOrSeparate<BlendFunc>;
+            src: SingleOrSeparateRgbAlpha<BlendFunc>;
+            dst: SingleOrSeparateRgbAlpha<BlendFunc>;
         };
-        equation?: BlendOrSeparate<BlendEquation>;
+        equation?: SingleOrSeparateRgbAlpha<BlendEquation>;
         color?: [number, number, number, number];
     };
 }
@@ -269,38 +270,6 @@ export class Command<P> {
     ): Command<P> {
         assert.nonNull(vert, fmtParamNonNull("vert"));
         assert.nonNull(frag, fmtParamNonNull("frag"));
-        if (depth) {
-            assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
-        }
-        if (blend) {
-            assert.nonNull(blend.func, fmtParamNonNull("blend.func"));
-            assert.nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
-            assert.nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
-            if (typeof blend.func.src === "object") {
-                assert.nonNull(
-                    blend.func.src.rgb,
-                    fmtParamNonNull("blend.func.src.rgb"),
-                );
-                assert.nonNull(
-                    blend.func.src.alpha,
-                    fmtParamNonNull("blend.func.src.alpha"),
-                );
-            }
-            if (typeof blend.func.dst === "object") {
-                assert.nonNull(
-                    blend.func.dst.rgb,
-                    fmtParamNonNull("blend.func.dst.rgb"),
-                );
-                assert.nonNull(
-                    blend.func.dst.alpha,
-                    fmtParamNonNull("blend.func.dst.alpha"),
-                );
-            }
-        }
-        if (stencil) {
-            assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
-            // TODO: complete stencil validation... validation framework?
-        }
 
         const depthDescr = parseDepth(depth);
         const stencilDescr = parseStencil(stencil);
@@ -322,8 +291,8 @@ export class Command<P> {
     readonly depthDescr: DepthDescriptor | null;
     readonly stencilDescr: StencilDescriptor | null;
     readonly blendDescr: BlendDescriptor | null;
-    readonly textureAccessors: TextureAccessor<P>[];
-    readonly uniformDescrs: UniformDescriptor<P>[];
+    readonly textureAccessors!: TextureAccessor<P>[];
+    readonly uniformDescrs!: UniformDescriptor<P>[];
 
     private dev: Device;
     private vsSource: string;
@@ -350,8 +319,6 @@ export class Command<P> {
         this.stencilDescr = stencilDescr || null;
         this.blendDescr = blendDescr || null;
         this.glProgram = null;
-        this.textureAccessors = [];
-        this.uniformDescrs = [];
 
         this.init();
     }
@@ -675,6 +642,7 @@ function parseDepth(
     depth: CommandOptions<void>["depth"],
 ): DepthDescriptor | undefined {
     if (!depth) { return undefined; }
+    assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
     return new DepthDescriptor(
         depth.func || DepthFunc.LESS,
         typeof depth.mask === "boolean" ? depth.mask : true,
@@ -687,6 +655,8 @@ function parseStencil(
     stencil: CommandOptions<void>["stencil"],
 ): StencilDescriptor | undefined {
     if (!stencil) { return undefined; }
+    assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+    // TODO: complete stencil validation... validation framework?
     return new StencilDescriptor(
         typeof stencil.func.func === "object"
             ? stencil.func.func.front
@@ -761,6 +731,29 @@ function parseBlend(
     blend: CommandOptions<void>["blend"],
 ): BlendDescriptor | undefined {
     if (!blend) { return undefined; }
+    assert.nonNull(blend.func, fmtParamNonNull("blend.func"));
+    assert.nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+    assert.nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+    if (typeof blend.func.src === "object") {
+        assert.nonNull(
+            blend.func.src.rgb,
+            fmtParamNonNull("blend.func.src.rgb"),
+        );
+        assert.nonNull(
+            blend.func.src.alpha,
+            fmtParamNonNull("blend.func.src.alpha"),
+        );
+    }
+    if (typeof blend.func.dst === "object") {
+        assert.nonNull(
+            blend.func.dst.rgb,
+            fmtParamNonNull("blend.func.dst.rgb"),
+        );
+        assert.nonNull(
+            blend.func.dst.alpha,
+            fmtParamNonNull("blend.func.dst.alpha"),
+        );
+    }
     return new BlendDescriptor(
         typeof blend.func.src === "object"
             ? blend.func.src.rgb

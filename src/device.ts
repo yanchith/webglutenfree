@@ -12,7 +12,8 @@ export interface DeviceCreateOptions {
     extensions?: Extension[];
     debug?: boolean;
     pixelRatio?: number;
-    viewport?: [number, number];
+    viewportWidth?: number;
+    viewportHeight?: number;
 }
 
 export interface DeviceWithCanvasOptions {
@@ -24,14 +25,16 @@ export interface DeviceWithCanvasOptions {
     extensions?: Extension[];
     debug?: boolean;
     pixelRatio?: number;
-    viewport?: [number, number];
+    viewportWidth?: number;
+    viewportHeight?: number;
 }
 
 export interface DeviceWithContextOptions {
     extensions?: Extension[];
     debug?: boolean;
     pixelRatio?: number;
-    viewport?: [number, number];
+    viewportWidth?: number;
+    viewportHeight?: number;
 }
 
 /**
@@ -94,7 +97,8 @@ export class Device {
         gl: WebGL2RenderingContext,
         {
             pixelRatio,
-            viewport,
+            viewportWidth,
+            viewportHeight,
             extensions,
             debug,
         }: DeviceWithContextOptions = {},
@@ -120,9 +124,13 @@ export class Device {
             gl = wrapper;
         }
 
-        const dev = new Device(gl, gl.canvas, pixelRatio, viewport);
-        dev.update();
-        return dev;
+        return new Device(
+            gl,
+            gl.canvas,
+            pixelRatio,
+            viewportWidth,
+            viewportHeight,
+        );
     }
 
     readonly _gl: WebGL2RenderingContext;
@@ -130,8 +138,8 @@ export class Device {
 
     // To manage state, we use multiple stacks of various state bits.
     // Disregarding outside interference, the stack head should always be bound
-    // with the GL context - this is implemented with the change callbacks in
-    // device constructor. The callbacks also diff the current and previous
+    // with the GL context - this is implemented with the change diff and apply
+    // callbacks in device constructor. They diff the current and previous
     // values, so pushing a value a second time is a NOOP from WebGL perspective.
     // This allows nested target drawing (since the API does not prevent it,
     // we should at least do the correct thing, if not the fast one) by first
@@ -153,7 +161,8 @@ export class Device {
     readonly _stackDrawBuffers: Stack<number[]>;
 
     private explicitPixelRatio?: number;
-    private explicitViewport?: [number, number];
+    private explicitViewportWidth?: number;
+    private explicitViewportHeight?: number;
 
     private backbufferTarget: Target;
 
@@ -161,103 +170,113 @@ export class Device {
         gl: WebGL2RenderingContext,
         canvas: HTMLCanvasElement,
         explicitPixelRatio?: number,
-        explicitViewport?: [number, number],
+        explicitViewportWidth?: number,
+        explicitViewportHeight?: number,
     ) {
         this._gl = gl;
         this._canvas = canvas;
         this.explicitPixelRatio = explicitPixelRatio;
-        this.explicitViewport = explicitViewport;
-        this.backbufferTarget = new Target(this, [gl.BACK], null);
+        this.explicitViewportWidth = explicitViewportWidth;
+        this.explicitViewportHeight = explicitViewportHeight;
+
+        this.update();
+
+        this.backbufferTarget = new Target(
+            this,
+            [gl.BACK],
+            null,
+            gl.drawingBufferWidth,
+            gl.drawingBufferHeight,
+        );
 
         this._stackVertexArray = new Stack<WebGLVertexArrayObject | null>(
             null,
-            (prev, val) => prev === val ? void 0 : gl.bindVertexArray(val),
+            (prev, val) => prev !== val,
+            (val) => gl.bindVertexArray(val),
         );
 
         this._stackProgram = new Stack<WebGLProgram | null>(
             null,
-            (prev, val) => prev === val ? void 0 : gl.useProgram(val),
+            (prev, val) => prev !== val,
+            (val) => gl.useProgram(val),
         );
 
         this._stackDepthTest = new Stack<DepthDescriptor | null>(
             null,
-            (prev, val) => {
-                if (!DepthDescriptor.equals(prev, val)) {
-                    if (val) {
-                        gl.enable(gl.DEPTH_TEST);
-                        gl.depthFunc(val.func);
-                        gl.depthMask(val.mask);
-                        gl.depthRange(val.rangeStart, val.rangeEnd);
-                    } else { gl.disable(gl.DEPTH_TEST); }
-                }
+            (prev, val) => !DepthDescriptor.equals(prev, val),
+            (val) => {
+                if (val) {
+                    gl.enable(gl.DEPTH_TEST);
+                    gl.depthFunc(val.func);
+                    gl.depthMask(val.mask);
+                    gl.depthRange(val.rangeStart, val.rangeEnd);
+                } else { gl.disable(gl.DEPTH_TEST); }
             },
         );
 
         this._stackStencilTest = new Stack<StencilDescriptor | null>(
             null,
-            (prev, val) => {
-                if (!StencilDescriptor.equals(prev, val)) {
-                    if (val) {
-                        const {
-                            fFn,
-                            bFn,
-                            fFnRef,
-                            bFnRef,
-                            fFnMask,
-                            bFnMask,
-                            fMask,
-                            bMask,
-                            fOpFail,
-                            bOpFail,
-                            fOpZFail,
-                            bOpZFail,
-                            fOpZPass,
-                            bOpZPass,
-                        } = val;
-                        gl.enable(gl.STENCIL_TEST);
-                        gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
-                        gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
-                        gl.stencilMaskSeparate(gl.FRONT, fMask);
-                        gl.stencilMaskSeparate(gl.BACK, bMask);
-                        gl.stencilOpSeparate(
-                            gl.FRONT,
-                            fOpFail,
-                            fOpZFail,
-                            fOpZPass,
-                        );
-                        gl.stencilOpSeparate(
-                            gl.BACK,
-                            bOpFail,
-                            bOpZFail,
-                            bOpZPass,
-                        );
-                    } else { gl.disable(gl.STENCIL_TEST); }
-                }
+            (prev, val) => !StencilDescriptor.equals(prev, val),
+            (val) => {
+                if (val) {
+                    const {
+                        fFn,
+                        bFn,
+                        fFnRef,
+                        bFnRef,
+                        fFnMask,
+                        bFnMask,
+                        fMask,
+                        bMask,
+                        fOpFail,
+                        bOpFail,
+                        fOpZFail,
+                        bOpZFail,
+                        fOpZPass,
+                        bOpZPass,
+                    } = val;
+                    gl.enable(gl.STENCIL_TEST);
+                    gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
+                    gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
+                    gl.stencilMaskSeparate(gl.FRONT, fMask);
+                    gl.stencilMaskSeparate(gl.BACK, bMask);
+                    gl.stencilOpSeparate(
+                        gl.FRONT,
+                        fOpFail,
+                        fOpZFail,
+                        fOpZPass,
+                    );
+                    gl.stencilOpSeparate(
+                        gl.BACK,
+                        bOpFail,
+                        bOpZFail,
+                        bOpZPass,
+                    );
+                } else { gl.disable(gl.STENCIL_TEST); }
             },
         );
 
         this._stackBlend = new Stack<BlendDescriptor | null>(
             null,
-            (prev, val) => {
-                if (!BlendDescriptor.equals(prev, val)) {
-                    if (val) {
-                        gl.enable(gl.BLEND);
-                        gl.blendFuncSeparate(
-                            val.srcRGB,
-                            val.dstRGB,
-                            val.srcAlpha,
-                            val.dstAlpha,
-                        );
-                        gl.blendEquationSeparate(
-                            val.eqnRGB,
-                            val.eqnAlpha,
-                        );
-                        if (val.color) {
-                            const [r, g, b, a] = val.color;
-                            gl.blendColor(r, g, b, a);
-                        }
-                    } else { gl.disable(gl.BLEND); }
-                }
+            (prev, val) => !BlendDescriptor.equals(prev, val),
+            (val) => {
+                if (val) {
+                    gl.enable(gl.BLEND);
+                    gl.blendFuncSeparate(
+                        val.srcRGB,
+                        val.dstRGB,
+                        val.srcAlpha,
+                        val.dstAlpha,
+                    );
+                    gl.blendEquationSeparate(
+                        val.eqnRGB,
+                        val.eqnAlpha,
+                    );
+                    if (val.color) {
+                        const [r, g, b, a] = val.color;
+                        gl.blendColor(r, g, b, a);
+                    }
+                } else { gl.disable(gl.BLEND); }
             },
         );
 
@@ -267,24 +286,26 @@ export class Device {
 
         this._stackDrawFramebuffer = new Stack<WebGLFramebuffer | null>(
             null,
-            (prev, val) => prev === val
-                ? void 0
-                : gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val),
+            (prev, val) => prev !== val,
+            (val) => gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val),
         );
 
         this._stackReadFramebuffer = new Stack<WebGLFramebuffer | null>(
             null,
-            (prev, val) => prev === val
-                ? void 0
-                : gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val),
+            (prev, val) => prev !== val,
+            (val) => gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val),
         );
 
         this._stackDrawBuffers = new Stack<number[]>(
             [gl.BACK],
-            (prev, val) => eqNumberArrays(prev, val)
-                ? void 0
-                : gl.drawBuffers(val),
+            (prev, val) => !eqNumberArrays(prev, val),
+            (val) => gl.drawBuffers(val),
         );
+
+        // Enable scissor test globally. Practically everywhere you would want
+        // it disbled you can pass explicit scissor box instead. The impact on
+        // perf is negligent
+        gl.enable(gl.SCISSOR_TEST);
     }
 
     /**
@@ -345,12 +366,12 @@ export class Device {
     update(): void {
         const dpr = this.pixelRatio;
         const canvas = this._canvas;
-        const width = this.explicitViewport
-            && this.explicitViewport[0]
-            || canvas.clientWidth * dpr;
-        const height = this.explicitViewport
-            && this.explicitViewport[1]
-            || canvas.clientHeight * dpr;
+        const width = typeof this.explicitViewportWidth !== "undefined"
+            ? this.explicitViewportWidth
+            : canvas.clientWidth * dpr;
+        const height = typeof this.explicitViewportHeight !== "undefined"
+            ? this.explicitViewportHeight
+            : canvas.clientHeight * dpr;
         if (width !== canvas.width) { canvas.width = width; }
         if (height !== canvas.height) { canvas.height = height; }
     }
@@ -383,5 +404,4 @@ function eqNumberArrays(left: number[], right: number[]): boolean {
         if (left[i] !== right[i]) { return false; }
     }
     return true;
-
 }

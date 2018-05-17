@@ -13,16 +13,16 @@
 
 import {
     Device,
-    DataType,
-    BufferBits,
     Command,
     Attributes,
-    Primitive,
     Texture,
-    TextureWrap,
-    TextureInternalFormat as TexIntFmt,
-    TextureFormat as TexFmt,
     Framebuffer,
+    BufferBits,
+    Primitive,
+    DataType,
+    InternalFormat,
+    Format,
+    Wrap,
 } from "./lib/webglutenfree.js";
 
 const dev = Device.create({ antialias: false });
@@ -34,13 +34,13 @@ const [lifeWidth, lifeHeight] = [
 
 // Use textures with only one channel. By using REPEAT in both directions, we
 // create a cyclic universe
-const pingTex = Texture.create(dev, lifeWidth, lifeHeight, TexIntFmt.R8, {
-    wrapS: TextureWrap.REPEAT,
-    wrapT: TextureWrap.REPEAT,
+const pingTex = Texture.create(dev, lifeWidth, lifeHeight, InternalFormat.R8, {
+    wrapS: Wrap.REPEAT,
+    wrapT: Wrap.REPEAT,
 });
-const pongTex = Texture.create(dev, lifeWidth, lifeHeight, TexIntFmt.R8, {
-    wrapS: TextureWrap.REPEAT,
-    wrapT: TextureWrap.REPEAT,
+const pongTex = Texture.create(dev, lifeWidth, lifeHeight, InternalFormat.R8, {
+    wrapS: Wrap.REPEAT,
+    wrapT: Wrap.REPEAT,
 });
 
 const data = Array(lifeWidth * lifeHeight);
@@ -49,7 +49,7 @@ for (let i = 0; i < lifeWidth * lifeHeight; ++i) {
 }
 pingTex.store(
     new Uint8Array(data),
-    TexFmt.RED,
+    Format.RED,
     DataType.UNSIGNED_BYTE,
 );
 
@@ -60,7 +60,7 @@ const pongFbo = Framebuffer.create(dev, lifeWidth, lifeHeight, pongTex);
 // universe from one texture and writing the result to another.
 
 interface CmdProps {
-    tex: Texture<TexIntFmt>;
+    tex: Texture<InternalFormat>;
 }
 
 const cmd = Command.create<CmdProps>(

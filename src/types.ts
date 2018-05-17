@@ -1,6 +1,5 @@
 import * as assert from "./util/assert";
 
-
 /**
  * Possible buffer targets to operate on.
  */
@@ -30,6 +29,19 @@ export enum BufferUsage {
 }
 
 /**
+ * Drawing primitives.
+ */
+export enum Primitive {
+    POINTS = 0x0000,
+    LINES = 0x0001,
+    LINE_LOOP = 0x0002,
+    LINE_STRIP = 0x0003,
+    TRIANGLES = 0x0004,
+    TRIANGLE_STRIP = 0x0005,
+    TRIANGLE_FAN = 0x0006,
+}
+
+/**
  * Possible data types.
  */
 export enum DataType {
@@ -53,6 +65,107 @@ export enum DataType {
     // UNSIGNED_INT_10F_11F_11F_REV
 
     FLOAT_32_UNSIGNED_INT_24_8_REV = 0x8DAD,
+}
+
+export enum InternalFormat {
+
+    // RED
+    R8 = 0x8229,
+    R8_SNORM = 0x8F94,
+    R8UI = 0x8232,
+    R8I = 0x8231,
+    R16UI = 0x8234,
+    R16I = 0x8233,
+    R32UI = 0x8236,
+    R32I = 0x8235,
+    R16F = 0x822D,
+    R32F = 0x822E,
+
+    // RG
+    RG8 = 0x822B,
+    RG8_SNORM = 0x8F95,
+    RG8UI = 0x8238,
+    RG8I = 0x8237,
+    RG16UI = 0x823A,
+    RG16I = 0x8239,
+    RG32UI = 0x823C,
+    RG32I = 0x823B,
+    RG16F = 0x822F,
+    RG32F = 0x8230,
+
+    // RGB
+    RGB8 = 0x8051,
+    RGB8_SNORM = 0x8F96,
+    RGB8UI = 0x8D7D,
+    RGB8I = 0x8D8F,
+    RGB16UI = 0x8D77,
+    RGB16I = 0x8D89,
+    RGB32UI = 0x8D71,
+    RGB32I = 0x8D83,
+    RGB16F = 0x881B,
+    RGB32F = 0x8815,
+
+    // RGBA
+    RGBA8 = 0x8058,
+    RGBA8_SNORM = 0x8F97,
+    RGBA8UI = 0x8D7C,
+    RGBA8I = 0x8D8E,
+    RGBA16UI = 0x8D76,
+    RGBA16I = 0x8D88,
+    RGBA32UI = 0x8D70,
+    RGBA32I = 0x8D82,
+    RGBA16F = 0x881A,
+    RGBA32F = 0x8814,
+
+    // TODO: support exotic formats
+
+    // DEPTH
+    DEPTH_COMPONENT16 = 0x81A5,
+    DEPTH_COMPONENT24 = 0x81A6,
+    DEPTH_COMPONENT32F = 0x8CAC,
+
+    // DEPTH STENCIL
+    DEPTH24_STENCIL8 = 0x88F0,
+    DEPTH32F_STENCIL8 = 0x8CAD,
+
+    // ~LUMINANCE ALPHA
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+}
+
+export enum Format {
+    RED = 0x1903,
+    RG = 0x8227,
+    RGB = 0x1907,
+    RGBA = 0x1908,
+    RED_INTEGER = 0x8D94,
+    RG_INTEGER = 0x8228,
+    RGB_INTEGER = 0x8D98,
+    RGBA_INTEGER = 0x8D99,
+
+    // TODO: support exotic formats
+
+    DEPTH_COMPONENT = 0x1902,
+    DEPTH_STENCIL = 0x84F9,
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+}
+
+export enum Filter {
+    NEAREST = 0x2600,
+    LINEAR = 0x2601,
+    NEAREST_MIPMAP_NEAREST = 0x2700,
+    LINEAR_MIPMAP_NEAREST = 0x2701,
+    NEAREST_MIPMAP_LINEAR = 0x2702,
+    LINEAR_MIPMAP_LINEAR = 0x2703,
+}
+
+export enum Wrap {
+    CLAMP_TO_EDGE = 0x812F,
+    REPEAT = 0x2901,
+    MIRRORED_REPEAT = 0x8370,
 }
 
 /**
@@ -83,19 +196,6 @@ export enum UniformType {
 
     // TODO: support exotic types
     // BOOL
-}
-
-/**
- * Drawing primitives.
- */
-export enum Primitive {
-    POINTS = 0x0000,
-    LINES = 0x0001,
-    LINE_LOOP = 0x0002,
-    LINE_STRIP = 0x0003,
-    TRIANGLES = 0x0004,
-    TRIANGLE_STRIP = 0x0005,
-    TRIANGLE_FAN = 0x0006,
 }
 
 export function sizeOf(type: DataType): number {

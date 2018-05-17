@@ -8,7 +8,9 @@
 
 #### Enhancements:
 
--   (None yet)
+-   Added possibility to specify scissor box for all rendering operations
+-   Added possibiliry to specify viewport for `command.draw()` and `command.batch()`
+-   Added possibility to specify source and destination rects for `command.blit()`
 
 ## v0.0.7 (02/05/2018)
 #### Fixes:
