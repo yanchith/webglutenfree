@@ -10,8 +10,8 @@ import {
     Attributes,
     Primitive,
     Texture,
-    TextureInternalFormat as TexIntFmt,
     Framebuffer,
+    InternalFormat,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 
@@ -20,9 +20,9 @@ import * as sponza from "./libx/sponza.js";
 const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const colorTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
-const normalTex = Texture.create(dev, width, height, TexIntFmt.RGBA8);
-const depthTex = Texture.create(dev, width, height, TexIntFmt.DEPTH_COMPONENT24);
+const colorTex = Texture.create(dev, width, height, InternalFormat.RGBA8);
+const normalTex = Texture.create(dev, width, height, InternalFormat.RGBA8);
+const depthTex = Texture.create(dev, width, height, InternalFormat.DEPTH_COMPONENT24);
 const fbo = Framebuffer.create(dev, width, height, [
     colorTex,
     normalTex,
