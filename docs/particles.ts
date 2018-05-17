@@ -172,7 +172,7 @@ const loop = (time) => {
     buffer.store(positions);
 
     dev.target((rt) => {
-        rt.clear(BufferBits.COLOR);
+        rt.clear(BufferBits.COLOR_DEPTH);
         rt.draw(cmd, attrs, { time, tick: t });
     });
 
