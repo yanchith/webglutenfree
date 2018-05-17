@@ -117,7 +117,7 @@ const objs = models.map((m, i) => {
 
 const loop = (time) => {
     dev.target((rt) => {
-        rt.clear(BufferBits.COLOR);
+        rt.clear(BufferBits.COLOR_DEPTH);
         rt.batch(cmd, (draw) => {
             objs.forEach(({ attrs, matrix }) => {
                 draw(attrs, { time, matrix });
