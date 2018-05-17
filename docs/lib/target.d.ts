@@ -12,14 +12,36 @@ export interface TargetClearOptions {
     a?: number;
     depth?: number;
     stencil?: number;
+    scissorX?: number;
+    scissorY?: number;
+    scissorWidth?: number;
+    scissorHeight?: number;
 }
 export declare type BlitFilter = Filter.NEAREST | Filter.LINEAR;
 export interface TargetBlitOptions {
-    xOffset?: number;
-    yOffset?: number;
-    width?: number;
-    height?: number;
+    srcX?: number;
+    srcY?: number;
+    srcWidth?: number;
+    srcHeight?: number;
+    dstX?: number;
+    dstY?: number;
+    dstWidth?: number;
+    dstHeight?: number;
     filter?: BlitFilter;
+    scissorX?: number;
+    scissorY?: number;
+    scissorWidth?: number;
+    scissorHeight?: number;
+}
+export interface TargetDrawOptions {
+    viewportX?: number;
+    viewportY?: number;
+    viewportWidth?: number;
+    viewportHeight?: number;
+    scissorX?: number;
+    scissorY?: number;
+    scissorWidth?: number;
+    scissorHeight?: number;
 }
 /**
  * Target represents a drawable surface. Get hold of targets with
@@ -43,12 +65,12 @@ export declare class Target {
     /**
      * Clear selected buffers to provided values.
      */
-    clear(bits: BufferBits, { r, g, b, a, depth, stencil, }?: TargetClearOptions): void;
+    clear(bits: BufferBits, { r, g, b, a, depth, stencil, scissorX, scissorY, scissorWidth, scissorHeight, }?: TargetClearOptions): void;
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
      * choose buffers to blit.
      */
-    blit(source: Framebuffer, bits: BufferBits, { xOffset, yOffset, width, height, filter, }?: TargetBlitOptions): void;
+    blit(source: Framebuffer, bits: BufferBits, { srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, filter, scissorX, scissorY, scissorWidth, scissorHeight, }?: TargetBlitOptions): void;
     /**
      * Draw to this target with a void command and attributes.
      */
@@ -58,7 +80,7 @@ export declare class Target {
      * The properties are passed to the command's uniform or texture callbacks,
      * if used.
      */
-    draw<P>(cmd: Command<P>, attrs: Attributes, props: P): void;
+    draw<P>(cmd: Command<P>, attrs: Attributes, props: P, opts?: TargetDrawOptions): void;
     /**
      * Perform multiple draws to this target with the same command, but multiple
      * attributes and command properties. The properties are passed to the
@@ -67,7 +89,7 @@ export declare class Target {
      * All drawing should be performed within the callback to prevent
      * unnecesasry rebinding.
      */
-    batch<P>(cmd: Command<P>, cb: (draw: (attrs: Attributes, props: P) => void) => void): void;
+    batch<P>(cmd: Command<P>, cb: (draw: (attrs: Attributes, props: P) => void) => void, { viewportX, viewportY, viewportWidth, viewportHeight, scissorX, scissorY, scissorWidth, scissorHeight, }?: TargetDrawOptions): void;
     private drawArrays;
     private drawElements;
     private textures;

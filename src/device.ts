@@ -189,7 +189,6 @@ export class Device {
             gl.drawingBufferHeight,
         );
 
-
         this._stackVertexArray = new Stack<WebGLVertexArrayObject | null>(
             null,
             (prev, val) => prev !== val,
@@ -302,6 +301,11 @@ export class Device {
             (prev, val) => !eqNumberArrays(prev, val),
             (val) => gl.drawBuffers(val),
         );
+
+        // Enable scissor test globally. Practically everywhere you would want
+        // it disbled you can pass explicit scissor box instead. The impact on
+        // perf is negligent
+        gl.enable(gl.SCISSOR_TEST);
     }
 
     /**

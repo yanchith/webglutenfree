@@ -17,7 +17,11 @@ export {
     DeviceWithContextOptions,
 } from "./device";
 
-export { TargetClearOptions, TargetBlitOptions } from "./target";
+export {
+    TargetClearOptions,
+    TargetBlitOptions,
+    TargetDrawOptions,
+} from "./target";
 
 export {
     Command,

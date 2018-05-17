@@ -320,11 +320,9 @@ class Target {
      * unnecessary rebinding.
      */
     with(cb) {
-        const gl = this.dev._gl;
-        const { dev: { _stackDrawBuffers, _stackDrawFramebuffer, }, glFramebuffer, glDrawBuffers, surfaceWidth = gl.drawingBufferWidth, surfaceHeight = gl.drawingBufferHeight, } = this;
+        const { dev: { _stackDrawBuffers, _stackDrawFramebuffer, }, glFramebuffer, glDrawBuffers, } = this;
         _stackDrawFramebuffer.push(glFramebuffer);
         _stackDrawBuffers.push(glDrawBuffers);
-        gl.viewport(0, 0, surfaceWidth, surfaceHeight);
         cb(this);
         _stackDrawFramebuffer.pop();
         _stackDrawBuffers.pop();
@@ -332,9 +330,14 @@ class Target {
     /**
      * Clear selected buffers to provided values.
      */
-    clear(bits, { r = 0, g = 0, b = 0, a = 1, depth = 1, stencil = 0, } = {}) {
+    clear(bits, { r = 0, g = 0, b = 0, a = 1, depth = 1, stencil = 0, scissorX = 0, scissorY = 0, scissorWidth = this.surfaceWidth === void 0
+        ? this.dev._gl.drawingBufferWidth
+        : this.surfaceWidth, scissorHeight = this.surfaceHeight === void 0
+        ? this.dev._gl.drawingBufferHeight
+        : this.surfaceHeight, } = {}) {
         this.with(() => {
             const gl = this.dev._gl;
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
             if (bits & BufferBits.COLOR) {
                 gl.clearColor(r, g, b, a);
             }
@@ -351,12 +354,16 @@ class Target {
      * Blit source framebuffer onto this render target. Use buffer bits to
      * choose buffers to blit.
      */
-    blit(source, bits, { xOffset = 0, yOffset = 0, width = source.width, height = source.height, filter = Filter.NEAREST, } = {}) {
-        const gl = this.dev._gl;
-        const { dev: { _stackReadFramebuffer }, surfaceWidth = gl.drawingBufferWidth, surfaceHeight = gl.drawingBufferHeight, } = this;
+    blit(source, bits, { srcX = 0, srcY = 0, srcWidth = source.width, srcHeight = source.height, dstX = 0, dstY = 0, dstWidth = this.surfaceWidth === void 0
+        ? this.dev._gl.drawingBufferWidth
+        : this.surfaceWidth, dstHeight = this.surfaceHeight === void 0
+        ? this.dev._gl.drawingBufferHeight
+        : this.surfaceHeight, filter = Filter.NEAREST, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
+        const { dev: { _gl: gl, _stackReadFramebuffer } } = this;
         this.with(() => {
             _stackReadFramebuffer.push(source.glFramebuffer);
-            gl.blitFramebuffer(xOffset, yOffset, width, height, 0, 0, surfaceWidth, surfaceHeight, bits, filter);
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+            gl.blitFramebuffer(srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, bits, filter);
             _stackReadFramebuffer.pop();
         });
     }
@@ -367,8 +374,12 @@ class Target {
      *
      * This is a unified header to stisfy the typechecker.
      */
-    draw(cmd, attrs, props) {
-        const { dev: { _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
+    draw(cmd, attrs, props, { viewportX = 0, viewportY = 0, viewportWidth = this.surfaceWidth === void 0
+        ? this.dev._gl.drawingBufferWidth
+        : this.surfaceWidth, viewportHeight = this.surfaceHeight === void 0
+        ? this.dev._gl.drawingBufferHeight
+        : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
+        const { dev: { _gl: gl, _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         this.with(() => {
             _stackDepthTest.push(depthDescr);
@@ -379,6 +390,8 @@ class Target {
             this.uniforms(uniformDescrs, props, 0);
             // Note that attrs.glVertexArray may be null for empty attrs -> ok
             _stackVertexArray.push(attrs.glVertexArray);
+            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
             if (attrs.indexed) {
                 this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
                 attrs.instanceCount);
@@ -402,8 +415,12 @@ class Target {
      * All drawing should be performed within the callback to prevent
      * unnecesasry rebinding.
      */
-    batch(cmd, cb) {
-        const { dev: { _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
+    batch(cmd, cb, { viewportX = 0, viewportY = 0, viewportWidth = this.surfaceWidth === void 0
+        ? this.dev._gl.drawingBufferWidth
+        : this.surfaceWidth, viewportHeight = this.surfaceHeight === void 0
+        ? this.dev._gl.drawingBufferHeight
+        : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
+        const { dev: { _gl: gl, _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch, unless API
@@ -426,6 +443,8 @@ class Target {
                 this.textures(textureAccessors, props, i);
                 this.uniforms(uniformDescrs, props, i);
                 _stackVertexArray.push(attrs.glVertexArray);
+                gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+                gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
                 if (attrs.indexed) {
                     this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
                     attrs.instanceCount);
@@ -1420,6 +1439,10 @@ class Device {
         this._stackDrawFramebuffer = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
         this._stackReadFramebuffer = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
         this._stackDrawBuffers = new Stack([gl.BACK], (prev, val) => !eqNumberArrays(prev, val), (val) => gl.drawBuffers(val));
+        // Enable scissor test globally. Practically everywhere you would want
+        // it disbled you can pass explicit scissor box instead. The impact on
+        // perf is negligent
+        gl.enable(gl.SCISSOR_TEST);
     }
     /**
      * Return width of the gl drawing buffer.
