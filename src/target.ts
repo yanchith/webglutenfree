@@ -18,7 +18,6 @@ export interface TargetClearOptions {
 }
 
 export type BlitFilter = Filter.NEAREST | Filter.LINEAR;
-
 export interface TargetBlitOptions {
     xOffset?: number;
     yOffset?: number;
@@ -27,23 +26,6 @@ export interface TargetBlitOptions {
     filter?: BlitFilter;
 }
 
-export class Viewport {
-    static equals(left: Viewport, right: Viewport) {
-        if (left === right) { return true; }
-        if (left.x !== right.x) { return false; }
-        if (left.y !== right.y) { return false; }
-        if (left.width !== right.width) { return false; }
-        if (left.height !== right.height) { return false; }
-        return true;
-    }
-
-    constructor(
-        readonly x: number,
-        readonly y: number,
-        readonly width: number,
-        readonly height: number,
-    ) { }
-}
 
 /**
  * Target represents a drawable surface. Get hold of targets with
@@ -51,24 +33,13 @@ export class Viewport {
  */
 export class Target {
 
-    readonly viewport: Viewport;
-
-    private dev: Device;
-    private glDrawBuffers: number[];
-    private glFramebuffer: WebGLFramebuffer | null;
-
     constructor(
-        dev: Device,
-        glDrawBuffers: number[],
-        glFramebuffer: WebGLFramebuffer | null,
-        width: number = dev._gl.drawingBufferWidth,
-        height: number = dev._gl.drawingBufferHeight,
-    ) {
-        this.dev = dev;
-        this.glDrawBuffers = glDrawBuffers;
-        this.glFramebuffer = glFramebuffer;
-        this.viewport = new Viewport(0, 0, width, height);
-    }
+        private dev: Device,
+        private glDrawBuffers: number[],
+        private glFramebuffer: WebGLFramebuffer | null,
+        private viewportWidth?: number,
+        private viewportHeight?: number,
+    ) {}
 
     /**
      * Run the callback with the target bound. This is called automatically,
@@ -78,24 +49,26 @@ export class Target {
      * unnecessary rebinding.
      */
     with(cb: (rt: Target) => void): void {
+        const gl = this.dev._gl;
         const {
             dev: {
                 _stackDrawBuffers,
                 _stackDrawFramebuffer,
-                _stackViewport,
             },
             glFramebuffer,
             glDrawBuffers,
-            viewport,
+            viewportWidth = gl.drawingBufferWidth,
+            viewportHeight = gl.drawingBufferHeight,
         } = this;
 
         _stackDrawFramebuffer.push(glFramebuffer);
         _stackDrawBuffers.push(glDrawBuffers);
-        _stackViewport.push(viewport);
+
+        // Setting the viewport is a relatively cheap operation that can be done
+        gl.viewport(0, 0, viewportWidth, viewportHeight);
 
         cb(this);
 
-        _stackViewport.pop();
         _stackDrawFramebuffer.pop();
         _stackDrawBuffers.pop();
     }
@@ -139,19 +112,24 @@ export class Target {
             filter = Filter.NEAREST,
         }: TargetBlitOptions = {},
     ): void {
-        const { dev: { _gl, _stackReadFramebuffer } } = this;
+        const gl = this.dev._gl;
+        const {
+            dev: { _stackReadFramebuffer },
+            viewportWidth = gl.drawingBufferWidth,
+            viewportHeight = gl.drawingBufferHeight,
+        } = this;
 
         this.with(() => {
             _stackReadFramebuffer.push(source.glFramebuffer);
-            _gl.blitFramebuffer(
+            gl.blitFramebuffer(
                 xOffset,
                 yOffset,
                 width,
                 height,
-                this.viewport.x,
-                this.viewport.y,
-                this.viewport.width,
-                this.viewport.height,
+                0,
+                0,
+                viewportWidth,
+                viewportHeight,
                 bits,
                 filter,
             );

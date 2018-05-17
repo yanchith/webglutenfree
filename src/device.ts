@@ -1,5 +1,5 @@
 import { Stack } from "./util/stack";
-import { Target, Viewport } from "./target";
+import { Target } from "./target";
 import { DepthDescriptor, StencilDescriptor, BlendDescriptor } from "./command";
 
 export interface DeviceCreateOptions {
@@ -159,7 +159,6 @@ export class Device {
     readonly _stackDrawFramebuffer: Stack<WebGLFramebuffer | null>;
     readonly _stackReadFramebuffer: Stack<WebGLFramebuffer | null>;
     readonly _stackDrawBuffers: Stack<number[]>;
-    readonly _stackViewport: Stack<Viewport>;
 
     private explicitPixelRatio?: number;
     private explicitViewportWidth?: number;
@@ -303,12 +302,6 @@ export class Device {
             (prev, val) => !eqNumberArrays(prev, val),
             (val) => gl.drawBuffers(val),
         );
-
-        this._stackViewport = new Stack<Viewport>(
-            this.backbufferTarget.viewport,
-            (prev, val) => !Viewport.equals(prev, val),
-            (val) => gl.viewport(val.x, val.y, val.width, val.height),
-        );
     }
 
     /**
@@ -407,5 +400,4 @@ function eqNumberArrays(left: number[], right: number[]): boolean {
         if (left[i] !== right[i]) { return false; }
     }
     return true;
-
 }

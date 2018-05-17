@@ -300,42 +300,17 @@ class Stack {
     }
 }
 
-class Viewport {
-    constructor(x, y, width, height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-    }
-    static equals(left, right) {
-        if (left === right) {
-            return true;
-        }
-        if (left.x !== right.x) {
-            return false;
-        }
-        if (left.y !== right.y) {
-            return false;
-        }
-        if (left.width !== right.width) {
-            return false;
-        }
-        if (left.height !== right.height) {
-            return false;
-        }
-        return true;
-    }
-}
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
  */
 class Target {
-    constructor(dev, glDrawBuffers, glFramebuffer, width = dev._gl.drawingBufferWidth, height = dev._gl.drawingBufferHeight) {
+    constructor(dev, glDrawBuffers, glFramebuffer, viewportWidth, viewportHeight) {
         this.dev = dev;
         this.glDrawBuffers = glDrawBuffers;
         this.glFramebuffer = glFramebuffer;
-        this.viewport = new Viewport(0, 0, width, height);
+        this.viewportWidth = viewportWidth;
+        this.viewportHeight = viewportHeight;
     }
     /**
      * Run the callback with the target bound. This is called automatically,
@@ -345,12 +320,13 @@ class Target {
      * unnecessary rebinding.
      */
     with(cb) {
-        const { dev: { _stackDrawBuffers, _stackDrawFramebuffer, _stackViewport, }, glFramebuffer, glDrawBuffers, viewport, } = this;
+        const gl = this.dev._gl;
+        const { dev: { _stackDrawBuffers, _stackDrawFramebuffer, }, glFramebuffer, glDrawBuffers, viewportWidth = gl.drawingBufferWidth, viewportHeight = gl.drawingBufferHeight, } = this;
         _stackDrawFramebuffer.push(glFramebuffer);
         _stackDrawBuffers.push(glDrawBuffers);
-        _stackViewport.push(viewport);
+        // Setting the viewport is a relatively cheap operation that can be done
+        gl.viewport(0, 0, viewportWidth, viewportHeight);
         cb(this);
-        _stackViewport.pop();
         _stackDrawFramebuffer.pop();
         _stackDrawBuffers.pop();
     }
@@ -377,10 +353,11 @@ class Target {
      * choose buffers to blit.
      */
     blit(source, bits, { xOffset = 0, yOffset = 0, width = source.width, height = source.height, filter = Filter.NEAREST, } = {}) {
-        const { dev: { _gl, _stackReadFramebuffer } } = this;
+        const gl = this.dev._gl;
+        const { dev: { _stackReadFramebuffer }, viewportWidth = gl.drawingBufferWidth, viewportHeight = gl.drawingBufferHeight, } = this;
         this.with(() => {
             _stackReadFramebuffer.push(source.glFramebuffer);
-            _gl.blitFramebuffer(xOffset, yOffset, width, height, this.viewport.x, this.viewport.y, this.viewport.width, this.viewport.height, bits, filter);
+            gl.blitFramebuffer(xOffset, yOffset, width, height, 0, 0, viewportWidth, viewportHeight, bits, filter);
             _stackReadFramebuffer.pop();
         });
     }
@@ -1454,7 +1431,6 @@ class Device {
         this._stackDrawFramebuffer = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
         this._stackReadFramebuffer = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
         this._stackDrawBuffers = new Stack([gl.BACK], (prev, val) => !eqNumberArrays(prev, val), (val) => gl.drawBuffers(val));
-        this._stackViewport = new Stack(this.backbufferTarget.viewport, (prev, val) => !Viewport.equals(prev, val), (val) => gl.viewport(val.x, val.y, val.width, val.height));
     }
     /**
      * Return width of the gl drawing buffer.
@@ -2149,5 +2125,5 @@ class Framebuffer {
     }
 }
 
-export { BufferBits, BufferUsage, DataType, InternalFormat, Format, Filter, Wrap, Primitive, Device, Extension, Viewport, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, Framebuffer };
+export { BufferBits, BufferUsage, DataType, InternalFormat, Format, Filter, Wrap, Primitive, Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, Framebuffer };
 //# sourceMappingURL=webglutenfree.js.map

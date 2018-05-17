@@ -1,6 +1,6 @@
 /// <reference types="webgl2" />
 import { Stack } from "./util/stack";
-import { Target, Viewport } from "./target";
+import { Target } from "./target";
 import { DepthDescriptor, StencilDescriptor, BlendDescriptor } from "./command";
 export interface DeviceCreateOptions {
     element?: HTMLElement;
@@ -68,7 +68,6 @@ export declare class Device {
     readonly _stackDrawFramebuffer: Stack<WebGLFramebuffer | null>;
     readonly _stackReadFramebuffer: Stack<WebGLFramebuffer | null>;
     readonly _stackDrawBuffers: Stack<number[]>;
-    readonly _stackViewport: Stack<Viewport>;
     private explicitPixelRatio?;
     private explicitViewportWidth?;
     private explicitViewportHeight?;
