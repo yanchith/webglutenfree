@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@types/node": "^6.0.110",
-    "@types/three": "^0.91.13",
+    "@types/three": "^0.91.14",
     "cpx": "^1.5.0",
     "cross-env": "^5.2.0",
     "http-server": "^0.11.1",
