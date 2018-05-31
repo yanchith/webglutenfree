@@ -1,5 +1,5 @@
 /**
- * This example loads some 3d models and draws them on the screen usgin goraud
+ * This example loads some 3d models and draws them on the screen using goraud
  * shading.
  */
 
