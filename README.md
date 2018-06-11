@@ -2,39 +2,48 @@
 
 We serve your draw calls type-safe and gluten-free.
 
-Webglutenfree is a lightweight, high-level abstraction layer on top of WebGL2.
-We decided to bake this one without internal ~~gluten~~ state, letting everyone
-enjoy WebGL without worrying too much about their health.
+Webglutenfree is a lightweight, comfort focused abstraction on top of WebGL2.
+The API completely abstracts away the GL state machine. Parameters are used
+instead of state-setting calls, and all user-visible state is encapsulated in
+resource objects.
 
-The library encourages init time creation for all drawing resources (`Command`s,
-`Attributes`, `Texture`s, `Framebuffer`s, etc.). Drawing is done by requesting a
-render `Target` and executing draw commands with it.
+On the scale from low-level and flexible to high-level and
+opinionated, Webglutenfree leans towards flexibility. In general, 80-90% of
+the *sensible* things possible with raw WebGL should be possible in Webglutenfree.
+If you think a feature is missing, please file an issue.
 
-Webglutenfree tries not only to be safe and simple to use while adding minimal
-overhead, but also guide users down the more performant path.
+However, Webglutenfree *is* opinionated in the sense that some things are just "not
+a good idea". Therefore, the library encourages init time creation for resources.
+Its API ergonomics aligns with performance penalties - a weird looking
+code in the render loop should be indicative of potential issues.
 
 While it can be consumed directly from JavaScript, using TypeScript adds an
-additional layer of comfort and safety.
+additional layer of comfort and safety. More concretely, instead of loose `GLenum`
+values, all function parameters are strictly typed and invalid values are rejected
+at compile time.
 
 ## Current State
 
-Work is underway on stabilizing the API and getting to a `0.1.0` release.
-We are mostly missing documentation.
+We want to get to a `0.1.0` (meaning generally usable) eventually,
+but there are still things missing:
+
+- Documentation: we need a tutorial and API documentation,
+- API stability: the API is still not the where we want it to be and will change,
+- Features: we are missing at least Texture Arrays, 3d Textures, Cubemaps,
+  Renderbuffers, and Transform Feedback.
 
 ## Gallery
 
-Try looking at our [gallery](https://yanchith.github.io/webglutenfree/)
-(Firefox >= 59 with `dom.moduleScripts.enabled` or Chrome >= 61).
+Have a look at our [gallery](https://yanchith.github.io/webglutenfree/)
+(Firefox and Chrome only, due to being WebGL2 only for the moment).
 
-## Usage
+## Hello Triangle
 
-Webglutenfree initialization consists acquiring a `Device` (WebGL context),
-creating a `Command` (WebGL program), and uploading your data to the GPU.
+Usually, you would acquire a `Device` (aka WebGL context) and create `Command`s
+at init time. To draw, request a render target from the device and execute
+draw commands with it.
 
-Afterwards, a render target is obtained from the `Device` (or `Framebuffer`)
-and used to execute draw commands.
-
-```javascript
+```typescript
 import { Device, Command, Attributes, Primitive } from "webglutenfree";
 
 const dev = Device.create();
@@ -59,7 +68,7 @@ const cmd = Command.create(
 
         in vec4 v_color;
 
-        out vec4 f_color;
+        layout (location = 0) out vec4 f_color;
 
         void main() {
             f_color = v_color;
@@ -80,18 +89,25 @@ const attrs = Attributes.create(dev, Primitive.TRIANGLES, {
     ],
 });
 
-dev.target(rt => {
+dev.target((rt) => {
     rt.draw(cmd, attrs);
-})
+});
 
 ```
 
-## Acknowledgements
+## Installation
 
-Webglutenfree is inspired by the [regl](http://regl.party) javascript library, and
-[glium](https://github.com/glium/glium) rust library. Thank you!
+`npm install --save webglutenfree` or `yarn add webglutenfree`
 
-Also, [webgl2fundementals.org](https://webgl2fundamentals.org/) and
-[learnopengl.com](https://learnopengl.com/) together with
-[mdn](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API) proved
-invaluable sources of GL lore.
+## Sources
+
+Webglutenfree is inspired by:
+
+- [regl](http://regl.party)
+- [glium](https://github.com/glium/glium)
+
+We found the following docs and tutorials helpful:
+
+- [mdn](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API)
+- [learnopengl.com](https://learnopengl.com/)
+- [webgl2fundementals.org](https://webgl2fundamentals.org/)
