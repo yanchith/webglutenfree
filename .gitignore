@@ -12,6 +12,6 @@ yarn-error.log
 .vscode/
 .idea
 
-# Build dirs
+# Build & dist dirs
 build/
 dist/

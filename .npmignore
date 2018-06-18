@@ -9,17 +9,27 @@ node_modules/
 yarn-error.log
 yarn.lock
 
+# TypeScript & TSLint
+tsconfig.json
+tslint.json
+
+# Rollup
+rollup.config.js
+
 # Editors
 .vscode/
 .idea
 
-# Build dirs
+# Editorconfig
+.editorconfig
+
+# Build dir
 build/
 
-# Docs
+# Docs dir
 docs/
 
-# Scripts
+# Scripts dir
 scripts/
 
 # Git repository
