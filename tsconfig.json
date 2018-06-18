@@ -8,8 +8,9 @@
       "es2017"
     ],
 
-    "declaration": true,
     "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
     "noEmitOnError": false,
 
     "strict": true,

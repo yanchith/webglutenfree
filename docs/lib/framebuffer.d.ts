@@ -44,3 +44,4 @@ export declare class Framebuffer {
     target(cb: (rt: Target) => void): void;
     private init;
 }
+//# sourceMappingURL=framebuffer.d.ts.map

@@ -146,3 +146,4 @@ export declare enum UniformType {
     SAMPLER_CUBE = 35680
 }
 export declare function sizeOf(type: DataType): number;
+//# sourceMappingURL=types.d.ts.map

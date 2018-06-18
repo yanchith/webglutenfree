@@ -5,12 +5,14 @@
 
 -   Allow users to envify `process.env.NODE_ENV` (again). Provide shim for
     `process.env.NODE_ENV` in case they don't
+-   Include all declaration files in the distribution
 
 #### Enhancements:
 
 -   Added possibility to specify scissor box for all rendering operations
 -   Added possibiliry to specify viewport for `command.draw()` and `command.batch()`
 -   Added possibility to specify source and destination rects for `command.blit()`
+-   Use typescript's declaration maps for tex editor navigation
 
 ## v0.0.7 (02/05/2018)
 #### Fixes:

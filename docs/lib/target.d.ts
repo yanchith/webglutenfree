@@ -95,3 +95,4 @@ export declare class Target {
     private textures;
     private uniforms;
 }
+//# sourceMappingURL=target.d.ts.map

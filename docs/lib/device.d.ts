@@ -119,3 +119,4 @@ export declare class Device {
      */
     target(cb: (rt: Target) => void): void;
 }
+//# sourceMappingURL=device.d.ts.map

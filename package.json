@@ -21,25 +21,19 @@
   "types": "dist/webglutenfree.d.ts",
   "scripts": {
     "serve": "http-server docs -p 8000",
-    "prebuild": "rimraf build",
-    "build": "tsc --outDir build",
-    "prebuild:watch": "rimraf build",
-    "build:watch": "tsc --outDir build --watch",
-    "lint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts*\"",
+    "precompile": "rimraf build",
+    "compile": "tsc --outDir build",
     "predist": "rimraf dist",
-    "dist": "yarn dist:es && yarn dist:umd && yarn dist:es:prod:min && yarn dist:umd:prod:min && yarn dist:dts",
+    "dist": "yarn dist:es && yarn dist:umd && yarn dist:dts",
     "dist:es": "cross-env FMT=es rollup --config",
     "dist:umd": "cross-env FMT=umd rollup --config",
     "dist:es:prod": "cross-env FMT=es PROD=yes rollup --config",
     "dist:umd:prod": "cross-env FMT=umd PROD=yes rollup --config",
     "dist:es:prod:min": "cross-env FMT=es PROD=yes MIN=yes rollup --config",
     "dist:umd:prod:min": "cross-env FMT=umd PROD=yes MIN=yes rollup --config",
-    "dist:dts": "cpx \"build/**/*.d.ts\" dist && mv dist/index.d.ts dist/webglutenfree.d.ts",
-    "predist:es:watch": "rimraf dist",
-    "dist:es:watch": "cross-env FMT=es rollup --config --watch",
-    "demolib": "yarn demolib:rm && yarn demolib:cp",
-    "demolib:rm": "rm docs/lib/{webglutenfree.js,webglutenfree.js.map,*.d.ts}",
-    "demolib:cp": "cp dist/{webglutenfree.js,webglutenfree.js.map,*.d.ts} docs/lib",
+    "dist:dts": "cpx \"build/**/{*.d.ts,*d.ts.map}\" dist && mv dist/index.d.ts dist/webglutenfree.d.ts",
+    "update-sandbox": "rimraf docs/lib && cpx \"dist/{webglutenfree.js,webglutenfree.js.map,**/*.d.ts}\" docs/lib",
+    "lint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts\"",
     "clean": "rimraf build && rimraf dist"
   },
   "dependencies": {
@@ -47,13 +41,13 @@
   },
   "devDependencies": {
     "cpx": "^1.5.0",
-    "cross-env": "^5.1.4",
+    "cross-env": "^5.2.0",
     "http-server": "^0.11.1",
     "rimraf": "^2.6.2",
     "rollup": "^0.57.1",
     "rollup-plugin-replace": "^2.0.0",
     "rollup-plugin-uglify": "^3.0.0",
-    "tslint": "^5.9.1",
-    "typescript": "^2.9.0-dev.20180502"
+    "tslint": "^5.10.0",
+    "typescript": "^2.9.1"
   }
 }
