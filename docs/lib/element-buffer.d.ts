@@ -58,3 +58,4 @@ export declare class ElementBuffer<T extends ElementBufferType> {
     store(data: ElementBufferTypeToTypedArray[T] | number[], { offset }?: ElementBufferStoreOptions): this;
     private init;
 }
+//# sourceMappingURL=element-buffer.d.ts.map

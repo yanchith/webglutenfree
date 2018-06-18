@@ -209,3 +209,4 @@ export declare class Texture<F extends TextureInternalFormat> {
     mipmap(): void;
     private init;
 }
+//# sourceMappingURL=texture.d.ts.map

@@ -7,3 +7,4 @@ export { ElementBuffer, ElementBufferType, ElementBufferOptions, ElementBufferSt
 export { Attributes, AttributeType, AttributesCreateOptions, } from "./attributes";
 export { Texture, TextureMinFilter, TextureMagFilter, TextureWrap, TextureInternalFormat, TextureFormat, TextureDataType, TextureOptions, TextureStoreOptions, } from "./texture";
 export { Framebuffer, TextureColorInternalFormat, TextureDepthInternalFormat, TextureDepthStencilInternalFormat, } from "./framebuffer";
+//# sourceMappingURL=index.d.ts.map

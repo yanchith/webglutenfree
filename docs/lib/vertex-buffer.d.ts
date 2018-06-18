@@ -54,3 +54,4 @@ export declare class VertexBuffer<T extends VertexBufferType> {
     store(data: VertexBufferTypeToTypedArray[T] | number[], { offset }?: VertexBufferStoreOptions): this;
     private init;
 }
+//# sourceMappingURL=vertex-buffer.d.ts.map

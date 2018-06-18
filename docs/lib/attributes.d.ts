@@ -83,3 +83,4 @@ export declare class Attributes {
     private init;
     private hasAttribs;
 }
+//# sourceMappingURL=attributes.d.ts.map

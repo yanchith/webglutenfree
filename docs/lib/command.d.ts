@@ -278,3 +278,4 @@ export declare class UniformDescriptor<P> {
     readonly definition: Uniform<P>;
     constructor(identifier: string, location: WebGLUniformLocation, definition: Uniform<P>);
 }
+//# sourceMappingURL=command.d.ts.map
