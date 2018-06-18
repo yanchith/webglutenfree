@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+(None yet)
+
+## v0.0.8 (18/06/2018)
 #### Fixes:
 
 -   Allow users to envify `process.env.NODE_ENV` (again). Provide shim for
