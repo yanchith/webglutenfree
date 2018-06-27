@@ -1,26 +1,30 @@
 import pluginReplace from "rollup-plugin-replace";
 import pluginUglify from "rollup-plugin-uglify";
 
-const FMT = process.env.FMT || "umd";
-const PROD = process.env.PROD && process.env.PROD === "yes";
-const MIN = process.env.MIN && process.env.MIN === "yes";
+const nyes = /([Yy][Ee]?[Ss]?)|([Tt][Rr]?[Uu]?[Ee]?)/;
+const ALL = process.env.ALL && nyes.test(process.env.ALL);
 
-const plugins = [
-    PROD && pluginReplace({ "process.env.NODE_ENV": JSON.stringify("production") }),
-    MIN && pluginUglify(),
-].filter(plugin => !!plugin);
-
-const fmtPart = FMT === "es" ? "" : `.${FMT}`;
-const prodPart = PROD ? ".prod" : "";
-const minPart = MIN ? ".min" : "";
-
-export default {
+const conf = (file, format, prod, min) => ({
     input: "build/index.js",
     output: {
-        file: `dist/webglutenfree${prodPart}${fmtPart}${minPart}.js`,
-        format: FMT,
-        name: 'webglutenfree',
+        file,
+        format,
+        name: "webglutenfree",
         sourcemap: true,
     },
-    plugins,
-};
+    plugins: [
+        prod && pluginReplace({
+            "process.env.NODE_ENV": JSON.stringify("production"),
+        }),
+        min && pluginUglify(),
+    ].filter(plugin => !!plugin),
+});
+
+export default [
+    conf("dist/webglutenfree.js", "es", false, false),
+    ALL && conf("dist/webglutenfree.prod.js", "es", true, false),
+    ALL && conf("dist/webglutenfree.prod.min.js", "es", true, true),
+    conf("dist/webglutenfree.umd.js", "umd", false, false),
+    ALL && conf("dist/webglutenfree.umd.prod.js", "umd", true, false),
+    ALL && conf("dist/webglutenfree.umd.prod.min.js", "umd", true, true),
+].filter(build => !!build);
