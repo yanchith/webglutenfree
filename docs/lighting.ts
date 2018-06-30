@@ -23,7 +23,8 @@ const N_LIGHTS = 5;
 const LIGHT_CONSTANT = 1;
 const LIGHT_LINEAR = 0.022;
 const LIGHT_QUADRATIC = 0.0019;
-const LIGHT_SCATTER = 200;
+const LIGHT_SCATTER_NEAR = 10;
+const LIGHT_SCATTER_FAR = 15;
 const NEAR = 0.1;
 const FAR = 500;
 
@@ -57,11 +58,17 @@ for (let i = 0; i < N_LIGHTS; ++i) {
         Math.random() * 0.2,
         Math.random() * 0.2,
     );
+    const initialPosition = vec3.fromValues(
+        LIGHT_SCATTER_NEAR + Math.random() * (LIGHT_SCATTER_FAR - LIGHT_SCATTER_NEAR),
+        2.5,
+        0,
+    );
     allLights.push({
-        position: vec3.fromValues(
-            Math.random() * LIGHT_SCATTER - LIGHT_SCATTER / 2,
-            Math.random() * LIGHT_SCATTER - LIGHT_SCATTER / 2,
-            Math.random() * LIGHT_SCATTER - LIGHT_SCATTER / 2,
+        position: vec3.rotateY(
+            initialPosition,
+            initialPosition,
+            zero,
+            Math.random() * 2 * Math.PI,
         ),
         ambient: color,
         diffuse: vec3.fromValues(color[0] * 5, color[1] * 5, color[2] * 5),
@@ -73,7 +80,7 @@ for (let i = 0; i < N_LIGHTS; ++i) {
 }
 const updateLights = (_lights: Light[], delta: number): void => {
     for (const light of _lights) {
-        vec3.rotateY(light.position, light.position, zero, delta / 1000);
+        vec3.rotateY(light.position, light.position, zero, delta / 5000);
     }
 };
 
@@ -311,7 +318,7 @@ const cmdDrawLight = Command.create<CmdDrawLightProps>(
             },
             u_model: {
                 type: "matrix4fv",
-                value: mat4.fromScaling(mat4.create(), [0.1, 0.1, 0.1]),
+                value: mat4.identity(mat4.create()),
             },
             u_position: {
                 type: "3f",
@@ -327,9 +334,9 @@ const cmdDrawLight = Command.create<CmdDrawLightProps>(
 );
 
 const objectMaterial: Material = {
-    ambient: vec3.fromValues(0.2, 0.2, 0.2),
-    diffuse: vec3.fromValues(0.8, 0.8, 0.8),
-    specular: vec3.fromValues(1, 1, 1),
+    ambient: vec3.fromValues(0.4, 0.4, 0.4),
+    diffuse: vec3.fromValues(0.4, 0.4, 0.4),
+    specular: vec3.fromValues(0.5, 0.5, 0.5),
     shininess: 32,
 };
 const objects = sponza.objects.map(({ positions, normals }) => ({
@@ -343,7 +350,7 @@ const objects = sponza.objects.map(({ positions, normals }) => ({
 const lightAttrs = Attributes.create(
     dev,
     cube.elements,
-    { 0: cube.positions },
+    { 0: cube.positions.map(([x, y, z]) => [x / 50,  y / 50, z / 50]) },
 );
 
 let t = window.performance.now();
