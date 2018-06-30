@@ -19,7 +19,10 @@ import * as sponza from "./libx/sponza.js";
 import * as cube from "./libx/cube.js";
 
 const N_LIGHTS = 10;
-const LIGHT_SCATTER = 5;
+const LIGHT_CONSTANT = 1;
+const LIGHT_LINEAR = 0.045;
+const LIGHT_QUADRATIC = 0.0075;
+const LIGHT_SCATTER = 100;
 const NEAR = 0.1;
 const FAR = 500;
 
@@ -29,48 +32,55 @@ const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 const zero = vec3.fromValues(0, 0, 0);
 const up = vec3.fromValues(0, 1, 0);
 
-interface Light {
-    position: vec3;
-    color: vec3;
-    ambientStrength: number;
-    specularStrength: number;
+interface Material {
+    ambient: vec3;
+    diffuse: vec3;
+    specular: vec3;
+    shininess: number;
 }
 
-let lights: Light[] = [];
+interface Light {
+    position: vec3;
+    ambient: vec3;
+    diffuse: vec3;
+    specular: vec3;
+    constant: number;
+    linear: number;
+    quadratic: number;
+}
+
+const lights: Light[] = [];
 for (let i = 0; i < N_LIGHTS; ++i) {
+    const color = vec3.fromValues(
+        Math.random() * 0.2,
+        Math.random() * 0.2,
+        Math.random() * 0.2,
+    );
     lights.push({
         position: vec3.fromValues(
             Math.random() * LIGHT_SCATTER - LIGHT_SCATTER / 2,
             Math.random() * LIGHT_SCATTER - LIGHT_SCATTER / 2,
             Math.random() * LIGHT_SCATTER - LIGHT_SCATTER / 2,
         ),
-        color: vec3.fromValues(
-            Math.random(),
-            Math.random(),
-            Math.random(),
-        ),
-        ambientStrength: 0.1,
-        specularStrength: 0.5,
+        ambient: color,
+        diffuse: vec3.fromValues(color[0] * 5, color[1] * 5, color[2] * 5),
+        specular: vec3.fromValues(1, 1, 1),
+        constant: LIGHT_CONSTANT,
+        linear: LIGHT_LINEAR,
+        quadratic: LIGHT_QUADRATIC,
     });
 }
-const updateLights = (_lights: Light[], delta: number): Light[] => {
-    return _lights.map((light) => ({
-        ...light,
-        position: vec3.rotateY(
-            light.position,
-            light.position,
-            zero,
-            delta / 1000,
-        ),
-    }));
+const updateLights = (_lights: Light[], delta: number): void => {
+    for (const light of _lights) {
+        vec3.rotateY(light.position, light.position, zero, delta / 1000);
+    }
 };
 
 const cameraPosition = vec3.fromValues(0, 2.5, 0);
-let viewMatrix = mat4.create();
-const updateViewMatrix = (mat: mat4, time: number): mat4 => mat4.lookAt(
-    mat,
+const viewMatrix = mat4.lookAt(
+    mat4.create(),
     cameraPosition,
-    [Math.cos(time / 10000), 2.5, Math.sin(time / 10000)],
+    [1, 2.5, 0],
     up,
 );
 
@@ -85,7 +95,7 @@ const projMatrix = mat4.perspective(
 interface CmdDrawObjectProps {
     proj: mat4;
     view: mat4;
-    color: vec3;
+    material: Material;
     light: Light;
 }
 
@@ -111,8 +121,26 @@ const cmdDrawObject = Command.create<CmdDrawObjectProps>(
     `#version 300 es
         precision mediump float;
 
-        uniform vec3 u_camera_position, u_color, u_light_color, u_light_position;
-        uniform float u_light_ambient_strength, u_light_specular_strength;
+        struct Material {
+            vec3 ambient;
+            vec3 diffuse;
+            vec3 specular;
+            float shininess;
+        };
+
+        struct Light {
+            vec3 position;
+            vec3 ambient;
+            vec3 diffuse;
+            vec3 specular;
+            float constant;
+            float linear;
+            float quadratic;
+        };
+
+        uniform Light u_light;
+        uniform Material u_material;
+        uniform vec3 u_camera_position, u_color;
 
         in vec3 v_position;
         in vec3 v_normal;
@@ -121,18 +149,27 @@ const cmdDrawObject = Command.create<CmdDrawObjectProps>(
 
         void main() {
             vec3 normal = normalize(v_normal);
-            vec3 light_dir = normalize(u_light_position - v_position);
+            float distance = length(u_light.position - v_position);
+            vec3 light_dir = normalize(u_light.position - v_position);
             vec3 view_dir = normalize(u_camera_position - v_position);
             vec3 reflect_dir = reflect(-light_dir, normal);
 
             float diffuse_factor = max(dot(light_dir, normal), 0.0);
-            float specular_factor = pow(max(dot(reflect_dir, view_dir), 0.0), 32.0);
+            float specular_factor = pow(
+                max(dot(reflect_dir, view_dir), 0.0),
+                u_material.shininess
+            );
 
-            vec3 ambient = u_light_ambient_strength * u_light_color;
-            vec3 diffuse = diffuse_factor * u_light_color;
-            vec3 specular = u_light_specular_strength * specular_factor * u_light_color;
+            vec3 ambient = u_light.ambient * u_material.ambient;
+            vec3 diffuse = diffuse_factor * u_light.diffuse * u_material.diffuse;
+            vec3 specular = specular_factor * u_light.specular * u_material.specular;
 
-            f_color = vec4((ambient + diffuse + specular) * u_color, 1);
+            float attenuation = 1.0 / (u_light.constant
+                + u_light.linear * distance
+                + u_light.quadratic * distance * distance
+            );
+
+            f_color = vec4(attenuation * (ambient + diffuse + specular), 1);
         }
     `,
     {
@@ -153,25 +190,49 @@ const cmdDrawObject = Command.create<CmdDrawObjectProps>(
                 type: "3f",
                 value: cameraPosition,
             },
-            u_color: {
+            "u_material.ambient": {
                 type: "3f",
-                value: ({ color }) => color,
+                value: ({ material }) => material.ambient,
             },
-            u_light_position: {
+            "u_material.diffuse": {
+                type: "3f",
+                value: ({ material }) => material.diffuse,
+            },
+            "u_material.specular": {
+                type: "3f",
+                value: ({ material }) => material.specular,
+            },
+            "u_material.shininess": {
+                type: "1f",
+                value: ({ material }) => material.shininess,
+            },
+            "u_light.position": {
                 type: "3f",
                 value: ({ light }) => light.position,
             },
-            u_light_color: {
+            "u_light.ambient": {
                 type: "3f",
-                value: ({ light }) => light.color,
+                value: ({ light }) => light.ambient,
             },
-            u_light_ambient_strength: {
-                type: "1f",
-                value: ({ light }) => light.ambientStrength,
+            "u_light.diffuse": {
+                type: "3f",
+                value: ({ light }) => light.diffuse,
             },
-            u_light_specular_strength: {
+            "u_light.specular": {
+                type: "3f",
+                value: ({ light }) => light.specular,
+            },
+            "u_light.constant": {
                 type: "1f",
-                value: ({ light }) => light.specularStrength,
+                value: ({ light }) => light.constant,
+            },
+            "u_light.linear": {
+                type: "1f",
+                value: ({ light }) => light.linear,
+            },
+            "u_light.quadratic": {
+                type: "1f",
+                value: ({ light }) => light.quadratic,
             },
         },
         depth: { func: DepthFunc.LESS },
@@ -231,15 +292,21 @@ const cmdDrawLight = Command.create<CmdDrawLightProps>(
             },
             u_color: {
                 type: "3f",
-                value: ({ light }) => light.color,
+                value: ({ light }) => light.diffuse,
             },
         },
         depth: { func: DepthFunc.LESS },
     },
 );
 
+const objectMaterial: Material = {
+    ambient: vec3.fromValues(0.2, 0.2, 0.2),
+    diffuse: vec3.fromValues(0.8, 0.8, 0.8),
+    specular: vec3.fromValues(1, 1, 1),
+    shininess: 32,
+};
 const objects = sponza.objects.map(({ positions, normals }) => ({
-    color: vec3.fromValues(0.9, 0.9, 0.9),
+    material: objectMaterial,
     attrs: Attributes.create(dev, Primitive.TRIANGLES, {
         0: positions,
         1: normals,
@@ -257,8 +324,7 @@ const loop = (time: number): void => {
     const delta = time - t;
     t = time;
 
-    viewMatrix = updateViewMatrix(viewMatrix, time);
-    lights = updateLights(lights, delta);
+    updateLights(lights, delta);
 
     dev.target((rt) => {
         rt.clear(BufferBits.COLOR_DEPTH);
@@ -268,7 +334,7 @@ const loop = (time: number): void => {
                     draw(object.attrs, {
                         proj: projMatrix,
                         view: viewMatrix,
-                        color: object.color,
+                        material: object.material,
                         light,
                     });
                 });
