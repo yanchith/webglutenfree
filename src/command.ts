@@ -844,14 +844,21 @@ function validateUniformDeclarations(
 ): void {
     const nUniforms = gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS);
     const progUniforms = new Map<string, WebGLActiveInfo>();
+
+    // Note: gl.getUniformLocation accepts a shorthand for uniform names of
+    // basic type arrays (trailing "[0]" can be omitted). Because
+    // gl.getActiveUniforms always gives us the full name, we need to widen
+    // our mathing to accept the shorthands and pair them with the introspected
+    // WebGLActiveInfos
+    // https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getUniformLocation
+    const shorthands = new Map<string, string>();
     for (let i = 0; i < nUniforms; ++i) {
         const info = gl.getActiveUniform(prog, i)!;
-        // Naming collision-wise, it is safe to trim "[0]"
-        // It only indicates an array uniform, which we can not validate too well
-        const key = info.name.includes("[0]")
-            ? info.name.substring(0, info.name.length - 3)
-            : info.name;
-        progUniforms.set(key, info);
+        progUniforms.set(info.name, info);
+        if (info.name.endsWith("[0]")) {
+            const shorthand = info.name.substring(0, info.name.length - 3);
+            shorthands.set(shorthand, info.name);
+        }
     }
 
     // The "list" of uniforms left to check from the program's perspective
@@ -859,13 +866,23 @@ function validateUniformDeclarations(
 
     Object.entries(uniforms).map(([name, tyObj]) => {
         const type = tyObj.type;
-        if (progUniforms.has(name)) {
-            const progUniform = progUniforms.get(name)!;
+        // TODO: should we assert array uniforms if we discover it in their names?
+        const shorthand = shorthands.has(name) && shorthands.get(name);
+        const progUniform = progUniforms.has(name)
+            ? progUniforms.get(name)!
+            : shorthand && progUniforms.has(shorthand)
+                ? progUniforms.get(shorthands.get(name)!)
+                : null;
+        if (progUniform) {
             validateUniformDeclaration(gl, progUniform, type);
         } else {
             throw new Error(`Redundant uniform [name = ${name}, type = ${type}]`);
         }
-        toCheck.delete(name);
+        if (shorthand) {
+            toCheck.delete(shorthand);
+        } else {
+            toCheck.delete(name);
+        }
     });
 
     Object.keys(textures).map((name) => {

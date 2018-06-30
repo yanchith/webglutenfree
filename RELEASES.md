@@ -1,6 +1,12 @@
 # Changelog
 
 ## Unreleased
+#### Fixes:
+
+-   Teach uniform validation mechanism about possible basic type array shorthands
+
+#### Enhancements:
+
 (None yet)
 
 ## v0.0.8 (18/06/2018)
