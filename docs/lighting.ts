@@ -6,6 +6,7 @@ import {
     Device,
     BufferBits,
     Command,
+    CommandOptions,
     DepthFunc,
     Attributes,
     Primitive,
@@ -18,11 +19,11 @@ import { mat4, vec3 } from "./libx/gl-matrix.js";
 import * as sponza from "./libx/sponza.js";
 import * as cube from "./libx/cube.js";
 
-const N_LIGHTS = 10;
+const N_LIGHTS = 5;
 const LIGHT_CONSTANT = 1;
-const LIGHT_LINEAR = 0.045;
-const LIGHT_QUADRATIC = 0.0075;
-const LIGHT_SCATTER = 100;
+const LIGHT_LINEAR = 0.022;
+const LIGHT_QUADRATIC = 0.0019;
+const LIGHT_SCATTER = 200;
 const NEAR = 0.1;
 const FAR = 500;
 
@@ -49,14 +50,14 @@ interface Light {
     quadratic: number;
 }
 
-const lights: Light[] = [];
+const allLights: Light[] = [];
 for (let i = 0; i < N_LIGHTS; ++i) {
     const color = vec3.fromValues(
         Math.random() * 0.2,
         Math.random() * 0.2,
         Math.random() * 0.2,
     );
-    lights.push({
+    allLights.push({
         position: vec3.fromValues(
             Math.random() * LIGHT_SCATTER - LIGHT_SCATTER / 2,
             Math.random() * LIGHT_SCATTER - LIGHT_SCATTER / 2,
@@ -96,8 +97,77 @@ interface CmdDrawObjectProps {
     proj: mat4;
     view: mat4;
     material: Material;
-    light: Light;
+    lights: Light[];
 }
+
+type UniformOpts = CommandOptions<CmdDrawObjectProps>["uniforms"];
+const createUniformOptions = (nLights: number): UniformOpts => {
+    const uniforms: UniformOpts = {
+        u_proj: {
+            type: "matrix4fv",
+            value: ({ proj }) => proj,
+        },
+        u_view: {
+            type: "matrix4fv",
+            value: ({ view }) => view,
+        },
+        u_model: {
+            type: "matrix4fv",
+            value: mat4.identity(mat4.create()),
+        },
+        u_camera_position: {
+            type: "3f",
+            value: cameraPosition,
+        },
+        "u_material.ambient": {
+            type: "3f",
+            value: ({ material }) => material.ambient,
+        },
+        "u_material.diffuse": {
+            type: "3f",
+            value: ({ material }) => material.diffuse,
+        },
+        "u_material.specular": {
+            type: "3f",
+            value: ({ material }) => material.specular,
+        },
+        "u_material.shininess": {
+            type: "1f",
+            value: ({ material }) => material.shininess,
+        },
+    };
+    for (let i = 0; i < nLights; ++i) {
+        uniforms[`u_lights[${i}].position`] = {
+            type: "3f",
+            value: ({ lights }) => lights[i].position,
+        };
+        uniforms[`u_lights[${i}].ambient`] = {
+            type: "3f",
+            value: ({ lights }) => lights[i].ambient,
+        };
+        uniforms[`u_lights[${i}].diffuse`] = {
+            type: "3f",
+            value: ({ lights }) => lights[i].diffuse,
+        };
+        uniforms[`u_lights[${i}].specular`] = {
+            type: "3f",
+            value: ({ lights }) => lights[i].specular,
+        };
+        uniforms[`u_lights[${i}].constant`] = {
+            type: "1f",
+            value: ({ lights }) => lights[i].constant,
+        };
+        uniforms[`u_lights[${i}].linear`] = {
+            type: "1f",
+            value: ({ lights }) => lights[i].linear,
+        };
+        uniforms[`u_lights[${i}].quadratic`] = {
+            type: "1f",
+            value: ({ lights }) => lights[i].quadratic,
+        };
+    }
+    return uniforms;
+};
 
 const cmdDrawObject = Command.create<CmdDrawObjectProps>(
     dev,
@@ -121,6 +191,8 @@ const cmdDrawObject = Command.create<CmdDrawObjectProps>(
     `#version 300 es
         precision mediump float;
 
+        #define N_LIGHTS ${N_LIGHTS}
+
         struct Material {
             vec3 ambient;
             vec3 diffuse;
@@ -138,7 +210,7 @@ const cmdDrawObject = Command.create<CmdDrawObjectProps>(
             float quadratic;
         };
 
-        uniform Light u_light;
+        uniform Light u_lights[N_LIGHTS];
         uniform Material u_material;
         uniform vec3 u_camera_position, u_color;
 
@@ -149,92 +221,47 @@ const cmdDrawObject = Command.create<CmdDrawObjectProps>(
 
         void main() {
             vec3 normal = normalize(v_normal);
-            float distance = length(u_light.position - v_position);
-            vec3 light_dir = normalize(u_light.position - v_position);
             vec3 view_dir = normalize(u_camera_position - v_position);
-            vec3 reflect_dir = reflect(-light_dir, normal);
 
-            float diffuse_factor = max(dot(light_dir, normal), 0.0);
-            float specular_factor = pow(
-                max(dot(reflect_dir, view_dir), 0.0),
-                u_material.shininess
-            );
+            vec3 ambient = vec3(0);
+            vec3 diffuse = vec3(0);
+            vec3 specular = vec3(0);
 
-            vec3 ambient = u_light.ambient * u_material.ambient;
-            vec3 diffuse = diffuse_factor * u_light.diffuse * u_material.diffuse;
-            vec3 specular = specular_factor * u_light.specular * u_material.specular;
+            for (int i = 0; i < N_LIGHTS; ++i) {
+                Light light = u_lights[i];
 
-            float attenuation = 1.0 / (u_light.constant
-                + u_light.linear * distance
-                + u_light.quadratic * distance * distance
-            );
+                float distance = length(light.position - v_position);
+                vec3 light_dir = normalize(light.position - v_position);
+                vec3 reflect_dir = reflect(-light_dir, normal);
 
-            f_color = vec4(attenuation * (ambient + diffuse + specular), 1);
+                float diffuse_factor = max(dot(light_dir, normal), 0.0);
+                float specular_factor = pow(
+                    max(dot(reflect_dir, view_dir), 0.0),
+                    u_material.shininess
+                );
+
+                float attenuation = 1.0 / (light.constant
+                    + light.linear * distance
+                    + light.quadratic * distance * distance
+                );
+
+                ambient += attenuation
+                    * light.ambient
+                    * u_material.ambient;
+                diffuse += attenuation
+                    * diffuse_factor
+                    * light.diffuse * u_material.diffuse;
+                specular += attenuation
+                    * specular_factor
+                    * light.specular
+                    * u_material.specular;
+            }
+
+            f_color = vec4(ambient + diffuse + specular, 1);
         }
     `,
     {
-        uniforms: {
-            u_proj: {
-                type: "matrix4fv",
-                value: ({ proj }) => proj,
-            },
-            u_view: {
-                type: "matrix4fv",
-                value: ({ view }) => view,
-            },
-            u_model: {
-                type: "matrix4fv",
-                value: mat4.identity(mat4.create()),
-            },
-            u_camera_position: {
-                type: "3f",
-                value: cameraPosition,
-            },
-            "u_material.ambient": {
-                type: "3f",
-                value: ({ material }) => material.ambient,
-            },
-            "u_material.diffuse": {
-                type: "3f",
-                value: ({ material }) => material.diffuse,
-            },
-            "u_material.specular": {
-                type: "3f",
-                value: ({ material }) => material.specular,
-            },
-            "u_material.shininess": {
-                type: "1f",
-                value: ({ material }) => material.shininess,
-            },
-            "u_light.position": {
-                type: "3f",
-                value: ({ light }) => light.position,
-            },
-            "u_light.ambient": {
-                type: "3f",
-                value: ({ light }) => light.ambient,
-            },
-            "u_light.diffuse": {
-                type: "3f",
-                value: ({ light }) => light.diffuse,
-            },
-            "u_light.specular": {
-                type: "3f",
-                value: ({ light }) => light.specular,
-            },
-            "u_light.constant": {
-                type: "1f",
-                value: ({ light }) => light.constant,
-            },
-            "u_light.linear": {
-                type: "1f",
-                value: ({ light }) => light.linear,
-            },
-            "u_light.quadratic": {
-                type: "1f",
-                value: ({ light }) => light.quadratic,
-            },
-        },
+        uniforms: createUniformOptions(N_LIGHTS),
         depth: { func: DepthFunc.LESS },
     },
 );
@@ -324,24 +351,22 @@ const loop = (time: number): void => {
     const delta = time - t;
     t = time;
 
-    updateLights(lights, delta);
+    updateLights(allLights, delta);
 
     dev.target((rt) => {
         rt.clear(BufferBits.COLOR_DEPTH);
         rt.batch(cmdDrawObject, (draw) => {
             objects.forEach((object) => {
-                lights.forEach((light) => {
-                    draw(object.attrs, {
-                        proj: projMatrix,
-                        view: viewMatrix,
-                        material: object.material,
-                        light,
-                    });
+                draw(object.attrs, {
+                    proj: projMatrix,
+                    view: viewMatrix,
+                    material: object.material,
+                    lights: allLights,
                 });
             });
         });
         rt.batch(cmdDrawLight, (draw) => {
-            lights.forEach((light) => {
+            allLights.forEach((light) => {
                 draw(lightAttrs, {
                     proj: projMatrix,
                     view: viewMatrix,
