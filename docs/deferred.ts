@@ -85,11 +85,7 @@ const cmdDraw = Command.create<number>(
                 value: (time) => mat4.lookAt(
                     view,
                     [0, 2.5, 0],
-                    [
-                        5 * Math.cos(time / 10000),
-                        2.5,
-                        5 * Math.sin(time / 10000),
-                    ],
+                    [Math.cos(time / 10000), 2.5, Math.sin(time / 10000)],
                     [0, 1, 0],
                 ),
             },
