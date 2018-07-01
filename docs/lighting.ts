@@ -40,6 +40,22 @@ const identity = mat4.identity(mat4.create());
 const zero = vec3.fromValues(0, 0, 0);
 const up = vec3.fromValues(0, 1, 0);
 
+const projMatrix = mat4.perspective(
+    mat4.create(),
+    Math.PI / 4,
+    width / height,
+    PROJ_NEAR,
+    PROJ_FAR,
+);
+
+const cameraPosition = vec3.fromValues(0, CAMERA_Y, 0);
+const viewMatrix = mat4.lookAt(
+    mat4.create(),
+    cameraPosition,
+    [1, CAMERA_Y, 0],
+    up,
+);
+
 /**
  * Material properties as described by Phong lighting model.
  */
@@ -103,22 +119,6 @@ for (let i = 0; i < N_LIGHTS; ++i) {
         CAMERA_Y,
     ));
 }
-
-const projMatrix = mat4.perspective(
-    mat4.create(),
-    Math.PI / 4,
-    width / height,
-    PROJ_NEAR,
-    PROJ_FAR,
-);
-
-const cameraPosition = vec3.fromValues(0, CAMERA_Y, 0);
-const viewMatrix = mat4.lookAt(
-    mat4.create(),
-    cameraPosition,
-    [1, CAMERA_Y, 0],
-    up,
-);
 
 interface CmdDrawLightingProps {
     proj: mat4;
@@ -247,7 +247,7 @@ const cmdDrawLighting = Command.create<CmdDrawLightingProps>(
 
         uniform Light u_lights[N_LIGHTS];
         uniform Material u_material;
-        uniform vec3 u_camera_position, u_color;
+        uniform vec3 u_camera_position;
 
         in vec3 v_position;
         in vec3 v_normal;
@@ -382,7 +382,7 @@ const objects = sponza.objects.map(({ positions, normals }) => ({
 const lightAttrs = Attributes.create(
     dev,
     cube.elements,
-    { 0: cube.positions.map(([x, y, z]) => [x / 50,  y / 50, z / 50]) },
+    { 0: cube.positions.map(([x, y, z]) => [x / 50, y / 50, z / 50]) },
 );
 
 let t = window.performance.now();
@@ -425,8 +425,8 @@ const loop = (time: number): void => {
                 });
             });
         }
-
     });
+
     window.requestAnimationFrame(loop);
 };
 
