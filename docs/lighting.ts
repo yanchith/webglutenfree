@@ -89,10 +89,15 @@ const createLight = (
     minY: number,
     maxY: number,
 ): Light => {
+    const mask = [
+        Math.random() > 0.5 ? 0.15 : 0,
+        Math.random() > 0.5 ? 0.15 : 0,
+        Math.random() > 0.5 ? 0.15 : 0,
+    ];
     const color = vec3.fromValues(
-        0.15 + Math.random() * 0.05,
-        0.15 + Math.random() * 0.05,
-        0.15 + Math.random() * 0.05,
+        mask[0] + Math.random() * 0.05,
+        mask[1] + Math.random() * 0.05,
+        mask[2] + Math.random() * 0.05,
     );
     const distance = vec3.fromValues(
         scatterXZNear + Math.random() * (scatterXZFar - scatterXZNear),
