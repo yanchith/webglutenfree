@@ -2,8 +2,8 @@
  * This example uses deferred shading to illuminate a scene with multiple
  * point lights with the Phong lighting model.
  *
- * learnopengl.com provides an excellent explanation of both Phong lighting and
- * deferred shading.
+ * learnopengl.com provides an excellent explanation of both Blinn-Phong
+ * lighting and deferred shading.
  *
  * Sponza modeled by Marko Dabrovic, with UVs and crack errors fixed by Kenzie
  * amar at Vicarious Visions.
@@ -154,9 +154,8 @@ const cmdDrawGeometry = Command.create<CmdDrawGeometryProps>(
         out vec3 v_normal;
 
         void main() {
-            mat3 model = mat3(u_model);
-            v_position = model * a_position;
-            v_normal = transpose(inverse(model)) * a_normal;
+            v_position = (u_model * vec4(a_position, 1)).xyz;
+            v_normal = transpose(inverse(mat3(u_model))) * a_normal;
             gl_Position = u_proj * u_view * u_model * vec4(a_position, 1);
         }
     `,
@@ -220,10 +219,10 @@ interface CmdDrawLightingProps {
 const createUniformOptions = (nLights: number): Uniforms<CmdDrawLightingProps> => {
     // Add statically known uniforms
     const uniforms: Uniforms<CmdDrawLightingProps> = {
-        // u_camera_position: {
-        //     type: "3f",
-        //     value: (props) => props.cameraPosition,
-        // },
+        u_camera_position: {
+            type: "3f",
+            value: (props) => props.cameraPosition,
+        },
     };
 
     // Add uniforms for each light
@@ -296,7 +295,7 @@ const cmdDrawLighting = Command.create<CmdDrawLightingProps>(
         };
 
         uniform Light u_lights[N_LIGHTS];
-        // uniform vec3 u_camera_position;
+        uniform vec3 u_camera_position;
         uniform sampler2D u_g_albedo_specular;
         uniform sampler2D u_g_position;
         uniform sampler2D u_g_normal;
@@ -306,43 +305,36 @@ const cmdDrawLighting = Command.create<CmdDrawLightingProps>(
         void main() {
             ivec2 coords = ivec2(gl_FragCoord.xy);
 
-            vec3 albedo = texelFetch(u_g_albedo_specular, coords, 0).rgb;
+            vec3 diffuse = texelFetch(u_g_albedo_specular, coords, 0).rgb;
             float specular = texelFetch(u_g_albedo_specular, coords, 0).a;
             vec3 position = texelFetch(u_g_position, coords, 0).xyz;
             vec3 normal = texelFetch(u_g_normal, coords, 0).xyz;
 
-            // vec3 view_dir = normalize(u_camera_position - position);
+            vec3 view_dir = normalize(u_camera_position - position);
 
-            vec3 lighting = albedo * 0.1;
-            vec3 out_diffuse = vec3(0);
-            vec3 out_specular = vec3(0);
+            vec3 lighting = diffuse * 0.1; // Hardcoded ambient
 
             for (int i = 0; i < N_LIGHTS; ++i) {
                 Light light = u_lights[i];
 
                 float distance = length(light.position - position);
                 vec3 light_dir = normalize(light.position - position);
-                // vec3 reflect_dir = reflect(-light_dir, normal);
+                vec3 halfway_dir = normalize(view_dir + light_dir);
 
-                float diffuse_factor = max(dot(light_dir, normal), 0.0);
-                // float specular_factor = pow(
-                //     max(dot(reflect_dir, view_dir), 0.0),
-                //     specular
-                // );
+                float diffuse_f = max(dot(light_dir, normal), 0.0);
+                float specular_f = pow(
+                    max(dot(normal, halfway_dir), 0.0),
+                    16.0 // Hardcoded shininess
+                );
 
                 float attenuation = 1.0 / (light.constant
                     + light.linear * distance
                     + light.quadratic * distance * distance
                 );
 
-                lighting += attenuation * diffuse_factor * light.diffuse * albedo;
-                // lighting += attenuation * specular_factor * light.specular * specular;
+                lighting += attenuation * diffuse_f * light.diffuse * diffuse;
+                lighting += attenuation * specular_f * light.specular * specular;
             }
-
-            f_color = vec4(albedo, 1);
-            f_color = vec4(vec3(specular), 1);
-            f_color = vec4(position, 1);
-            f_color = vec4(normal, 1);
 
             f_color = vec4(lighting, 1);
         }

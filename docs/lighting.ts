@@ -1,8 +1,8 @@
 /**
- * This example uses Phong lighting model to illuminate a scene with multiple
- * point lights. All lights are forward-rendered.
+ * This example uses Blinn-Phong lighting model to illuminate a scene with
+ * multiple point lights.
  *
- * learnopengl.com provides an excellent explanation of Phong lighting.
+ * learnopengl.com provides an excellent explanation of Blinn-Phong lighting.
  *
  * Sponza modeled by Marko Dabrovic, with UVs and crack errors fixed by Kenzie
  * amar at Vicarious Visions.
@@ -218,7 +218,7 @@ const cmdDrawLighting = Command.create<CmdDrawLightingProps>(
         out vec3 v_normal;
 
         void main() {
-            v_position = a_position;
+            v_position = (u_model * vec4(a_position, 1)).xyz;
             v_normal = transpose(inverse(mat3(u_model))) * a_normal;
             gl_Position = u_proj * u_view * u_model * vec4(a_position, 1);
         }
@@ -258,20 +258,18 @@ const cmdDrawLighting = Command.create<CmdDrawLightingProps>(
             vec3 normal = normalize(v_normal);
             vec3 view_dir = normalize(u_camera_position - v_position);
 
-            vec3 ambient = vec3(0);
-            vec3 diffuse = vec3(0);
-            vec3 specular = vec3(0);
+            vec3 lighting = vec3(0);
 
             for (int i = 0; i < N_LIGHTS; ++i) {
                 Light light = u_lights[i];
 
                 float distance = length(light.position - v_position);
                 vec3 light_dir = normalize(light.position - v_position);
-                vec3 reflect_dir = reflect(-light_dir, normal);
+                vec3 halfway_dir = normalize(view_dir + light_dir);
 
-                float diffuse_factor = max(dot(light_dir, normal), 0.0);
-                float specular_factor = pow(
-                    max(dot(reflect_dir, view_dir), 0.0),
+                float diffuse_f = max(dot(light_dir, normal), 0.0);
+                float specular_f = pow(
+                    max(dot(normal, halfway_dir), 0.0),
                     u_material.shininess
                 );
 
@@ -280,19 +278,12 @@ const cmdDrawLighting = Command.create<CmdDrawLightingProps>(
                     + light.quadratic * distance * distance
                 );
 
-                ambient += attenuation
-                    * light.ambient
-                    * u_material.ambient;
-                diffuse += attenuation
-                    * diffuse_factor
-                    * light.diffuse * u_material.diffuse;
-                specular += attenuation
-                    * specular_factor
-                    * light.specular
-                    * u_material.specular;
+                lighting += attenuation * light.ambient * u_material.ambient;
+                lighting += attenuation * diffuse_f * light.diffuse * u_material.diffuse;
+                lighting += attenuation * specular_f * light.specular * u_material.specular;
             }
 
-            f_color = vec4(ambient + diffuse + specular, 1);
+            f_color = vec4(lighting, 1);
         }
     `,
     {
@@ -368,7 +359,7 @@ const material: Material = {
     ambient: vec3.fromValues(0.4, 0.4, 0.4),
     diffuse: vec3.fromValues(0.4, 0.4, 0.4),
     specular: vec3.fromValues(0.5, 0.5, 0.5),
-    shininess: 2,
+    shininess: 16,
 };
 
 const objects = sponza.objects.map(({ positions, normals }) => ({
