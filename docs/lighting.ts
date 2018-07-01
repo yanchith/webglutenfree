@@ -22,16 +22,19 @@ import { mat4, vec3 } from "./libx/gl-matrix.js";
 import * as sponza from "./libx/sponza.js";
 import * as cube from "./libx/cube.js";
 
-const N_LIGHTS = 5;
-const DRAW_LIGHTS = false;
+const N_LIGHTS = 10;
+const DRAW_LIGHTS = true;
 const LIGHT_ATTENUATION_CONSTANT = 1;
 const LIGHT_ATTENUATION_LINEAR = 0.14;
 const LIGHT_ATTENUATION_QUADRATIC = 0.07;
-const LIGHT_SCATTER_XZ_NEAR = 10;
-const LIGHT_SCATTER_XZ_FAR = 15;
-const CAMERA_Y = 2.5;
+const LIGHT_SCATTER_XZ_NEAR = 5;
+const LIGHT_SCATTER_XZ_FAR = 8;
+const LIGHT_MIN_Y = 0;
+const LIGHT_MAX_Y = 10;
+const CAMERA_Y = 10;
 const PROJ_NEAR = 0.1;
 const PROJ_FAR = 500;
+const PROJ_FOV = Math.PI / 2;
 
 const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -42,7 +45,7 @@ const up = vec3.fromValues(0, 1, 0);
 
 const projMatrix = mat4.perspective(
     mat4.create(),
-    Math.PI / 4,
+    PROJ_FOV,
     width / height,
     PROJ_NEAR,
     PROJ_FAR,
@@ -52,7 +55,7 @@ const cameraPosition = vec3.fromValues(0, CAMERA_Y, 0);
 const viewMatrix = mat4.lookAt(
     mat4.create(),
     cameraPosition,
-    [1, CAMERA_Y, 0],
+    [10, 1, 0],
     up,
 );
 
@@ -83,7 +86,8 @@ interface Light {
 const createLight = (
     scatterXZNear: number,
     scatterXZFar: number,
-    y: number,
+    minY: number,
+    maxY: number,
 ): Light => {
     const color = vec3.fromValues(
         0.15 + Math.random() * 0.05,
@@ -92,7 +96,7 @@ const createLight = (
     );
     const distance = vec3.fromValues(
         scatterXZNear + Math.random() * (scatterXZFar - scatterXZNear),
-        y,
+        minY + Math.random() * (maxY - minY),
         0,
     );
     return {
@@ -116,7 +120,8 @@ for (let i = 0; i < N_LIGHTS; ++i) {
     lights.push(createLight(
         LIGHT_SCATTER_XZ_NEAR,
         LIGHT_SCATTER_XZ_FAR,
-        CAMERA_Y,
+        LIGHT_MIN_Y,
+        LIGHT_MAX_Y,
     ));
 }
 
