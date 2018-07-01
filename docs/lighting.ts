@@ -1,18 +1,21 @@
 /**
- * TODO
+ * This example uses Phong lighting model to illuminate a scene with multiple
+ * point lights.
+ *
+ * learnopengl.com provides an excellent explanation of Phong lighting.
+ *
+ * Sponza modeled by Marko Dabrovic, with UVs and crack errors fixed by Kenzie
+ * amar at Vicarious Visions.
  */
 
 import {
     Device,
     BufferBits,
     Command,
-    CommandOptions,
+    Uniforms,
     DepthFunc,
     Attributes,
     Primitive,
-    Texture,
-    Framebuffer,
-    InternalFormat,
 } from "./lib/webglutenfree.js";
 import { mat4, vec3 } from "./libx/gl-matrix.js";
 
@@ -20,13 +23,15 @@ import * as sponza from "./libx/sponza.js";
 import * as cube from "./libx/cube.js";
 
 const N_LIGHTS = 5;
-const LIGHT_CONSTANT = 1;
-const LIGHT_LINEAR = 0.022;
-const LIGHT_QUADRATIC = 0.0019;
-const LIGHT_SCATTER_NEAR = 10;
-const LIGHT_SCATTER_FAR = 15;
-const NEAR = 0.1;
-const FAR = 500;
+const DRAW_LIGHTS = false;
+const LIGHT_ATTENUATION_CONSTANT = 1;
+const LIGHT_ATTENUATION_LINEAR = 0.14;
+const LIGHT_ATTENUATION_QUADRATIC = 0.07;
+const LIGHT_SCATTER_XZ_NEAR = 10;
+const LIGHT_SCATTER_XZ_FAR = 15;
+const CAMERA_Y = 2.5;
+const PROJ_NEAR = 0.1;
+const PROJ_FAR = 500;
 
 const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
@@ -34,6 +39,9 @@ const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 const zero = vec3.fromValues(0, 0, 0);
 const up = vec3.fromValues(0, 1, 0);
 
+/**
+ * Material properties as described by Phong lighting model.
+ */
 interface Material {
     ambient: vec3;
     diffuse: vec3;
@@ -41,6 +49,10 @@ interface Material {
     shininess: number;
 }
 
+/**
+ * Light properties as described by Phong lighting model. Also contains
+ * attenuation terms for light falloff.
+ */
 interface Light {
     position: vec3;
     ambient: vec3;
@@ -51,44 +63,51 @@ interface Light {
     quadratic: number;
 }
 
-const allLights: Light[] = [];
-for (let i = 0; i < N_LIGHTS; ++i) {
+const createLight = (
+    scatterXZNear: number,
+    scatterXZFar: number,
+    y: number,
+): Light => {
     const color = vec3.fromValues(
-        Math.random() * 0.2,
-        Math.random() * 0.2,
-        Math.random() * 0.2,
+        0.15 + Math.random() * 0.05,
+        0.15 + Math.random() * 0.05,
+        0.15 + Math.random() * 0.05,
     );
-    const initialPosition = vec3.fromValues(
-        LIGHT_SCATTER_NEAR + Math.random() * (LIGHT_SCATTER_FAR - LIGHT_SCATTER_NEAR),
-        2.5,
+    const distance = vec3.fromValues(
+        scatterXZNear + Math.random() * (scatterXZFar - scatterXZNear),
+        height,
         0,
     );
-    allLights.push({
+    return {
         position: vec3.rotateY(
-            initialPosition,
-            initialPosition,
+            distance,
+            distance,
             zero,
             Math.random() * 2 * Math.PI,
         ),
         ambient: color,
         diffuse: vec3.fromValues(color[0] * 5, color[1] * 5, color[2] * 5),
         specular: vec3.fromValues(1, 1, 1),
-        constant: LIGHT_CONSTANT,
-        linear: LIGHT_LINEAR,
-        quadratic: LIGHT_QUADRATIC,
-    });
-}
-const updateLights = (_lights: Light[], delta: number): void => {
-    for (const light of _lights) {
-        vec3.rotateY(light.position, light.position, zero, delta / 5000);
-    }
+        constant: LIGHT_ATTENUATION_CONSTANT,
+        linear: LIGHT_ATTENUATION_LINEAR,
+        quadratic: LIGHT_ATTENUATION_QUADRATIC,
+    };
 };
 
-const cameraPosition = vec3.fromValues(0, 2.5, 0);
+const lights: Light[] = [];
+for (let i = 0; i < N_LIGHTS; ++i) {
+    lights.push(createLight(
+        LIGHT_SCATTER_XZ_NEAR,
+        LIGHT_SCATTER_XZ_FAR,
+        CAMERA_Y,
+    ));
+}
+
+const cameraPosition = vec3.fromValues(0, CAMERA_Y, 0);
 const viewMatrix = mat4.lookAt(
     mat4.create(),
     cameraPosition,
-    [1, 2.5, 0],
+    [1, CAMERA_Y, 0],
     up,
 );
 
@@ -96,8 +115,8 @@ const projMatrix = mat4.perspective(
     mat4.create(),
     Math.PI / 4,
     width / height,
-    NEAR,
-    FAR,
+    PROJ_NEAR,
+    PROJ_FAR,
 );
 
 interface CmdDrawObjectProps {
@@ -107,9 +126,11 @@ interface CmdDrawObjectProps {
     lights: Light[];
 }
 
-type UniformOpts = CommandOptions<CmdDrawObjectProps>["uniforms"];
-const createUniformOptions = (nLights: number): UniformOpts => {
-    const uniforms: UniformOpts = {
+// Dynamically create uniform options, as the number of lights is not known
+// beforehand.
+const createUniformOptions = (nLights: number): Uniforms<CmdDrawObjectProps> => {
+    // Add statically known uniforms
+    const uniforms: Uniforms<CmdDrawObjectProps> = {
         u_proj: {
             type: "matrix4fv",
             value: ({ proj }) => proj,
@@ -128,54 +149,58 @@ const createUniformOptions = (nLights: number): UniformOpts => {
         },
         "u_material.ambient": {
             type: "3f",
-            value: ({ material }) => material.ambient,
+            value: (props) => props.material.ambient,
         },
         "u_material.diffuse": {
             type: "3f",
-            value: ({ material }) => material.diffuse,
+            value: (props) => props.material.diffuse,
         },
         "u_material.specular": {
             type: "3f",
-            value: ({ material }) => material.specular,
+            value: (props) => props.material.specular,
         },
         "u_material.shininess": {
             type: "1f",
-            value: ({ material }) => material.shininess,
+            value: (props) => props.material.shininess,
         },
     };
+
+    // Add uniforms for each light
     for (let i = 0; i < nLights; ++i) {
         uniforms[`u_lights[${i}].position`] = {
             type: "3f",
-            value: ({ lights }) => lights[i].position,
+            value: (props) => props.lights[i].position,
         };
         uniforms[`u_lights[${i}].ambient`] = {
             type: "3f",
-            value: ({ lights }) => lights[i].ambient,
+            value: (props) => props.lights[i].ambient,
         };
         uniforms[`u_lights[${i}].diffuse`] = {
             type: "3f",
-            value: ({ lights }) => lights[i].diffuse,
+            value: (props) => props.lights[i].diffuse,
         };
         uniforms[`u_lights[${i}].specular`] = {
             type: "3f",
-            value: ({ lights }) => lights[i].specular,
+            value: (props) => props.lights[i].specular,
         };
         uniforms[`u_lights[${i}].constant`] = {
             type: "1f",
-            value: ({ lights }) => lights[i].constant,
+            value: (props) => props.lights[i].constant,
         };
         uniforms[`u_lights[${i}].linear`] = {
             type: "1f",
-            value: ({ lights }) => lights[i].linear,
+            value: (props) => props.lights[i].linear,
         };
         uniforms[`u_lights[${i}].quadratic`] = {
             type: "1f",
-            value: ({ lights }) => lights[i].quadratic,
+            value: (props) => props.lights[i].quadratic,
         };
     }
+
     return uniforms;
 };
 
+// Draw an object of concrete material and apply lights to it.
 const cmdDrawObject = Command.create<CmdDrawObjectProps>(
     dev,
     `#version 300 es
@@ -279,6 +304,7 @@ interface CmdDrawLightProps {
     light: Light;
 }
 
+// Draw each light as it's own geometry centered on position, use diffuse color
 const cmdDrawLight = Command.create<CmdDrawLightProps>(
     dev,
     `#version 300 es
@@ -333,14 +359,16 @@ const cmdDrawLight = Command.create<CmdDrawLightProps>(
     },
 );
 
-const objectMaterial: Material = {
+// Material used for all objects
+const material: Material = {
     ambient: vec3.fromValues(0.4, 0.4, 0.4),
     diffuse: vec3.fromValues(0.4, 0.4, 0.4),
     specular: vec3.fromValues(0.5, 0.5, 0.5),
-    shininess: 32,
+    shininess: 2,
 };
+
 const objects = sponza.objects.map(({ positions, normals }) => ({
-    material: objectMaterial,
+    material,
     attrs: Attributes.create(dev, Primitive.TRIANGLES, {
         0: positions,
         1: normals,
@@ -358,29 +386,39 @@ const loop = (time: number): void => {
     const delta = time - t;
     t = time;
 
-    updateLights(allLights, delta);
+    // Update lights
+    for (const light of lights) {
+        vec3.rotateY(light.position, light.position, zero, delta / 5000);
+    }
 
     dev.target((rt) => {
         rt.clear(BufferBits.COLOR_DEPTH);
+
+        // Draw each object with the lighting program
         rt.batch(cmdDrawObject, (draw) => {
             objects.forEach((object) => {
                 draw(object.attrs, {
                     proj: projMatrix,
                     view: viewMatrix,
                     material: object.material,
-                    lights: allLights,
+                    lights,
                 });
             });
         });
-        rt.batch(cmdDrawLight, (draw) => {
-            allLights.forEach((light) => {
-                draw(lightAttrs, {
-                    proj: projMatrix,
-                    view: viewMatrix,
-                    light,
+
+        if (DRAW_LIGHTS) {
+            // Draw each light as a small cube
+            rt.batch(cmdDrawLight, (draw) => {
+                lights.forEach((light) => {
+                    draw(lightAttrs, {
+                        proj: projMatrix,
+                        view: viewMatrix,
+                        light,
+                    });
                 });
             });
-        });
+        }
+
     });
     window.requestAnimationFrame(loop);
 };
