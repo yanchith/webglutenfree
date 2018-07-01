@@ -1,6 +1,6 @@
 /**
  * This example uses Phong lighting model to illuminate a scene with multiple
- * point lights.
+ * point lights. All lights are forward-rendered.
  *
  * learnopengl.com provides an excellent explanation of Phong lighting.
  *
@@ -36,6 +36,7 @@ const PROJ_FAR = 500;
 const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
+const identity = mat4.identity(mat4.create());
 const zero = vec3.fromValues(0, 0, 0);
 const up = vec3.fromValues(0, 1, 0);
 
@@ -75,7 +76,7 @@ const createLight = (
     );
     const distance = vec3.fromValues(
         scatterXZNear + Math.random() * (scatterXZFar - scatterXZNear),
-        height,
+        y,
         0,
     );
     return {
@@ -103,14 +104,6 @@ for (let i = 0; i < N_LIGHTS; ++i) {
     ));
 }
 
-const cameraPosition = vec3.fromValues(0, CAMERA_Y, 0);
-const viewMatrix = mat4.lookAt(
-    mat4.create(),
-    cameraPosition,
-    [1, CAMERA_Y, 0],
-    up,
-);
-
 const projMatrix = mat4.perspective(
     mat4.create(),
     Math.PI / 4,
@@ -119,18 +112,28 @@ const projMatrix = mat4.perspective(
     PROJ_FAR,
 );
 
-interface CmdDrawObjectProps {
+const cameraPosition = vec3.fromValues(0, CAMERA_Y, 0);
+const viewMatrix = mat4.lookAt(
+    mat4.create(),
+    cameraPosition,
+    [1, CAMERA_Y, 0],
+    up,
+);
+
+interface CmdDrawLightingProps {
     proj: mat4;
     view: mat4;
+    model: mat4;
+    cameraPosition: vec3;
     material: Material;
     lights: Light[];
 }
 
 // Dynamically create uniform options, as the number of lights is not known
 // beforehand.
-const createUniformOptions = (nLights: number): Uniforms<CmdDrawObjectProps> => {
+const createUniformOptions = (nLights: number): Uniforms<CmdDrawLightingProps> => {
     // Add statically known uniforms
-    const uniforms: Uniforms<CmdDrawObjectProps> = {
+    const uniforms: Uniforms<CmdDrawLightingProps> = {
         u_proj: {
             type: "matrix4fv",
             value: ({ proj }) => proj,
@@ -141,11 +144,11 @@ const createUniformOptions = (nLights: number): Uniforms<CmdDrawObjectProps> => 
         },
         u_model: {
             type: "matrix4fv",
-            value: mat4.identity(mat4.create()),
+            value: ({ model }) => model,
         },
         u_camera_position: {
             type: "3f",
-            value: cameraPosition,
+            value: (props) => props.cameraPosition,
         },
         "u_material.ambient": {
             type: "3f",
@@ -201,7 +204,7 @@ const createUniformOptions = (nLights: number): Uniforms<CmdDrawObjectProps> => 
 };
 
 // Draw an object of concrete material and apply lights to it.
-const cmdDrawObject = Command.create<CmdDrawObjectProps>(
+const cmdDrawLighting = Command.create<CmdDrawLightingProps>(
     dev,
     `#version 300 es
         precision mediump float;
@@ -301,6 +304,7 @@ const cmdDrawObject = Command.create<CmdDrawObjectProps>(
 interface CmdDrawLightProps {
     proj: mat4;
     view: mat4;
+    model: mat4;
     light: Light;
 }
 
@@ -344,7 +348,7 @@ const cmdDrawLight = Command.create<CmdDrawLightProps>(
             },
             u_model: {
                 type: "matrix4fv",
-                value: mat4.identity(mat4.create()),
+                value: ({ model }) => model,
             },
             u_position: {
                 type: "3f",
@@ -395,11 +399,13 @@ const loop = (time: number): void => {
         rt.clear(BufferBits.COLOR_DEPTH);
 
         // Draw each object with the lighting program
-        rt.batch(cmdDrawObject, (draw) => {
+        rt.batch(cmdDrawLighting, (draw) => {
             objects.forEach((object) => {
                 draw(object.attrs, {
                     proj: projMatrix,
                     view: viewMatrix,
+                    model: identity,
+                    cameraPosition,
                     material: object.material,
                     lights,
                 });
@@ -413,6 +419,7 @@ const loop = (time: number): void => {
                     draw(lightAttrs, {
                         proj: projMatrix,
                         view: viewMatrix,
+                        model: identity,
                         light,
                     });
                 });
