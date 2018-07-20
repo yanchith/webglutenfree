@@ -1,7 +1,7 @@
 import * as assert from "./assert";
 
 export type Op = "init" | "push" | "pop";
-export type ChangeDiffCallback<T> = (prevValue: T, newValue: T, op: Op) => void;
+export type ChangeDiffCallback<T> = (prevValue: T, newValue: T, op: Op) => boolean;
 export type ChangeApplyCallback<T> = (value: T, op: Op) => void;
 
 export class Stack<T> {
@@ -19,6 +19,10 @@ export class Stack<T> {
         this.onChangeDiff = onChangeDiff;
         this.onChangeApply = onChangeApply;
         onChangeApply(initialValue, "init");
+    }
+
+    get length(): number {
+        return this.s.length;
     }
 
     push(value: T): void {

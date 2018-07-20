@@ -278,6 +278,9 @@ class Stack {
         this.onChangeApply = onChangeApply;
         onChangeApply(initialValue, "init");
     }
+    get length() {
+        return this.s.length;
+    }
     push(value) {
         const top = this.peek();
         if (this.onChangeDiff(top, value, "push")) {
