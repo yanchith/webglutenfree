@@ -24,47 +24,47 @@ import { mat4 } from "./libx/gl-matrix.js";
 const dev = Device.create();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
-const view = mat4.identity(mat4.create());
+const viewMatrix = mat4.identity(mat4.create());
 
 // There is nothing special about this draw command. It uses 3 attributes and
-// does not actually know, that two of those are instanced.
+// does not actually know two of those are instanced.
 const cmd = Command.create(
     dev,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform mat4 u_projection;
-        uniform mat4 u_model;
-        uniform mat4 u_view;
+    uniform mat4 u_proj;
+    uniform mat4 u_model;
+    uniform mat4 u_view;
 
-        layout (location = 0) in vec2 a_position;
-        layout (location = 1) in vec2 a_offset;
-        layout (location = 2) in vec4 a_color;
+    layout (location = 0) in vec2 a_position;
+    layout (location = 1) in vec2 a_offset;
+    layout (location = 2) in vec4 a_color;
 
-        out vec4 v_vertex_color;
+    out vec4 v_vertex_color;
 
-        void main() {
-            v_vertex_color = a_color;
-            gl_Position = u_projection
-                * u_view
-                * u_model
-                * vec4(a_position + a_offset, 0.0, 1.0);
-        }
+    void main() {
+        v_vertex_color = a_color;
+        gl_Position = u_proj
+            * u_view
+            * u_model
+            * vec4(a_position + a_offset, 0.0, 1.0);
+    }
     `,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        in vec4 v_vertex_color;
+    in vec4 v_vertex_color;
 
-        out vec4 f_color;
+    out vec4 f_color;
 
-        void main() {
-            f_color = v_vertex_color;
-        }
+    void main() {
+        f_color = v_vertex_color;
+    }
     `,
     {
         uniforms: {
-            u_projection: {
+            u_proj: {
                 type: "matrix4fv",
                 value: mat4.ortho(
                     mat4.create(),
@@ -82,7 +82,7 @@ const cmd = Command.create(
             },
             u_view: {
                 type: "matrix4fv",
-                value: () => mat4.rotateZ(view, view, 0.01),
+                value: () => mat4.rotateZ(viewMatrix, viewMatrix, 0.01),
             },
         },
     },
@@ -145,7 +145,7 @@ const attrs = Attributes.create(
     },
 );
 
-const loop = () => {
+const loop = (): void => {
     dev.target((rt) => {
         rt.clear(BufferBits.COLOR);
         rt.draw(cmd, attrs);

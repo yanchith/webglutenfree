@@ -19,16 +19,15 @@ import {
 import { mat3, mat4 } from "./libx/gl-matrix.js";
 
 const N_PARTICLES = 5000;
-const WANDER_FACTOR = 0.005;
 const CAMERA_DISTANCE = 10000;
 const SCALE = 1000;
+const PARTICLE_WANDER_FACTOR = 0.005;
 const PARTICLE_SCALE = 0.015;
-const FOV = Math.PI / 4;
 
 const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const viewBuffer = mat4.create();
+const viewMatrix = mat4.create();
 
 interface CmdProps {
     time: number;
@@ -38,50 +37,50 @@ interface CmdProps {
 const cmd = Command.create<CmdProps>(
     dev,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform mat4 u_projection, u_view, u_model;
-        uniform mat3 u_model_local;
-        uniform float u_flip;
+    uniform mat4 u_proj, u_view, u_model;
+    uniform mat3 u_model_local;
+    uniform float u_flip;
 
-        layout (location = 0) in vec3 a_position;
-        layout (location = 1) in vec3 a_local_orig;
-        layout (location = 2) in vec3 a_local_flip;
+    layout (location = 0) in vec3 a_position;
+    layout (location = 1) in vec3 a_local_orig;
+    layout (location = 2) in vec3 a_local_flip;
 
-        void main() {
-            // We need the view matrix right and up vectors to make
-            // the particles face screen
-            vec3 right = vec3(u_view[0][0], u_view[1][0], u_view[2][0]);
-            vec3 up = vec3(u_view[0][1], u_view[1][1], u_view[2][1]);
+    void main() {
+        // We need the view matrix right and up vectors to make
+        // the particles face screen
+        vec3 right = vec3(u_view[0][0], u_view[1][0], u_view[2][0]);
+        vec3 up = vec3(u_view[0][1], u_view[1][1], u_view[2][1]);
 
-            // Flip based on u_flip
-            vec3 local = a_local_orig + (a_local_flip - a_local_orig) * u_flip;
-            vec3 local_transformed = u_model_local * local;
+        // Flip based on u_flip
+        vec3 local = a_local_orig + (a_local_flip - a_local_orig) * u_flip;
+        vec3 local_transformed = u_model_local * local;
 
-            // Combine the position with applied right and up
-            vec3 position = a_position
-                + right * local_transformed.x
-                + up * local_transformed.y;
+        // Combine the position with applied right and up
+        vec3 position = a_position
+            + right * local_transformed.x
+            + up * local_transformed.y;
 
-            gl_Position = u_projection * u_view * u_model * vec4(position, 1.0);
+        gl_Position = u_proj * u_view * u_model * vec4(position, 1.0);
         }
     `,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        out vec4 f_color;
+    out vec4 f_color;
 
-        void main() {
-            f_color = vec4(0.9, 0.9, 1.0, 0.8);
-        }
+    void main() {
+        f_color = vec4(0.9, 0.9, 1.0, 0.8);
+    }
     `,
     {
         uniforms: {
-            u_projection: {
+            u_proj: {
                 type: "matrix4fv",
                 value: mat4.perspective(
                     mat4.create(),
-                    FOV,
+                    Math.PI / 4,
                     width / height,
                     0.1,
                     100000,
@@ -90,7 +89,7 @@ const cmd = Command.create<CmdProps>(
             u_view: {
                 type: "matrix4fv",
                 value: ({ time }) => mat4.lookAt(
-                    viewBuffer,
+                    viewMatrix,
                     [
                         CAMERA_DISTANCE * Math.cos(time / 10000),
                         1,
@@ -165,9 +164,10 @@ const attrs = Attributes.create(dev, Primitive.TRIANGLES, cmd.locate({
 let t = 0;
 
 
-const loop = (time) => {
+const loop = (time: number): void => {
     for (let i = 0; i < positions.length; i++) {
-        positions[i] += Math.random() * WANDER_FACTOR - WANDER_FACTOR / 2;
+        positions[i] += Math.random() * PARTICLE_WANDER_FACTOR
+            - PARTICLE_WANDER_FACTOR / 2;
     }
     buffer.store(positions);
 

@@ -69,7 +69,7 @@ const sceneFbo = Framebuffer.create(dev, width, height, colorTex, depthTex);
 const pingFbo = Framebuffer.create(dev, blurWidth, blurHeight, pingTex);
 const pongFbo = Framebuffer.create(dev, blurWidth, blurHeight, pongTex);
 
-const view = mat4.create();
+const viewMatrix = mat4.create();
 
 // This vertex shader just renders one huge triangle to cover the screenspace.
 const screenspaceVS = `#version 300 es
@@ -129,16 +129,16 @@ const cmdDraw = Command.create<CmdDrawProps>(
 
         layout (location = 0) out vec4 f_color;
 
-        const vec3 u_color = vec3(0.1, 0.475, 0.811);
-        const float u_edge_thickness = 2.0;
-        const float u_edge_sharpness = 30.0;
-        const float u_edge_subtract	= 0.3;
+        const vec3 COLOR = vec3(0.1, 0.475, 0.811);
+        const float EDGE_THICKNESS = 2.0;
+        const float EDGE_SHARPNESS = 30.0;
+        const float EDGE_SUBTRACT = 0.3;
 
         void main() {
-            vec2 uv = abs(v_uv - 0.5) * u_edge_thickness;
-            uv = pow(uv, vec2(u_edge_sharpness)) - u_edge_subtract;
+            vec2 uv = abs(v_uv - 0.5) * EDGE_THICKNESS;
+            uv = pow(uv, vec2(EDGE_SHARPNESS)) - EDGE_SUBTRACT;
             float c = clamp(uv.x + uv.y, 0.0, 1.0) * u_glow_strength;
-            f_color	= vec4(u_color * c, 1.0);
+            f_color	= vec4(COLOR * c, 1.0);
         }
     `,
     {
@@ -150,7 +150,7 @@ const cmdDraw = Command.create<CmdDrawProps>(
             u_view: {
                 type: "matrix4fv",
                 value: ({ time }) => mat4.lookAt(
-                    view,
+                    viewMatrix,
                     [
                         200 * Math.cos(time / 9000),
                         155,
@@ -225,7 +225,7 @@ const cmdBlur = Command.create<CmdBlurProps>(
     `#version 300 es
         precision mediump float;
 
-        #define KERNEL_LENGTH ${KERNEL.length}
+        const int KERNEL_LENGTH = int(${KERNEL.length});
 
         uniform sampler2D u_image;
         uniform float[KERNEL_LENGTH] u_kernel;
@@ -316,7 +316,7 @@ const modelAttrs = Attributes.create(dev, uvCube.elements, {
 const HORIZONTAL = vec2.fromValues(1, 0);
 const VERTICAL = vec2.fromValues(0, 1);
 
-const loop = (time) => {
+const loop = (time: number): void => {
     // Render geometry into texture
     sceneFbo.target((rt) => {
         rt.clear(BufferBits.COLOR_DEPTH);

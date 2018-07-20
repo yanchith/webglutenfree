@@ -16,8 +16,8 @@ import {
 
 const MAX_ITERS = 1 << 8;
 const ESCAPE_THRESHOLD = 2.0;
-const REAL_DOMAIN = [-1.20, -1];
-const IMAG_DOMAIN = [0.20, 0.35];
+const DOMAIN_REAL = [-1.20, -1];
+const DOMAIN_IMAG = [0.20, 0.35];
 
 // Use extensions so we can render to 32 bit float textures for values
 const dev = Device.create({ extensions: [Extension.EXTColorBufferFloat] });
@@ -65,67 +65,67 @@ const cmdCompute = Command.create<CmdComputeProps>(
     dev,
     screenspaceVS,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform uint u_tick;
-        uniform float u_escape_threshold;
-        uniform vec2 u_re_domain, u_im_domain;
-        uniform sampler2D u_prev;
+    uniform uint u_tick;
+    uniform float u_escape_threshold;
+    uniform vec2 u_re_domain, u_im_domain;
+    uniform sampler2D u_prev;
 
-        layout (location = 0) out vec3 f_val;
+    layout (location = 0) out vec3 f_val;
 
-        float remap(float value, vec2 source, vec2 dest) {
-            return (((value - source.x)
-                / (source.y - source.x))
-                * (dest.y - dest.x))
-                + dest.x;
-        }
+    float remap(float value, vec2 source, vec2 dest) {
+        return (((value - source.x)
+            / (source.y - source.x))
+            * (dest.y - dest.x))
+            + dest.x;
+    }
 
-        vec2 remap2(
-            vec2 value,
-            vec2 source_x,
-            vec2 source_y,
-            vec2 dest_x,
-            vec2 dest_y
-        ) {
-            return vec2(
-                remap(value.x, source_x, dest_x),
-                remap(value.y, source_y, dest_y)
+    vec2 remap2(
+        vec2 value,
+        vec2 source_x,
+        vec2 source_y,
+        vec2 dest_x,
+        vec2 dest_y
+    ) {
+        return vec2(
+            remap(value.x, source_x, dest_x),
+            remap(value.y, source_y, dest_y)
+        );
+    }
+
+    vec2 complex_mult(vec2 a, vec2 b) {
+        return vec2((a.x * b.x) - (a.y * b.y), (a.x * b.y) + (a.y * b.x));
+    }
+
+    vec2 escape(vec2 c, vec2 z) {
+        return complex_mult(z, z) + c;
+    }
+
+    void main() {
+        ivec2 dimensions = textureSize(u_prev, 0);
+        vec3 pix_prev = texelFetch(u_prev, ivec2(gl_FragCoord.xy), 0).rgb;
+
+        vec2 prev_val = pix_prev.xy;
+        uint prev_esc = uint(pix_prev.z);
+
+        f_val = pix_prev;
+        if (prev_esc == 0u) {
+            vec2 c = remap2(
+                gl_FragCoord.xy,
+                vec2(0, float(dimensions.x)),
+                vec2(0, float(dimensions.y)),
+                u_re_domain,
+                u_im_domain
             );
-        }
-
-        vec2 complex_mult(vec2 a, vec2 b) {
-            return vec2((a.x * b.x) - (a.y * b.y), (a.x * b.y) + (a.y * b.x));
-        }
-
-        vec2 escape(vec2 c, vec2 z) {
-            return complex_mult(z, z) + c;
-        }
-
-        void main() {
-            ivec2 dimensions = textureSize(u_prev, 0);
-            vec3 pix_prev = texelFetch(u_prev, ivec2(gl_FragCoord.xy), 0).rgb;
-
-            vec2 prev_val = pix_prev.xy;
-            uint prev_esc = uint(pix_prev.z);
-
-            f_val = pix_prev;
-            if (prev_esc == 0u) {
-                vec2 c = remap2(
-                    gl_FragCoord.xy,
-                    vec2(0, float(dimensions.x)),
-                    vec2(0, float(dimensions.y)),
-                    u_re_domain,
-                    u_im_domain
-                );
-                vec2 val = escape(c, prev_val);
-                uint esc = 0u;
-                if (length(val) > u_escape_threshold) {
-                    esc = u_tick;
-                }
-                f_val = vec3(val, esc);
+            vec2 val = escape(c, prev_val);
+            uint esc = 0u;
+            if (length(val) > u_escape_threshold) {
+                esc = u_tick;
             }
+            f_val = vec3(val, esc);
         }
+    }
     `,
     {
         textures: { u_prev: ({ tex }) => tex },
@@ -136,11 +136,11 @@ const cmdCompute = Command.create<CmdComputeProps>(
             },
             u_re_domain: {
                 type: "2f",
-                value: REAL_DOMAIN,
+                value: DOMAIN_REAL,
             },
             u_im_domain: {
                 type: "2f",
-                value: IMAG_DOMAIN,
+                value: DOMAIN_IMAG,
             },
             u_escape_threshold: {
                 type: "1f",
@@ -163,23 +163,23 @@ const cmdDraw = Command.create<CmdDrawProps>(
     dev,
     screenspaceVS,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform float u_max_iters;
-        uniform sampler2D u_val;
+    uniform float u_max_iters;
+    uniform sampler2D u_val;
 
-        layout (location = 0) out vec4 f_color;
+    layout (location = 0) out vec4 f_color;
 
-        void main() {
-            vec3 pix = texelFetch(u_val, ivec2(gl_FragCoord.xy), 0).rgb;
+    void main() {
+        vec3 pix = texelFetch(u_val, ivec2(gl_FragCoord.xy), 0).rgb;
 
-            float esc = pix.z;
-            float greyscale = esc / u_max_iters;
-            f_color = vec4(vec3(0), 1);
-            if (greyscale > 0.00001) {
-                f_color = vec4(vec3(1. - greyscale), 1);
-            }
+        float esc = pix.z;
+        float greyscale = esc / u_max_iters;
+        f_color = vec4(vec3(0), 1);
+        if (greyscale > 0.00001) {
+            f_color = vec4(vec3(1. - greyscale), 1);
         }
+    }
     `,
     {
         textures: { u_val: ({ tex }) => tex },
@@ -199,7 +199,7 @@ let pong = { tex: pongTex, fbo: pongFbo };
 
 let t = 0;
 
-const loop = () => {
+const loop = (): void => {
     t++;
 
     // Compute using previous values in ping, store to pong
