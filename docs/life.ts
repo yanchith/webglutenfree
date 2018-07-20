@@ -66,63 +66,63 @@ interface CmdProps {
 const cmd = Command.create<CmdProps>(
     dev,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        out vec2 v_uv;
+    out vec2 v_uv;
 
-        void main() {
-            switch (gl_VertexID % 3) {
-                case 0:
-                    gl_Position = vec4(-1, 3, 0, 1);
-                    v_uv = vec2(0, 2);
-                    break;
-                case 1:
-                    gl_Position = vec4(-1, -1, 0, 1);
-                    v_uv = vec2(0, 0);
-                    break;
-                case 2:
-                    gl_Position = vec4(3, -1, 0, 1);
-                    v_uv = vec2(2, 0);
-                    break;
-            }
+    void main() {
+        switch (gl_VertexID % 3) {
+            case 0:
+                gl_Position = vec4(-1, 3, 0, 1);
+                v_uv = vec2(0, 2);
+                break;
+            case 1:
+                gl_Position = vec4(-1, -1, 0, 1);
+                v_uv = vec2(0, 0);
+                break;
+            case 2:
+                gl_Position = vec4(3, -1, 0, 1);
+                v_uv = vec2(2, 0);
+                break;
         }
+    }
     `,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform sampler2D u_universe;
+    uniform sampler2D u_universe;
 
-        in vec2 v_uv;
+    in vec2 v_uv;
 
-        layout (location = 0) out float f_next_universe;
+    layout (location = 0) out float f_next_universe;
 
-        void main() {
-            vec2 px = vec2(1) / vec2(textureSize(u_universe, 0));
+    void main() {
+        vec2 px = vec2(1) / vec2(textureSize(u_universe, 0));
 
-            float current = texture(u_universe, v_uv).r;
-            float neighbors = 0.0;
+        float current = texture(u_universe, v_uv).r;
+        float neighbors = 0.0;
 
-            neighbors += texture(u_universe, px * vec2( 1,  1) + v_uv).r;
-            neighbors += texture(u_universe, px * vec2( 0,  1) + v_uv).r;
-            neighbors += texture(u_universe, px * vec2(-1,  1) + v_uv).r;
-            neighbors += texture(u_universe, px * vec2(-1,  0) + v_uv).r;
-            neighbors += texture(u_universe, px * vec2(-1, -1) + v_uv).r;
-            neighbors += texture(u_universe, px * vec2( 0, -1) + v_uv).r;
-            neighbors += texture(u_universe, px * vec2( 1, -1) + v_uv).r;
-            neighbors += texture(u_universe, px * vec2( 1,  0) + v_uv).r;
+        neighbors += texture(u_universe, px * vec2( 1,  1) + v_uv).r;
+        neighbors += texture(u_universe, px * vec2( 0,  1) + v_uv).r;
+        neighbors += texture(u_universe, px * vec2(-1,  1) + v_uv).r;
+        neighbors += texture(u_universe, px * vec2(-1,  0) + v_uv).r;
+        neighbors += texture(u_universe, px * vec2(-1, -1) + v_uv).r;
+        neighbors += texture(u_universe, px * vec2( 0, -1) + v_uv).r;
+        neighbors += texture(u_universe, px * vec2( 1, -1) + v_uv).r;
+        neighbors += texture(u_universe, px * vec2( 1,  0) + v_uv).r;
 
-            if (current == 0.0) {
-                f_next_universe = neighbors == 3.0 ? 1.0 : 0.0;
+        if (current == 0.0) {
+            f_next_universe = neighbors == 3.0 ? 1.0 : 0.0;
+        } else {
+            if (neighbors >= 4.0) {
+                f_next_universe = 0.0;
+            } else if (neighbors >= 2.0) {
+                f_next_universe = 1.0;
             } else {
-                if (neighbors >= 4.0) {
-                    f_next_universe = 0.0;
-                } else if (neighbors >= 2.0) {
-                    f_next_universe = 1.0;
-                } else {
-                    f_next_universe = 0.0;
-                }
+                f_next_universe = 0.0;
             }
         }
+    }
     `,
     { textures: { u_universe: ({ tex }) => tex } },
 );
@@ -132,7 +132,7 @@ const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
 let ping = { tex: pingTex, fbo: pingFbo };
 let pong = { tex: pongTex, fbo: pongFbo };
 
-const loop = () => {
+const loop = (): void => {
     // Compute using previous values in ping, store to pong
     pong.fbo.target((rt) => {
         rt.draw(cmd, attrs, { tex: ping.tex });

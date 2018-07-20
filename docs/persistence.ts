@@ -35,7 +35,7 @@ const pingFbo = Framebuffer.create(dev, width, height, pingTex);
 const pongTex = Texture.create(dev, width, height, InternalFormat.RGBA8);
 const pongFbo = Framebuffer.create(dev, width, height, pongTex);
 
-const view = mat4.create();
+const viewMatrix = mat4.create();
 
 interface CmdDrawProps {
     time: number;
@@ -44,40 +44,40 @@ interface CmdDrawProps {
 const cmdDraw = Command.create<CmdDrawProps>(
     dev,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform mat4 u_projection, u_view;
+    uniform mat4 u_proj, u_view;
 
-        layout (location = 0) in vec3 a_position;
-        layout (location = 1) in vec3 a_normal;
+    layout (location = 0) in vec3 a_position;
+    layout (location = 1) in vec3 a_normal;
 
-        out vec3 v_normal;
+    out vec3 v_normal;
 
-        void main() {
-            mat4 matrix = u_projection * u_view;
-            v_normal = transpose(inverse(mat3(matrix))) * a_normal;
-            gl_Position = matrix * vec4(a_position, 1.0);
-        }
+    void main() {
+        mat4 matrix = u_proj * u_view;
+        v_normal = transpose(inverse(mat3(matrix))) * a_normal;
+        gl_Position = matrix * vec4(a_position, 1.0);
+    }
     `,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform vec3 u_light;
+    uniform vec3 u_light;
 
-        in vec3 v_normal;
+    in vec3 v_normal;
 
-        out vec4 f_color;
+    out vec4 f_color;
 
-        void main() {
-            float brightness = dot(normalize(v_normal), normalize(u_light));
-            vec3 dark = vec3(0.3, 0.0, 0.3);
-            vec3 bright = vec3(1.0, 0.0, 0.8);
-            f_color = vec4(mix(dark, bright, brightness), 1.0);
-        }
+    void main() {
+        float brightness = dot(normalize(v_normal), normalize(u_light));
+        vec3 dark = vec3(0.3, 0.0, 0.3);
+        vec3 bright = vec3(1.0, 0.0, 0.8);
+        f_color = vec4(mix(dark, bright, brightness), 1.0);
+    }
     `,
     {
         uniforms: {
-            u_projection: {
+            u_proj: {
                 type: "matrix4fv",
                 value: mat4.perspective(
                     mat4.create(),
@@ -90,7 +90,7 @@ const cmdDraw = Command.create<CmdDrawProps>(
             u_view: {
                 type: "matrix4fv",
                 value: ({ time }) => mat4.lookAt(
-                    view,
+                    viewMatrix,
                     [
                         30 * Math.cos(time / 1000),
                         2.5,
@@ -117,46 +117,46 @@ interface CmdBlendProps {
 const cmdBlend = Command.create<CmdBlendProps>(
     dev,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        out vec2 v_uv;
+    out vec2 v_uv;
 
-        void main() {
-            switch (gl_VertexID % 3) {
-                case 0:
-                    gl_Position = vec4(-1, 3, 0, 1);
-                    v_uv = vec2(0, 2);
-                    break;
-                case 1:
-                    gl_Position = vec4(-1, -1, 0, 1);
-                    v_uv = vec2(0, 0);
-                    break;
-                case 2:
-                    gl_Position = vec4(3, -1, 0, 1);
-                    v_uv = vec2(2, 0);
-                    break;
-            }
+    void main() {
+        switch (gl_VertexID % 3) {
+            case 0:
+                gl_Position = vec4(-1, 3, 0, 1);
+                v_uv = vec2(0, 2);
+                break;
+            case 1:
+                gl_Position = vec4(-1, -1, 0, 1);
+                v_uv = vec2(0, 0);
+                break;
+            case 2:
+                gl_Position = vec4(3, -1, 0, 1);
+                v_uv = vec2(2, 0);
+                break;
         }
+    }
     `,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform sampler2D u_new_frame, u_prev_frame;
-        uniform float u_blend_factor;
+    uniform sampler2D u_new_frame, u_prev_frame;
+    uniform float u_blend_factor;
 
-        in vec2 v_uv;
+    in vec2 v_uv;
 
-        out vec4 f_color;
+    out vec4 f_color;
 
-        vec4 blend_alpha(vec4 src_color, vec4 dst_color, float factor) {
-            return (src_color * factor) + (dst_color * (1. - factor));
-        }
+    vec4 blend_alpha(vec4 src_color, vec4 dst_color, float factor) {
+        return (src_color * factor) + (dst_color * (1. - factor));
+    }
 
-        void main() {
-            vec4 c1 = texture(u_new_frame, v_uv);
-            vec4 c2 = texture(u_prev_frame, v_uv);
-            f_color = blend_alpha(c2, c1, u_blend_factor);
-        }
+    void main() {
+        vec4 c1 = texture(u_new_frame, v_uv);
+        vec4 c2 = texture(u_prev_frame, v_uv);
+        f_color = blend_alpha(c2, c1, u_blend_factor);
+    }
     `,
     {
         textures: {
@@ -189,7 +189,7 @@ let pong = {
     fbo: pongFbo,
 };
 
-const loop = (time) => {
+const loop = (time: number): void => {
     // By repeating the following process, we gain a buildup of past frame memory
     // in our ping/pong buffers, with an exponential falloff.
 

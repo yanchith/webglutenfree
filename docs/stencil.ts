@@ -22,7 +22,7 @@ import * as teapot from "./libx/teapot.js";
 const dev = Device.create();
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const projection = mat4.perspective(
+const projMatrix = mat4.perspective(
     mat4.create(),
     Math.PI / 4,
     width / height,
@@ -30,64 +30,64 @@ const projection = mat4.perspective(
     1000,
 );
 
-const view = mat4.create();
+const viewMatrix = mat4.create();
 
 interface CmdDrawProps {
     time: number;
-    matrix: mat4;
+    modelMatrix: mat4;
 }
 
 const cmdDraw = Command.create<CmdDrawProps>(
     dev,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform mat4 u_projection, u_model, u_view;
+    uniform mat4 u_proj, u_model, u_view;
 
-        layout (location = 0) in vec3 a_position;
+    layout (location = 0) in vec3 a_position;
 
-        out vec4 v_vertex_color;
+    out vec4 v_vertex_color;
 
-        void main() {
-            gl_Position = u_projection
-                * u_view
-                * u_model
-                * vec4(a_position, 1.0);
-        }
+    void main() {
+        gl_Position = u_proj
+            * u_view
+            * u_model
+            * vec4(a_position, 1.0);
+    }
     `,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        out vec4 f_color;
+    out vec4 f_color;
 
-        void main() {
-            float depth = gl_FragCoord.z / gl_FragCoord.w;
-            float factor = 1.0 - 1.0 / depth * 5.0;
-            f_color = mix(
-                vec4(0.2, 0.0, 0.8, 1.0),
-                vec4(0.2, 0.0, 0.0, 1.0),
-                factor
-            );
-        }
+    void main() {
+        float depth = gl_FragCoord.z / gl_FragCoord.w;
+        float factor = 1.0 - 1.0 / depth * 5.0;
+        f_color = mix(
+            vec4(0.2, 0.0, 0.8, 1.0),
+            vec4(0.2, 0.0, 0.0, 1.0),
+            factor
+        );
+    }
     `,
     {
         uniforms: {
-            u_model: {
+            u_proj: {
                 type: "matrix4fv",
-                value: ({ matrix }) => matrix,
+                value: projMatrix,
             },
             u_view: {
                 type: "matrix4fv",
                 value: ({ time }) => mat4.lookAt(
-                    view,
+                    viewMatrix,
                     [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
                     [0, 1, 0],
                     [0, 1, 0],
                 ),
             },
-            u_projection: {
+            u_model: {
                 type: "matrix4fv",
-                value: projection,
+                value: ({ modelMatrix }) => modelMatrix,
             },
         },
         depth: { func: DepthFunc.LESS },
@@ -109,7 +109,7 @@ const cmdDraw = Command.create<CmdDrawProps>(
 
 interface CmdDrawOutlinesProps {
     time: number;
-    matrix: mat4;
+    modelMatrix: mat4;
 }
 
 const cmdDrawOutlines = Command.create<CmdDrawOutlinesProps>(
@@ -117,14 +117,14 @@ const cmdDrawOutlines = Command.create<CmdDrawOutlinesProps>(
     `#version 300 es
         precision mediump float;
 
-        uniform mat4 u_projection, u_model, u_view;
+        uniform mat4 u_proj, u_model, u_view;
 
         layout (location = 0) in vec3 a_position;
 
         out vec4 v_vertex_color;
 
         void main() {
-            gl_Position = u_projection
+            gl_Position = u_proj
                 * u_view
                 * u_model
                 * vec4(a_position, 1.0);
@@ -141,22 +141,22 @@ const cmdDrawOutlines = Command.create<CmdDrawOutlinesProps>(
     `,
     {
         uniforms: {
-            u_model: {
+            u_proj: {
                 type: "matrix4fv",
-                value: ({ matrix }) => matrix,
+                value: projMatrix,
             },
             u_view: {
                 type: "matrix4fv",
                 value: ({ time }) => mat4.lookAt(
-                    view,
+                    viewMatrix,
                     [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
                     [0, 1, 0],
                     [0, 1, 0],
                 ),
             },
-            u_projection: {
+            u_model: {
                 type: "matrix4fv",
-                value: projection,
+                value: ({ modelMatrix }) => modelMatrix,
             },
         },
         stencil: {
@@ -175,31 +175,31 @@ const models = [teapot, bunny, cube];
 const objs = models.map((m, i) => {
     const angle = i / models.length * 2 * Math.PI;
     const scale = (i + 1) * 0.1;
-    const matrix = mat4.fromRotation(mat4.create(), angle, [0, 1, 0]);
-    mat4.translate(matrix, matrix, [2, 0, 0]);
-    mat4.scale(matrix, matrix, [scale, scale, scale]);
+    const modelMatrix = mat4.fromRotation(mat4.create(), angle, [0, 1, 0]);
+    mat4.translate(modelMatrix, modelMatrix, [2, 0, 0]);
+    mat4.scale(modelMatrix, modelMatrix, [scale, scale, scale]);
     return {
-        matrix,
+        modelMatrix,
         attrs: Attributes.create(dev, m.elements, { 0: m.positions }),
     };
 });
 
 const outlineObjs = objs.map((obj) => ({
-    matrix: mat4.scale(mat4.create(), obj.matrix, [1.04, 1.04, 1.04]),
+    modelMatrix: mat4.scale(mat4.create(), obj.modelMatrix, [1.04, 1.04, 1.04]),
     attrs: obj.attrs,
 }));
 
-const loop = (time) => {
+const loop = (time: number): void => {
     dev.target((rt) => {
         rt.clear(BufferBits.COLOR_DEPTH_STENCIL);
         rt.batch(cmdDraw, (draw) => {
-            objs.forEach(({ attrs, matrix }) => {
-                draw(attrs, { time, matrix });
+            objs.forEach(({ attrs, modelMatrix }) => {
+                draw(attrs, { time, modelMatrix });
             });
         });
         rt.batch(cmdDrawOutlines, (draw) => {
-            outlineObjs.forEach(({ attrs, matrix }) => {
-                draw(attrs, { time, matrix });
+            outlineObjs.forEach(({ attrs, modelMatrix }) => {
+                draw(attrs, { time, modelMatrix });
             });
         });
     });

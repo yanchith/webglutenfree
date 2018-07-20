@@ -23,7 +23,7 @@ import * as sponza from "./libx/sponza.js";
 import * as cube from "./libx/cube.js";
 
 const N_LIGHTS = 10;
-const DRAW_LIGHTS = true;
+const DRAW_LIGHTS = false;
 const LIGHT_ATTENUATION_CONSTANT = 1;
 const LIGHT_ATTENUATION_LINEAR = 0.14;
 const LIGHT_ATTENUATION_QUADRATIC = 0.07;
@@ -217,84 +217,84 @@ const createUniformOptions = (nLights: number): Uniforms<CmdDrawLightingProps> =
 const cmdDrawLighting = Command.create<CmdDrawLightingProps>(
     dev,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform mat4 u_proj, u_view, u_model;
+    uniform mat4 u_proj, u_view, u_model;
 
-        layout (location = 0) in vec3 a_position;
-        layout (location = 1) in vec3 a_normal;
+    layout (location = 0) in vec3 a_position;
+    layout (location = 1) in vec3 a_normal;
 
-        out vec3 v_position;
-        out vec3 v_normal;
+    out vec3 v_position;
+    out vec3 v_normal;
 
-        void main() {
-            v_position = (u_model * vec4(a_position, 1)).xyz;
-            v_normal = transpose(inverse(mat3(u_model))) * a_normal;
-            gl_Position = u_proj * u_view * u_model * vec4(a_position, 1);
-        }
+    void main() {
+        v_position = (u_model * vec4(a_position, 1)).xyz;
+        v_normal = transpose(inverse(mat3(u_model))) * a_normal;
+        gl_Position = u_proj * u_view * u_model * vec4(a_position, 1);
+    }
     `,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        #define N_LIGHTS ${N_LIGHTS}
+    const int N_LIGHTS = int(${N_LIGHTS});
 
-        struct Material {
-            vec3 ambient;
-            vec3 diffuse;
-            vec3 specular;
-            float shininess;
-        };
+    struct Material {
+        vec3 ambient;
+        vec3 diffuse;
+        vec3 specular;
+        float shininess;
+    };
 
-        struct Light {
-            vec3 position;
-            vec3 ambient;
-            vec3 diffuse;
-            vec3 specular;
-            float constant;
-            float linear;
-            float quadratic;
-        };
+    struct Light {
+        vec3 position;
+        vec3 ambient;
+        vec3 diffuse;
+        vec3 specular;
+        float constant;
+        float linear;
+        float quadratic;
+    };
 
-        uniform Light u_lights[N_LIGHTS];
-        uniform Material u_material;
-        uniform vec3 u_camera_position;
+    uniform Light u_lights[N_LIGHTS];
+    uniform Material u_material;
+    uniform vec3 u_camera_position;
 
-        in vec3 v_position;
-        in vec3 v_normal;
+    in vec3 v_position;
+    in vec3 v_normal;
 
-        layout (location = 0) out vec4 f_color;
+    layout (location = 0) out vec4 f_color;
 
-        void main() {
-            vec3 normal = normalize(v_normal);
-            vec3 view_dir = normalize(u_camera_position - v_position);
+    void main() {
+        vec3 normal = normalize(v_normal);
+        vec3 view_dir = normalize(u_camera_position - v_position);
 
-            vec3 lighting = vec3(0);
+        vec3 lighting = vec3(0);
 
-            for (int i = 0; i < N_LIGHTS; ++i) {
-                Light light = u_lights[i];
+        for (int i = 0; i < N_LIGHTS; ++i) {
+            Light light = u_lights[i];
 
-                float distance = length(light.position - v_position);
-                vec3 light_dir = normalize(light.position - v_position);
-                vec3 halfway_dir = normalize(view_dir + light_dir);
+            float distance = length(light.position - v_position);
+            vec3 light_dir = normalize(light.position - v_position);
+            vec3 halfway_dir = normalize(view_dir + light_dir);
 
-                float diffuse_f = max(dot(light_dir, normal), 0.0);
-                float specular_f = pow(
-                    max(dot(normal, halfway_dir), 0.0),
-                    u_material.shininess
-                );
+            float diffuse_f = max(dot(light_dir, normal), 0.0);
+            float specular_f = pow(
+                max(dot(normal, halfway_dir), 0.0),
+                u_material.shininess
+            );
 
-                float attenuation = 1.0 / (light.constant
-                    + light.linear * distance
-                    + light.quadratic * distance * distance
-                );
+            float attenuation = 1.0 / (light.constant
+                + light.linear * distance
+                + light.quadratic * distance * distance
+            );
 
-                lighting += attenuation * light.ambient * u_material.ambient;
-                lighting += attenuation * diffuse_f * light.diffuse * u_material.diffuse;
-                lighting += attenuation * specular_f * light.specular * u_material.specular;
-            }
-
-            f_color = vec4(lighting, 1);
+            lighting += attenuation * light.ambient * u_material.ambient;
+            lighting += attenuation * diffuse_f * light.diffuse * u_material.diffuse;
+            lighting += attenuation * specular_f * light.specular * u_material.specular;
         }
+
+        f_color = vec4(lighting, 1);
+    }
     `,
     {
         uniforms: createUniformOptions(N_LIGHTS),
@@ -313,29 +313,30 @@ interface CmdDrawLightProps {
 const cmdDrawLight = Command.create<CmdDrawLightProps>(
     dev,
     `#version 300 es
+    precision mediump float;
 
-        uniform mat4 u_proj, u_view, u_model;
-        uniform vec3 u_position;
+    uniform mat4 u_proj, u_view, u_model;
+    uniform vec3 u_position;
 
-        layout (location = 0) in vec3 a_position;
+    layout (location = 0) in vec3 a_position;
 
-        void main() {
-            gl_Position = u_proj
-                * u_view
-                * u_model
-                * vec4(a_position + u_position, 1.0);
-        }
+    void main() {
+        gl_Position = u_proj
+            * u_view
+            * u_model
+            * vec4(a_position + u_position, 1.0);
+    }
     `,
     `#version 300 es
-        precision mediump float;
+    precision mediump float;
 
-        uniform vec3 u_color;
+    uniform vec3 u_color;
 
-        layout (location = 0) out vec4 f_color;
+    layout (location = 0) out vec4 f_color;
 
-        void main() {
-            f_color = vec4(u_color, 0.5);
-        }
+    void main() {
+        f_color = vec4(u_color, 0.5);
+    }
     `,
     {
         uniforms: {

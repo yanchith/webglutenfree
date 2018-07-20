@@ -6,12 +6,7 @@
  * https://webgl2fundamentals.org/webgl/lessons/webgl-image-processing.html
  */
 
-import {
-    Device,
-    Command,
-    Attributes,
-    Texture,
-} from "./lib/webglutenfree.js";
+import { Device, Command, Attributes, Texture } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 import { loadImage } from "./libx/load-image.js";
 
@@ -57,48 +52,48 @@ async function run() {
     const cmd = Command.create(
         dev,
         `#version 300 es
-            precision mediump float;
+        precision mediump float;
 
-            uniform mat4 u_projection, u_model;
+        uniform mat4 u_proj, u_model;
 
-            layout (location = 0) in vec2 a_position;
-            layout (location = 1) in vec2 a_uv;
+        layout (location = 0) in vec2 a_position;
+        layout (location = 1) in vec2 a_uv;
 
-            out vec2 v_uv;
+        out vec2 v_uv;
 
-            void main() {
-                v_uv = a_uv;
-                gl_Position = u_projection
-                    * u_model
-                    * vec4(a_position, 0.0, 1.0);
-            }
+        void main() {
+            v_uv = a_uv;
+            gl_Position = u_proj
+                * u_model
+                * vec4(a_position, 0.0, 1.0);
+        }
         `,
         `#version 300 es
-            precision mediump float;
+        precision mediump float;
 
-            uniform sampler2D u_image;
-            uniform float[9] u_kernel;
-            uniform float u_kernel_weight;
+        uniform sampler2D u_image;
+        uniform float[9] u_kernel;
+        uniform float u_kernel_weight;
 
-            in vec2 v_uv;
+        in vec2 v_uv;
 
-            out vec4 f_color;
+        out vec4 f_color;
 
-            void main() {
-                vec2 px = vec2(1) / vec2(textureSize(u_image, 0));
-                float[9] k = u_kernel;
-                vec4 color_sum =
-                    texture(u_image, px * vec2(-1, -1) + v_uv) * k[0] +
-                    texture(u_image, px * vec2( 0, -1) + v_uv) * k[1] +
-                    texture(u_image, px * vec2( 1, -1) + v_uv) * k[2] +
-                    texture(u_image, px * vec2(-1,  0) + v_uv) * k[3] +
-                    texture(u_image, px * vec2( 0,  0) + v_uv) * k[4] +
-                    texture(u_image, px * vec2( 1,  0) + v_uv) * k[5] +
-                    texture(u_image, px * vec2(-1,  1) + v_uv) * k[6] +
-                    texture(u_image, px * vec2( 0,  1) + v_uv) * k[7] +
-                    texture(u_image, px * vec2( 1,  1) + v_uv) * k[8] ;
-                f_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
-            }
+        void main() {
+            vec2 px = vec2(1) / vec2(textureSize(u_image, 0));
+            float[9] k = u_kernel;
+            vec4 color_sum =
+                texture(u_image, px * vec2(-1, -1) + v_uv) * k[0] +
+                texture(u_image, px * vec2( 0, -1) + v_uv) * k[1] +
+                texture(u_image, px * vec2( 1, -1) + v_uv) * k[2] +
+                texture(u_image, px * vec2(-1,  0) + v_uv) * k[3] +
+                texture(u_image, px * vec2( 0,  0) + v_uv) * k[4] +
+                texture(u_image, px * vec2( 1,  0) + v_uv) * k[5] +
+                texture(u_image, px * vec2(-1,  1) + v_uv) * k[6] +
+                texture(u_image, px * vec2( 0,  1) + v_uv) * k[7] +
+                texture(u_image, px * vec2( 1,  1) + v_uv) * k[8] ;
+            f_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
+        }
         `,
         {
             textures: { u_image: imageTexture },
@@ -107,7 +102,7 @@ async function run() {
                     type: "matrix4fv",
                     value: mat4.fromScaling(mat4.create(), [400, 400, 1]),
                 },
-                u_projection: {
+                u_proj: {
                     type: "matrix4fv",
                     value: mat4.ortho(
                         mat4.create(),
