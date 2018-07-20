@@ -34,11 +34,15 @@ export class Stack<T> {
     }
 
     pop(): T {
-        assert.nonEmpty(this.s, () => "Stack must not be empty for pop");
+        assert.gte(
+            this.s.length,
+            2,
+            () => "Stack must contain at least two element for pop",
+        );
         const prevValue = this.s.pop()!;
         const top = this.peek();
         if (this.onChangeDiff(prevValue, top, "pop")) {
-            this.onChangeApply(top, "push");
+            this.onChangeApply(top, "pop");
         }
         return prevValue;
     }

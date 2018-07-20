@@ -52,6 +52,16 @@ function gt(p, low, fmt) {
         }
     }
 }
+function gte(p, low, fmt) {
+    if (process.env.NODE_ENV !== "production") {
+        if (p < low) {
+            const msg = fmt
+                ? fmt(p, low)
+                : `Assertion failed: Value ${p} is lower than expected ${low}`;
+            throw new Error(msg);
+        }
+    }
+}
 function rangeInclusive(p, low, high, fmt) {
     if (process.env.NODE_ENV !== "production") {
         if (p < low || p > high) {
@@ -289,11 +299,11 @@ class Stack {
         this.s.push(value);
     }
     pop() {
-        nonEmpty(this.s, () => "Stack must not be empty for pop");
+        gte(this.s.length, 2, () => "Stack must contain at least two element for pop");
         const prevValue = this.s.pop();
         const top = this.peek();
         if (this.onChangeDiff(prevValue, top, "pop")) {
-            this.onChangeApply(top, "push");
+            this.onChangeApply(top, "pop");
         }
         return prevValue;
     }

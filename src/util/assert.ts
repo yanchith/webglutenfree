@@ -70,6 +70,21 @@ export function gt(
     }
 }
 
+export function gte(
+    p: number,
+    low: number,
+    fmt?: (got: number, low: number) => string,
+): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (p < low) {
+            const msg = fmt
+                ? fmt(p, low)
+                : `Assertion failed: Value ${p} is lower than expected ${low}`;
+            throw new Error(msg);
+        }
+    }
+}
+
 export function rangeInclusive(
     p: number,
     low: number,
