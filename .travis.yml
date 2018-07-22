@@ -3,7 +3,8 @@ node_js:
   - "node"
   - "lts/*"
 before_script:
-  - "yarn build"
+  - "yarn compile"
+  - "yarn bundle"
 script:
   - "yarn test"
 cache: yarn
