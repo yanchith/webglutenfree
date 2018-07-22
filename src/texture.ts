@@ -370,8 +370,13 @@ export class Texture<F extends TextureInternalFormat> {
             height,
             format,
             type,
-            // Chrome does not handle Uint8ClampedArray well
-            data instanceof Uint8ClampedArray ? new Uint8Array(data) : data,
+            // WebGL bug causes Uint8ClampedArray to be read incorrectly
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            data instanceof Uint8ClampedArray
+                // Both buffers are u8 -> do not copy, just change lens
+                ? new Uint8Array(data.buffer)
+                // Other buffer types are fine
+                : data,
         );
         if (mipmap) { gl.generateMipmap(gl.TEXTURE_2D); }
         gl.bindTexture(gl.TEXTURE_2D, null);
