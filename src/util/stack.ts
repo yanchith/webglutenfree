@@ -1,8 +1,15 @@
 import * as assert from "./assert";
 
-export type Op = "init" | "push" | "pop";
-export type ChangeDiffCallback<T> = (prevValue: T, newValue: T, op: Op) => void;
-export type ChangeApplyCallback<T> = (value: T, op: Op) => void;
+export type ChangeDiffCallback<T> = (
+    prevValue: T,
+    newValue: T,
+    op: "push" | "pop",
+) => boolean;
+
+export type ChangeApplyCallback<T> = (
+    value: T,
+    op: "init" | "push" | "pop",
+) => void;
 
 export class Stack<T> {
 
@@ -21,6 +28,10 @@ export class Stack<T> {
         onChangeApply(initialValue, "init");
     }
 
+    get length(): number {
+        return this.s.length;
+    }
+
     push(value: T): void {
         const top = this.peek();
         if (this.onChangeDiff(top, value, "push")) {
@@ -30,11 +41,15 @@ export class Stack<T> {
     }
 
     pop(): T {
-        assert.nonEmpty(this.s, () => "Stack must not be empty for pop");
+        assert.gte(
+            this.s.length,
+            2,
+            () => "Stack must contain at least two element for pop",
+        );
         const prevValue = this.s.pop()!;
         const top = this.peek();
         if (this.onChangeDiff(prevValue, top, "pop")) {
-            this.onChangeApply(top, "push");
+            this.onChangeApply(top, "pop");
         }
         return prevValue;
     }

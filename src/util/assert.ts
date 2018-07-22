@@ -1,24 +1,46 @@
-import process from "./process-shim";
+import { process } from "./process-shim";
 
-export function nonNull(p: any, fmt?: (got: string) => string): void {
+export function isTrue(got: any, fmt?: (got: any) => string): void {
     if (process.env.NODE_ENV !== "production") {
-        if (typeof p === "undefined" || typeof p === "object" && !p) {
+        if (got !== true) {
             const msg = fmt
-                ? fmt(p)
+                ? fmt(got)
+                : `Assertion failed: expected true, got ${got}`;
+            throw new Error(msg);
+        }
+    }
+}
+
+export function isFalse(got: any, fmt?: (got: any) => string): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (got !== false) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: expected false, got ${got}`;
+            throw new Error(msg);
+        }
+    }
+}
+
+export function nonNull(got: any, fmt?: (got: any) => string): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (typeof got === "undefined" || typeof got === "object" && !got) {
+            const msg = fmt
+                ? fmt(got)
                 : `Assertion failed: object is undefined or null`;
             throw new Error(msg);
         }
     }
 }
 
-export function nonEmpty(
-    p: string | any[],
-    fmt?: (got: string | any[]) => string,
+export function nonEmpty<T>(
+    got: string | T[],
+    fmt?: (got: string | T[]) => string,
 ): void {
     if (process.env.NODE_ENV !== "production") {
-        if (!p.length) {
+        if (!got.length) {
             const msg = fmt
-                ? fmt(p)
+                ? fmt(got)
                 : `Assertion failed: string or array is empty`;
             throw new Error(msg);
         }
@@ -26,71 +48,86 @@ export function nonEmpty(
 }
 
 export function equal<T>(
-    p: T,
+    got: T,
     expected: T,
     fmt?: (got: T, expected: T) => string,
 ): void {
     if (process.env.NODE_ENV !== "production") {
-        if (p !== expected) {
+        if (got !== expected) {
             const msg = fmt
-                ? fmt(p, expected)
-                : `Assertion failed: values not equal. Expected ${expected}, got ${p}`;
+                ? fmt(got, expected)
+                : `Assertion failed: values not equal. Expected ${expected}, got ${got}`;
             throw new Error(msg);
         }
     }
 }
 
 export function oneOf<T>(
-    p: T,
+    got: T,
     expected: T[],
     fmt?: (got: T, expected: T[]) => string,
 ): void {
     if (process.env.NODE_ENV !== "production") {
-        if (!expected.includes(p)) {
+        if (!expected.includes(got)) {
             const msg = fmt
-                ? fmt(p, expected)
-                : `Assertion failed: Value ${p} is not one of expected ${expected}`;
+                ? fmt(got, expected)
+                : `Assertion failed: value ${got} is not one of expected ${expected}`;
             throw new Error(msg);
         }
     }
 }
 
 export function gt(
-    p: number,
+    got: number,
     low: number,
     fmt?: (got: number, low: number) => string,
 ): void {
     if (process.env.NODE_ENV !== "production") {
-        if (p <= low) {
+        if (got <= low) {
             const msg = fmt
-                ? fmt(p, low)
-                : `Assertion failed: Value ${p} is lower or equal than expected ${low}`;
+                ? fmt(got, low)
+                : `Assertion failed: value ${got} is lower or equal than expected ${low}`;
+            throw new Error(msg);
+        }
+    }
+}
+
+export function gte(
+    got: number,
+    low: number,
+    fmt?: (got: number, low: number) => string,
+): void {
+    if (process.env.NODE_ENV !== "production") {
+        if (got < low) {
+            const msg = fmt
+                ? fmt(got, low)
+                : `Assertion failed: value ${got} is lower than expected ${low}`;
             throw new Error(msg);
         }
     }
 }
 
 export function rangeInclusive(
-    p: number,
+    got: number,
     low: number,
     high: number,
     fmt?: (got: number, low: number, high: number) => string,
 ): void {
     if (process.env.NODE_ENV !== "production") {
-        if (p < low || p > high) {
+        if (got < low || got > high) {
             const msg = fmt
-                ? fmt(p, low, high)
-                : `Assertion failed: Value ${p} is not in inclusive range [${low}, ${high}]`;
+                ? fmt(got, low, high)
+                : `Assertion failed: value ${got} is not in inclusive range [${low}, ${high}]`;
             throw new Error(msg);
         }
     }
 }
 
-export function never(p: never, fmt?: (p: any) => string): never {
+export function never(got: never, fmt?: (p: any) => string): never {
     // "never" can not be eliminated, as its "return value" is actually captured
     // at the callsites for control-flow.
     const msg = fmt
-        ? fmt(p)
-        : `Assertion failed: This branch should be unreachable`;
+        ? fmt(got)
+        : `Assertion failed: this branch should be unreachable`;
     throw new Error(msg);
 }
