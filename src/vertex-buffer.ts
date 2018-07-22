@@ -134,11 +134,12 @@ export class VertexBuffer<T extends VertexBufferType> {
         const { type, gl, glBuffer } = this;
         const buffer = Array.isArray(data)
             ? createBuffer(type, data)
-            // Note: we have to convert Uint8ClampedArray to Uint8Array
-            // because of webgl bug
+            // WebGL bug causes Uint8ClampedArray to be read incorrectly
             // https://github.com/KhronosGroup/WebGL/issues/1533
             : data instanceof Uint8ClampedArray
-                ? new Uint8Array(data)
+                // Both buffers are u8 -> do not copy, just change lens
+                ? new Uint8Array(data.buffer)
+                // Other buffer types are fine
                 : data;
         const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
         gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);

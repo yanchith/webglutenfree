@@ -384,9 +384,12 @@ export class Command<P> {
         _stackProgram.push(prog);
 
         // Texture declarations are evaluated in two phases:
-        // 1) Sampler location offsets are sent to the shader eagerly
-        // 2) Textures are bound to the locations at draw time
-        // Note that Object.entries provides values in a nondeterministic order,
+        // 1) Sampler location offsets are sent to the shader eagerly. This is
+        //    ok because even if the textures themselves can change (function
+        //    accessors), their offsets stay the same
+        // 2) Textures provided by the accessor are activated and bound to their
+        //    locations at draw time
+        // Note: Object.entries() provides values in a nondeterministic order,
         // but we store the descriptors in an array, remembering the order.
 
         const textureAccessors: TextureAccessor<P>[] = [];

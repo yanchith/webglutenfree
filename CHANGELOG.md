@@ -4,6 +4,7 @@
 #### Fixes:
 
 -   Teach uniform validation mechanism about possible basic type array shorthands
+-   Remove needless buffer copying in vertex/element buffers and texture
 
 #### Enhancements:
 
