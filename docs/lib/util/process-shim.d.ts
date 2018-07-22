@@ -1,7 +1,7 @@
-declare const _default: {
+export interface Process {
     env: {
-        NODE_ENV: string;
+        NODE_ENV: "development" | "production";
     };
-};
-export default _default;
+}
+export declare const process: Process;
 //# sourceMappingURL=process-shim.d.ts.map

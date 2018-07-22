@@ -1,5 +1,5 @@
-import process from "./util/process-shim";
 import * as assert from "./util/assert";
+import { process } from "./util/process-shim";
 import { TextureInternalFormat } from "./texture";
 
 export type Device = import ("./device").Device;

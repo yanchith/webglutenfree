@@ -86,7 +86,7 @@ export class ElementBuffer<T extends ElementBufferType> {
         data: ElementArray,
         options?: ElementBufferOptions,
     ): ElementBuffer<DataType.UNSIGNED_INT> {
-        if (array.isArray2(data)) {
+        if (array.is2(data)) {
             const shape = array.shape2(data);
             assert.rangeInclusive(shape[1], 2, 3, (p) => {
                 return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;

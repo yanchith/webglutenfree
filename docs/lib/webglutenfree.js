@@ -1,83 +1,103 @@
 // Shim NODE_ENV. Our production build replaces all usages and it gets DCEd.
 // Downstream users can use replacers or envifiers achieve the same.
-var process = { env: { NODE_ENV: "development" } };
+const process = { env: { NODE_ENV: "development" } };
 
-function nonNull(p, fmt) {
+function isTrue(got, fmt) {
     if (process.env.NODE_ENV !== "production") {
-        if (typeof p === "undefined" || typeof p === "object" && !p) {
+        if (got !== true) {
             const msg = fmt
-                ? fmt(p)
+                ? fmt(got)
+                : `Assertion failed: expected true, got ${got}`;
+            throw new Error(msg);
+        }
+    }
+}
+function isFalse(got, fmt) {
+    if (process.env.NODE_ENV !== "production") {
+        if (got !== false) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: expected false, got ${got}`;
+            throw new Error(msg);
+        }
+    }
+}
+function nonNull(got, fmt) {
+    if (process.env.NODE_ENV !== "production") {
+        if (typeof got === "undefined" || typeof got === "object" && !got) {
+            const msg = fmt
+                ? fmt(got)
                 : `Assertion failed: object is undefined or null`;
             throw new Error(msg);
         }
     }
 }
-function nonEmpty(p, fmt) {
+function nonEmpty(got, fmt) {
     if (process.env.NODE_ENV !== "production") {
-        if (!p.length) {
+        if (!got.length) {
             const msg = fmt
-                ? fmt(p)
+                ? fmt(got)
                 : `Assertion failed: string or array is empty`;
             throw new Error(msg);
         }
     }
 }
-function equal(p, expected, fmt) {
+function equal(got, expected, fmt) {
     if (process.env.NODE_ENV !== "production") {
-        if (p !== expected) {
+        if (got !== expected) {
             const msg = fmt
-                ? fmt(p, expected)
-                : `Assertion failed: values not equal. Expected ${expected}, got ${p}`;
+                ? fmt(got, expected)
+                : `Assertion failed: values not equal. Expected ${expected}, got ${got}`;
             throw new Error(msg);
         }
     }
 }
-function oneOf(p, expected, fmt) {
+function oneOf(got, expected, fmt) {
     if (process.env.NODE_ENV !== "production") {
-        if (!expected.includes(p)) {
+        if (!expected.includes(got)) {
             const msg = fmt
-                ? fmt(p, expected)
-                : `Assertion failed: Value ${p} is not one of expected ${expected}`;
+                ? fmt(got, expected)
+                : `Assertion failed: value ${got} is not one of expected ${expected}`;
             throw new Error(msg);
         }
     }
 }
-function gt(p, low, fmt) {
+function gt(got, low, fmt) {
     if (process.env.NODE_ENV !== "production") {
-        if (p <= low) {
+        if (got <= low) {
             const msg = fmt
-                ? fmt(p, low)
-                : `Assertion failed: Value ${p} is lower or equal than expected ${low}`;
+                ? fmt(got, low)
+                : `Assertion failed: value ${got} is lower or equal than expected ${low}`;
             throw new Error(msg);
         }
     }
 }
-function gte(p, low, fmt) {
+function gte(got, low, fmt) {
     if (process.env.NODE_ENV !== "production") {
-        if (p < low) {
+        if (got < low) {
             const msg = fmt
-                ? fmt(p, low)
-                : `Assertion failed: Value ${p} is lower than expected ${low}`;
+                ? fmt(got, low)
+                : `Assertion failed: value ${got} is lower than expected ${low}`;
             throw new Error(msg);
         }
     }
 }
-function rangeInclusive(p, low, high, fmt) {
+function rangeInclusive(got, low, high, fmt) {
     if (process.env.NODE_ENV !== "production") {
-        if (p < low || p > high) {
+        if (got < low || got > high) {
             const msg = fmt
-                ? fmt(p, low, high)
-                : `Assertion failed: Value ${p} is not in inclusive range [${low}, ${high}]`;
+                ? fmt(got, low, high)
+                : `Assertion failed: value ${got} is not in inclusive range [${low}, ${high}]`;
             throw new Error(msg);
         }
     }
 }
-function never(p, fmt) {
+function never(got, fmt) {
     // "never" can not be eliminated, as its "return value" is actually captured
     // at the callsites for control-flow.
     const msg = fmt
-        ? fmt(p)
-        : `Assertion failed: This branch should be unreachable`;
+        ? fmt(got)
+        : `Assertion failed: this branch should be unreachable`;
     throw new Error(msg);
 }
 
@@ -1650,12 +1670,37 @@ function createBuffer(type, arr) {
 }
 
 /**
- * Chacks whether array is at least 2d, mostly useful because of return type
- * predicate.
+ * Chacks whether array has at least two dimensions.
+ * Asserts array is not jagged. Only checks first two dimensions.
+ * Returns false if array is degenerate (either dimension is 0), as 0d array
+ * is not 2d array.
  */
-function isArray2(array) {
-    return !!array.length && Array.isArray(array[0]);
+function is2(array) {
+    if (!array.length) {
+        return false;
+    }
+    const length2 = Array.isArray(array[0]) ? array[0].length : -1;
+    // Do some asserts if not production
+    if (process.env.NODE_ENV !== "production") {
+        array.forEach((sub) => {
+            const isSubArray = Array.isArray(sub);
+            if (length2 !== -1) {
+                isTrue(isSubArray);
+                equal(sub.length, length2);
+            }
+            else {
+                isFalse(isSubArray);
+            }
+        });
+    }
+    // if length2 === 0, array is degenerate
+    // if length2 === -1, array is 1d
+    return length2 > 0;
 }
+/**
+ * Returns first two dimensions of array. Assumes nonjagged array and does no
+ * checks to prove so.
+ */
 function shape2(array) {
     const outer = array.length;
     const inner = outer ? array[0].length : 0;
@@ -1701,7 +1746,7 @@ class ElementBuffer {
      * Does not take ownership of data.
      */
     static withArray(dev, data, options) {
-        if (isArray2(data)) {
+        if (is2(data)) {
             const shape = shape2(data);
             rangeInclusive(shape[1], 2, 3, (p) => {
                 return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;
@@ -1937,7 +1982,7 @@ class AttributeDescriptor {
     }
     static create(dev, location, props) {
         if (Array.isArray(props)) {
-            if (isArray2(props)) {
+            if (is2(props)) {
                 const s = shape2(props);
                 const r = ravel2(props, s);
                 return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.withTypedArray(dev, DataType.FLOAT, r), s[0], s[1], false, 0);

@@ -308,7 +308,7 @@ class AttributeDescriptor {
         props: AttributeConfig,
     ): AttributeDescriptor {
         if (Array.isArray(props)) {
-            if (array.isArray2(props)) {
+            if (array.is2(props)) {
                 const s = array.shape2(props);
                 const r = array.ravel2(props, s);
                 return new AttributeDescriptor(
