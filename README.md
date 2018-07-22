@@ -1,5 +1,7 @@
 # webglutenfree
 
+[![Build Status](https://travis-ci.com/yanchith/webglutenfree.svg?branch=master)](https://travis-ci.com/yanchith/webglutenfree)
+
 We serve your draw calls type-safe and gluten-free.
 
 Webglutenfree is a lightweight, comfort focused abstraction on top of WebGL2.
