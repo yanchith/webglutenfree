@@ -1699,13 +1699,19 @@ function is2(array) {
 }
 /**
  * Returns first two dimensions of array. Assumes nonjagged array and does no
- * checks to prove so.
+ * checks to prove so. Accepts degenerate arrays.
  */
 function shape2(array) {
     const outer = array.length;
     const inner = outer ? array[0].length : 0;
     return [outer, inner];
 }
+/**
+ * Take an unraveled 2d array and a shape. Returns new flat array with all
+ * elements from the original unraveled array. Assumes unraveled array is not
+ * jagged and shape matches the unraveled dimensions and makes no checks to
+ * prove so. Accepts degenerate arrays if shape matches them.
+ */
 function ravel2(unraveled, shape) {
     const [outer, inner] = shape;
     const raveled = new Array(inner * outer);

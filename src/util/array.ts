@@ -39,6 +39,12 @@ export function shape2<T>(array: T[][]): [number, number] {
     return [outer, inner];
 }
 
+/**
+ * Take an unraveled 2d array and a shape. Returns new flat array with all
+ * elements from the original unraveled array. Assumes unraveled array is not
+ * jagged and shape matches the unraveled dimensions and makes no checks to
+ * prove so. Accepts degenerate arrays if shape matches them.
+ */
 export function ravel2<T>(unraveled: T[][], shape: [number, number]): T[] {
     const [outer, inner] = shape;
     const raveled: T[] = new Array<T>(inner * outer);

@@ -1,8 +1,15 @@
 import * as assert from "./assert";
 
-export type Op = "init" | "push" | "pop";
-export type ChangeDiffCallback<T> = (prevValue: T, newValue: T, op: Op) => boolean;
-export type ChangeApplyCallback<T> = (value: T, op: Op) => void;
+export type ChangeDiffCallback<T> = (
+    prevValue: T,
+    newValue: T,
+    op: "push" | "pop",
+) => boolean;
+
+export type ChangeApplyCallback<T> = (
+    value: T,
+    op: "init" | "push" | "pop",
+) => void;
 
 export class Stack<T> {
 
