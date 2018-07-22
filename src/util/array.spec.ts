@@ -38,3 +38,9 @@ test("shape2 returns shape of nondegenerate 2d array", (t) => {
     t.deepEqual([3, 3], shape2([[1, 2, 3], [2, 3, 4], [3, 4, 5]]));
     t.deepEqual([1, 3], shape2([[1, 2, 3]]));
 });
+
+test("shape2 returns shape of degenerate 2d arrays", (t) => {
+    t.deepEqual([0, 0], shape2([]));
+    t.deepEqual([1, 0], shape2([[]]));
+    t.deepEqual([2, 0], shape2([[], []]));
+});

@@ -31,7 +31,7 @@ export function is2<T>(array: T[] | T[][]): array is T[][] {
 
 /**
  * Returns first two dimensions of array. Assumes nonjagged array and does no
- * checks to prove so.
+ * checks to prove so. Accepts degenerate arrays.
  */
 export function shape2<T>(array: T[][]): [number, number] {
     const outer = array.length;
