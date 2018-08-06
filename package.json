@@ -45,7 +45,7 @@
     "rimraf": "^2.6.2",
     "rollup": "^0.63.5",
     "rollup-plugin-replace": "^2.0.0",
-    "rollup-plugin-uglify": "^3.0.0",
+    "rollup-plugin-terser": "^1.0.1",
     "three": "^0.95.0",
     "ts-node": "^7.0.0",
     "tslint": "^5.11.0",
