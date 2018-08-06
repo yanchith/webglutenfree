@@ -526,7 +526,7 @@ export class Command<P> {
                             u.value,
                         );
                         break;
-                    default: assert.never(u);
+                    default: assert.unreachable(u);
                 }
             } else {
                 // Store a descriptor for lazy values for later use
@@ -1011,7 +1011,7 @@ function validateUniformDeclaration(
             assert.equal(info.type, gl.FLOAT_MAT4, fmtTyMismatch(info.name));
             assert.equal(info.size, 1);
             break;
-        default: assert.never(type);
+        default: assert.unreachable(type);
     }
 }
 

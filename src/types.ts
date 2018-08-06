@@ -214,6 +214,6 @@ export function sizeOf(type: DataType): number {
             return 4;
         case DataType.FLOAT_32_UNSIGNED_INT_24_8_REV:
             return 8;
-        default: return assert.never(type);
+        default: return assert.unreachable(type);
     }
 }

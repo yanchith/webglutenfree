@@ -1,98 +1,99 @@
-// Shim NODE_ENV. Our production build replaces all usages and it gets DCEd.
-// Downstream users can use replacers or envifiers achieve the same.
-const process = { env: { NODE_ENV: "development" } };
+/**
+ * Shim NODE_ENV. Our production build replaces all usages and it gets DCEd.
+ * Downstream users can use replacers or envifiers achieve the same.
+ */
 
 function isTrue(got, fmt) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (got !== true) {
             const msg = fmt
                 ? fmt(got)
-                : `Assertion failed: expected true, got ${got}`;
+                : `Assertion failed: value ${got} not true`;
             throw new Error(msg);
         }
     }
 }
 function isFalse(got, fmt) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (got !== false) {
             const msg = fmt
                 ? fmt(got)
-                : `Assertion failed: expected false, got ${got}`;
+                : `Assertion failed: value ${got} not false`;
             throw new Error(msg);
         }
     }
 }
 function nonNull(got, fmt) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (typeof got === "undefined" || typeof got === "object" && !got) {
             const msg = fmt
                 ? fmt(got)
-                : `Assertion failed: object is undefined or null`;
+                : `Assertion failed: value undefined or null`;
             throw new Error(msg);
         }
     }
 }
 function nonEmpty(got, fmt) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (!got.length) {
             const msg = fmt
                 ? fmt(got)
-                : `Assertion failed: string or array is empty`;
+                : `Assertion failed: string or array value empty`;
             throw new Error(msg);
         }
     }
 }
 function equal(got, expected, fmt) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (got !== expected) {
             const msg = fmt
                 ? fmt(got, expected)
-                : `Assertion failed: values not equal. Expected ${expected}, got ${got}`;
+                : `Assertion failed: value ${got} not equal to ${expected}`;
             throw new Error(msg);
         }
     }
 }
 function oneOf(got, expected, fmt) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (!expected.includes(got)) {
             const msg = fmt
                 ? fmt(got, expected)
-                : `Assertion failed: value ${got} is not one of expected ${expected}`;
+                : `Assertion failed: value ${got} not in ${expected}`;
             throw new Error(msg);
         }
     }
 }
 function gt(got, low, fmt) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (got <= low) {
             const msg = fmt
                 ? fmt(got, low)
-                : `Assertion failed: value ${got} is lower or equal than expected ${low}`;
+                : `Assertion failed: value ${got} not GT than expected ${low}`;
             throw new Error(msg);
         }
     }
 }
 function gte(got, low, fmt) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (got < low) {
             const msg = fmt
                 ? fmt(got, low)
-                : `Assertion failed: value ${got} is lower than expected ${low}`;
+                : `Assertion failed: value ${got} not GTE than expected ${low}`;
             throw new Error(msg);
         }
     }
 }
 function rangeInclusive(got, low, high, fmt) {
-    if (process.env.NODE_ENV !== "production") {
+    {
         if (got < low || got > high) {
             const msg = fmt
                 ? fmt(got, low, high)
-                : `Assertion failed: value ${got} is not in inclusive range [${low}, ${high}]`;
+                : `Assertion failed: value ${got} not in range [${low},${high}]`;
             throw new Error(msg);
         }
     }
 }
-function never(got, fmt) {
+function unreachable(got, fmt) {
     // "never" can not be eliminated, as its "return value" is actually captured
     // at the callsites for control-flow.
     const msg = fmt
@@ -297,7 +298,7 @@ function sizeOf(type) {
             return 4;
         case DataType.FLOAT_32_UNSIGNED_INT_24_8_REV:
             return 8;
-        default: return never(type);
+        default: return unreachable(type);
     }
 }
 
@@ -628,7 +629,7 @@ class Target {
                     gl.uniformMatrix4fv(loc, false, access(props, index, def.value));
                     break;
                 default:
-                    never(def, () => `Unknown uniform: ${ident}`);
+                    unreachable(def, () => `Unknown uniform: ${ident}`);
                     break;
             }
         });
@@ -755,7 +756,7 @@ class Command {
         _gl.deleteShader(vs);
         _gl.deleteShader(fs);
         // Validation time! (only for nonproduction envs)
-        if (process.env.NODE_ENV !== "production") {
+        {
             if (!prog) {
                 // ctx loss or not, we can panic all we want in nonprod env!
                 throw new Error("Program was not compiled, possible reason: context loss");
@@ -891,7 +892,7 @@ class Command {
                     case "matrix4fv":
                         _gl.uniformMatrix4fv(loc, false, u.value);
                         break;
-                    default: never(u);
+                    default: unreachable(u);
                 }
             }
             else {
@@ -1358,7 +1359,7 @@ function validateUniformDeclaration(gl, info, type) {
             equal(info.type, gl.FLOAT_MAT4, fmtTyMismatch(info.name));
             equal(info.size, 1);
             break;
-        default: never(type);
+        default: unreachable(type);
     }
 }
 function fmtParamNonNull(name) {
@@ -1669,12 +1670,14 @@ function createBuffer(type, arr) {
         case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
         case DataType.UNSIGNED_INT: return new Uint32Array(arr);
         case DataType.FLOAT: return new Float32Array(arr);
-        default: return never(type, (p) => `Invalid buffer type: ${p}`);
+        default: return unreachable(type, (p) => {
+            return `Invalid buffer type: ${p}`;
+        });
     }
 }
 
 /**
- * Chacks whether array has at least two dimensions.
+ * Checks whether array has at least two dimensions.
  * Asserts array is not jagged. Only checks first two dimensions.
  * Returns false if array is degenerate (either dimension is 0), as 0d array
  * is not 2d array.
@@ -1685,7 +1688,7 @@ function is2(array) {
     }
     const length2 = Array.isArray(array[0]) ? array[0].length : -1;
     // Do some asserts if not production
-    if (process.env.NODE_ENV !== "production") {
+    {
         array.forEach((sub) => {
             const isSubArray = Array.isArray(sub);
             if (length2 !== -1) {
@@ -1819,7 +1822,9 @@ function createBuffer$1(type, arr) {
         case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
         case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
         case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        default: return never(type, (p) => `invalid buffer type: ${p}`);
+        default: return unreachable(type, (p) => {
+            return `invalid buffer type: ${p}`;
+        });
     }
 }
 
@@ -1957,7 +1962,7 @@ class Attributes {
                 case AttributeType.IPOINTER:
                     _gl.vertexAttribIPointer(location, size, glBufferType, 0, 0);
                     break;
-                default: never(type);
+                default: unreachable(type);
             }
             if (divisor) {
                 _gl.vertexAttribDivisor(location, divisor);
@@ -2198,7 +2203,7 @@ class Framebuffer {
                 case InternalFormat.DEPTH_COMPONENT32F:
                     _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
-                default: never(depthStencil, (p) => {
+                default: unreachable(depthStencil, (p) => {
                     return `Unsupported attachment: ${p}`;
                 });
             }

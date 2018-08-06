@@ -30,7 +30,7 @@ export declare class VertexBuffer<T extends VertexBufferType> {
      * Create a new vertex buffer with given type and of given size.
      */
     static create<T extends VertexBufferType>(dev: Device, type: T, size: number, { usage }?: {
-        usage?: BufferUsage;
+        usage?: BufferUsage | undefined;
     }): VertexBuffer<T>;
     /**
      * Create a new vertex buffer of given type with provided data. Does not

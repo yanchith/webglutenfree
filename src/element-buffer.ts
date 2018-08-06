@@ -213,6 +213,8 @@ function createBuffer(
         case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
         case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
         case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        default: return assert.never(type, (p) => `invalid buffer type: ${p}`);
+        default: return assert.unreachable(type, (p) => {
+            return `invalid buffer type: ${p}`;
+        });
     }
 }

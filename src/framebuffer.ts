@@ -226,7 +226,7 @@ export class Framebuffer {
                         0,
                     );
                     break;
-                default: assert.never(depthStencil, (p) => {
+                default: assert.unreachable(depthStencil, (p) => {
                     return `Unsupported attachment: ${p}`;
                 });
             }

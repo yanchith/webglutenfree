@@ -272,7 +272,7 @@ export class Attributes {
                         0,
                     );
                     break;
-                default: assert.never(type);
+                default: assert.unreachable(type);
             }
             if (divisor) { _gl.vertexAttribDivisor(location, divisor); }
         });

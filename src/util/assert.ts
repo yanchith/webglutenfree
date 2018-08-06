@@ -5,7 +5,7 @@ export function isTrue(got: any, fmt?: (got: any) => string): void {
         if (got !== true) {
             const msg = fmt
                 ? fmt(got)
-                : `Assertion failed: expected true, got ${got}`;
+                : `Assertion failed: value ${got} not true`;
             throw new Error(msg);
         }
     }
@@ -16,7 +16,7 @@ export function isFalse(got: any, fmt?: (got: any) => string): void {
         if (got !== false) {
             const msg = fmt
                 ? fmt(got)
-                : `Assertion failed: expected false, got ${got}`;
+                : `Assertion failed: value ${got} not false`;
             throw new Error(msg);
         }
     }
@@ -27,7 +27,7 @@ export function nonNull(got: any, fmt?: (got: any) => string): void {
         if (typeof got === "undefined" || typeof got === "object" && !got) {
             const msg = fmt
                 ? fmt(got)
-                : `Assertion failed: object is undefined or null`;
+                : `Assertion failed: value undefined or null`;
             throw new Error(msg);
         }
     }
@@ -41,7 +41,7 @@ export function nonEmpty<T>(
         if (!got.length) {
             const msg = fmt
                 ? fmt(got)
-                : `Assertion failed: string or array is empty`;
+                : `Assertion failed: string or array value empty`;
             throw new Error(msg);
         }
     }
@@ -56,7 +56,7 @@ export function equal<T>(
         if (got !== expected) {
             const msg = fmt
                 ? fmt(got, expected)
-                : `Assertion failed: values not equal. Expected ${expected}, got ${got}`;
+                : `Assertion failed: value ${got} not equal to ${expected}`;
             throw new Error(msg);
         }
     }
@@ -71,7 +71,7 @@ export function oneOf<T>(
         if (!expected.includes(got)) {
             const msg = fmt
                 ? fmt(got, expected)
-                : `Assertion failed: value ${got} is not one of expected ${expected}`;
+                : `Assertion failed: value ${got} not in ${expected}`;
             throw new Error(msg);
         }
     }
@@ -86,7 +86,7 @@ export function gt(
         if (got <= low) {
             const msg = fmt
                 ? fmt(got, low)
-                : `Assertion failed: value ${got} is lower or equal than expected ${low}`;
+                : `Assertion failed: value ${got} not GT than expected ${low}`;
             throw new Error(msg);
         }
     }
@@ -101,7 +101,7 @@ export function gte(
         if (got < low) {
             const msg = fmt
                 ? fmt(got, low)
-                : `Assertion failed: value ${got} is lower than expected ${low}`;
+                : `Assertion failed: value ${got} not GTE than expected ${low}`;
             throw new Error(msg);
         }
     }
@@ -117,13 +117,13 @@ export function rangeInclusive(
         if (got < low || got > high) {
             const msg = fmt
                 ? fmt(got, low, high)
-                : `Assertion failed: value ${got} is not in inclusive range [${low}, ${high}]`;
+                : `Assertion failed: value ${got} not in range [${low},${high}]`;
             throw new Error(msg);
         }
     }
 }
 
-export function never(got: never, fmt?: (p: any) => string): never {
+export function unreachable(got: never, fmt?: (p: any) => string): never {
     // "never" can not be eliminated, as its "return value" is actually captured
     // at the callsites for control-flow.
     const msg = fmt

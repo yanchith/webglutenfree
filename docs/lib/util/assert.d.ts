@@ -7,5 +7,5 @@ export declare function oneOf<T>(got: T, expected: T[], fmt?: (got: T, expected:
 export declare function gt(got: number, low: number, fmt?: (got: number, low: number) => string): void;
 export declare function gte(got: number, low: number, fmt?: (got: number, low: number) => string): void;
 export declare function rangeInclusive(got: number, low: number, high: number, fmt?: (got: number, low: number, high: number) => string): void;
-export declare function never(got: never, fmt?: (p: any) => string): never;
+export declare function unreachable(got: never, fmt?: (p: any) => string): never;
 //# sourceMappingURL=assert.d.ts.map
