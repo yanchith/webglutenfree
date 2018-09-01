@@ -46,7 +46,7 @@ const data = obj.children.map((child) => {
     });
 
     return res;
-})
+});
 
 const text = `export const objects = ${JSON.stringify(data)};`;
 if (outfilename) {

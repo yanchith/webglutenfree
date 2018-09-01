@@ -39,11 +39,11 @@
   dependencies:
     "@babel/highlight" "7.0.0-beta.51"
 
-"@babel/code-frame@^7.0.0-beta.47":
-  version "7.0.0-beta.56"
-  resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.0.0-beta.56.tgz#09f76300673ac085d3b90e02aafa0ffc2c96846a"
+"@babel/code-frame@^7.0.0":
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.0.0.tgz#06e2ab19bdb535385559aabb5ba59729482800f8"
   dependencies:
-    "@babel/highlight" "7.0.0-beta.56"
+    "@babel/highlight" "^7.0.0"
 
 "@babel/core@7.0.0-beta.51":
   version "7.0.0-beta.51"
@@ -196,13 +196,13 @@
     esutils "^2.0.2"
     js-tokens "^3.0.0"
 
-"@babel/highlight@7.0.0-beta.56":
-  version "7.0.0-beta.56"
-  resolved "https://registry.yarnpkg.com/@babel/highlight/-/highlight-7.0.0-beta.56.tgz#f8b0fc8c5c2de53bb2c12f9001ad3d99e573696d"
+"@babel/highlight@^7.0.0":
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/@babel/highlight/-/highlight-7.0.0.tgz#f710c38c8d458e6dd9a201afb637fcb781ce99e4"
   dependencies:
     chalk "^2.0.0"
     esutils "^2.0.2"
-    js-tokens "^3.0.0"
+    js-tokens "^4.0.0"
 
 "@babel/parser@7.0.0-beta.51":
   version "7.0.0-beta.51"
@@ -329,9 +329,13 @@
   version "0.0.39"
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-0.0.39.tgz#e177e699ee1b8c22d23174caaa7422644389509f"
 
-"@types/node@*", "@types/node@^10.5.6":
+"@types/node@*":
   version "10.5.6"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.5.6.tgz#1640f021dd0eaf12e731e54198c12ad2e020dc8e"
+
+"@types/node@^10.9.4":
+  version "10.9.4"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-10.9.4.tgz#0f4cb2dc7c1de6096055357f70179043c33e9897"
 
 "@types/webgl2@^0.0.4":
   version "0.0.4"
@@ -861,9 +865,9 @@ commander@^2.12.1:
   version "2.15.1"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.15.1.tgz#df46e867d0fc2aec66a34662b406a9ccafff5b0f"
 
-commander@~2.16.0:
-  version "2.16.0"
-  resolved "https://registry.yarnpkg.com/commander/-/commander-2.16.0.tgz#f16390593996ceb4f3eeb020b31d78528f7f8a50"
+commander@~2.17.1:
+  version "2.17.1"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-2.17.1.tgz#bd77ab7de6de94205ceacc72f1716d29f20a77bf"
 
 common-path-prefix@^1.0.0:
   version "1.0.0"
@@ -1819,6 +1823,12 @@ isobject@^3.0.0, isobject@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/isobject/-/isobject-3.0.1.tgz#4e431e92b11a9731636aa1f9c8d1ccbcfdab78df"
 
+jest-worker@^23.2.0:
+  version "23.2.0"
+  resolved "https://registry.yarnpkg.com/jest-worker/-/jest-worker-23.2.0.tgz#faf706a8da36fae60eb26957257fa7b5d8ea02b9"
+  dependencies:
+    merge-stream "^1.0.1"
+
 js-string-escape@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/js-string-escape/-/js-string-escape-1.0.1.tgz#e2625badbc0d67c7533e9edc1068c587ae4137ef"
@@ -1827,7 +1837,7 @@ js-tokens@^3.0.0, js-tokens@^3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-3.0.2.tgz#9866df395102130e38f7f996bceb65443209c25b"
 
-"js-tokens@^3.0.0 || ^4.0.0":
+"js-tokens@^3.0.0 || ^4.0.0", js-tokens@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"
 
@@ -2036,6 +2046,12 @@ meow@^5.0.0:
     redent "^2.0.0"
     trim-newlines "^2.0.0"
     yargs-parser "^10.0.0"
+
+merge-stream@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/merge-stream/-/merge-stream-1.0.1.tgz#4041202d508a342ba00174008df0c251b8c135e1"
+  dependencies:
+    readable-stream "^2.0.1"
 
 micromatch@^2.1.5, micromatch@^2.3.11:
   version "2.3.11"
@@ -2551,7 +2567,7 @@ read-pkg@^3.0.0:
     normalize-package-data "^2.3.2"
     path-type "^3.0.0"
 
-readable-stream@^2.0.2, readable-stream@^2.0.6:
+readable-stream@^2.0.1, readable-stream@^2.0.2, readable-stream@^2.0.6:
   version "2.3.6"
   resolved "https://registry.yarnpkg.com/readable-stream/-/readable-stream-2.3.6.tgz#b11c27d88b8ff1fbe070643cf94b0c79ae1b0aaf"
   dependencies:
@@ -2717,12 +2733,13 @@ rollup-plugin-replace@^2.0.0:
     minimatch "^3.0.2"
     rollup-pluginutils "^2.0.1"
 
-rollup-plugin-terser@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/rollup-plugin-terser/-/rollup-plugin-terser-1.0.1.tgz#ba5f497cbc9aa38ba19d3ee2167c04ea3ed279af"
+rollup-plugin-terser@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/rollup-plugin-terser/-/rollup-plugin-terser-2.0.2.tgz#1b59d67c80fc0d499cdc29a6991944b2d671ea03"
   dependencies:
-    "@babel/code-frame" "^7.0.0-beta.47"
-    terser "^3.7.5"
+    "@babel/code-frame" "^7.0.0"
+    jest-worker "^23.2.0"
+    terser "^3.8.2"
 
 rollup-pluginutils@^2.0.1:
   version "2.0.1"
@@ -2731,9 +2748,9 @@ rollup-pluginutils@^2.0.1:
     estree-walker "^0.3.0"
     micromatch "^2.3.11"
 
-rollup@^0.63.5:
-  version "0.63.5"
-  resolved "https://registry.yarnpkg.com/rollup/-/rollup-0.63.5.tgz#5543eecac9a1b83b7e1be598b5be84c9c0a089db"
+rollup@^0.65.0:
+  version "0.65.0"
+  resolved "https://registry.yarnpkg.com/rollup/-/rollup-0.65.0.tgz#280db1252169b68fc3043028346b337dde453fba"
   dependencies:
     "@types/estree" "0.0.39"
     "@types/node" "*"
@@ -3043,17 +3060,17 @@ term-size@^1.2.0:
   dependencies:
     execa "^0.7.0"
 
-terser@^3.7.5:
-  version "3.8.1"
-  resolved "https://registry.yarnpkg.com/terser/-/terser-3.8.1.tgz#cb70070ac9e0a71add169dfb63c0a64fca2738ac"
+terser@^3.8.2:
+  version "3.8.2"
+  resolved "https://registry.yarnpkg.com/terser/-/terser-3.8.2.tgz#48b880f949f8d038aca4dfd00a37c53d96ecf9fb"
   dependencies:
-    commander "~2.16.0"
+    commander "~2.17.1"
     source-map "~0.6.1"
     source-map-support "~0.5.6"
 
-three@^0.95.0:
-  version "0.95.0"
-  resolved "https://registry.yarnpkg.com/three/-/three-0.95.0.tgz#b60ea076ba17df9faba9e855b86ab3f541289abf"
+three@^0.96.0:
+  version "0.96.0"
+  resolved "https://registry.yarnpkg.com/three/-/three-0.96.0.tgz#6f48bb9e321506906ae4708bda69b0ffa808ee7f"
 
 time-zone@^1.0.0:
   version "1.0.0"
@@ -3101,9 +3118,9 @@ trim-right@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/trim-right/-/trim-right-1.0.1.tgz#cb2e1203067e0c8de1f614094b9fe45704ea6003"
 
-ts-node@^7.0.0:
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-7.0.0.tgz#a94a13c75e5e1aa6b82814b84c68deb339ba7bff"
+ts-node@^7.0.1:
+  version "7.0.1"
+  resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-7.0.1.tgz#9562dc2d1e6d248d24bc55f773e3f614337d9baf"
   dependencies:
     arrify "^1.0.0"
     buffer-from "^1.1.0"
@@ -3141,9 +3158,9 @@ tsutils@^2.27.2:
   dependencies:
     tslib "^1.8.1"
 
-typescript@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.0.1.tgz#43738f29585d3a87575520a4b93ab6026ef11fdb"
+typescript@^3.0.3:
+  version "3.0.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.0.3.tgz#4853b3e275ecdaa27f78fda46dc273a7eb7fc1c8"
 
 uid2@0.0.3:
   version "0.0.3"
