@@ -1,0 +1,15 @@
+{
+  "name": "webglutenfree-scripts",
+  "private": true,
+  "version": "0.0.8",
+  "description": "Auxiliary scripts for webglutenfree",
+  "author": "yanchith",
+  "license": "MIT",
+  "scripts": {
+    "parseobj": "node src/parseobj.js"
+  },
+  "devDependencies": {
+    "@types/node": "^10.9.4",
+    "three": "^0.96.0"
+  }
+}
