@@ -76,8 +76,7 @@ export declare class Target {
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
      *
-     * All drawing to the target should be done within the callback to prevent
-     * unnecessary rebinding.
+     * All writes/drawing to the target MUST be done within the callback.
      */
     with(cb: (rt: Target) => void): void;
     /**

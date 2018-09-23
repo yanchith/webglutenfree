@@ -90,8 +90,7 @@ export class Target {
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
      *
-     * All drawing to the target should be done within the callback to prevent
-     * unnecessary rebinding.
+     * All writes/drawing to the target MUST be done within the callback.
      */
     with(cb: (rt: Target) => void): void {
         const {
@@ -140,7 +139,10 @@ export class Target {
                 : this.surfaceHeight,
         }: TargetClearOptions = {},
     ): void {
-        const gl = this.dev._gl;
+        const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform clear");
+        }
 
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
@@ -178,7 +180,10 @@ export class Target {
             scissorHeight = dstHeight,
         }: TargetBlitOptions = {},
     ): void {
-        const { dev: { _gl: gl } } = this;
+        const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform blit");
+        }
 
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
@@ -239,6 +244,10 @@ export class Target {
         }: TargetDrawOptions = {},
     ): void {
         const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform draw");
+        }
+
         const {
             glProgram,
             depthTestDescr,
@@ -326,6 +335,10 @@ export class Target {
         }: TargetDrawOptions = {},
     ): void {
         const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform batch");
+        }
+
         const {
             glProgram,
             depthTestDescr,
@@ -355,6 +368,13 @@ export class Target {
         let i = 0;
 
         cb((attrs: Attributes, props: P) => {
+            if (!TARGET_BINDINGS.has(dev)) {
+                throw new Error("A target must be bound to batch draw");
+            }
+            if (!COMMAND_BINDINGS.has(dev)) {
+                throw new Error("A command must be bound to batch draw");
+            }
+
             i++;
 
             this.textures(textureAccessors, props, i);

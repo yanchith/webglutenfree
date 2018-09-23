@@ -961,8 +961,7 @@ class Target {
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
      *
-     * All drawing to the target should be done within the callback to prevent
-     * unnecessary rebinding.
+     * All writes/drawing to the target MUST be done within the callback.
      */
     with(cb) {
         const { dev, dev: { _gl: gl }, glFramebuffer, glDrawBuffers, } = this;
@@ -987,7 +986,10 @@ class Target {
         : this.surfaceWidth, scissorHeight = this.surfaceHeight === void 0
         ? this.dev._gl.drawingBufferHeight
         : this.surfaceHeight, } = {}) {
-        const gl = this.dev._gl;
+        const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform clear");
+        }
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
         if (bits & BufferBits.COLOR) {
             gl.clearColor(r, g, b, a);
@@ -1009,7 +1011,10 @@ class Target {
         : this.surfaceWidth, dstHeight = this.surfaceHeight === void 0
         ? this.dev._gl.drawingBufferHeight
         : this.surfaceHeight, filter = Filter.NEAREST, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
-        const { dev: { _gl: gl } } = this;
+        const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform blit");
+        }
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
         gl.blitFramebuffer(srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, bits, filter);
@@ -1028,6 +1033,9 @@ class Target {
         ? this.dev._gl.drawingBufferHeight
         : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
         const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform draw");
+        }
         const { glProgram, depthTestDescr, stencilTestDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         if (COMMAND_BINDINGS.has(dev)) {
             throw new Error("Command already bound, cannot bind twice");
@@ -1076,6 +1084,9 @@ class Target {
         ? this.dev._gl.drawingBufferHeight
         : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
         const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform batch");
+        }
         const { glProgram, depthTestDescr, stencilTestDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch
@@ -1090,6 +1101,12 @@ class Target {
         gl.useProgram(glProgram);
         let i = 0;
         cb((attrs, props) => {
+            if (!TARGET_BINDINGS.has(dev)) {
+                throw new Error("A target must be bound to batch draw");
+            }
+            if (!COMMAND_BINDINGS.has(dev)) {
+                throw new Error("A command must be bound to batch draw");
+            }
             i++;
             this.textures(textureAccessors, props, i);
             this.uniforms(uniformDescrs, props, i);
