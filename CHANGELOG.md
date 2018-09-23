@@ -6,6 +6,7 @@
 
 - Teach uniform validation mechanism about possible basic type array shorthands
 - Remove needless buffer copying in vertex/element buffers and texture
+- Obscure `process.env.NODE_ENV` shim to prevent rollup inlining it
 
 ### Enhancements
 
@@ -48,8 +49,6 @@
 ### Fixes
 
 - Add missing d.ts.
-
----
 
 ## v0.0.5 (22/02/2018)
 
