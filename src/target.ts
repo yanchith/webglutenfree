@@ -8,6 +8,26 @@ export type TextureAccessor<P> = import ("./command").TextureAccessor<P>;
 export type Attributes = import ("./attributes").Attributes;
 export type Framebuffer = import ("./framebuffer").Framebuffer;
 
+/**
+ * Tracks binding of `Target`s for each `Device`. Each `Device` must have at most
+ * one `Target` bound at any time. Nested target binding is not supported even
+ * though they are not prohibited by the shape of the API (they are expensive
+ * on some platforms):
+ *
+ * // This produces a runtime error
+ * fbo.target((fbort) => {
+ *     dev.target((rt) => rt.draw(...));
+ *     fbort.draw(...);
+ * });
+ *
+ * WeakSet is used instead of `private static` variables, as there can be
+ * multiple `Device`s.
+ */
+export const TARGET_BINDINGS = new WeakSet<Device>();
+
+const GL_NONE = 0;
+const DRAW_BUFFERS_NONE = [GL_NONE];
+
 export interface TargetClearOptions {
     r?: number;
     g?: number;
@@ -72,21 +92,25 @@ export class Target {
      */
     with(cb: (rt: Target) => void): void {
         const {
-            dev: {
-                _stackDrawBuffers,
-                _stackDrawFramebuffer,
-            },
+            dev,
+            dev: { _gl: gl },
             glFramebuffer,
             glDrawBuffers,
         } = this;
 
-        _stackDrawFramebuffer.push(glFramebuffer);
-        _stackDrawBuffers.push(glDrawBuffers);
+        if (TARGET_BINDINGS.has(dev)) {
+            throw new Error("a target for this device is already bound");
+        }
+
+        TARGET_BINDINGS.add(dev);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
+        gl.drawBuffers(glDrawBuffers);
 
         cb(this);
 
-        _stackDrawFramebuffer.pop();
-        _stackDrawBuffers.pop();
+        gl.drawBuffers(DRAW_BUFFERS_NONE);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+        TARGET_BINDINGS.delete(dev);
     }
 
     /**
@@ -111,16 +135,14 @@ export class Target {
                 : this.surfaceHeight,
         }: TargetClearOptions = {},
     ): void {
-        this.with(() => {
-            const gl = this.dev._gl;
+        const gl = this.dev._gl;
 
-            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
-            if (bits & BufferBits.COLOR) { gl.clearColor(r, g, b, a); }
-            if (bits & BufferBits.DEPTH) { gl.clearDepth(depth); }
-            if (bits & BufferBits.STENCIL) { gl.clearStencil(stencil); }
-            gl.clear(bits);
-        });
+        if (bits & BufferBits.COLOR) { gl.clearColor(r, g, b, a); }
+        if (bits & BufferBits.DEPTH) { gl.clearDepth(depth); }
+        if (bits & BufferBits.STENCIL) { gl.clearStencil(stencil); }
+        gl.clear(bits);
     }
 
 
@@ -153,23 +175,21 @@ export class Target {
     ): void {
         const { dev: { _gl: gl } } = this;
 
-        this.with(() => {
-            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
-            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-            gl.blitFramebuffer(
-                srcX,
-                srcY,
-                srcWidth,
-                srcHeight,
-                dstX,
-                dstY,
-                dstWidth,
-                dstHeight,
-                bits,
-                filter,
-            );
-            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-        });
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        gl.blitFramebuffer(
+            srcX,
+            srcY,
+            srcWidth,
+            srcHeight,
+            dstX,
+            dstY,
+            dstWidth,
+            dstHeight,
+            bits,
+            filter,
+        );
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     }
 
     /**
@@ -231,51 +251,49 @@ export class Target {
             uniformDescrs,
         } = cmd;
 
-        this.with(() => {
-            _stackDepthTest.push(depthDescr);
-            _stackStencilTest.push(stencilDescr);
-            _stackBlend.push(blendDescr);
-            _stackProgram.push(glProgram);
+        _stackDepthTest.push(depthDescr);
+        _stackStencilTest.push(stencilDescr);
+        _stackBlend.push(blendDescr);
+        _stackProgram.push(glProgram);
 
-            this.textures(textureAccessors, props, 0);
-            this.uniforms(uniformDescrs, props, 0);
+        this.textures(textureAccessors, props, 0);
+        this.uniforms(uniformDescrs, props, 0);
 
-            // Only bind the VAO if it is not null - we always assume we cleaned
-            // up after ourselves so it SHOULD be unbound prior to this point
-            if (attrs.glVertexArray) {
-                gl.bindVertexArray(attrs.glVertexArray);
-            }
+        // Only bind the VAO if it is not null - we always assume we cleaned
+        // up after ourselves so it SHOULD be unbound prior to this point
+        if (attrs.glVertexArray) {
+            gl.bindVertexArray(attrs.glVertexArray);
+        }
 
-            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
-            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
-            if (attrs.indexed) {
-                this.drawElements(
-                    attrs.primitive,
-                    attrs.elementCount,
-                    attrs.indexType!,
-                    0, // offset
-                    attrs.instanceCount,
-                );
-            } else {
-                this.drawArrays(
-                    attrs.primitive,
-                    attrs.count,
-                    0, // offset
-                    attrs.instanceCount,
-                );
-            }
+        if (attrs.indexed) {
+            this.drawElements(
+                attrs.primitive,
+                attrs.elementCount,
+                attrs.indexType!,
+                0, // offset
+                attrs.instanceCount,
+            );
+        } else {
+            this.drawArrays(
+                attrs.primitive,
+                attrs.count,
+                0, // offset
+                attrs.instanceCount,
+            );
+        }
 
-            // Clean up after ourselves if we bound something
-            if (attrs.glVertexArray) {
-                gl.bindVertexArray(null);
-            }
+        // Clean up after ourselves if we bound something
+        if (attrs.glVertexArray) {
+            gl.bindVertexArray(null);
+        }
 
-            _stackBlend.pop();
-            _stackStencilTest.pop();
-            _stackDepthTest.pop();
-            _stackProgram.pop();
-        });
+        _stackBlend.pop();
+        _stackStencilTest.pop();
+        _stackDepthTest.pop();
+        _stackProgram.pop();
     }
 
     /**
@@ -336,59 +354,56 @@ export class Target {
         let i = 0;
 
         cb((attrs: Attributes, props: P) => {
-            // with() ensures the original target is still bound
-            this.with(() => {
-                i++;
+            i++;
 
-                // Ensure the shared setup still holds
+            // Ensure the shared setup still holds
 
-                _stackDepthTest.push(depthDescr);
-                _stackStencilTest.push(stencilDescr);
-                _stackBlend.push(blendDescr);
-                _stackProgram.push(glProgram);
+            _stackDepthTest.push(depthDescr);
+            _stackStencilTest.push(stencilDescr);
+            _stackBlend.push(blendDescr);
+            _stackProgram.push(glProgram);
 
-                this.textures(textureAccessors, props, i);
-                this.uniforms(uniformDescrs, props, i);
+            this.textures(textureAccessors, props, i);
+            this.uniforms(uniformDescrs, props, i);
 
-                // Only bind the VAO if it is not null - we always assume we
-                // cleaned up after ourselves so it SHOULD be unbound prior to
-                // this point
-                if (attrs.glVertexArray) {
-                    gl.bindVertexArray(attrs.glVertexArray);
-                }
+            // Only bind the VAO if it is not null - we always assume we
+            // cleaned up after ourselves so it SHOULD be unbound prior to
+            // this point
+            if (attrs.glVertexArray) {
+                gl.bindVertexArray(attrs.glVertexArray);
+            }
 
-                gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
-                gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
-                if (attrs.indexed) {
-                    this.drawElements(
-                        attrs.primitive,
-                        attrs.elementCount,
-                        attrs.indexType!,
-                        0, // offset
-                        attrs.instanceCount,
-                    );
-                } else {
-                    this.drawArrays(
-                        attrs.primitive,
-                        attrs.count,
-                        0, // offset
-                        attrs.instanceCount,
-                    );
-                }
+            if (attrs.indexed) {
+                this.drawElements(
+                    attrs.primitive,
+                    attrs.elementCount,
+                    attrs.indexType!,
+                    0, // offset
+                    attrs.instanceCount,
+                );
+            } else {
+                this.drawArrays(
+                    attrs.primitive,
+                    attrs.count,
+                    0, // offset
+                    attrs.instanceCount,
+                );
+            }
 
-                // Clean up after ourselves if we bound something. We can't
-                // leave this bound as an optimisation, as we assume everywhere
-                // it is not bound in beginning of our methods.
-                if (attrs.glVertexArray) {
-                    gl.bindVertexArray(null);
-                }
+            // Clean up after ourselves if we bound something. We can't
+            // leave this bound as an optimisation, as we assume everywhere
+            // it is not bound in beginning of our methods.
+            if (attrs.glVertexArray) {
+                gl.bindVertexArray(null);
+            }
 
-                _stackProgram.pop();
-                _stackBlend.pop();
-                _stackStencilTest.pop();
-                _stackDepthTest.pop();
-            });
+            _stackProgram.pop();
+            _stackBlend.pop();
+            _stackStencilTest.pop();
+            _stackDepthTest.pop();
         });
 
         _stackProgram.pop();

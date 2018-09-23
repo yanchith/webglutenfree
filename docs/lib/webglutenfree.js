@@ -336,6 +336,24 @@ class Stack {
 }
 
 /**
+ * Tracks binding of `Target`s for each `Device`. Each `Device` must have at most
+ * one `Target` bound at any time. Nested target binding is not supported even
+ * though they are not prohibited by the shape of the API (they are expensive
+ * on some platforms):
+ *
+ * // This produces a runtime error
+ * fbo.target((fbort) => {
+ *     dev.target((rt) => rt.draw(...));
+ *     fbort.draw(...);
+ * });
+ *
+ * WeakSet is used instead of `private static` variables, as there can be
+ * multiple `Device`s.
+ */
+const TARGET_BINDINGS = new WeakSet();
+const GL_NONE = 0;
+const DRAW_BUFFERS_NONE = [GL_NONE];
+/**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
  */
@@ -355,12 +373,17 @@ class Target {
      * unnecessary rebinding.
      */
     with(cb) {
-        const { dev: { _stackDrawBuffers, _stackDrawFramebuffer, }, glFramebuffer, glDrawBuffers, } = this;
-        _stackDrawFramebuffer.push(glFramebuffer);
-        _stackDrawBuffers.push(glDrawBuffers);
+        const { dev, dev: { _gl: gl }, glFramebuffer, glDrawBuffers, } = this;
+        if (TARGET_BINDINGS.has(dev)) {
+            throw new Error("a target for this device is already bound");
+        }
+        TARGET_BINDINGS.add(dev);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
+        gl.drawBuffers(glDrawBuffers);
         cb(this);
-        _stackDrawFramebuffer.pop();
-        _stackDrawBuffers.pop();
+        gl.drawBuffers(DRAW_BUFFERS_NONE);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+        TARGET_BINDINGS.delete(dev);
     }
     /**
      * Clear selected buffers to provided values.
@@ -370,20 +393,18 @@ class Target {
         : this.surfaceWidth, scissorHeight = this.surfaceHeight === void 0
         ? this.dev._gl.drawingBufferHeight
         : this.surfaceHeight, } = {}) {
-        this.with(() => {
-            const gl = this.dev._gl;
-            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-            if (bits & BufferBits.COLOR) {
-                gl.clearColor(r, g, b, a);
-            }
-            if (bits & BufferBits.DEPTH) {
-                gl.clearDepth(depth);
-            }
-            if (bits & BufferBits.STENCIL) {
-                gl.clearStencil(stencil);
-            }
-            gl.clear(bits);
-        });
+        const gl = this.dev._gl;
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        if (bits & BufferBits.COLOR) {
+            gl.clearColor(r, g, b, a);
+        }
+        if (bits & BufferBits.DEPTH) {
+            gl.clearDepth(depth);
+        }
+        if (bits & BufferBits.STENCIL) {
+            gl.clearStencil(stencil);
+        }
+        gl.clear(bits);
     }
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
@@ -394,13 +415,11 @@ class Target {
         : this.surfaceWidth, dstHeight = this.surfaceHeight === void 0
         ? this.dev._gl.drawingBufferHeight
         : this.surfaceHeight, filter = Filter.NEAREST, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
-        const { dev: { _gl: gl, _stackReadFramebuffer } } = this;
-        this.with(() => {
-            _stackReadFramebuffer.push(source.glFramebuffer);
-            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-            gl.blitFramebuffer(srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, bits, filter);
-            _stackReadFramebuffer.pop();
-        });
+        const { dev: { _gl: gl } } = this;
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        gl.blitFramebuffer(srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, bits, filter);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     }
     /**
      * Draw to this target with a command, attributes, and command properties.
@@ -414,33 +433,37 @@ class Target {
         : this.surfaceWidth, viewportHeight = this.surfaceHeight === void 0
         ? this.dev._gl.drawingBufferHeight
         : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
-        const { dev: { _gl: gl, _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
+        const { dev: { _gl: gl, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
-        this.with(() => {
-            _stackDepthTest.push(depthDescr);
-            _stackStencilTest.push(stencilDescr);
-            _stackBlend.push(blendDescr);
-            _stackProgram.push(glProgram);
-            this.textures(textureAccessors, props, 0);
-            this.uniforms(uniformDescrs, props, 0);
-            // Note that attrs.glVertexArray may be null for empty attrs -> ok
-            _stackVertexArray.push(attrs.glVertexArray);
-            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
-            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-            if (attrs.indexed) {
-                this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
-                attrs.instanceCount);
-            }
-            else {
-                this.drawArrays(attrs.primitive, attrs.count, 0, // offset
-                attrs.instanceCount);
-            }
-            _stackVertexArray.pop();
-            _stackBlend.pop();
-            _stackStencilTest.pop();
-            _stackDepthTest.pop();
-            _stackProgram.pop();
-        });
+        _stackDepthTest.push(depthDescr);
+        _stackStencilTest.push(stencilDescr);
+        _stackBlend.push(blendDescr);
+        _stackProgram.push(glProgram);
+        this.textures(textureAccessors, props, 0);
+        this.uniforms(uniformDescrs, props, 0);
+        // Only bind the VAO if it is not null - we always assume we cleaned
+        // up after ourselves so it SHOULD be unbound prior to this point
+        if (attrs.glVertexArray) {
+            gl.bindVertexArray(attrs.glVertexArray);
+        }
+        gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        if (attrs.indexed) {
+            this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
+            attrs.instanceCount);
+        }
+        else {
+            this.drawArrays(attrs.primitive, attrs.count, 0, // offset
+            attrs.instanceCount);
+        }
+        // Clean up after ourselves if we bound something
+        if (attrs.glVertexArray) {
+            gl.bindVertexArray(null);
+        }
+        _stackBlend.pop();
+        _stackStencilTest.pop();
+        _stackDepthTest.pop();
+        _stackProgram.pop();
     }
     /**
      * Perform multiple draws to this target with the same command, but multiple
@@ -455,7 +478,7 @@ class Target {
         : this.surfaceWidth, viewportHeight = this.surfaceHeight === void 0
         ? this.dev._gl.drawingBufferHeight
         : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
-        const { dev: { _gl: gl, _stackVertexArray, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
+        const { dev: { _gl: gl, _stackProgram, _stackDepthTest, _stackStencilTest, _stackBlend, }, } = this;
         const { glProgram, depthDescr, stencilDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch, unless API
@@ -467,33 +490,40 @@ class Target {
         _stackProgram.push(glProgram);
         let i = 0;
         cb((attrs, props) => {
-            // with() ensures the original target is still bound
-            this.with(() => {
-                i++;
-                // Ensure the shared setup still holds
-                _stackDepthTest.push(depthDescr);
-                _stackStencilTest.push(stencilDescr);
-                _stackBlend.push(blendDescr);
-                _stackProgram.push(glProgram);
-                this.textures(textureAccessors, props, i);
-                this.uniforms(uniformDescrs, props, i);
-                _stackVertexArray.push(attrs.glVertexArray);
-                gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
-                gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-                if (attrs.indexed) {
-                    this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
-                    attrs.instanceCount);
-                }
-                else {
-                    this.drawArrays(attrs.primitive, attrs.count, 0, // offset
-                    attrs.instanceCount);
-                }
-                _stackVertexArray.pop();
-                _stackProgram.pop();
-                _stackBlend.pop();
-                _stackStencilTest.pop();
-                _stackDepthTest.pop();
-            });
+            i++;
+            // Ensure the shared setup still holds
+            _stackDepthTest.push(depthDescr);
+            _stackStencilTest.push(stencilDescr);
+            _stackBlend.push(blendDescr);
+            _stackProgram.push(glProgram);
+            this.textures(textureAccessors, props, i);
+            this.uniforms(uniformDescrs, props, i);
+            // Only bind the VAO if it is not null - we always assume we
+            // cleaned up after ourselves so it SHOULD be unbound prior to
+            // this point
+            if (attrs.glVertexArray) {
+                gl.bindVertexArray(attrs.glVertexArray);
+            }
+            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+            if (attrs.indexed) {
+                this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
+                attrs.instanceCount);
+            }
+            else {
+                this.drawArrays(attrs.primitive, attrs.count, 0, // offset
+                attrs.instanceCount);
+            }
+            // Clean up after ourselves if we bound something. We can't
+            // leave this bound as an optimisation, as we assume everywhere
+            // it is not bound in beginning of our methods.
+            if (attrs.glVertexArray) {
+                gl.bindVertexArray(null);
+            }
+            _stackProgram.pop();
+            _stackBlend.pop();
+            _stackStencilTest.pop();
+            _stackDepthTest.pop();
         });
         _stackProgram.pop();
         _stackBlend.pop();
@@ -1446,7 +1476,6 @@ class Device {
         this.explicitViewportHeight = explicitViewportHeight;
         this.update();
         this.backbufferTarget = new Target(this, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        this._stackVertexArray = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindVertexArray(val));
         this._stackProgram = new Stack(null, (prev, val) => prev !== val, (val) => gl.useProgram(val));
         this._stackDepthTest = new Stack(null, (prev, val) => !DepthDescriptor.equals(prev, val), (val) => {
             if (val) {
@@ -1488,12 +1517,6 @@ class Device {
                 gl.disable(gl.BLEND);
             }
         });
-        // Note: DRAW_FRAMEBUFFER and READ_FRAMEBUFFER are handled separately
-        // to support blitting. In library code, gl.FRAMEBUFFER target must
-        // never be used, as it overwrites READ_FRAMEBUFFER and DRAW_FRAMEBUFFER
-        this._stackDrawFramebuffer = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val));
-        this._stackReadFramebuffer = new Stack(null, (prev, val) => prev !== val, (val) => gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val));
-        this._stackDrawBuffers = new Stack([gl.BACK], (prev, val) => !eqNumberArrays(prev, val), (val) => gl.drawBuffers(val));
         // Enable scissor test globally. Practically everywhere you would want
         // it disbled you can pass explicit scissor box instead. The impact on
         // perf is negligent
@@ -1581,20 +1604,6 @@ function createDebugFunc(gl, key) {
         console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
         return gl[key].apply(gl, arguments);
     };
-}
-function eqNumberArrays(left, right) {
-    if (left === right) {
-        return true;
-    }
-    if (left.length !== right.length) {
-        return false;
-    }
-    for (let i = 0; i < left.length; i++) {
-        if (left[i] !== right[i]) {
-            return false;
-        }
-    }
-    return true;
 }
 
 /**
@@ -1948,34 +1957,34 @@ class Attributes {
         if (this.hasAttribs()) {
             return;
         }
-        const { dev: { _gl, _stackVertexArray }, attributes, elementBuffer, } = this;
-        const vao = _gl.createVertexArray();
-        _stackVertexArray.push(vao);
+        const { dev: { _gl: gl }, attributes, elementBuffer } = this;
+        const vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
         attributes.forEach(({ location, type, buffer: { glBuffer, type: glBufferType }, size, normalized = false, divisor, }) => {
             // Enable sending attribute arrays for location
-            _gl.enableVertexAttribArray(location);
+            gl.enableVertexAttribArray(location);
             // Send buffer
-            _gl.bindBuffer(_gl.ARRAY_BUFFER, glBuffer);
+            gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
             switch (type) {
                 case AttributeType.POINTER:
-                    _gl.vertexAttribPointer(location, size, glBufferType, normalized, 0, 0);
+                    gl.vertexAttribPointer(location, size, glBufferType, normalized, 0, 0);
                     break;
                 case AttributeType.IPOINTER:
-                    _gl.vertexAttribIPointer(location, size, glBufferType, 0, 0);
+                    gl.vertexAttribIPointer(location, size, glBufferType, 0, 0);
                     break;
                 default: unreachable(type);
             }
             if (divisor) {
-                _gl.vertexAttribDivisor(location, divisor);
+                gl.vertexAttribDivisor(location, divisor);
             }
         });
         if (elementBuffer) {
-            _gl.bindBuffer(_gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
         }
-        _stackVertexArray.pop();
-        _gl.bindBuffer(_gl.ARRAY_BUFFER, null);
+        gl.bindVertexArray(null);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
         if (elementBuffer) {
-            _gl.bindBuffer(_gl.ELEMENT_ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         }
         this.glVertexArray = vao;
     }
@@ -2187,42 +2196,46 @@ class Framebuffer {
         }
     }
     init() {
-        const { width, height, dev, dev: { _gl, _stackDrawFramebuffer }, glColorAttachments, colors, depthStencil, } = this;
-        const fbo = _gl.createFramebuffer();
-        _stackDrawFramebuffer.push(fbo);
+        const { width, height, dev, dev: { _gl: gl }, glColorAttachments, colors, depthStencil, } = this;
+        // This would overwrite a the currently bound `Target`s FBO
+        if (TARGET_BINDINGS.has(dev)) {
+            throw new Error("Cannot bind framebuffers while a Target is bound");
+        }
+        const fbo = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
         colors.forEach((buffer, i) => {
-            _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.COLOR_ATTACHMENT0 + i, _gl.TEXTURE_2D, buffer.glTexture, 0);
+            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
         });
         if (depthStencil) {
             switch (depthStencil.format) {
                 case InternalFormat.DEPTH24_STENCIL8:
                 case InternalFormat.DEPTH32F_STENCIL8:
-                    _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.DEPTH_STENCIL_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
+                    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
                 case InternalFormat.DEPTH_COMPONENT16:
                 case InternalFormat.DEPTH_COMPONENT24:
                 case InternalFormat.DEPTH_COMPONENT32F:
-                    _gl.framebufferTexture2D(_gl.DRAW_FRAMEBUFFER, _gl.DEPTH_ATTACHMENT, _gl.TEXTURE_2D, depthStencil.glTexture, 0);
+                    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
                 default: unreachable(depthStencil, (p) => {
                     return `Unsupported attachment: ${p}`;
                 });
             }
         }
-        const status = _gl.checkFramebufferStatus(_gl.DRAW_FRAMEBUFFER);
-        _stackDrawFramebuffer.pop();
-        if (status !== _gl.FRAMEBUFFER_COMPLETE) {
-            _gl.deleteFramebuffer(fbo);
+        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+        if (status !== gl.FRAMEBUFFER_COMPLETE) {
+            gl.deleteFramebuffer(fbo);
             switch (status) {
-                case _gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
                     throw new Error("FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-                case _gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
                     throw new Error("FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-                case _gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+                case gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
                     throw new Error("FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
-                case _gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+                case gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
                     throw new Error("FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
-                case _gl.FRAMEBUFFER_UNSUPPORTED:
+                case gl.FRAMEBUFFER_UNSUPPORTED:
                     throw new Error("FRAMEBUFFER_UNSUPPORTED");
                 default: throw new Error("Framebuffer incomplete");
             }

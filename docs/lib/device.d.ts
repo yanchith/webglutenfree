@@ -60,14 +60,10 @@ export declare class Device {
     static withContext(gl: WebGL2RenderingContext, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, }?: DeviceWithContextOptions): Device;
     readonly _gl: WebGL2RenderingContext;
     readonly _canvas: HTMLCanvasElement;
-    readonly _stackVertexArray: Stack<WebGLVertexArrayObject | null>;
     readonly _stackProgram: Stack<WebGLProgram | null>;
     readonly _stackDepthTest: Stack<DepthDescriptor | null>;
     readonly _stackStencilTest: Stack<StencilDescriptor | null>;
     readonly _stackBlend: Stack<BlendDescriptor | null>;
-    readonly _stackDrawFramebuffer: Stack<WebGLFramebuffer | null>;
-    readonly _stackReadFramebuffer: Stack<WebGLFramebuffer | null>;
-    readonly _stackDrawBuffers: Stack<number[]>;
     private explicitPixelRatio?;
     private explicitViewportWidth?;
     private explicitViewportHeight?;

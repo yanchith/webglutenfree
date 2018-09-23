@@ -157,9 +157,6 @@ export class Device {
     readonly _stackStencilTest: Stack<StencilDescriptor | null>;
     readonly _stackBlend: Stack<BlendDescriptor | null>;
 
-    readonly _stackDrawFramebuffer: Stack<WebGLFramebuffer | null>;
-    readonly _stackDrawBuffers: Stack<number[]>;
-
     private explicitPixelRatio?: number;
     private explicitViewportWidth?: number;
     private explicitViewportHeight?: number;
@@ -274,22 +271,6 @@ export class Device {
             },
         );
 
-        // Note: DRAW_FRAMEBUFFER and READ_FRAMEBUFFER are handled separately
-        // to support blitting. In library code, gl.FRAMEBUFFER target must
-        // never be used, as it overwrites READ_FRAMEBUFFER and DRAW_FRAMEBUFFER
-
-        this._stackDrawFramebuffer = new Stack<WebGLFramebuffer | null>(
-            null,
-            (prev, val) => prev !== val,
-            (val) => gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val),
-        );
-
-        this._stackDrawBuffers = new Stack<number[]>(
-            [gl.BACK],
-            (prev, val) => !eqNumberArrays(prev, val),
-            (val) => gl.drawBuffers(val),
-        );
-
         // Enable scissor test globally. Practically everywhere you would want
         // it disbled you can pass explicit scissor box instead. The impact on
         // perf is negligent
@@ -383,13 +364,4 @@ function createDebugFunc(gl: any, key: string): (...args: any[]) => any {
         console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
         return gl[key].apply(gl, arguments);
     };
-}
-
-function eqNumberArrays(left: number[], right: number[]): boolean {
-    if (left === right) { return true; }
-    if (left.length !== right.length) { return false; }
-    for (let i = 0; i < left.length; i++) {
-        if (left[i] !== right[i]) { return false; }
-    }
-    return true;
 }

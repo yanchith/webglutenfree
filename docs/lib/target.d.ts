@@ -5,6 +5,22 @@ export declare type UniformDescriptor<P> = import("./command").UniformDescriptor
 export declare type TextureAccessor<P> = import("./command").TextureAccessor<P>;
 export declare type Attributes = import("./attributes").Attributes;
 export declare type Framebuffer = import("./framebuffer").Framebuffer;
+/**
+ * Tracks binding of `Target`s for each `Device`. Each `Device` must have at most
+ * one `Target` bound at any time. Nested target binding is not supported even
+ * though they are not prohibited by the shape of the API (they are expensive
+ * on some platforms):
+ *
+ * // This produces a runtime error
+ * fbo.target((fbort) => {
+ *     dev.target((rt) => rt.draw(...));
+ *     fbort.draw(...);
+ * });
+ *
+ * WeakSet is used instead of `private static` variables, as there can be
+ * multiple `Device`s.
+ */
+export declare const TARGET_BINDINGS: WeakSet<import("./device").Device>;
 export interface TargetClearOptions {
     r?: number;
     g?: number;

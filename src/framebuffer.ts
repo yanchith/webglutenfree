@@ -1,6 +1,6 @@
 import * as assert from "./util/assert";
 import { InternalFormat } from "./types";
-import { Target } from "./target";
+import { Target, TARGET_BINDINGS } from "./target";
 
 export type Device = import ("./device").Device;
 export type Texture<F> = import ("./texture").Texture<F>;
@@ -183,21 +183,25 @@ export class Framebuffer {
             width,
             height,
             dev,
-            dev: { _gl, _stackDrawFramebuffer },
+            dev: { _gl: gl },
             glColorAttachments,
             colors,
             depthStencil,
         } = this;
 
-        const fbo = _gl.createFramebuffer();
+        // This would overwrite a the currently bound `Target`s FBO
+        if (TARGET_BINDINGS.has(dev)) {
+            throw new Error("Cannot bind framebuffers while a Target is bound");
+        }
 
-        _stackDrawFramebuffer.push(fbo);
+        const fbo = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
 
         colors.forEach((buffer, i) => {
-            _gl.framebufferTexture2D(
-                _gl.DRAW_FRAMEBUFFER,
-                _gl.COLOR_ATTACHMENT0 + i,
-                _gl.TEXTURE_2D,
+            gl.framebufferTexture2D(
+                gl.DRAW_FRAMEBUFFER,
+                gl.COLOR_ATTACHMENT0 + i,
+                gl.TEXTURE_2D,
                 buffer.glTexture,
                 0,
             );
@@ -207,10 +211,10 @@ export class Framebuffer {
             switch (depthStencil.format) {
                 case InternalFormat.DEPTH24_STENCIL8:
                 case InternalFormat.DEPTH32F_STENCIL8:
-                    _gl.framebufferTexture2D(
-                        _gl.DRAW_FRAMEBUFFER,
-                        _gl.DEPTH_STENCIL_ATTACHMENT,
-                        _gl.TEXTURE_2D,
+                    gl.framebufferTexture2D(
+                        gl.DRAW_FRAMEBUFFER,
+                        gl.DEPTH_STENCIL_ATTACHMENT,
+                        gl.TEXTURE_2D,
                         depthStencil.glTexture,
                         0,
                     );
@@ -218,10 +222,10 @@ export class Framebuffer {
                 case InternalFormat.DEPTH_COMPONENT16:
                 case InternalFormat.DEPTH_COMPONENT24:
                 case InternalFormat.DEPTH_COMPONENT32F:
-                    _gl.framebufferTexture2D(
-                        _gl.DRAW_FRAMEBUFFER,
-                        _gl.DEPTH_ATTACHMENT,
-                        _gl.TEXTURE_2D,
+                    gl.framebufferTexture2D(
+                        gl.DRAW_FRAMEBUFFER,
+                        gl.DEPTH_ATTACHMENT,
+                        gl.TEXTURE_2D,
                         depthStencil.glTexture,
                         0,
                     );
@@ -232,22 +236,22 @@ export class Framebuffer {
             }
         }
 
-        const status = _gl.checkFramebufferStatus(_gl.DRAW_FRAMEBUFFER);
+        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
 
-        _stackDrawFramebuffer.pop();
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
-        if (status !== _gl.FRAMEBUFFER_COMPLETE) {
-            _gl.deleteFramebuffer(fbo);
+        if (status !== gl.FRAMEBUFFER_COMPLETE) {
+            gl.deleteFramebuffer(fbo);
             switch (status) {
-                case _gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
                     throw new Error("FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-                case _gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
                     throw new Error("FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-                case _gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+                case gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
                     throw new Error("FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
-                case _gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+                case gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
                     throw new Error("FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
-                case _gl.FRAMEBUFFER_UNSUPPORTED:
+                case gl.FRAMEBUFFER_UNSUPPORTED:
                     throw new Error("FRAMEBUFFER_UNSUPPORTED");
                 default: throw new Error("Framebuffer incomplete");
             }
