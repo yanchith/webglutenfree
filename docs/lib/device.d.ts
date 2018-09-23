@@ -1,7 +1,5 @@
 /// <reference types="webgl2" />
-import { Stack } from "./util/stack";
 import { Target } from "./target";
-import { DepthDescriptor, StencilDescriptor, BlendDescriptor } from "./command";
 export interface DeviceCreateOptions {
     element?: HTMLElement;
     alpha?: boolean;
@@ -60,10 +58,6 @@ export declare class Device {
     static withContext(gl: WebGL2RenderingContext, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, }?: DeviceWithContextOptions): Device;
     readonly _gl: WebGL2RenderingContext;
     readonly _canvas: HTMLCanvasElement;
-    readonly _stackProgram: Stack<WebGLProgram | null>;
-    readonly _stackDepthTest: Stack<DepthDescriptor | null>;
-    readonly _stackStencilTest: Stack<StencilDescriptor | null>;
-    readonly _stackBlend: Stack<BlendDescriptor | null>;
     private explicitPixelRatio?;
     private explicitViewportWidth?;
     private explicitViewportHeight?;

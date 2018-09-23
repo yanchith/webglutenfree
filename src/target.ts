@@ -1,8 +1,12 @@
 import * as assert from "./util/assert";
+import { COMMAND_BINDINGS } from "./command";
 import { BufferBits, Filter, Primitive } from "./types";
 
 export type Device = import ("./device").Device;
 export type Command<P> = import ("./command").Command<P>;
+export type DepthTestDescriptor = import ("./command").DepthTestDescriptor;
+export type StencilTestDescriptor = import ("./command").StencilTestDescriptor;
+export type BlendDescriptor = import ("./command").BlendDescriptor;
 export type UniformDescriptor<P> = import ("./command").UniformDescriptor<P>;
 export type TextureAccessor<P> = import ("./command").TextureAccessor<P>;
 export type Attributes = import ("./attributes").Attributes;
@@ -11,8 +15,7 @@ export type Framebuffer = import ("./framebuffer").Framebuffer;
 /**
  * Tracks binding of `Target`s for each `Device`. Each `Device` must have at most
  * one `Target` bound at any time. Nested target binding is not supported even
- * though they are not prohibited by the shape of the API (they are expensive
- * on some platforms):
+ * though it is not prohibited by the shape of the API:
  *
  * // This produces a runtime error
  * fbo.target((fbort) => {
@@ -21,7 +24,7 @@ export type Framebuffer = import ("./framebuffer").Framebuffer;
  * });
  *
  * WeakSet is used instead of `private static` variables, as there can be
- * multiple `Device`s.
+ * multiple `Device`s owning the targets.
  */
 export const TARGET_BINDINGS = new WeakSet<Device>();
 
@@ -98,8 +101,10 @@ export class Target {
             glDrawBuffers,
         } = this;
 
+        // We would overwrite the currently bound DRAW_FRAMEBUFFER unless we
+        // checked
         if (TARGET_BINDINGS.has(dev)) {
-            throw new Error("a target for this device is already bound");
+            throw new Error("A target for this device is already bound");
         }
 
         TARGET_BINDINGS.add(dev);
@@ -233,28 +238,25 @@ export class Target {
             scissorHeight = viewportHeight,
         }: TargetDrawOptions = {},
     ): void {
-        const {
-            dev: {
-                _gl: gl,
-                _stackProgram,
-                _stackDepthTest,
-                _stackStencilTest,
-                _stackBlend,
-            },
-        } = this;
+        const { dev, dev: { _gl: gl } } = this;
         const {
             glProgram,
-            depthDescr,
-            stencilDescr,
+            depthTestDescr,
+            stencilTestDescr,
             blendDescr,
             textureAccessors,
             uniformDescrs,
         } = cmd;
 
-        _stackDepthTest.push(depthDescr);
-        _stackStencilTest.push(stencilDescr);
-        _stackBlend.push(blendDescr);
-        _stackProgram.push(glProgram);
+        if (COMMAND_BINDINGS.has(dev)) {
+            throw new Error("Command already bound, cannot bind twice");
+        }
+
+        this.depthTest(depthTestDescr);
+        this.stencilTest(stencilTestDescr);
+        this.blend(blendDescr);
+
+        gl.useProgram(glProgram);
 
         this.textures(textureAccessors, props, 0);
         this.uniforms(uniformDescrs, props, 0);
@@ -290,10 +292,11 @@ export class Target {
             gl.bindVertexArray(null);
         }
 
-        _stackBlend.pop();
-        _stackStencilTest.pop();
-        _stackDepthTest.pop();
-        _stackProgram.pop();
+        gl.useProgram(null);
+
+        this.blend(null);
+        this.stencilTest(null);
+        this.depthTest(null);
     }
 
     /**
@@ -322,46 +325,37 @@ export class Target {
             scissorHeight = viewportHeight,
         }: TargetDrawOptions = {},
     ): void {
-        const {
-            dev: {
-                _gl: gl,
-                _stackProgram,
-                _stackDepthTest,
-                _stackStencilTest,
-                _stackBlend,
-            },
-        } = this;
+        const { dev, dev: { _gl: gl } } = this;
         const {
             glProgram,
-            depthDescr,
-            stencilDescr,
+            depthTestDescr,
+            stencilTestDescr,
             blendDescr,
             textureAccessors,
             uniformDescrs,
         } = cmd;
 
         // The price for gl.useProgram, enabling depth/stencil tests and
-        // blending is paid only once for all draw calls in batch, unless API
-        // is badly abused and the draw() callback is called outside ot batch()
+        // blending is paid only once for all draw calls in batch
 
-        // Perform shared batch setup
+        // Perform shared batch setup, but first ensure no concurrency
 
-        _stackDepthTest.push(depthDescr);
-        _stackStencilTest.push(stencilDescr);
-        _stackBlend.push(blendDescr);
-        _stackProgram.push(glProgram);
+        if (COMMAND_BINDINGS.has(dev)) {
+            throw new Error("Command already bound, cannot bind twice");
+        }
+
+        COMMAND_BINDINGS.add(dev);
+
+        this.depthTest(depthTestDescr);
+        this.stencilTest(stencilTestDescr);
+        this.blend(blendDescr);
+
+        gl.useProgram(glProgram);
 
         let i = 0;
 
         cb((attrs: Attributes, props: P) => {
             i++;
-
-            // Ensure the shared setup still holds
-
-            _stackDepthTest.push(depthDescr);
-            _stackStencilTest.push(stencilDescr);
-            _stackBlend.push(blendDescr);
-            _stackProgram.push(glProgram);
 
             this.textures(textureAccessors, props, i);
             this.uniforms(uniformDescrs, props, i);
@@ -399,17 +393,15 @@ export class Target {
             if (attrs.glVertexArray) {
                 gl.bindVertexArray(null);
             }
-
-            _stackProgram.pop();
-            _stackBlend.pop();
-            _stackStencilTest.pop();
-            _stackDepthTest.pop();
         });
 
-        _stackProgram.pop();
-        _stackBlend.pop();
-        _stackStencilTest.pop();
-        _stackDepthTest.pop();
+        gl.useProgram(null);
+
+        this.blend(null);
+        this.stencilTest(null);
+        this.depthTest(null);
+
+        COMMAND_BINDINGS.delete(dev);
     }
 
     private drawArrays(
@@ -598,6 +590,76 @@ export class Target {
                     break;
             }
         });
+    }
+
+    private depthTest(desc: DepthTestDescriptor | null): void {
+        const gl = this.dev._gl;
+        if (desc) {
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(desc.func);
+            gl.depthMask(desc.mask);
+            gl.depthRange(desc.rangeStart, desc.rangeEnd);
+        } else { gl.disable(gl.DEPTH_TEST); }
+    }
+
+    private stencilTest(desc: StencilTestDescriptor | null): void {
+        const gl = this.dev._gl;
+        if (desc) {
+            const {
+                fFn,
+                bFn,
+                fFnRef,
+                bFnRef,
+                fFnMask,
+                bFnMask,
+                fMask,
+                bMask,
+                fOpFail,
+                bOpFail,
+                fOpZFail,
+                bOpZFail,
+                fOpZPass,
+                bOpZPass,
+            } = desc;
+            gl.enable(gl.STENCIL_TEST);
+            gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
+            gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
+            gl.stencilMaskSeparate(gl.FRONT, fMask);
+            gl.stencilMaskSeparate(gl.BACK, bMask);
+            gl.stencilOpSeparate(
+                gl.FRONT,
+                fOpFail,
+                fOpZFail,
+                fOpZPass,
+            );
+            gl.stencilOpSeparate(
+                gl.BACK,
+                bOpFail,
+                bOpZFail,
+                bOpZPass,
+            );
+        } else { gl.disable(gl.STENCIL_TEST); }
+    }
+
+    private blend(desc: BlendDescriptor | null): void {
+        const gl = this.dev._gl;
+        if (desc) {
+            gl.enable(gl.BLEND);
+            gl.blendFuncSeparate(
+                desc.srcRGB,
+                desc.dstRGB,
+                desc.srcAlpha,
+                desc.dstAlpha,
+            );
+            gl.blendEquationSeparate(
+                desc.eqnRGB,
+                desc.eqnAlpha,
+            );
+            if (desc.color) {
+                const [r, g, b, a] = desc.color;
+                gl.blendColor(r, g, b, a);
+            }
+        } else { gl.disable(gl.BLEND); }
     }
 }
 

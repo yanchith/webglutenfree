@@ -2,6 +2,22 @@ import { TextureInternalFormat } from "./texture";
 export declare type Device = import("./device").Device;
 export declare type Texture<T> = import("./texture").Texture<T>;
 export declare type AttributesConfig = import("./attributes").AttributesConfig;
+/**
+ * Tracks binding of `Command`s for each `Device`. Each `Device` must have at
+ * most one `Command` bound at any time. Nested command binding is not supported
+ * even though it is not prohibited by the shape of the API:
+ *
+ * // This produces a runtime error
+ * dev.target((rt) => {
+ *     rt.batch(cmd, (draw) => {
+ *         rt.draw(cmd, attrs, props);
+ *     });
+ * });
+ *
+ * WeakSet is used instead of `private static` variables, as there can be
+ * multiple `Device`s owning the commands.
+ */
+export declare const COMMAND_BINDINGS: WeakSet<import("./device").Device>;
 export declare type Accessor<P, R> = R | ((props: P, index: number) => R);
 export declare type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
 export interface Textures<P> {
@@ -213,8 +229,8 @@ export declare enum BlendEquation {
 export declare class Command<P> {
     static create<P = void>(dev: Device, vert: string, frag: string, { textures, uniforms, depth, stencil, blend, }?: CommandOptions<P>): Command<P>;
     readonly glProgram: WebGLProgram | null;
-    readonly depthDescr: DepthDescriptor | null;
-    readonly stencilDescr: StencilDescriptor | null;
+    readonly depthTestDescr: DepthTestDescriptor | null;
+    readonly stencilTestDescr: StencilTestDescriptor | null;
     readonly blendDescr: BlendDescriptor | null;
     readonly textureAccessors: TextureAccessor<P>[];
     readonly uniformDescrs: UniformDescriptor<P>[];
@@ -235,15 +251,14 @@ export declare class Command<P> {
     locate(attributes: AttributesConfig): AttributesConfig;
     private init;
 }
-export declare class DepthDescriptor {
+export declare class DepthTestDescriptor {
     readonly func: number;
     readonly mask: boolean;
     readonly rangeStart: number;
     readonly rangeEnd: number;
-    static equals(left: DepthDescriptor | null, right: DepthDescriptor | null): boolean;
     constructor(func: number, mask: boolean, rangeStart: number, rangeEnd: number);
 }
-export declare class StencilDescriptor {
+export declare class StencilTestDescriptor {
     readonly fFn: number;
     readonly bFn: number;
     readonly fFnRef: number;
@@ -258,7 +273,6 @@ export declare class StencilDescriptor {
     readonly bOpZFail: number;
     readonly fOpZPass: number;
     readonly bOpZPass: number;
-    static equals(left: StencilDescriptor | null, right: StencilDescriptor | null): boolean;
     constructor(fFn: number, bFn: number, fFnRef: number, bFnRef: number, fFnMask: number, bFnMask: number, fMask: number, bMask: number, fOpFail: number, bOpFail: number, fOpZFail: number, bOpZFail: number, fOpZPass: number, bOpZPass: number);
 }
 export declare class BlendDescriptor {
@@ -269,7 +283,6 @@ export declare class BlendDescriptor {
     readonly eqnRGB: number;
     readonly eqnAlpha: number;
     readonly color?: [number, number, number, number] | undefined;
-    static equals(left: BlendDescriptor | null, right: BlendDescriptor | null): boolean;
     constructor(srcRGB: number, srcAlpha: number, dstRGB: number, dstAlpha: number, eqnRGB: number, eqnAlpha: number, color?: [number, number, number, number] | undefined);
 }
 export declare class UniformDescriptor<P> {

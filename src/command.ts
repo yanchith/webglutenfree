@@ -9,6 +9,23 @@ export type AttributesConfig = import ("./attributes").AttributesConfig;
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 
+/**
+ * Tracks binding of `Command`s for each `Device`. Each `Device` must have at
+ * most one `Command` bound at any time. Nested command binding is not supported
+ * even though it is not prohibited by the shape of the API:
+ *
+ * // This produces a runtime error
+ * dev.target((rt) => {
+ *     rt.batch(cmd, (draw) => {
+ *         rt.draw(cmd, attrs, props);
+ *     });
+ * });
+ *
+ * WeakSet is used instead of `private static` variables, as there can be
+ * multiple `Device`s owning the commands.
+ */
+export const COMMAND_BINDINGS = new WeakSet<Device>();
+
 export type Accessor<P, R> = R | ((props: P, index: number) => R);
 export type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
 
@@ -288,8 +305,8 @@ export class Command<P> {
     }
 
     readonly glProgram: WebGLProgram | null;
-    readonly depthDescr: DepthDescriptor | null;
-    readonly stencilDescr: StencilDescriptor | null;
+    readonly depthTestDescr: DepthTestDescriptor | null;
+    readonly stencilTestDescr: StencilTestDescriptor | null;
     readonly blendDescr: BlendDescriptor | null;
     readonly textureAccessors!: TextureAccessor<P>[];
     readonly uniformDescrs!: UniformDescriptor<P>[];
@@ -306,8 +323,8 @@ export class Command<P> {
         fsSource: string,
         textures: Textures<P>,
         uniforms: Uniforms<P>,
-        depthDescr?: DepthDescriptor,
-        stencilDescr?: StencilDescriptor,
+        depthDescr?: DepthTestDescriptor,
+        stencilDescr?: StencilTestDescriptor,
         blendDescr?: BlendDescriptor,
     ) {
         this.dev = dev;
@@ -315,8 +332,8 @@ export class Command<P> {
         this.fsSource = fsSource;
         this.textures = textures;
         this.uniforms = uniforms;
-        this.depthDescr = depthDescr || null;
-        this.stencilDescr = stencilDescr || null;
+        this.depthTestDescr = depthDescr || null;
+        this.stencilTestDescr = stencilDescr || null;
         this.blendDescr = blendDescr || null;
         this.glProgram = null;
 
@@ -357,19 +374,25 @@ export class Command<P> {
 
     private init(): void {
         const {
-            dev: { _gl, _stackProgram },
+            dev,
+            dev: { _gl: gl },
             vsSource,
             fsSource,
             textures,
             uniforms,
         } = this;
 
-        const vs = createShader(_gl, _gl.VERTEX_SHADER, vsSource);
-        const fs = createShader(_gl, _gl.FRAGMENT_SHADER, fsSource);
-        const prog = createProgram(_gl, vs, fs);
+        // We would overwrite the currently bound program unless we checked
+        if (COMMAND_BINDINGS.has(dev)) {
+            throw new Error("A command for this device is already bound");
+        }
 
-        _gl.deleteShader(vs);
-        _gl.deleteShader(fs);
+        const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+        const prog = createProgram(gl, vs, fs);
+
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
 
         // Validation time! (only for nonproduction envs)
 
@@ -378,10 +401,10 @@ export class Command<P> {
                 // ctx loss or not, we can panic all we want in nonprod env!
                 throw new Error("Program was not compiled, possible reason: context loss");
             }
-            validateUniformDeclarations(_gl, prog, uniforms, textures);
+            validateUniformDeclarations(gl, prog, uniforms, textures);
         }
 
-        _stackProgram.push(prog);
+        gl.useProgram(prog);
 
         // Texture declarations are evaluated in two phases:
         // 1) Sampler location offsets are sent to the shader eagerly. This is
@@ -394,11 +417,11 @@ export class Command<P> {
 
         const textureAccessors: TextureAccessor<P>[] = [];
         Object.entries(textures).forEach(([ident, t], i) => {
-            const loc = _gl.getUniformLocation(prog, ident);
+            const loc = gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for sampler: ${ident}`);
             }
-            _gl.uniform1i(loc, i);
+            gl.uniform1i(loc, i);
             textureAccessors.push(t);
         });
 
@@ -408,7 +431,7 @@ export class Command<P> {
 
         const uniformDescrs: UniformDescriptor<P>[] = [];
         Object.entries(uniforms).forEach(([ident, u]) => {
-            const loc = _gl.getUniformLocation(prog, ident);
+            const loc = gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for uniform: ${ident}`);
             }
@@ -416,111 +439,111 @@ export class Command<P> {
                 // Eagerly send everything we can process now to GPU
                 switch (u.type) {
                     case "1f":
-                        _gl.uniform1f(loc, u.value);
+                        gl.uniform1f(loc, u.value);
                         break;
                     case "1fv":
-                        _gl.uniform1fv(loc, u.value);
+                        gl.uniform1fv(loc, u.value);
                         break;
                     case "1i":
-                        _gl.uniform1i(loc, u.value);
+                        gl.uniform1i(loc, u.value);
                         break;
                     case "1iv":
-                        _gl.uniform1iv(loc, u.value);
+                        gl.uniform1iv(loc, u.value);
                         break;
                     case "1ui":
-                        _gl.uniform1ui(loc, u.value);
+                        gl.uniform1ui(loc, u.value);
                         break;
                     case "1uiv":
-                        _gl.uniform1uiv(loc, u.value);
+                        gl.uniform1uiv(loc, u.value);
                         break;
                     case "2f": {
                         const [x, y] = u.value;
-                        _gl.uniform2f(loc, x, y);
+                        gl.uniform2f(loc, x, y);
                         break;
                     }
                     case "2fv":
-                        _gl.uniform2fv(loc, u.value);
+                        gl.uniform2fv(loc, u.value);
                         break;
                     case "2i": {
                         const [x, y] = u.value;
-                        _gl.uniform2i(loc, x, y);
+                        gl.uniform2i(loc, x, y);
                         break;
                     }
                     case "2iv":
-                        _gl.uniform2iv(loc, u.value);
+                        gl.uniform2iv(loc, u.value);
                         break;
                     case "2ui": {
                         const [x, y] = u.value;
-                        _gl.uniform2ui(loc, x, y);
+                        gl.uniform2ui(loc, x, y);
                         break;
                     }
                     case "2uiv":
-                        _gl.uniform2uiv(loc, u.value);
+                        gl.uniform2uiv(loc, u.value);
                         break;
                     case "3f": {
                         const [x, y, z] = u.value;
-                        _gl.uniform3f(loc, x, y, z);
+                        gl.uniform3f(loc, x, y, z);
                         break;
                     }
                     case "3fv":
-                        _gl.uniform3fv(loc, u.value);
+                        gl.uniform3fv(loc, u.value);
                         break;
                     case "3i": {
                         const [x, y, z] = u.value;
-                        _gl.uniform3i(loc, x, y, z);
+                        gl.uniform3i(loc, x, y, z);
                         break;
                     }
                     case "3iv":
-                        _gl.uniform3iv(loc, u.value);
+                        gl.uniform3iv(loc, u.value);
                         break;
                     case "3ui": {
                         const [x, y, z] = u.value;
-                        _gl.uniform3ui(loc, x, y, z);
+                        gl.uniform3ui(loc, x, y, z);
                         break;
                     }
                     case "3uiv":
-                        _gl.uniform3uiv(loc, u.value);
+                        gl.uniform3uiv(loc, u.value);
                         break;
                     case "4f": {
                         const [x, y, z, w] = u.value;
-                        _gl.uniform4f(loc, x, y, z, w);
+                        gl.uniform4f(loc, x, y, z, w);
                         break;
                     }
                     case "4fv":
-                        _gl.uniform4fv(loc, u.value);
+                        gl.uniform4fv(loc, u.value);
                         break;
                     case "4i": {
                         const [x, y, z, w] = u.value;
-                        _gl.uniform4i(loc, x, y, z, w);
+                        gl.uniform4i(loc, x, y, z, w);
                         break;
                     }
                     case "4iv":
-                        _gl.uniform4iv(loc, u.value);
+                        gl.uniform4iv(loc, u.value);
                         break;
                     case "4ui": {
                         const [x, y, z, w] = u.value;
-                        _gl.uniform4ui(loc, x, y, z, w);
+                        gl.uniform4ui(loc, x, y, z, w);
                         break;
                     }
                     case "4uiv":
-                        _gl.uniform4uiv(loc, u.value);
+                        gl.uniform4uiv(loc, u.value);
                         break;
                     case "matrix2fv":
-                        _gl.uniformMatrix2fv(
+                        gl.uniformMatrix2fv(
                             loc,
                             false,
                             u.value,
                         );
                         break;
                     case "matrix3fv":
-                        _gl.uniformMatrix3fv(
+                        gl.uniformMatrix3fv(
                             loc,
                             false,
                             u.value,
                         );
                         break;
                     case "matrix4fv":
-                        _gl.uniformMatrix4fv(
+                        gl.uniformMatrix4fv(
                             loc,
                             false,
                             u.value,
@@ -534,7 +557,7 @@ export class Command<P> {
             }
         });
 
-        _stackProgram.pop();
+        gl.useProgram(null);
 
         (this as any).glProgram = prog;
         (this as any).textureAccessors = textureAccessors;
@@ -542,17 +565,7 @@ export class Command<P> {
     }
 }
 
-export class DepthDescriptor {
-    static equals(left: DepthDescriptor | null, right: DepthDescriptor | null) {
-        if (left === right) { return true; }
-        if (!left || !right) { return false; }
-        if (left.func !== right.func) { return false; }
-        if (left.mask !== right.mask) { return false; }
-        if (left.rangeStart !== right.rangeStart) { return false; }
-        if (left.rangeEnd !== right.rangeEnd) { return false; }
-        return true;
-    }
-
+export class DepthTestDescriptor {
     constructor(
         readonly func: number,
         readonly mask: boolean,
@@ -561,30 +574,7 @@ export class DepthDescriptor {
     ) { }
 }
 
-export class StencilDescriptor {
-    static equals(
-        left: StencilDescriptor | null,
-        right: StencilDescriptor | null,
-    ) {
-        if (left === right) { return true; }
-        if (!left || !right) { return false; }
-        if (left.fFn !== right.fFn) { return false; }
-        if (left.bFn !== right.bFn) { return false; }
-        if (left.fFnRef !== right.fFnRef) { return false; }
-        if (left.bFnRef !== right.bFnRef) { return false; }
-        if (left.fFnMask !== right.fFnMask) { return false; }
-        if (left.bFnMask !== right.bFnMask) { return false; }
-        if (left.fMask !== right.fMask) { return false; }
-        if (left.bMask !== right.bMask) { return false; }
-        if (left.fOpFail !== right.fOpFail) { return false; }
-        if (left.bOpFail !== right.bOpFail) { return false; }
-        if (left.fOpZFail !== right.fOpZFail) { return false; }
-        if (left.bOpZFail !== right.bOpZFail) { return false; }
-        if (left.fOpZPass !== right.fOpZPass) { return false; }
-        if (left.bOpZPass !== right.bOpZPass) { return false; }
-        return true;
-    }
-
+export class StencilTestDescriptor {
     constructor(
         readonly fFn: number,
         readonly bFn: number,
@@ -604,24 +594,6 @@ export class StencilDescriptor {
 }
 
 export class BlendDescriptor {
-    static equals(left: BlendDescriptor | null, right: BlendDescriptor | null) {
-        if (left === right) { return true; }
-        if (!left || !right) { return false; }
-        if (left.srcRGB !== right.srcRGB) { return false; }
-        if (left.srcAlpha !== right.srcAlpha) { return false; }
-        if (left.dstRGB !== right.dstRGB) { return false; }
-        if (left.dstAlpha !== right.dstAlpha) { return false; }
-        if (left.eqnRGB !== right.eqnRGB) { return false; }
-        if (left.eqnAlpha !== right.eqnAlpha) { return false; }
-        if (left.color === right.color) { return true; }
-        if (!left.color || !right.color) { return false; }
-        if (left.color[0] !== right.color[0]) { return false; }
-        if (left.color[1] !== right.color[1]) { return false; }
-        if (left.color[2] !== right.color[2]) { return false; }
-        if (left.color[3] !== right.color[3]) { return false; }
-        return true;
-    }
-
     constructor(
         readonly srcRGB: number,
         readonly srcAlpha: number,
@@ -643,10 +615,10 @@ export class UniformDescriptor<P> {
 
 function parseDepth(
     depth: CommandOptions<void>["depth"],
-): DepthDescriptor | undefined {
+): DepthTestDescriptor | undefined {
     if (!depth) { return undefined; }
     assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
-    return new DepthDescriptor(
+    return new DepthTestDescriptor(
         depth.func || DepthFunc.LESS,
         typeof depth.mask === "boolean" ? depth.mask : true,
         depth.range ? depth.range[0] : 0,
@@ -656,11 +628,11 @@ function parseDepth(
 
 function parseStencil(
     stencil: CommandOptions<void>["stencil"],
-): StencilDescriptor | undefined {
+): StencilTestDescriptor | undefined {
     if (!stencil) { return undefined; }
     assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
     // TODO: complete stencil validation... validation framework?
-    return new StencilDescriptor(
+    return new StencilTestDescriptor(
         typeof stencil.func.func === "object"
             ? stencil.func.func.front
             : stencil.func.func,

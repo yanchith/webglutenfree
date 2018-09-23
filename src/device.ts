@@ -1,6 +1,4 @@
-import { Stack } from "./util/stack";
 import { Target } from "./target";
-import { DepthDescriptor, StencilDescriptor, BlendDescriptor } from "./command";
 
 export interface DeviceCreateOptions {
     element?: HTMLElement;
@@ -136,27 +134,6 @@ export class Device {
     readonly _gl: WebGL2RenderingContext;
     readonly _canvas: HTMLCanvasElement;
 
-    // To manage state, we use multiple stacks of various state bits.
-    // Disregarding outside interference, the stack head should always be bound
-    // with the GL context - this is implemented with the change diff and apply
-    // callbacks in device constructor. They diff the current and previous
-    // values, so pushing a value a second time is a NOOP from WebGL perspective.
-    // This allows nested target drawing (since the API does not prevent it,
-    // we should at least do the correct thing, if not the fast one) by first
-    // pushing a stack value before the callback, and ensuring the value just
-    // before drawing.
-    //
-    // fbo.target(fbort => {
-    //   dev.target(rt => rt.draw(...));
-    //   fbort.draw(,,,);
-    // });
-
-
-    readonly _stackProgram: Stack<WebGLProgram | null>;
-    readonly _stackDepthTest: Stack<DepthDescriptor | null>;
-    readonly _stackStencilTest: Stack<StencilDescriptor | null>;
-    readonly _stackBlend: Stack<BlendDescriptor | null>;
-
     private explicitPixelRatio?: number;
     private explicitViewportWidth?: number;
     private explicitViewportHeight?: number;
@@ -184,91 +161,6 @@ export class Device {
             null,
             gl.drawingBufferWidth,
             gl.drawingBufferHeight,
-        );
-
-        this._stackProgram = new Stack<WebGLProgram | null>(
-            null,
-            (prev, val) => prev !== val,
-            (val) => gl.useProgram(val),
-        );
-
-        this._stackDepthTest = new Stack<DepthDescriptor | null>(
-            null,
-            (prev, val) => !DepthDescriptor.equals(prev, val),
-            (val) => {
-                if (val) {
-                    gl.enable(gl.DEPTH_TEST);
-                    gl.depthFunc(val.func);
-                    gl.depthMask(val.mask);
-                    gl.depthRange(val.rangeStart, val.rangeEnd);
-                } else { gl.disable(gl.DEPTH_TEST); }
-            },
-        );
-
-        this._stackStencilTest = new Stack<StencilDescriptor | null>(
-            null,
-            (prev, val) => !StencilDescriptor.equals(prev, val),
-            (val) => {
-                if (val) {
-                    const {
-                        fFn,
-                        bFn,
-                        fFnRef,
-                        bFnRef,
-                        fFnMask,
-                        bFnMask,
-                        fMask,
-                        bMask,
-                        fOpFail,
-                        bOpFail,
-                        fOpZFail,
-                        bOpZFail,
-                        fOpZPass,
-                        bOpZPass,
-                    } = val;
-                    gl.enable(gl.STENCIL_TEST);
-                    gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
-                    gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
-                    gl.stencilMaskSeparate(gl.FRONT, fMask);
-                    gl.stencilMaskSeparate(gl.BACK, bMask);
-                    gl.stencilOpSeparate(
-                        gl.FRONT,
-                        fOpFail,
-                        fOpZFail,
-                        fOpZPass,
-                    );
-                    gl.stencilOpSeparate(
-                        gl.BACK,
-                        bOpFail,
-                        bOpZFail,
-                        bOpZPass,
-                    );
-                } else { gl.disable(gl.STENCIL_TEST); }
-            },
-        );
-
-        this._stackBlend = new Stack<BlendDescriptor | null>(
-            null,
-            (prev, val) => !BlendDescriptor.equals(prev, val),
-            (val) => {
-                if (val) {
-                    gl.enable(gl.BLEND);
-                    gl.blendFuncSeparate(
-                        val.srcRGB,
-                        val.dstRGB,
-                        val.srcAlpha,
-                        val.dstAlpha,
-                    );
-                    gl.blendEquationSeparate(
-                        val.eqnRGB,
-                        val.eqnAlpha,
-                    );
-                    if (val.color) {
-                        const [r, g, b, a] = val.color;
-                        gl.blendColor(r, g, b, a);
-                    }
-                } else { gl.disable(gl.BLEND); }
-            },
         );
 
         // Enable scissor test globally. Practically everywhere you would want

@@ -1,6 +1,9 @@
 import { BufferBits, Filter } from "./types";
 export declare type Device = import("./device").Device;
 export declare type Command<P> = import("./command").Command<P>;
+export declare type DepthTestDescriptor = import("./command").DepthTestDescriptor;
+export declare type StencilTestDescriptor = import("./command").StencilTestDescriptor;
+export declare type BlendDescriptor = import("./command").BlendDescriptor;
 export declare type UniformDescriptor<P> = import("./command").UniformDescriptor<P>;
 export declare type TextureAccessor<P> = import("./command").TextureAccessor<P>;
 export declare type Attributes = import("./attributes").Attributes;
@@ -8,8 +11,7 @@ export declare type Framebuffer = import("./framebuffer").Framebuffer;
 /**
  * Tracks binding of `Target`s for each `Device`. Each `Device` must have at most
  * one `Target` bound at any time. Nested target binding is not supported even
- * though they are not prohibited by the shape of the API (they are expensive
- * on some platforms):
+ * though it is not prohibited by the shape of the API:
  *
  * // This produces a runtime error
  * fbo.target((fbort) => {
@@ -18,7 +20,7 @@ export declare type Framebuffer = import("./framebuffer").Framebuffer;
  * });
  *
  * WeakSet is used instead of `private static` variables, as there can be
- * multiple `Device`s.
+ * multiple `Device`s owning the targets.
  */
 export declare const TARGET_BINDINGS: WeakSet<import("./device").Device>;
 export interface TargetClearOptions {
@@ -110,5 +112,8 @@ export declare class Target {
     private drawElements;
     private textures;
     private uniforms;
+    private depthTest;
+    private stencilTest;
+    private blend;
 }
 //# sourceMappingURL=target.d.ts.map
