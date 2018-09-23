@@ -1,9 +1,9 @@
 import * as assert from "./util/assert";
 import { process } from "./util/process-shim";
-import { TextureInternalFormat } from "./texture";
 
 export type Device = import ("./device").Device;
 export type Texture<T> = import ("./texture").Texture<T>;
+export type TextureInternalFormat = import ("./texture").TextureInternalFormat;
 export type AttributesConfig = import ("./attributes").AttributesConfig;
 
 const INT_PATTERN = /^0|[1-9]\d*$/;

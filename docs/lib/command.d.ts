@@ -1,6 +1,6 @@
-import { TextureInternalFormat } from "./texture";
 export declare type Device = import("./device").Device;
 export declare type Texture<T> = import("./texture").Texture<T>;
+export declare type TextureInternalFormat = import("./texture").TextureInternalFormat;
 export declare type AttributesConfig = import("./attributes").AttributesConfig;
 /**
  * Tracks binding of `Command`s for each `Device`. Each `Device` must have at
