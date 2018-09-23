@@ -230,14 +230,10 @@ export class Attributes {
         // Do not create the gl vao if there are no buffers to bind
         if (this.hasAttribs()) { return; }
 
-        const {
-            dev: { _gl, _stackVertexArray },
-            attributes,
-            elementBuffer,
-        } = this;
-        const vao = _gl.createVertexArray();
+        const { dev: { _gl: gl }, attributes, elementBuffer } = this;
 
-        _stackVertexArray.push(vao);
+        const vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
 
         attributes.forEach(({
             location,
@@ -248,13 +244,13 @@ export class Attributes {
             divisor,
         }) => {
             // Enable sending attribute arrays for location
-            _gl.enableVertexAttribArray(location);
+            gl.enableVertexAttribArray(location);
 
             // Send buffer
-            _gl.bindBuffer(_gl.ARRAY_BUFFER, glBuffer);
+            gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
             switch (type) {
                 case AttributeType.POINTER:
-                    _gl.vertexAttribPointer(
+                    gl.vertexAttribPointer(
                         location,
                         size,
                         glBufferType,
@@ -264,7 +260,7 @@ export class Attributes {
                     );
                     break;
                 case AttributeType.IPOINTER:
-                    _gl.vertexAttribIPointer(
+                    gl.vertexAttribIPointer(
                         location,
                         size,
                         glBufferType,
@@ -274,18 +270,18 @@ export class Attributes {
                     break;
                 default: assert.unreachable(type);
             }
-            if (divisor) { _gl.vertexAttribDivisor(location, divisor); }
+            if (divisor) { gl.vertexAttribDivisor(location, divisor); }
         });
 
         if (elementBuffer) {
-            _gl.bindBuffer(_gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
         }
 
-        _stackVertexArray.pop();
+        gl.bindVertexArray(null);
 
-        _gl.bindBuffer(_gl.ARRAY_BUFFER, null);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
         if (elementBuffer) {
-            _gl.bindBuffer(_gl.ELEMENT_ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         }
 
         (this as any).glVertexArray = vao;

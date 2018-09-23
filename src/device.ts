@@ -151,7 +151,6 @@ export class Device {
     //   fbort.draw(,,,);
     // });
 
-    readonly _stackVertexArray: Stack<WebGLVertexArrayObject | null>;
 
     readonly _stackProgram: Stack<WebGLProgram | null>;
     readonly _stackDepthTest: Stack<DepthDescriptor | null>;
@@ -188,12 +187,6 @@ export class Device {
             null,
             gl.drawingBufferWidth,
             gl.drawingBufferHeight,
-        );
-
-        this._stackVertexArray = new Stack<WebGLVertexArrayObject | null>(
-            null,
-            (prev, val) => prev !== val,
-            (val) => gl.bindVertexArray(val),
         );
 
         this._stackProgram = new Stack<WebGLProgram | null>(
