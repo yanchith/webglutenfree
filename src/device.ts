@@ -152,12 +152,13 @@ export class Device {
     // });
 
     readonly _stackVertexArray: Stack<WebGLVertexArrayObject | null>;
+
     readonly _stackProgram: Stack<WebGLProgram | null>;
     readonly _stackDepthTest: Stack<DepthDescriptor | null>;
     readonly _stackStencilTest: Stack<StencilDescriptor | null>;
     readonly _stackBlend: Stack<BlendDescriptor | null>;
+
     readonly _stackDrawFramebuffer: Stack<WebGLFramebuffer | null>;
-    readonly _stackReadFramebuffer: Stack<WebGLFramebuffer | null>;
     readonly _stackDrawBuffers: Stack<number[]>;
 
     private explicitPixelRatio?: number;
@@ -288,12 +289,6 @@ export class Device {
             null,
             (prev, val) => prev !== val,
             (val) => gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, val),
-        );
-
-        this._stackReadFramebuffer = new Stack<WebGLFramebuffer | null>(
-            null,
-            (prev, val) => prev !== val,
-            (val) => gl.bindFramebuffer(gl.READ_FRAMEBUFFER, val),
         );
 
         this._stackDrawBuffers = new Stack<number[]>(

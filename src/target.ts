@@ -151,13 +151,11 @@ export class Target {
             scissorHeight = dstHeight,
         }: TargetBlitOptions = {},
     ): void {
-        const { dev: { _gl: gl, _stackReadFramebuffer } } = this;
+        const { dev: { _gl: gl } } = this;
 
         this.with(() => {
-            _stackReadFramebuffer.push(source.glFramebuffer);
-
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
             gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-
             gl.blitFramebuffer(
                 srcX,
                 srcY,
@@ -170,8 +168,7 @@ export class Target {
                 bits,
                 filter,
             );
-
-            _stackReadFramebuffer.pop();
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
         });
     }
 
