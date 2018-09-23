@@ -1827,13 +1827,13 @@ class Attributes {
         attributes.forEach((attr) => attr.buffer.restore());
         // If we have no attributes nor elements, there is no need to restore
         // any GPU state
-        if (!this.hasAttribs() && !_gl.isVertexArray(glVertexArray)) {
+        if (this.hasAttribs() && !_gl.isVertexArray(glVertexArray)) {
             this.init();
         }
     }
     init() {
         // Do not create the gl vao if there are no buffers to bind
-        if (this.hasAttribs()) {
+        if (!this.hasAttribs()) {
             return;
         }
         const { dev: { _gl: gl }, attributes, elementBuffer } = this;
@@ -1870,7 +1870,7 @@ class Attributes {
     hasAttribs() {
         // IF we have either attributes or elements, this geometry can not
         // longer be considered empty.
-        return !this.elementBuffer && !this.attributes.length;
+        return !!this.elementBuffer || !!this.attributes.length;
     }
 }
 // TODO: this could use some further refactoring. Currently its just former
