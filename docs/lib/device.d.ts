@@ -52,10 +52,14 @@ export declare class Device {
     static withCanvas(canvas: HTMLCanvasElement, options?: DeviceWithCanvasOptions): Device;
     /**
      * Create a new device from existing gl context. Does not take ownership of
-     * context, but concurrent usage of voids the warranty. Only use
+     * context, but concurrent usage of it voids the warranty. Only use
      * concurrently when absolutely necessary.
      */
     static withContext(gl: WebGL2RenderingContext, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, }?: DeviceWithContextOptions): Device;
+    /**
+     * Create a mock device for tests, without canvas or WebGL context.
+     */
+    static mock(): Device;
     readonly _gl: WebGL2RenderingContext;
     readonly _canvas: HTMLCanvasElement;
     private explicitPixelRatio?;

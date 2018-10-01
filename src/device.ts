@@ -1,3 +1,5 @@
+import { WebGL2RenderingContextMock } from "./util/webgl-mock";
+import { process } from "./util/process-shim";
 import { Target } from "./target";
 
 export interface DeviceCreateOptions {
@@ -88,7 +90,7 @@ export class Device {
 
     /**
      * Create a new device from existing gl context. Does not take ownership of
-     * context, but concurrent usage of voids the warranty. Only use
+     * context, but concurrent usage of it voids the warranty. Only use
      * concurrently when absolutely necessary.
      */
     static withContext(
@@ -122,13 +124,26 @@ export class Device {
             gl = wrapper;
         }
 
-        return new Device(
-            gl,
-            gl.canvas,
-            pixelRatio,
-            viewportWidth,
-            viewportHeight,
-        );
+        return new Device(gl, pixelRatio, viewportWidth, viewportHeight);
+    }
+
+    /**
+     * Create a mock device for tests, without canvas or WebGL context.
+     */
+    static mock(): Device {
+        if (process.env.NODE_ENV !== "production") {
+            const gl = new WebGL2RenderingContextMock({
+                width: 800,
+                height: 600,
+                clientWidth: 800,
+                clientHeight: 600,
+            });
+            // Make sure the implementation does not ask things of window by
+            // providing explicit values for dpr and viewport dimensions
+            // TODO: should we mock window and pass it as a parameter?
+            return new Device(gl as any, 1, 800, 600);
+        }
+        throw new Error("Mocking is not supported in production builds");
     }
 
     readonly _gl: WebGL2RenderingContext;
@@ -142,13 +157,12 @@ export class Device {
 
     private constructor(
         gl: WebGL2RenderingContext,
-        canvas: HTMLCanvasElement,
         explicitPixelRatio?: number,
         explicitViewportWidth?: number,
         explicitViewportHeight?: number,
     ) {
         this._gl = gl;
-        this._canvas = canvas;
+        this._canvas = gl.canvas;
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewportWidth = explicitViewportWidth;
         this.explicitViewportHeight = explicitViewportHeight;
