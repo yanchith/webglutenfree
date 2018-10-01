@@ -1,6 +1,16 @@
 import test from "ava";
 
 import { Device, Command, Attributes, Primitive } from "../index";
+import { WebGL2RenderingContextMock } from "./webgl-mock";
+
+function mockContext(): WebGL2RenderingContext {
+    return new WebGL2RenderingContextMock({
+        width: 800,
+        height: 600,
+        clientWidth: 800,
+        clientHeight: 600,
+    });
+}
 
 test("Normal usage does not trigger any errors", (t) => t.notThrows(() => {
     const dev = Device.mock();

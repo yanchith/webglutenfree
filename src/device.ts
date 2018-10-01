@@ -1,5 +1,3 @@
-import { WebGL2RenderingContextMock } from "./util/webgl-mock";
-import { process } from "./util/process-shim";
 import { Target } from "./target";
 
 export interface DeviceCreateOptions {
@@ -125,25 +123,6 @@ export class Device {
         }
 
         return new Device(gl, pixelRatio, viewportWidth, viewportHeight);
-    }
-
-    /**
-     * Create a mock device for tests, without canvas or WebGL context.
-     */
-    static mock(): Device {
-        if (process.env.NODE_ENV !== "production") {
-            const gl = new WebGL2RenderingContextMock({
-                width: 800,
-                height: 600,
-                clientWidth: 800,
-                clientHeight: 600,
-            });
-            // Make sure the implementation does not ask things of window by
-            // providing explicit values for dpr and viewport dimensions
-            // TODO: should we mock window and pass it as a parameter?
-            return new Device(gl as any, 1, 800, 600);
-        }
-        throw new Error("Mocking is not supported in production builds");
     }
 
     readonly _gl: WebGL2RenderingContext;

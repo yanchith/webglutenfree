@@ -293,464 +293,449 @@ function sizeOf(type) {
     }
 }
 
-const FUNCTIONS = [
-    "activeTexture",
-    "attachShader",
-    "bindAttribLocation",
-    "bindBuffer",
-    "bindFramebuffer",
-    "bindRenderbuffer",
-    "bindTexture",
-    "bindVertexArray",
-    "blendColor",
-    "blendEquation",
-    "blendEquationSeparate",
-    "blendFunc",
-    "blendFuncSeparate",
-    "bufferData",
-    "bufferSubData",
-    "checkFramebufferStatus",
-    "clear",
-    "clearColor",
-    "clearDepth",
-    "clearStencil",
-    "colorMask",
-    "compileShader",
-    "compressedTexImage2D",
-    "compressedTexSubImage2D",
-    "copyTexImage2D",
-    "copyTexSubImage2D",
-    "createBuffer",
-    "createFramebuffer",
-    "createProgram",
-    "createRenderbuffer",
-    "createShader",
-    "createTexture",
-    "createVertexArray",
-    "cullFace",
-    "deleteBuffer",
-    "deleteFramebuffer",
-    "deleteProgram",
-    "deleteRenderbuffer",
-    "deleteShader",
-    "deleteTexture",
-    "depthFunc",
-    "depthMask",
-    "depthRange",
-    "detachShader",
-    "disable",
-    "disableVertexAttribArray",
-    "drawArrays",
-    "drawBuffers",
-    "drawElements",
-    "enable",
-    "enableVertexAttribArray",
-    "finish",
-    "flush",
-    "framebufferRenderbuffer",
-    "framebufferTexture2D",
-    "frontFace",
-    "generateMipmap",
-    "getActiveAttrib",
-    "getActiveUniform",
-    "getAttachedShaders",
-    "getAttribLocation",
-    "getBufferParameter",
-    "getContextAttributes",
-    "getError",
-    "getExtension",
-    "getFramebufferAttachmentParameter",
-    "getParameter",
-    "getProgramParameter",
-    "getProgramInfoLog",
-    "getRenderbufferParameter",
-    "getShaderParameter",
-    "getShaderInfoLog",
-    "getShaderPrecisionFormat",
-    "getShaderSource",
-    "getSupportedExtensions",
-    "getTexParameter",
-    "getUniform",
-    "getUniformLocation",
-    "getVertexAttrib",
-    "getVertexAttribOffset",
-    "hint",
-    "isBuffer",
-    "isContextLost",
-    "isEnabled",
-    "isFramebuffer",
-    "isProgram",
-    "isRenderbuffer",
-    "isShader",
-    "isTexture",
-    "lineWidth",
-    "linkProgram",
-    "pixelStorei",
-    "polygonOffset",
-    "readPixels",
-    "renderbufferStorage",
-    "sampleCoverage",
-    "scissor",
-    "shaderSource",
-    "stencilFunc",
-    "stencilFuncSeparate",
-    "stencilMask",
-    "stencilMaskSeparate",
-    "stencilOp",
-    "stencilOpSeparate",
-    "texParameterf",
-    "texParameteri",
-    "texImage2D",
-    "texSubImage2D",
-    "uniform1f",
-    "uniform1fv",
-    "uniform1i",
-    "uniform1iv",
-    "uniform2f",
-    "uniform2fv",
-    "uniform2i",
-    "uniform2iv",
-    "uniform3f",
-    "uniform3fv",
-    "uniform3i",
-    "uniform3iv",
-    "uniform4f",
-    "uniform4fv",
-    "uniform4i",
-    "uniform4iv",
-    "uniformMatrix2fv",
-    "uniformMatrix3fv",
-    "uniformMatrix4fv",
-    "useProgram",
-    "validateProgram",
-    "vertexAttrib1f",
-    "vertexAttrib1fv",
-    "vertexAttrib2f",
-    "vertexAttrib2fv",
-    "vertexAttrib3f",
-    "vertexAttrib3fv",
-    "vertexAttrib4f",
-    "vertexAttrib4fv",
-    "vertexAttribPointer",
-    "viewport",
-];
-const ENUMS = {
-    DEPTH_BUFFER_BIT: 256,
-    STENCIL_BUFFER_BIT: 1024,
-    COLOR_BUFFER_BIT: 16384,
-    POINTS: 0,
-    LINES: 1,
-    LINE_LOOP: 2,
-    LINE_STRIP: 3,
-    TRIANGLES: 4,
-    TRIANGLE_STRIP: 5,
-    TRIANGLE_FAN: 6,
-    ZERO: 0,
-    ONE: 1,
-    SRC_COLOR: 768,
-    ONE_MINUS_SRC_COLOR: 769,
-    SRC_ALPHA: 770,
-    ONE_MINUS_SRC_ALPHA: 771,
-    DST_ALPHA: 772,
-    ONE_MINUS_DST_ALPHA: 773,
-    DST_COLOR: 774,
-    ONE_MINUS_DST_COLOR: 775,
-    SRC_ALPHA_SATURATE: 776,
-    FUNC_ADD: 32774,
-    BLEND_EQUATION: 32777,
-    BLEND_EQUATION_RGB: 32777,
-    BLEND_EQUATION_ALPHA: 34877,
-    FUNC_SUBTRACT: 32778,
-    FUNC_REVERSE_SUBTRACT: 32779,
-    BLEND_DST_RGB: 32968,
-    BLEND_SRC_RGB: 32969,
-    BLEND_DST_ALPHA: 32970,
-    BLEND_SRC_ALPHA: 32971,
-    CONSTANT_COLOR: 32769,
-    ONE_MINUS_CONSTANT_COLOR: 32770,
-    CONSTANT_ALPHA: 32771,
-    ONE_MINUS_CONSTANT_ALPHA: 32772,
-    BLEND_COLOR: 32773,
-    ARRAY_BUFFER: 34962,
-    ELEMENT_ARRAY_BUFFER: 34963,
-    ARRAY_BUFFER_BINDING: 34964,
-    ELEMENT_ARRAY_BUFFER_BINDING: 34965,
-    STREAM_DRAW: 35040,
-    STATIC_DRAW: 35044,
-    DYNAMIC_DRAW: 35048,
-    BUFFER_SIZE: 34660,
-    BUFFER_USAGE: 34661,
-    CURRENT_VERTEX_ATTRIB: 34342,
-    FRONT: 1028,
-    BACK: 1029,
-    FRONT_AND_BACK: 1032,
-    TEXTURE_2D: 3553,
-    CULL_FACE: 2884,
-    BLEND: 3042,
-    DITHER: 3024,
-    STENCIL_TEST: 2960,
-    DEPTH_TEST: 2929,
-    SCISSOR_TEST: 3089,
-    POLYGON_OFFSET_FILL: 32823,
-    SAMPLE_ALPHA_TO_COVERAGE: 32926,
-    SAMPLE_COVERAGE: 32928,
-    NO_ERROR: 0,
-    INVALID_ENUM: 1280,
-    INVALID_VALUE: 1281,
-    INVALID_OPERATION: 1282,
-    OUT_OF_MEMORY: 1285,
-    CW: 2304,
-    CCW: 2305,
-    LINE_WIDTH: 2849,
-    ALIASED_POINT_SIZE_RANGE: 33901,
-    ALIASED_LINE_WIDTH_RANGE: 33902,
-    CULL_FACE_MODE: 2885,
-    FRONT_FACE: 2886,
-    DEPTH_RANGE: 2928,
-    DEPTH_WRITEMASK: 2930,
-    DEPTH_CLEAR_VALUE: 2931,
-    DEPTH_FUNC: 2932,
-    STENCIL_CLEAR_VALUE: 2961,
-    STENCIL_FUNC: 2962,
-    STENCIL_FAIL: 2964,
-    STENCIL_PASS_DEPTH_FAIL: 2965,
-    STENCIL_PASS_DEPTH_PASS: 2966,
-    STENCIL_REF: 2967,
-    STENCIL_VALUE_MASK: 2963,
-    STENCIL_WRITEMASK: 2968,
-    STENCIL_BACK_FUNC: 34816,
-    STENCIL_BACK_FAIL: 34817,
-    STENCIL_BACK_PASS_DEPTH_FAIL: 34818,
-    STENCIL_BACK_PASS_DEPTH_PASS: 34819,
-    STENCIL_BACK_REF: 36003,
-    STENCIL_BACK_VALUE_MASK: 36004,
-    STENCIL_BACK_WRITEMASK: 36005,
-    VIEWPORT: 2978,
-    SCISSOR_BOX: 3088,
-    COLOR_CLEAR_VALUE: 3106,
-    COLOR_WRITEMASK: 3107,
-    UNPACK_ALIGNMENT: 3317,
-    PACK_ALIGNMENT: 3333,
-    MAX_TEXTURE_SIZE: 3379,
-    MAX_VIEWPORT_DIMS: 3386,
-    SUBPIXEL_BITS: 3408,
-    RED_BITS: 3410,
-    GREEN_BITS: 3411,
-    BLUE_BITS: 3412,
-    ALPHA_BITS: 3413,
-    DEPTH_BITS: 3414,
-    STENCIL_BITS: 3415,
-    POLYGON_OFFSET_UNITS: 10752,
-    POLYGON_OFFSET_FACTOR: 32824,
-    TEXTURE_BINDING_2D: 32873,
-    SAMPLE_BUFFERS: 32936,
-    SAMPLES: 32937,
-    SAMPLE_COVERAGE_VALUE: 32938,
-    SAMPLE_COVERAGE_INVERT: 32939,
-    COMPRESSED_TEXTURE_FORMATS: 34467,
-    DONT_CARE: 4352,
-    FASTEST: 4353,
-    NICEST: 4354,
-    GENERATE_MIPMAP_HINT: 33170,
-    BYTE: 5120,
-    UNSIGNED_BYTE: 5121,
-    SHORT: 5122,
-    UNSIGNED_SHORT: 5123,
-    INT: 5124,
-    UNSIGNED_INT: 5125,
-    FLOAT: 5126,
-    DEPTH_COMPONENT: 6402,
-    ALPHA: 6406,
-    RGB: 6407,
-    RGBA: 6408,
-    LUMINANCE: 6409,
-    LUMINANCE_ALPHA: 6410,
-    UNSIGNED_SHORT_4_4_4_4: 32819,
-    UNSIGNED_SHORT_5_5_5_1: 32820,
-    UNSIGNED_SHORT_5_6_5: 33635,
-    FRAGMENT_SHADER: 35632,
-    VERTEX_SHADER: 35633,
-    MAX_VERTEX_ATTRIBS: 34921,
-    MAX_VERTEX_UNIFORM_VECTORS: 36347,
-    MAX_VARYING_VECTORS: 36348,
-    MAX_COMBINED_TEXTURE_IMAGE_UNITS: 35661,
-    MAX_VERTEX_TEXTURE_IMAGE_UNITS: 35660,
-    MAX_TEXTURE_IMAGE_UNITS: 34930,
-    MAX_FRAGMENT_UNIFORM_VECTORS: 36349,
-    SHADER_TYPE: 35663,
-    DELETE_STATUS: 35712,
-    LINK_STATUS: 35714,
-    VALIDATE_STATUS: 35715,
-    ATTACHED_SHADERS: 35717,
-    ACTIVE_UNIFORMS: 35718,
-    ACTIVE_ATTRIBUTES: 35721,
-    SHADING_LANGUAGE_VERSION: 35724,
-    CURRENT_PROGRAM: 35725,
-    NEVER: 512,
-    LESS: 513,
-    EQUAL: 514,
-    LEQUAL: 515,
-    GREATER: 516,
-    NOTEQUAL: 517,
-    GEQUAL: 518,
-    ALWAYS: 519,
-    KEEP: 7680,
-    REPLACE: 7681,
-    INCR: 7682,
-    DECR: 7683,
-    INVERT: 5386,
-    INCR_WRAP: 34055,
-    DECR_WRAP: 34056,
-    VENDOR: 7936,
-    RENDERER: 7937,
-    VERSION: 7938,
-    NEAREST: 9728,
-    LINEAR: 9729,
-    NEAREST_MIPMAP_NEAREST: 9984,
-    LINEAR_MIPMAP_NEAREST: 9985,
-    NEAREST_MIPMAP_LINEAR: 9986,
-    LINEAR_MIPMAP_LINEAR: 9987,
-    TEXTURE_MAG_FILTER: 10240,
-    TEXTURE_MIN_FILTER: 10241,
-    TEXTURE_WRAP_S: 10242,
-    TEXTURE_WRAP_T: 10243,
-    TEXTURE: 5890,
-    TEXTURE_CUBE_MAP: 34067,
-    TEXTURE_BINDING_CUBE_MAP: 34068,
-    TEXTURE_CUBE_MAP_POSITIVE_X: 34069,
-    TEXTURE_CUBE_MAP_NEGATIVE_X: 34070,
-    TEXTURE_CUBE_MAP_POSITIVE_Y: 34071,
-    TEXTURE_CUBE_MAP_NEGATIVE_Y: 34072,
-    TEXTURE_CUBE_MAP_POSITIVE_Z: 34073,
-    TEXTURE_CUBE_MAP_NEGATIVE_Z: 34074,
-    MAX_CUBE_MAP_TEXTURE_SIZE: 34076,
-    TEXTURE0: 33984,
-    TEXTURE1: 33985,
-    TEXTURE2: 33986,
-    TEXTURE3: 33987,
-    TEXTURE4: 33988,
-    TEXTURE5: 33989,
-    TEXTURE6: 33990,
-    TEXTURE7: 33991,
-    TEXTURE8: 33992,
-    TEXTURE9: 33993,
-    TEXTURE10: 33994,
-    TEXTURE11: 33995,
-    TEXTURE12: 33996,
-    TEXTURE13: 33997,
-    TEXTURE14: 33998,
-    TEXTURE15: 33999,
-    TEXTURE16: 34000,
-    TEXTURE17: 34001,
-    TEXTURE18: 34002,
-    TEXTURE19: 34003,
-    TEXTURE20: 34004,
-    TEXTURE21: 34005,
-    TEXTURE22: 34006,
-    TEXTURE23: 34007,
-    TEXTURE24: 34008,
-    TEXTURE25: 34009,
-    TEXTURE26: 34010,
-    TEXTURE27: 34011,
-    TEXTURE28: 34012,
-    TEXTURE29: 34013,
-    TEXTURE30: 34014,
-    TEXTURE31: 34015,
-    ACTIVE_TEXTURE: 34016,
-    REPEAT: 10497,
-    CLAMP_TO_EDGE: 33071,
-    MIRRORED_REPEAT: 33648,
-    FLOAT_VEC2: 35664,
-    FLOAT_VEC3: 35665,
-    FLOAT_VEC4: 35666,
-    INT_VEC2: 35667,
-    INT_VEC3: 35668,
-    INT_VEC4: 35669,
-    BOOL: 35670,
-    BOOL_VEC2: 35671,
-    BOOL_VEC3: 35672,
-    BOOL_VEC4: 35673,
-    FLOAT_MAT2: 35674,
-    FLOAT_MAT3: 35675,
-    FLOAT_MAT4: 35676,
-    SAMPLER_2D: 35678,
-    SAMPLER_CUBE: 35680,
-    VERTEX_ATTRIB_ARRAY_ENABLED: 34338,
-    VERTEX_ATTRIB_ARRAY_SIZE: 34339,
-    VERTEX_ATTRIB_ARRAY_STRIDE: 34340,
-    VERTEX_ATTRIB_ARRAY_TYPE: 34341,
-    VERTEX_ATTRIB_ARRAY_NORMALIZED: 34922,
-    VERTEX_ATTRIB_ARRAY_POINTER: 34373,
-    VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: 34975,
-    IMPLEMENTATION_COLOR_READ_TYPE: 35738,
-    IMPLEMENTATION_COLOR_READ_FORMAT: 35739,
-    COMPILE_STATUS: 35713,
-    LOW_FLOAT: 36336,
-    MEDIUM_FLOAT: 36337,
-    HIGH_FLOAT: 36338,
-    LOW_INT: 36339,
-    MEDIUM_INT: 36340,
-    HIGH_INT: 36341,
-    FRAMEBUFFER: 36160,
-    RENDERBUFFER: 36161,
-    RGBA4: 32854,
-    RGB5_A1: 32855,
-    RGB565: 36194,
-    DEPTH_COMPONENT16: 33189,
-    STENCIL_INDEX: 6401,
-    STENCIL_INDEX8: 36168,
-    DEPTH_STENCIL: 34041,
-    RENDERBUFFER_WIDTH: 36162,
-    RENDERBUFFER_HEIGHT: 36163,
-    RENDERBUFFER_INTERNAL_FORMAT: 36164,
-    RENDERBUFFER_RED_SIZE: 36176,
-    RENDERBUFFER_GREEN_SIZE: 36177,
-    RENDERBUFFER_BLUE_SIZE: 36178,
-    RENDERBUFFER_ALPHA_SIZE: 36179,
-    RENDERBUFFER_DEPTH_SIZE: 36180,
-    RENDERBUFFER_STENCIL_SIZE: 36181,
-    FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: 36048,
-    FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: 36049,
-    FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: 36050,
-    FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: 36051,
-    COLOR_ATTACHMENT0: 36064,
-    DEPTH_ATTACHMENT: 36096,
-    STENCIL_ATTACHMENT: 36128,
-    DEPTH_STENCIL_ATTACHMENT: 33306,
-    NONE: 0,
-    FRAMEBUFFER_COMPLETE: 36053,
-    FRAMEBUFFER_INCOMPLETE_ATTACHMENT: 36054,
-    FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: 36055,
-    FRAMEBUFFER_INCOMPLETE_DIMENSIONS: 36057,
-    FRAMEBUFFER_UNSUPPORTED: 36061,
-    FRAMEBUFFER_BINDING: 36006,
-    RENDERBUFFER_BINDING: 36007,
-    MAX_RENDERBUFFER_SIZE: 34024,
-    INVALID_FRAMEBUFFER_OPERATION: 1286,
-    UNPACK_FLIP_Y_WEBGL: 37440,
-    UNPACK_PREMULTIPLY_ALPHA_WEBGL: 37441,
-    CONTEXT_LOST_WEBGL: 37442,
-    UNPACK_COLORSPACE_CONVERSION_WEBGL: 37443,
-    BROWSER_DEFAULT_WEBGL: 37444,
-};
 class WebGL2RenderingContextMock {
     constructor(canvas) {
         this.canvas = canvas;
         this.drawingBufferWidth = canvas.width;
         this.drawingBufferHeight = canvas.height;
     }
-    getExtension(_) {
-        return null;
-    }
+    activeTexture() { }
+    attachShader() { }
+    bindAttribLocation() { }
+    bindBuffer() { }
+    bindFramebuffer() { }
+    bindRenderbuffer() { }
+    bindTexture() { }
+    bindVertexArray() { }
+    blendColor() { }
+    blendEquation() { }
+    blendEquationSeparate() { }
+    blendFunc() { }
+    blendFuncSeparate() { }
+    bufferData() { }
+    bufferSubData() { }
+    checkFramebufferStatus() { }
+    clear() { }
+    clearColor() { }
+    clearDepth() { }
+    clearStencil() { }
+    colorMask() { }
+    compileShader() { }
+    compressedTexImage2D() { }
+    compressedTexSubImage2D() { }
+    copyTexImage2D() { }
+    copyTexSubImage2D() { }
+    createBuffer() { }
+    createFramebuffer() { }
+    createProgram() { }
+    createRenderbuffer() { }
+    createShader() { }
+    createTexture() { }
+    createVertexArray() { }
+    cullFace() { }
+    deleteBuffer() { }
+    deleteFramebuffer() { }
+    deleteProgram() { }
+    deleteRenderbuffer() { }
+    deleteShader() { }
+    deleteTexture() { }
+    depthFunc() { }
+    depthMask() { }
+    depthRange() { }
+    detachShader() { }
+    disable() { }
+    disableVertexAttribArray() { }
+    drawArrays() { }
+    drawBuffers() { }
+    drawElements() { }
+    enable() { }
+    enableVertexAttribArray() { }
+    finish() { }
+    flush() { }
+    framebufferRenderbuffer() { }
+    framebufferTexture2D() { }
+    frontFace() { }
+    generateMipmap() { }
+    getActiveAttrib() { }
+    getActiveUniform() { }
+    getAttachedShaders() { }
+    getAttribLocation() { }
+    getBufferParameter() { }
+    getContextAttributes() { }
+    getError() { }
+    getExtension() { }
+    getFramebufferAttachmentParameter() { }
+    getParameter() { }
+    getProgramParameter() { }
+    getProgramInfoLog() { }
+    getRenderbufferParameter() { }
+    getShaderParameter() { }
+    getShaderInfoLog() { }
+    getShaderPrecisionFormat() { }
+    getShaderSource() { }
+    getSupportedExtensions() { }
+    getTexParameter() { }
+    getUniform() { }
+    getUniformLocation() { }
+    getVertexAttrib() { }
+    getVertexAttribOffset() { }
+    hint() { }
+    isBuffer() { }
+    isContextLost() { }
+    isEnabled() { }
+    isFramebuffer() { }
+    isProgram() { }
+    isRenderbuffer() { }
+    isShader() { }
+    isTexture() { }
+    lineWidth() { }
+    linkProgram() { }
+    pixelStorei() { }
+    polygonOffset() { }
+    readPixels() { }
+    renderbufferStorage() { }
+    sampleCoverage() { }
+    scissor() { }
+    shaderSource() { }
+    stencilFunc() { }
+    stencilFuncSeparate() { }
+    stencilMask() { }
+    stencilMaskSeparate() { }
+    stencilOp() { }
+    stencilOpSeparate() { }
+    texParameterf() { }
+    texParameteri() { }
+    texImage2D() { }
+    texSubImage2D() { }
+    uniform1f() { }
+    uniform1fv() { }
+    uniform1i() { }
+    uniform1iv() { }
+    uniform2f() { }
+    uniform2fv() { }
+    uniform2i() { }
+    uniform2iv() { }
+    uniform3f() { }
+    uniform3fv() { }
+    uniform3i() { }
+    uniform3iv() { }
+    uniform4f() { }
+    uniform4fv() { }
+    uniform4i() { }
+    uniform4iv() { }
+    uniformMatrix2fv() { }
+    uniformMatrix3fv() { }
+    uniformMatrix4fv() { }
+    useProgram() { }
+    validateProgram() { }
+    vertexAttrib1f() { }
+    vertexAttrib1fv() { }
+    vertexAttrib2f() { }
+    vertexAttrib2fv() { }
+    vertexAttrib3f() { }
+    vertexAttrib3fv() { }
+    vertexAttrib4f() { }
+    vertexAttrib4fv() { }
+    vertexAttribPointer() { }
+    viewport() { }
 }
-// mock FUNCTIONS
-FUNCTIONS.forEach((fn) => {
-    WebGL2RenderingContextMock.prototype[fn] = () => ({});
-});
-// mock ENUMS
-Object.keys(ENUMS).forEach((key) => {
-    WebGL2RenderingContextMock.prototype[key] = ENUMS[key];
-});
+WebGL2RenderingContextMock.DEPTH_BUFFER_BIT = 256;
+WebGL2RenderingContextMock.STENCIL_BUFFER_BIT = 1024;
+WebGL2RenderingContextMock.COLOR_BUFFER_BIT = 16384;
+WebGL2RenderingContextMock.POINTS = 0;
+WebGL2RenderingContextMock.LINES = 1;
+WebGL2RenderingContextMock.LINE_LOOP = 2;
+WebGL2RenderingContextMock.LINE_STRIP = 3;
+WebGL2RenderingContextMock.TRIANGLES = 4;
+WebGL2RenderingContextMock.TRIANGLE_STRIP = 5;
+WebGL2RenderingContextMock.TRIANGLE_FAN = 6;
+WebGL2RenderingContextMock.ZERO = 0;
+WebGL2RenderingContextMock.ONE = 1;
+WebGL2RenderingContextMock.SRC_COLOR = 768;
+WebGL2RenderingContextMock.ONE_MINUS_SRC_COLOR = 769;
+WebGL2RenderingContextMock.SRC_ALPHA = 770;
+WebGL2RenderingContextMock.ONE_MINUS_SRC_ALPHA = 771;
+WebGL2RenderingContextMock.DST_ALPHA = 772;
+WebGL2RenderingContextMock.ONE_MINUS_DST_ALPHA = 773;
+WebGL2RenderingContextMock.DST_COLOR = 774;
+WebGL2RenderingContextMock.ONE_MINUS_DST_COLOR = 775;
+WebGL2RenderingContextMock.SRC_ALPHA_SATURATE = 776;
+WebGL2RenderingContextMock.FUNC_ADD = 32774;
+WebGL2RenderingContextMock.BLEND_EQUATION = 32777;
+WebGL2RenderingContextMock.BLEND_EQUATION_RGB = 32777;
+WebGL2RenderingContextMock.BLEND_EQUATION_ALPHA = 34877;
+WebGL2RenderingContextMock.FUNC_SUBTRACT = 32778;
+WebGL2RenderingContextMock.FUNC_REVERSE_SUBTRACT = 32779;
+WebGL2RenderingContextMock.BLEND_DST_RGB = 32968;
+WebGL2RenderingContextMock.BLEND_SRC_RGB = 32969;
+WebGL2RenderingContextMock.BLEND_DST_ALPHA = 32970;
+WebGL2RenderingContextMock.BLEND_SRC_ALPHA = 32971;
+WebGL2RenderingContextMock.CONSTANT_COLOR = 32769;
+WebGL2RenderingContextMock.ONE_MINUS_CONSTANT_COLOR = 32770;
+WebGL2RenderingContextMock.CONSTANT_ALPHA = 32771;
+WebGL2RenderingContextMock.ONE_MINUS_CONSTANT_ALPHA = 32772;
+WebGL2RenderingContextMock.BLEND_COLOR = 32773;
+WebGL2RenderingContextMock.ARRAY_BUFFER = 34962;
+WebGL2RenderingContextMock.ELEMENT_ARRAY_BUFFER = 34963;
+WebGL2RenderingContextMock.ARRAY_BUFFER_BINDING = 34964;
+WebGL2RenderingContextMock.ELEMENT_ARRAY_BUFFER_BINDING = 34965;
+WebGL2RenderingContextMock.STREAM_DRAW = 35040;
+WebGL2RenderingContextMock.STATIC_DRAW = 35044;
+WebGL2RenderingContextMock.DYNAMIC_DRAW = 35048;
+WebGL2RenderingContextMock.BUFFER_SIZE = 34660;
+WebGL2RenderingContextMock.BUFFER_USAGE = 34661;
+WebGL2RenderingContextMock.CURRENT_VERTEX_ATTRIB = 34342;
+WebGL2RenderingContextMock.FRONT = 1028;
+WebGL2RenderingContextMock.BACK = 1029;
+WebGL2RenderingContextMock.FRONT_AND_BACK = 1032;
+WebGL2RenderingContextMock.TEXTURE_2D = 3553;
+WebGL2RenderingContextMock.CULL_FACE = 2884;
+WebGL2RenderingContextMock.BLEND = 3042;
+WebGL2RenderingContextMock.DITHER = 3024;
+WebGL2RenderingContextMock.STENCIL_TEST = 2960;
+WebGL2RenderingContextMock.DEPTH_TEST = 2929;
+WebGL2RenderingContextMock.SCISSOR_TEST = 3089;
+WebGL2RenderingContextMock.POLYGON_OFFSET_FILL = 32823;
+WebGL2RenderingContextMock.SAMPLE_ALPHA_TO_COVERAGE = 32926;
+WebGL2RenderingContextMock.SAMPLE_COVERAGE = 32928;
+WebGL2RenderingContextMock.NO_ERROR = 0;
+WebGL2RenderingContextMock.INVALID_ENUM = 1280;
+WebGL2RenderingContextMock.INVALID_VALUE = 1281;
+WebGL2RenderingContextMock.INVALID_OPERATION = 1282;
+WebGL2RenderingContextMock.OUT_OF_MEMORY = 1285;
+WebGL2RenderingContextMock.CW = 2304;
+WebGL2RenderingContextMock.CCW = 2305;
+WebGL2RenderingContextMock.LINE_WIDTH = 2849;
+WebGL2RenderingContextMock.ALIASED_POINT_SIZE_RANGE = 33901;
+WebGL2RenderingContextMock.ALIASED_LINE_WIDTH_RANGE = 33902;
+WebGL2RenderingContextMock.CULL_FACE_MODE = 2885;
+WebGL2RenderingContextMock.FRONT_FACE = 2886;
+WebGL2RenderingContextMock.DEPTH_RANGE = 2928;
+WebGL2RenderingContextMock.DEPTH_WRITEMASK = 2930;
+WebGL2RenderingContextMock.DEPTH_CLEAR_VALUE = 2931;
+WebGL2RenderingContextMock.DEPTH_FUNC = 2932;
+WebGL2RenderingContextMock.STENCIL_CLEAR_VALUE = 2961;
+WebGL2RenderingContextMock.STENCIL_FUNC = 2962;
+WebGL2RenderingContextMock.STENCIL_FAIL = 2964;
+WebGL2RenderingContextMock.STENCIL_PASS_DEPTH_FAIL = 2965;
+WebGL2RenderingContextMock.STENCIL_PASS_DEPTH_PASS = 2966;
+WebGL2RenderingContextMock.STENCIL_REF = 2967;
+WebGL2RenderingContextMock.STENCIL_VALUE_MASK = 2963;
+WebGL2RenderingContextMock.STENCIL_WRITEMASK = 2968;
+WebGL2RenderingContextMock.STENCIL_BACK_FUNC = 34816;
+WebGL2RenderingContextMock.STENCIL_BACK_FAIL = 34817;
+WebGL2RenderingContextMock.STENCIL_BACK_PASS_DEPTH_FAIL = 34818;
+WebGL2RenderingContextMock.STENCIL_BACK_PASS_DEPTH_PASS = 34819;
+WebGL2RenderingContextMock.STENCIL_BACK_REF = 36003;
+WebGL2RenderingContextMock.STENCIL_BACK_VALUE_MASK = 36004;
+WebGL2RenderingContextMock.STENCIL_BACK_WRITEMASK = 36005;
+WebGL2RenderingContextMock.VIEWPORT = 2978;
+WebGL2RenderingContextMock.SCISSOR_BOX = 3088;
+WebGL2RenderingContextMock.COLOR_CLEAR_VALUE = 3106;
+WebGL2RenderingContextMock.COLOR_WRITEMASK = 3107;
+WebGL2RenderingContextMock.UNPACK_ALIGNMENT = 3317;
+WebGL2RenderingContextMock.PACK_ALIGNMENT = 3333;
+WebGL2RenderingContextMock.MAX_TEXTURE_SIZE = 3379;
+WebGL2RenderingContextMock.MAX_VIEWPORT_DIMS = 3386;
+WebGL2RenderingContextMock.SUBPIXEL_BITS = 3408;
+WebGL2RenderingContextMock.RED_BITS = 3410;
+WebGL2RenderingContextMock.GREEN_BITS = 3411;
+WebGL2RenderingContextMock.BLUE_BITS = 3412;
+WebGL2RenderingContextMock.ALPHA_BITS = 3413;
+WebGL2RenderingContextMock.DEPTH_BITS = 3414;
+WebGL2RenderingContextMock.STENCIL_BITS = 3415;
+WebGL2RenderingContextMock.POLYGON_OFFSET_UNITS = 10752;
+WebGL2RenderingContextMock.POLYGON_OFFSET_FACTOR = 32824;
+WebGL2RenderingContextMock.TEXTURE_BINDING_2D = 32873;
+WebGL2RenderingContextMock.SAMPLE_BUFFERS = 32936;
+WebGL2RenderingContextMock.SAMPLES = 32937;
+WebGL2RenderingContextMock.SAMPLE_COVERAGE_VALUE = 32938;
+WebGL2RenderingContextMock.SAMPLE_COVERAGE_INVERT = 32939;
+WebGL2RenderingContextMock.COMPRESSED_TEXTURE_FORMATS = 34467;
+WebGL2RenderingContextMock.DONT_CARE = 4352;
+WebGL2RenderingContextMock.FASTEST = 4353;
+WebGL2RenderingContextMock.NICEST = 4354;
+WebGL2RenderingContextMock.GENERATE_MIPMAP_HINT = 33170;
+WebGL2RenderingContextMock.BYTE = 5120;
+WebGL2RenderingContextMock.UNSIGNED_BYTE = 5121;
+WebGL2RenderingContextMock.SHORT = 5122;
+WebGL2RenderingContextMock.UNSIGNED_SHORT = 5123;
+WebGL2RenderingContextMock.INT = 5124;
+WebGL2RenderingContextMock.UNSIGNED_INT = 5125;
+WebGL2RenderingContextMock.FLOAT = 5126;
+WebGL2RenderingContextMock.DEPTH_COMPONENT = 6402;
+WebGL2RenderingContextMock.ALPHA = 6406;
+WebGL2RenderingContextMock.RGB = 6407;
+WebGL2RenderingContextMock.RGBA = 6408;
+WebGL2RenderingContextMock.LUMINANCE = 6409;
+WebGL2RenderingContextMock.LUMINANCE_ALPHA = 6410;
+WebGL2RenderingContextMock.UNSIGNED_SHORT_4_4_4_4 = 32819;
+WebGL2RenderingContextMock.UNSIGNED_SHORT_5_5_5_1 = 32820;
+WebGL2RenderingContextMock.UNSIGNED_SHORT_5_6_5 = 33635;
+WebGL2RenderingContextMock.FRAGMENT_SHADER = 35632;
+WebGL2RenderingContextMock.VERTEX_SHADER = 35633;
+WebGL2RenderingContextMock.MAX_VERTEX_ATTRIBS = 34921;
+WebGL2RenderingContextMock.MAX_VERTEX_UNIFORM_VECTORS = 36347;
+WebGL2RenderingContextMock.MAX_VARYING_VECTORS = 36348;
+WebGL2RenderingContextMock.MAX_COMBINED_TEXTURE_IMAGE_UNITS = 35661;
+WebGL2RenderingContextMock.MAX_VERTEX_TEXTURE_IMAGE_UNITS = 35660;
+WebGL2RenderingContextMock.MAX_TEXTURE_IMAGE_UNITS = 34930;
+WebGL2RenderingContextMock.MAX_FRAGMENT_UNIFORM_VECTORS = 36349;
+WebGL2RenderingContextMock.SHADER_TYPE = 35663;
+WebGL2RenderingContextMock.DELETE_STATUS = 35712;
+WebGL2RenderingContextMock.LINK_STATUS = 35714;
+WebGL2RenderingContextMock.VALIDATE_STATUS = 35715;
+WebGL2RenderingContextMock.ATTACHED_SHADERS = 35717;
+WebGL2RenderingContextMock.ACTIVE_UNIFORMS = 35718;
+WebGL2RenderingContextMock.ACTIVE_ATTRIBUTES = 35721;
+WebGL2RenderingContextMock.SHADING_LANGUAGE_VERSION = 35724;
+WebGL2RenderingContextMock.CURRENT_PROGRAM = 35725;
+WebGL2RenderingContextMock.NEVER = 512;
+WebGL2RenderingContextMock.LESS = 513;
+WebGL2RenderingContextMock.EQUAL = 514;
+WebGL2RenderingContextMock.LEQUAL = 515;
+WebGL2RenderingContextMock.GREATER = 516;
+WebGL2RenderingContextMock.NOTEQUAL = 517;
+WebGL2RenderingContextMock.GEQUAL = 518;
+WebGL2RenderingContextMock.ALWAYS = 519;
+WebGL2RenderingContextMock.KEEP = 7680;
+WebGL2RenderingContextMock.REPLACE = 7681;
+WebGL2RenderingContextMock.INCR = 7682;
+WebGL2RenderingContextMock.DECR = 7683;
+WebGL2RenderingContextMock.INVERT = 5386;
+WebGL2RenderingContextMock.INCR_WRAP = 34055;
+WebGL2RenderingContextMock.DECR_WRAP = 34056;
+WebGL2RenderingContextMock.VENDOR = 7936;
+WebGL2RenderingContextMock.RENDERER = 7937;
+WebGL2RenderingContextMock.VERSION = 7938;
+WebGL2RenderingContextMock.NEAREST = 9728;
+WebGL2RenderingContextMock.LINEAR = 9729;
+WebGL2RenderingContextMock.NEAREST_MIPMAP_NEAREST = 9984;
+WebGL2RenderingContextMock.LINEAR_MIPMAP_NEAREST = 9985;
+WebGL2RenderingContextMock.NEAREST_MIPMAP_LINEAR = 9986;
+WebGL2RenderingContextMock.LINEAR_MIPMAP_LINEAR = 9987;
+WebGL2RenderingContextMock.TEXTURE_MAG_FILTER = 10240;
+WebGL2RenderingContextMock.TEXTURE_MIN_FILTER = 10241;
+WebGL2RenderingContextMock.TEXTURE_WRAP_S = 10242;
+WebGL2RenderingContextMock.TEXTURE_WRAP_T = 10243;
+WebGL2RenderingContextMock.TEXTURE = 5890;
+WebGL2RenderingContextMock.TEXTURE_CUBE_MAP = 34067;
+WebGL2RenderingContextMock.TEXTURE_BINDING_CUBE_MAP = 34068;
+WebGL2RenderingContextMock.TEXTURE_CUBE_MAP_POSITIVE_X = 34069;
+WebGL2RenderingContextMock.TEXTURE_CUBE_MAP_NEGATIVE_X = 34070;
+WebGL2RenderingContextMock.TEXTURE_CUBE_MAP_POSITIVE_Y = 34071;
+WebGL2RenderingContextMock.TEXTURE_CUBE_MAP_NEGATIVE_Y = 34072;
+WebGL2RenderingContextMock.TEXTURE_CUBE_MAP_POSITIVE_Z = 34073;
+WebGL2RenderingContextMock.TEXTURE_CUBE_MAP_NEGATIVE_Z = 34074;
+WebGL2RenderingContextMock.MAX_CUBE_MAP_TEXTURE_SIZE = 34076;
+WebGL2RenderingContextMock.TEXTURE0 = 33984;
+WebGL2RenderingContextMock.TEXTURE1 = 33985;
+WebGL2RenderingContextMock.TEXTURE2 = 33986;
+WebGL2RenderingContextMock.TEXTURE3 = 33987;
+WebGL2RenderingContextMock.TEXTURE4 = 33988;
+WebGL2RenderingContextMock.TEXTURE5 = 33989;
+WebGL2RenderingContextMock.TEXTURE6 = 33990;
+WebGL2RenderingContextMock.TEXTURE7 = 33991;
+WebGL2RenderingContextMock.TEXTURE8 = 33992;
+WebGL2RenderingContextMock.TEXTURE9 = 33993;
+WebGL2RenderingContextMock.TEXTURE10 = 33994;
+WebGL2RenderingContextMock.TEXTURE11 = 33995;
+WebGL2RenderingContextMock.TEXTURE12 = 33996;
+WebGL2RenderingContextMock.TEXTURE13 = 33997;
+WebGL2RenderingContextMock.TEXTURE14 = 33998;
+WebGL2RenderingContextMock.TEXTURE15 = 33999;
+WebGL2RenderingContextMock.TEXTURE16 = 34000;
+WebGL2RenderingContextMock.TEXTURE17 = 34001;
+WebGL2RenderingContextMock.TEXTURE18 = 34002;
+WebGL2RenderingContextMock.TEXTURE19 = 34003;
+WebGL2RenderingContextMock.TEXTURE20 = 34004;
+WebGL2RenderingContextMock.TEXTURE21 = 34005;
+WebGL2RenderingContextMock.TEXTURE22 = 34006;
+WebGL2RenderingContextMock.TEXTURE23 = 34007;
+WebGL2RenderingContextMock.TEXTURE24 = 34008;
+WebGL2RenderingContextMock.TEXTURE25 = 34009;
+WebGL2RenderingContextMock.TEXTURE26 = 34010;
+WebGL2RenderingContextMock.TEXTURE27 = 34011;
+WebGL2RenderingContextMock.TEXTURE28 = 34012;
+WebGL2RenderingContextMock.TEXTURE29 = 34013;
+WebGL2RenderingContextMock.TEXTURE30 = 34014;
+WebGL2RenderingContextMock.TEXTURE31 = 34015;
+WebGL2RenderingContextMock.ACTIVE_TEXTURE = 34016;
+WebGL2RenderingContextMock.REPEAT = 10497;
+WebGL2RenderingContextMock.CLAMP_TO_EDGE = 33071;
+WebGL2RenderingContextMock.MIRRORED_REPEAT = 33648;
+WebGL2RenderingContextMock.FLOAT_VEC2 = 35664;
+WebGL2RenderingContextMock.FLOAT_VEC3 = 35665;
+WebGL2RenderingContextMock.FLOAT_VEC4 = 35666;
+WebGL2RenderingContextMock.INT_VEC2 = 35667;
+WebGL2RenderingContextMock.INT_VEC3 = 35668;
+WebGL2RenderingContextMock.INT_VEC4 = 35669;
+WebGL2RenderingContextMock.BOOL = 35670;
+WebGL2RenderingContextMock.BOOL_VEC2 = 35671;
+WebGL2RenderingContextMock.BOOL_VEC3 = 35672;
+WebGL2RenderingContextMock.BOOL_VEC4 = 35673;
+WebGL2RenderingContextMock.FLOAT_MAT2 = 35674;
+WebGL2RenderingContextMock.FLOAT_MAT3 = 35675;
+WebGL2RenderingContextMock.FLOAT_MAT4 = 35676;
+WebGL2RenderingContextMock.SAMPLER_2D = 35678;
+WebGL2RenderingContextMock.SAMPLER_CUBE = 35680;
+WebGL2RenderingContextMock.VERTEX_ATTRIB_ARRAY_ENABLED = 34338;
+WebGL2RenderingContextMock.VERTEX_ATTRIB_ARRAY_SIZE = 34339;
+WebGL2RenderingContextMock.VERTEX_ATTRIB_ARRAY_STRIDE = 34340;
+WebGL2RenderingContextMock.VERTEX_ATTRIB_ARRAY_TYPE = 34341;
+WebGL2RenderingContextMock.VERTEX_ATTRIB_ARRAY_NORMALIZED = 34922;
+WebGL2RenderingContextMock.VERTEX_ATTRIB_ARRAY_POINTER = 34373;
+WebGL2RenderingContextMock.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING = 34975;
+WebGL2RenderingContextMock.IMPLEMENTATION_COLOR_READ_TYPE = 35738;
+WebGL2RenderingContextMock.IMPLEMENTATION_COLOR_READ_FORMAT = 35739;
+WebGL2RenderingContextMock.COMPILE_STATUS = 35713;
+WebGL2RenderingContextMock.LOW_FLOAT = 36336;
+WebGL2RenderingContextMock.MEDIUM_FLOAT = 36337;
+WebGL2RenderingContextMock.HIGH_FLOAT = 36338;
+WebGL2RenderingContextMock.LOW_INT = 36339;
+WebGL2RenderingContextMock.MEDIUM_INT = 36340;
+WebGL2RenderingContextMock.HIGH_INT = 36341;
+WebGL2RenderingContextMock.FRAMEBUFFER = 36160;
+WebGL2RenderingContextMock.RENDERBUFFER = 36161;
+WebGL2RenderingContextMock.RGBA4 = 32854;
+WebGL2RenderingContextMock.RGB5_A1 = 32855;
+WebGL2RenderingContextMock.RGB565 = 36194;
+WebGL2RenderingContextMock.DEPTH_COMPONENT16 = 33189;
+WebGL2RenderingContextMock.STENCIL_INDEX = 6401;
+WebGL2RenderingContextMock.STENCIL_INDEX8 = 36168;
+WebGL2RenderingContextMock.DEPTH_STENCIL = 34041;
+WebGL2RenderingContextMock.RENDERBUFFER_WIDTH = 36162;
+WebGL2RenderingContextMock.RENDERBUFFER_HEIGHT = 36163;
+WebGL2RenderingContextMock.RENDERBUFFER_INTERNAL_FORMAT = 36164;
+WebGL2RenderingContextMock.RENDERBUFFER_RED_SIZE = 36176;
+WebGL2RenderingContextMock.RENDERBUFFER_GREEN_SIZE = 36177;
+WebGL2RenderingContextMock.RENDERBUFFER_BLUE_SIZE = 36178;
+WebGL2RenderingContextMock.RENDERBUFFER_ALPHA_SIZE = 36179;
+WebGL2RenderingContextMock.RENDERBUFFER_DEPTH_SIZE = 36180;
+WebGL2RenderingContextMock.RENDERBUFFER_STENCIL_SIZE = 36181;
+WebGL2RenderingContextMock.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE = 36048;
+WebGL2RenderingContextMock.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME = 36049;
+WebGL2RenderingContextMock.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL = 36050;
+WebGL2RenderingContextMock.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE = 36051;
+WebGL2RenderingContextMock.COLOR_ATTACHMENT0 = 36064;
+WebGL2RenderingContextMock.DEPTH_ATTACHMENT = 36096;
+WebGL2RenderingContextMock.STENCIL_ATTACHMENT = 36128;
+WebGL2RenderingContextMock.DEPTH_STENCIL_ATTACHMENT = 33306;
+WebGL2RenderingContextMock.NONE = 0;
+WebGL2RenderingContextMock.FRAMEBUFFER_COMPLETE = 36053;
+WebGL2RenderingContextMock.FRAMEBUFFER_INCOMPLETE_ATTACHMENT = 36054;
+WebGL2RenderingContextMock.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT = 36055;
+WebGL2RenderingContextMock.FRAMEBUFFER_INCOMPLETE_DIMENSIONS = 36057;
+WebGL2RenderingContextMock.FRAMEBUFFER_UNSUPPORTED = 36061;
+WebGL2RenderingContextMock.FRAMEBUFFER_BINDING = 36006;
+WebGL2RenderingContextMock.RENDERBUFFER_BINDING = 36007;
+WebGL2RenderingContextMock.MAX_RENDERBUFFER_SIZE = 34024;
+WebGL2RenderingContextMock.INVALID_FRAMEBUFFER_OPERATION = 1286;
+WebGL2RenderingContextMock.UNPACK_FLIP_Y_WEBGL = 37440;
+WebGL2RenderingContextMock.UNPACK_PREMULTIPLY_ALPHA_WEBGL = 37441;
+WebGL2RenderingContextMock.CONTEXT_LOST_WEBGL = 37442;
+WebGL2RenderingContextMock.UNPACK_COLORSPACE_CONVERSION_WEBGL = 37443;
+WebGL2RenderingContextMock.BROWSER_DEFAULT_WEBGL = 37444;
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
