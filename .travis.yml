@@ -2,9 +2,9 @@ language: node_js
 node_js:
   - "node"
   - "lts/*"
-before_script:
-  - "yarn compile"
-  - "yarn bundle"
 script:
+  - "yarn compile"
+  - "yarn bundle:all"
   - "yarn test"
+  - "yarn lint"
 cache: yarn
