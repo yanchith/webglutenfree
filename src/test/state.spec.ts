@@ -49,6 +49,22 @@ test("Nested bound Command with Target#batch should error", (t) => {
     });
 });
 
+test("Nested bound Target (device only) should error", (t) => {
+    const dev = createDevice();
+    dev.target(() => {
+        t.throws(() => dev.target(() => void 0));
+    });
+});
+
+test("Nested bound Target (device + fbo) should error", (t) => {
+    const dev = createDevice();
+    const tex = createTexture(dev);
+    const fbo = createFramebuffer(dev, tex);
+    dev.target(() => {
+        t.throws(() => fbo.target(() => void 0));
+    });
+});
+
 test("Unbound Target#draw should error", (t) => {
     const dev = createDevice();
     const cmd = createCommand(dev);
@@ -58,6 +74,7 @@ test("Unbound Target#draw should error", (t) => {
         sneakyRt = rt;
     });
 
+    t.truthy(sneakyRt);
     t.throws(() => sneakyRt!.draw(cmd, attrs));
 });
 
@@ -69,6 +86,7 @@ test("Unbound Target#batch should error", (t) => {
         sneakyRt = rt;
     });
 
+    t.truthy(sneakyRt);
     t.throws(() => sneakyRt!.batch(cmd, () => void 0));
 });
 
@@ -79,6 +97,7 @@ test("Unbound Target#clear should error", (t) => {
         sneakyRt = rt;
     });
 
+    t.truthy(sneakyRt);
     t.throws(() => sneakyRt!.clear(BufferBits.COLOR));
 });
 
@@ -91,25 +110,24 @@ test("Unbound Target#blit should error", (t) => {
         sneakyRt = rt;
     });
 
+    t.truthy(sneakyRt);
     t.throws(() => sneakyRt!.blit(fbo, BufferBits.COLOR));
 });
 
-test("Nested bound Target (dev only) should error", (t) => {
+test("Unbound draw callback should error", (t) => {
     const dev = createDevice();
-    dev.target(() => {
-        t.throws(() => dev.target(() => void 0));
+    const cmd = createCommand(dev);
+    const attrs = createAttributes(dev);
+    let sneakyDraw: ((attrs: Attributes, props: void) => void) | null = null;
+    dev.target((rt) => {
+        rt.batch(cmd, (draw) => {
+            sneakyDraw = draw;
+        });
     });
-});
 
-test("Nested bound Target (dev + fbo) should error", (t) => {
-    const dev = createDevice();
-    const tex = createTexture(dev);
-    const fbo = createFramebuffer(dev, tex);
-    dev.target(() => {
-        t.throws(() => fbo.target(() => void 0));
-    });
+    t.truthy(sneakyDraw);
+    t.throws(() => (sneakyDraw!)(attrs, void 0));
 });
-
 
 function mockContext(): WebGL2RenderingContext {
     return new WebGL2RenderingContextMock({
