@@ -1,12 +1,35 @@
 import * as assert from "./util/assert";
+import { COMMAND_BINDINGS } from "./command";
 import { BufferBits, Filter, Primitive } from "./types";
 
 export type Device = import ("./device").Device;
 export type Command<P> = import ("./command").Command<P>;
+export type DepthTestDescriptor = import ("./command").DepthTestDescriptor;
+export type StencilTestDescriptor = import ("./command").StencilTestDescriptor;
+export type BlendDescriptor = import ("./command").BlendDescriptor;
 export type UniformDescriptor<P> = import ("./command").UniformDescriptor<P>;
 export type TextureAccessor<P> = import ("./command").TextureAccessor<P>;
 export type Attributes = import ("./attributes").Attributes;
 export type Framebuffer = import ("./framebuffer").Framebuffer;
+
+/**
+ * Tracks binding of `Target`s for each `Device`. Each `Device` must have at most
+ * one `Target` bound at any time. Nested target binding is not supported even
+ * though it is not prohibited by the shape of the API:
+ *
+ * // This produces a runtime error
+ * fbo.target((fbort) => {
+ *     dev.target((rt) => rt.draw(...));
+ *     fbort.draw(...);
+ * });
+ *
+ * WeakSet is used instead of `private static` variables, as there can be
+ * multiple `Device`s owning the targets.
+ */
+export const TARGET_BINDINGS = new WeakSet<Device>();
+
+const GL_NONE = 0;
+const DRAW_BUFFERS_NONE = [GL_NONE];
 
 export interface TargetClearOptions {
     r?: number;
@@ -67,26 +90,31 @@ export class Target {
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
      *
-     * All drawing to the target should be done within the callback to prevent
-     * unnecessary rebinding.
+     * All writes/drawing to the target MUST be done within the callback.
      */
     with(cb: (rt: Target) => void): void {
         const {
-            dev: {
-                _stackDrawBuffers,
-                _stackDrawFramebuffer,
-            },
+            dev,
+            dev: { _gl: gl },
             glFramebuffer,
             glDrawBuffers,
         } = this;
 
-        _stackDrawFramebuffer.push(glFramebuffer);
-        _stackDrawBuffers.push(glDrawBuffers);
+        // We would overwrite the currently bound DRAW_FRAMEBUFFER unless we
+        // checked
+        if (TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target for this device is already bound");
+        }
+
+        TARGET_BINDINGS.add(dev);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
+        gl.drawBuffers(glDrawBuffers);
 
         cb(this);
 
-        _stackDrawFramebuffer.pop();
-        _stackDrawBuffers.pop();
+        gl.drawBuffers(DRAW_BUFFERS_NONE);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+        TARGET_BINDINGS.delete(dev);
     }
 
     /**
@@ -111,16 +139,17 @@ export class Target {
                 : this.surfaceHeight,
         }: TargetClearOptions = {},
     ): void {
-        this.with(() => {
-            const gl = this.dev._gl;
+        const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform clear");
+        }
 
-            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
-            if (bits & BufferBits.COLOR) { gl.clearColor(r, g, b, a); }
-            if (bits & BufferBits.DEPTH) { gl.clearDepth(depth); }
-            if (bits & BufferBits.STENCIL) { gl.clearStencil(stencil); }
-            gl.clear(bits);
-        });
+        if (bits & BufferBits.COLOR) { gl.clearColor(r, g, b, a); }
+        if (bits & BufferBits.DEPTH) { gl.clearDepth(depth); }
+        if (bits & BufferBits.STENCIL) { gl.clearStencil(stencil); }
+        gl.clear(bits);
     }
 
 
@@ -151,28 +180,26 @@ export class Target {
             scissorHeight = dstHeight,
         }: TargetBlitOptions = {},
     ): void {
-        const { dev: { _gl: gl, _stackReadFramebuffer } } = this;
+        const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform blit");
+        }
 
-        this.with(() => {
-            _stackReadFramebuffer.push(source.glFramebuffer);
-
-            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-
-            gl.blitFramebuffer(
-                srcX,
-                srcY,
-                srcWidth,
-                srcHeight,
-                dstX,
-                dstY,
-                dstWidth,
-                dstHeight,
-                bits,
-                filter,
-            );
-
-            _stackReadFramebuffer.pop();
-        });
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        gl.blitFramebuffer(
+            srcX,
+            srcY,
+            srcWidth,
+            srcHeight,
+            dstX,
+            dstY,
+            dstWidth,
+            dstHeight,
+            bits,
+            filter,
+        );
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     }
 
     /**
@@ -216,64 +243,69 @@ export class Target {
             scissorHeight = viewportHeight,
         }: TargetDrawOptions = {},
     ): void {
-        const {
-            dev: {
-                _gl: gl,
-                _stackVertexArray,
-                _stackProgram,
-                _stackDepthTest,
-                _stackStencilTest,
-                _stackBlend,
-            },
-        } = this;
+        const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform draw");
+        }
+
         const {
             glProgram,
-            depthDescr,
-            stencilDescr,
+            depthTestDescr,
+            stencilTestDescr,
             blendDescr,
             textureAccessors,
             uniformDescrs,
         } = cmd;
 
-        this.with(() => {
-            _stackDepthTest.push(depthDescr);
-            _stackStencilTest.push(stencilDescr);
-            _stackBlend.push(blendDescr);
-            _stackProgram.push(glProgram);
+        if (COMMAND_BINDINGS.has(dev)) {
+            throw new Error("Command already bound, cannot bind twice");
+        }
 
-            this.textures(textureAccessors, props, 0);
-            this.uniforms(uniformDescrs, props, 0);
+        this.depthTest(depthTestDescr);
+        this.stencilTest(stencilTestDescr);
+        this.blend(blendDescr);
 
-            // Note that attrs.glVertexArray may be null for empty attrs -> ok
-            _stackVertexArray.push(attrs.glVertexArray);
+        gl.useProgram(glProgram);
 
-            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
-            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        this.textures(textureAccessors, props, 0);
+        this.uniforms(uniformDescrs, props, 0);
 
-            if (attrs.indexed) {
-                this.drawElements(
-                    attrs.primitive,
-                    attrs.elementCount,
-                    attrs.indexType!,
-                    0, // offset
-                    attrs.instanceCount,
-                );
-            } else {
-                this.drawArrays(
-                    attrs.primitive,
-                    attrs.count,
-                    0, // offset
-                    attrs.instanceCount,
-                );
-            }
+        // Only bind the VAO if it is not null - we always assume we cleaned
+        // up after ourselves so it SHOULD be unbound prior to this point
+        if (attrs.glVertexArray) {
+            gl.bindVertexArray(attrs.glVertexArray);
+        }
 
-            _stackVertexArray.pop();
+        gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
-            _stackBlend.pop();
-            _stackStencilTest.pop();
-            _stackDepthTest.pop();
-            _stackProgram.pop();
-        });
+        if (attrs.indexed) {
+            this.drawElements(
+                attrs.primitive,
+                attrs.elementCount,
+                attrs.indexType!,
+                0, // offset
+                attrs.instanceCount,
+            );
+        } else {
+            this.drawArrays(
+                attrs.primitive,
+                attrs.count,
+                0, // offset
+                attrs.instanceCount,
+            );
+        }
+
+        // Clean up after ourselves if we bound something
+        if (attrs.glVertexArray) {
+            gl.bindVertexArray(null);
+        }
+
+        gl.useProgram(null);
+
+        this.blend(null);
+        this.stencilTest(null);
+        this.depthTest(null);
     }
 
     /**
@@ -302,88 +334,94 @@ export class Target {
             scissorHeight = viewportHeight,
         }: TargetDrawOptions = {},
     ): void {
-        const {
-            dev: {
-                _gl: gl,
-                _stackVertexArray,
-                _stackProgram,
-                _stackDepthTest,
-                _stackStencilTest,
-                _stackBlend,
-            },
-        } = this;
+        const { dev, dev: { _gl: gl } } = this;
+        if (!TARGET_BINDINGS.has(dev)) {
+            throw new Error("A target must be bound to perform batch");
+        }
+
         const {
             glProgram,
-            depthDescr,
-            stencilDescr,
+            depthTestDescr,
+            stencilTestDescr,
             blendDescr,
             textureAccessors,
             uniformDescrs,
         } = cmd;
 
         // The price for gl.useProgram, enabling depth/stencil tests and
-        // blending is paid only once for all draw calls in batch, unless API
-        // is badly abused and the draw() callback is called outside ot batch()
+        // blending is paid only once for all draw calls in batch
 
-        // Perform shared batch setup
+        // Perform shared batch setup, but first ensure no concurrency
 
-        _stackDepthTest.push(depthDescr);
-        _stackStencilTest.push(stencilDescr);
-        _stackBlend.push(blendDescr);
-        _stackProgram.push(glProgram);
+        if (COMMAND_BINDINGS.has(dev)) {
+            throw new Error("Command already bound, cannot bind twice");
+        }
+
+        COMMAND_BINDINGS.add(dev);
+
+        this.depthTest(depthTestDescr);
+        this.stencilTest(stencilTestDescr);
+        this.blend(blendDescr);
+
+        gl.useProgram(glProgram);
 
         let i = 0;
 
         cb((attrs: Attributes, props: P) => {
-            // with() ensures the original target is still bound
-            this.with(() => {
-                i++;
+            if (!TARGET_BINDINGS.has(dev)) {
+                throw new Error("A target must be bound to batch draw");
+            }
+            if (!COMMAND_BINDINGS.has(dev)) {
+                throw new Error("A command must be bound to batch draw");
+            }
 
-                // Ensure the shared setup still holds
+            i++;
 
-                _stackDepthTest.push(depthDescr);
-                _stackStencilTest.push(stencilDescr);
-                _stackBlend.push(blendDescr);
-                _stackProgram.push(glProgram);
+            this.textures(textureAccessors, props, i);
+            this.uniforms(uniformDescrs, props, i);
 
-                this.textures(textureAccessors, props, i);
-                this.uniforms(uniformDescrs, props, i);
+            // Only bind the VAO if it is not null - we always assume we
+            // cleaned up after ourselves so it SHOULD be unbound prior to
+            // this point
+            if (attrs.glVertexArray) {
+                gl.bindVertexArray(attrs.glVertexArray);
+            }
 
-                _stackVertexArray.push(attrs.glVertexArray);
+            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
-                gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
-                gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+            if (attrs.indexed) {
+                this.drawElements(
+                    attrs.primitive,
+                    attrs.elementCount,
+                    attrs.indexType!,
+                    0, // offset
+                    attrs.instanceCount,
+                );
+            } else {
+                this.drawArrays(
+                    attrs.primitive,
+                    attrs.count,
+                    0, // offset
+                    attrs.instanceCount,
+                );
+            }
 
-                if (attrs.indexed) {
-                    this.drawElements(
-                        attrs.primitive,
-                        attrs.elementCount,
-                        attrs.indexType!,
-                        0, // offset
-                        attrs.instanceCount,
-                    );
-                } else {
-                    this.drawArrays(
-                        attrs.primitive,
-                        attrs.count,
-                        0, // offset
-                        attrs.instanceCount,
-                    );
-                }
-
-                _stackVertexArray.pop();
-
-                _stackProgram.pop();
-                _stackBlend.pop();
-                _stackStencilTest.pop();
-                _stackDepthTest.pop();
-            });
+            // Clean up after ourselves if we bound something. We can't
+            // leave this bound as an optimisation, as we assume everywhere
+            // it is not bound in beginning of our methods.
+            if (attrs.glVertexArray) {
+                gl.bindVertexArray(null);
+            }
         });
 
-        _stackProgram.pop();
-        _stackBlend.pop();
-        _stackStencilTest.pop();
-        _stackDepthTest.pop();
+        gl.useProgram(null);
+
+        this.blend(null);
+        this.stencilTest(null);
+        this.depthTest(null);
+
+        COMMAND_BINDINGS.delete(dev);
     }
 
     private drawArrays(
@@ -572,6 +610,76 @@ export class Target {
                     break;
             }
         });
+    }
+
+    private depthTest(desc: DepthTestDescriptor | null): void {
+        const gl = this.dev._gl;
+        if (desc) {
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(desc.func);
+            gl.depthMask(desc.mask);
+            gl.depthRange(desc.rangeStart, desc.rangeEnd);
+        } else { gl.disable(gl.DEPTH_TEST); }
+    }
+
+    private stencilTest(desc: StencilTestDescriptor | null): void {
+        const gl = this.dev._gl;
+        if (desc) {
+            const {
+                fFn,
+                bFn,
+                fFnRef,
+                bFnRef,
+                fFnMask,
+                bFnMask,
+                fMask,
+                bMask,
+                fOpFail,
+                bOpFail,
+                fOpZFail,
+                bOpZFail,
+                fOpZPass,
+                bOpZPass,
+            } = desc;
+            gl.enable(gl.STENCIL_TEST);
+            gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
+            gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
+            gl.stencilMaskSeparate(gl.FRONT, fMask);
+            gl.stencilMaskSeparate(gl.BACK, bMask);
+            gl.stencilOpSeparate(
+                gl.FRONT,
+                fOpFail,
+                fOpZFail,
+                fOpZPass,
+            );
+            gl.stencilOpSeparate(
+                gl.BACK,
+                bOpFail,
+                bOpZFail,
+                bOpZPass,
+            );
+        } else { gl.disable(gl.STENCIL_TEST); }
+    }
+
+    private blend(desc: BlendDescriptor | null): void {
+        const gl = this.dev._gl;
+        if (desc) {
+            gl.enable(gl.BLEND);
+            gl.blendFuncSeparate(
+                desc.srcRGB,
+                desc.dstRGB,
+                desc.srcAlpha,
+                desc.dstAlpha,
+            );
+            gl.blendEquationSeparate(
+                desc.eqnRGB,
+                desc.eqnAlpha,
+            );
+            if (desc.color) {
+                const [r, g, b, a] = desc.color;
+                gl.blendColor(r, g, b, a);
+            }
+        } else { gl.disable(gl.BLEND); }
     }
 }
 

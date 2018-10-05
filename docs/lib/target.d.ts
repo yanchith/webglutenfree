@@ -1,10 +1,28 @@
 import { BufferBits, Filter } from "./types";
 export declare type Device = import("./device").Device;
 export declare type Command<P> = import("./command").Command<P>;
+export declare type DepthTestDescriptor = import("./command").DepthTestDescriptor;
+export declare type StencilTestDescriptor = import("./command").StencilTestDescriptor;
+export declare type BlendDescriptor = import("./command").BlendDescriptor;
 export declare type UniformDescriptor<P> = import("./command").UniformDescriptor<P>;
 export declare type TextureAccessor<P> = import("./command").TextureAccessor<P>;
 export declare type Attributes = import("./attributes").Attributes;
 export declare type Framebuffer = import("./framebuffer").Framebuffer;
+/**
+ * Tracks binding of `Target`s for each `Device`. Each `Device` must have at most
+ * one `Target` bound at any time. Nested target binding is not supported even
+ * though it is not prohibited by the shape of the API:
+ *
+ * // This produces a runtime error
+ * fbo.target((fbort) => {
+ *     dev.target((rt) => rt.draw(...));
+ *     fbort.draw(...);
+ * });
+ *
+ * WeakSet is used instead of `private static` variables, as there can be
+ * multiple `Device`s owning the targets.
+ */
+export declare const TARGET_BINDINGS: WeakSet<import("./device").Device>;
 export interface TargetClearOptions {
     r?: number;
     g?: number;
@@ -58,8 +76,7 @@ export declare class Target {
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
      *
-     * All drawing to the target should be done within the callback to prevent
-     * unnecessary rebinding.
+     * All writes/drawing to the target MUST be done within the callback.
      */
     with(cb: (rt: Target) => void): void;
     /**
@@ -94,5 +111,8 @@ export declare class Target {
     private drawElements;
     private textures;
     private uniforms;
+    private depthTest;
+    private stencilTest;
+    private blend;
 }
 //# sourceMappingURL=target.d.ts.map

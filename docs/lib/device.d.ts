@@ -1,7 +1,5 @@
 /// <reference types="webgl2" />
-import { Stack } from "./util/stack";
 import { Target } from "./target";
-import { DepthDescriptor, StencilDescriptor, BlendDescriptor } from "./command";
 export interface DeviceCreateOptions {
     element?: HTMLElement;
     alpha?: boolean;
@@ -54,20 +52,12 @@ export declare class Device {
     static withCanvas(canvas: HTMLCanvasElement, options?: DeviceWithCanvasOptions): Device;
     /**
      * Create a new device from existing gl context. Does not take ownership of
-     * context, but concurrent usage of voids the warranty. Only use
+     * context, but concurrent usage of it voids the warranty. Only use
      * concurrently when absolutely necessary.
      */
     static withContext(gl: WebGL2RenderingContext, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, }?: DeviceWithContextOptions): Device;
     readonly _gl: WebGL2RenderingContext;
     readonly _canvas: HTMLCanvasElement;
-    readonly _stackVertexArray: Stack<WebGLVertexArrayObject | null>;
-    readonly _stackProgram: Stack<WebGLProgram | null>;
-    readonly _stackDepthTest: Stack<DepthDescriptor | null>;
-    readonly _stackStencilTest: Stack<StencilDescriptor | null>;
-    readonly _stackBlend: Stack<BlendDescriptor | null>;
-    readonly _stackDrawFramebuffer: Stack<WebGLFramebuffer | null>;
-    readonly _stackReadFramebuffer: Stack<WebGLFramebuffer | null>;
-    readonly _stackDrawBuffers: Stack<number[]>;
     private explicitPixelRatio?;
     private explicitViewportWidth?;
     private explicitViewportHeight?;

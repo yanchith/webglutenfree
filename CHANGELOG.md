@@ -7,6 +7,7 @@
 - Teach uniform validation mechanism about possible basic type array shorthands
 - Remove needless buffer copying in vertex/element buffers and texture
 - Obscure `process.env.NODE_ENV` shim to prevent rollup inlining it
+- Remove state tracking stacks and instead add hard assertions on illegal usage
 
 ### Enhancements
 
