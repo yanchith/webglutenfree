@@ -18,6 +18,7 @@ export {
 } from "./device";
 
 export {
+    Target,
     TargetClearOptions,
     TargetBlitOptions,
     TargetDrawOptions,

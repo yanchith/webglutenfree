@@ -1,6 +1,6 @@
 import test from "ava";
 
-import { Device, Command, Attributes, Primitive } from "../index";
+import { Device, Target, Command, Attributes, Primitive } from "../index";
 import { WebGL2RenderingContextMock } from "./webgl-mock";
 
 function mockContext(): WebGL2RenderingContext {
@@ -17,9 +17,8 @@ function createDevice(): Device {
     return Device.withContext(gl, { pixelRatio: 1 });
 }
 
-test("Normal usage does not trigger any errors", (t) => t.notThrows(() => {
-    const dev = createDevice();
-    const cmd = Command.create(
+function createCommand(dev: Device): Command<void> {
+    return Command.create(
         dev,
         `#version 300 es
         precision mediump float;
@@ -46,8 +45,10 @@ test("Normal usage does not trigger any errors", (t) => t.notThrows(() => {
         }
         `,
     );
+}
 
-    const attrs = Attributes.create(dev, Primitive.TRIANGLES, {
+function createAttributes(dev: Device): Attributes {
+    return Attributes.create(dev, Primitive.TRIANGLES, {
         0: [
             [-0.3, -0.5],
             [0.3, -0.5],
@@ -59,8 +60,59 @@ test("Normal usage does not trigger any errors", (t) => t.notThrows(() => {
             [0, 0, 1, 1],
         ],
     });
+}
 
-    dev.target((rt) => {
-        rt.draw(cmd, attrs);
+test("Normal usage does not error", (t) => {
+    t.notThrows(() => {
+        const dev = createDevice();
+        const cmd = createCommand(dev);
+        const attrs = createAttributes(dev);
+        dev.target((rt) => {
+            rt.draw(cmd, attrs);
+        });
     });
-}));
+});
+
+test("Nested bound Command#draw should error", (t) => {
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    const attrs = createAttributes(dev);
+    dev.target((rt) => {
+        rt.batch(cmd, () => {
+            t.throws(() => rt.draw(cmd, attrs));
+        });
+    });
+});
+
+test("Nested bound Command#batch should error", (t) => {
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    dev.target((rt) => {
+        rt.batch(cmd, () => {
+            t.throws(() => rt.batch(cmd, () => void 0))
+        });
+    });
+});
+
+test("Unbound Command#draw should error", (t) => {
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    const attrs = createAttributes(dev);
+    let sneakyRt: Target | null = null;
+    dev.target((rt) => {
+        sneakyRt = rt;
+    });
+
+    t.throws(() => sneakyRt!.draw(cmd, attrs));
+});
+
+test("Unbound Command#batch should error", (t) => {
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    let sneakyRt: Target | null = null;
+    dev.target((rt) => {
+        sneakyRt = rt;
+    });
+
+    t.throws(() => sneakyRt!.batch(cmd, () => void 0));
+});

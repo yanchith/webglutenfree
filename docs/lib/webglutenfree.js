@@ -2126,5 +2126,5 @@ class Framebuffer {
     }
 }
 
-export { BufferBits, BufferUsage, DataType, InternalFormat, Format, Filter, Wrap, Primitive, Device, Extension, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, Framebuffer };
+export { BufferBits, BufferUsage, DataType, InternalFormat, Format, Filter, Wrap, Primitive, Device, Extension, Target, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, Framebuffer };
 //# sourceMappingURL=webglutenfree.js.map
