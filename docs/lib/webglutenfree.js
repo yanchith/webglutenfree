@@ -1,11 +1,19 @@
+// Rollup has gotten smarter and realizes that
+// `{ env: { NODE_ENV: "development" } }` is a constant. It therefore inlines
+// it, getting rid of our shim, and leaves no option to replace it for our
+// users. Rollup cannot see through the __OPAQUE_TRUE__ however, so it can't
+// inline the `process.env.NODE_ENV` shim.
+const __OPAQUE_TRUE__ = Math.random() > -1;
+const __OPAQUE_ENV__ = __OPAQUE_TRUE__ ? "development" : "production";
 /**
  * Shim NODE_ENV in node's `process.env`. Our production build replaces
  * all usages making the shim eligible for DCE. Downstream source users can use
  * replacers or envifiers achieve the same.
  */
+const process = { env: { NODE_ENV: __OPAQUE_ENV__ } };
 
 function isTrue(got, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (got !== true) {
             const msg = fmt
                 ? fmt(got)
@@ -15,7 +23,7 @@ function isTrue(got, fmt) {
     }
 }
 function isFalse(got, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (got !== false) {
             const msg = fmt
                 ? fmt(got)
@@ -25,7 +33,7 @@ function isFalse(got, fmt) {
     }
 }
 function nonNull(got, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (typeof got === "undefined" || typeof got === "object" && !got) {
             const msg = fmt
                 ? fmt(got)
@@ -35,7 +43,7 @@ function nonNull(got, fmt) {
     }
 }
 function nonEmpty(got, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (!got.length) {
             const msg = fmt
                 ? fmt(got)
@@ -45,7 +53,7 @@ function nonEmpty(got, fmt) {
     }
 }
 function equal(got, expected, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (got !== expected) {
             const msg = fmt
                 ? fmt(got, expected)
@@ -55,7 +63,7 @@ function equal(got, expected, fmt) {
     }
 }
 function oneOf(got, expected, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (!expected.includes(got)) {
             const msg = fmt
                 ? fmt(got, expected)
@@ -65,7 +73,7 @@ function oneOf(got, expected, fmt) {
     }
 }
 function gt(got, low, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (got <= low) {
             const msg = fmt
                 ? fmt(got, low)
@@ -75,7 +83,7 @@ function gt(got, low, fmt) {
     }
 }
 function rangeInclusive(got, low, high, fmt) {
-    {
+    if (process.env.NODE_ENV !== "production") {
         if (got < low || got > high) {
             const msg = fmt
                 ? fmt(got, low, high)
@@ -432,7 +440,7 @@ class Command {
         gl.deleteShader(vs);
         gl.deleteShader(fs);
         // Validation time! (only for nonproduction envs)
-        {
+        if (process.env.NODE_ENV !== "production") {
             if (!prog) {
                 // ctx loss or not, we can panic all we want in nonprod env!
                 throw new Error("Program was not compiled, possible reason: context loss");
@@ -1577,7 +1585,7 @@ function is2(array) {
     }
     const length2 = Array.isArray(array[0]) ? array[0].length : -1;
     // Do some asserts if not production
-    {
+    if (process.env.NODE_ENV !== "production") {
         array.forEach((sub) => {
             const isSubArray = Array.isArray(sub);
             if (length2 !== -1) {
