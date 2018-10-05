@@ -56,10 +56,6 @@ export declare class Device {
      * concurrently when absolutely necessary.
      */
     static withContext(gl: WebGL2RenderingContext, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, }?: DeviceWithContextOptions): Device;
-    /**
-     * Create a mock device for tests, without canvas or WebGL context.
-     */
-    static mock(): Device;
     readonly _gl: WebGL2RenderingContext;
     readonly _canvas: HTMLCanvasElement;
     private explicitPixelRatio?;

@@ -10,6 +10,304 @@ export interface CanvasMock {
 
 export class WebGL2RenderingContextMock implements WebGL2RenderingContext {
 
+    readonly ACTIVE_ATTRIBUTES: number = 0; // TODO
+    readonly ACTIVE_TEXTURE: number = 0; // TODO
+    readonly ACTIVE_UNIFORMS: number = 0; // TODO
+    readonly ALIASED_LINE_WIDTH_RANGE: number = 0; // TODO
+    readonly ALIASED_POINT_SIZE_RANGE: number = 0; // TODO
+    readonly ALPHA = 0; // TODO
+    readonly ALPHA_BITS = 0; // TODO
+    readonly ALWAYS = 0; // TODO
+    readonly ARRAY_BUFFER = 0; // TODO
+    readonly ARRAY_BUFFER_BINDING = 0; // TODO
+    readonly ATTACHED_SHADERS = 0; // TODO
+    readonly BACK = 0; // TODO
+    readonly BLEND = 0; // TODO
+    readonly BLEND_COLOR = 0; // TODO
+    readonly BLEND_DST_ALPHA = 0; // TODO
+    readonly BLEND_DST_RGB = 0; // TODO
+    readonly BLEND_EQUATION = 0; // TODO
+    readonly BLEND_EQUATION_ALPHA = 0; // TODO
+    readonly BLEND_EQUATION_RGB = 0; // TODO
+    readonly BLEND_SRC_ALPHA = 0; // TODO
+    readonly BLEND_SRC_RGB = 0; // TODO
+    readonly BLUE_BITS = 0; // TODO
+    readonly BOOL = 0; // TODO
+    readonly BOOL_VEC2 = 0; // TODO
+    readonly BOOL_VEC3 = 0; // TODO
+    readonly BOOL_VEC4 = 0; // TODO
+    readonly BROWSER_DEFAULT_WEBGL = 0; // TODO
+    readonly BUFFER_SIZE = 0; // TODO
+    readonly BUFFER_USAGE = 0; // TODO
+    readonly BYTE = 0; // TODO
+    readonly CCW = 0; // TODO
+    readonly CLAMP_TO_EDGE = 0; // TODO
+    readonly COLOR_BUFFER_BIT = 0; // TODO
+    readonly COLOR_CLEAR_VALUE = 0; // TODO
+    readonly COLOR_WRITEMASK = 0; // TODO
+    readonly COMPILE_STATUS = 0; // TODO
+    readonly COMPRESSED_TEXTURE_FORMATS = 0; // TODO
+    readonly CONSTANT_ALPHA = 0; // TODO
+    readonly CONSTANT_COLOR = 0; // TODO
+    readonly CONTEXT_LOST_WEBGL = 0; // TODO
+    readonly CULL_FACE = 0; // TODO
+    readonly CULL_FACE_MODE = 0; // TODO
+    readonly CURRENT_PROGRAM = 0; // TODO
+    readonly CURRENT_VERTEX_ATTRIB = 0; // TODO
+    readonly CW = 0; // TODO
+    readonly DECR = 0; // TODO
+    readonly DECR_WRAP = 0; // TODO
+    readonly DELETE_STATUS = 0; // TODO
+    readonly DEPTH_ATTACHMENT = 0; // TODO
+    readonly DEPTH_BITS = 0; // TODO
+    readonly DEPTH_BUFFER_BIT = 0; // TODO
+    readonly DEPTH_CLEAR_VALUE = 0; // TODO
+    readonly DEPTH_COMPONENT = 0; // TODO
+    readonly DEPTH_COMPONENT16 = 0; // TODO
+    readonly DEPTH_FUNC = 0; // TODO
+    readonly DEPTH_RANGE = 0; // TODO
+    readonly DEPTH_STENCIL = 0; // TODO
+    readonly DEPTH_STENCIL_ATTACHMENT = 0; // TODO
+    readonly DEPTH_TEST = 0; // TODO
+    readonly DEPTH_WRITEMASK = 0; // TODO
+    readonly DITHER = 0; // TODO
+    readonly DONT_CARE = 0; // TODO
+    readonly DST_ALPHA = 0; // TODO
+    readonly DST_COLOR = 0; // TODO
+    readonly DYNAMIC_DRAW = 0; // TODO
+    readonly ELEMENT_ARRAY_BUFFER = 0; // TODO
+    readonly ELEMENT_ARRAY_BUFFER_BINDING = 0; // TODO
+    readonly EQUAL = 0; // TODO
+    readonly FASTEST = 0; // TODO
+    readonly FLOAT = 0; // TODO
+    readonly FLOAT_MAT2 = 0; // TODO
+    readonly FLOAT_MAT3 = 0; // TODO
+    readonly FLOAT_MAT4 = 0; // TODO
+    readonly FLOAT_VEC2 = 0; // TODO
+    readonly FLOAT_VEC3 = 0; // TODO
+    readonly FLOAT_VEC4 = 0; // TODO
+    readonly FRAGMENT_SHADER = 0; // TODO
+    readonly FRAMEBUFFER = 0; // TODO
+    readonly FRAMEBUFFER_ATTACHMENT_OBJECT_NAME = 0; // TODO
+    readonly FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE = 0; // TODO
+    readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE = 0; // TODO
+    readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL = 0; // TODO
+    readonly FRAMEBUFFER_BINDING = 0; // TODO
+    readonly FRAMEBUFFER_COMPLETE = 0; // TODO
+    readonly FRAMEBUFFER_INCOMPLETE_ATTACHMENT = 0; // TODO
+    readonly FRAMEBUFFER_INCOMPLETE_DIMENSIONS = 0; // TODO
+    readonly FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT = 0; // TODO
+    readonly FRAMEBUFFER_UNSUPPORTED = 0; // TODO
+    readonly FRONT = 0; // TODO
+    readonly FRONT_AND_BACK = 0; // TODO
+    readonly FRONT_FACE = 0; // TODO
+    readonly FUNC_ADD = 0; // TODO
+    readonly FUNC_REVERSE_SUBTRACT = 0; // TODO
+    readonly FUNC_SUBTRACT = 0; // TODO
+    readonly GENERATE_MIPMAP_HINT = 0; // TODO
+    readonly GEQUAL = 0; // TODO
+    readonly GREATER = 0; // TODO
+    readonly GREEN_BITS = 0; // TODO
+    readonly HIGH_FLOAT = 0; // TODO
+    readonly HIGH_INT = 0; // TODO
+    readonly IMPLEMENTATION_COLOR_READ_FORMAT = 0; // TODO
+    readonly IMPLEMENTATION_COLOR_READ_TYPE = 0; // TODO
+    readonly INCR = 0; // TODO
+    readonly INCR_WRAP = 0; // TODO
+    readonly INT = 0; // TODO
+    readonly INT_VEC2 = 0; // TODO
+    readonly INT_VEC3 = 0; // TODO
+    readonly INT_VEC4 = 0; // TODO
+    readonly INVALID_ENUM = 0; // TODO
+    readonly INVALID_FRAMEBUFFER_OPERATION = 0; // TODO
+    readonly INVALID_OPERATION = 0; // TODO
+    readonly INVALID_VALUE = 0; // TODO
+    readonly INVERT = 0; // TODO
+    readonly KEEP = 0; // TODO
+    readonly LEQUAL = 0; // TODO
+    readonly LESS = 0; // TODO
+    readonly LINEAR = 0; // TODO
+    readonly LINEAR_MIPMAP_LINEAR = 0; // TODO
+    readonly LINEAR_MIPMAP_NEAREST = 0; // TODO
+    readonly LINE_LOOP = 0; // TODO
+    readonly LINE_STRIP = 0; // TODO
+    readonly LINE_WIDTH = 0; // TODO
+    readonly LINES = 0; // TODO
+    readonly LINK_STATUS = 0; // TODO
+    readonly LOW_FLOAT = 0; // TODO
+    readonly LOW_INT = 0; // TODO
+    readonly LUMINANCE = 0; // TODO
+    readonly LUMINANCE_ALPHA = 0; // TODO
+    readonly MAX_COMBINED_TEXTURE_IMAGE_UNITS = 0; // TODO
+    readonly MAX_CUBE_MAP_TEXTURE_SIZE = 0; // TODO
+    readonly MAX_FRAGMENT_UNIFORM_VECTORS = 0; // TODO
+    readonly MAX_RENDERBUFFER_SIZE = 0; // TODO
+    readonly MAX_TEXTURE_IMAGE_UNITS = 0; // TODO
+    readonly MAX_TEXTURE_SIZE = 0; // TODO
+    readonly MAX_VARYING_VECTORS = 0; // TODO
+    readonly MAX_VERTEX_ATTRIBS = 0; // TODO
+    readonly MAX_VERTEX_TEXTURE_IMAGE_UNITS = 0; // TODO
+    readonly MAX_VERTEX_UNIFORM_VECTORS = 0; // TODO
+    readonly MAX_VIEWPORT_DIMS = 0; // TODO
+    readonly MEDIUM_FLOAT = 0; // TODO
+    readonly MEDIUM_INT = 0; // TODO
+    readonly MIRRORED_REPEAT = 0; // TODO
+    readonly NEAREST = 0; // TODO
+    readonly NEAREST_MIPMAP_LINEAR = 0; // TODO
+    readonly NEAREST_MIPMAP_NEAREST = 0; // TODO
+    readonly NEVER = 0; // TODO
+    readonly NICEST = 0; // TODO
+    readonly NONE = 0; // TODO
+    readonly NOTEQUAL = 0; // TODO
+    readonly NO_ERROR = 0; // TODO
+    readonly ONE = 0; // TODO
+    readonly ONE_MINUS_CONSTANT_ALPHA = 0; // TODO
+    readonly ONE_MINUS_CONSTANT_COLOR = 0; // TODO
+    readonly ONE_MINUS_DST_ALPHA = 0; // TODO
+    readonly ONE_MINUS_DST_COLOR = 0; // TODO
+    readonly ONE_MINUS_SRC_ALPHA = 0; // TODO
+    readonly ONE_MINUS_SRC_COLOR = 0; // TODO
+    readonly OUT_OF_MEMORY = 0; // TODO
+    readonly PACK_ALIGNMENT = 0; // TODO
+    readonly POINTS = 0; // TODO
+    readonly POLYGON_OFFSET_FACTOR = 0; // TODO
+    readonly POLYGON_OFFSET_FILL = 0; // TODO
+    readonly POLYGON_OFFSET_UNITS = 0; // TODO
+    readonly RED_BITS = 0; // TODO
+    readonly RENDERBUFFER = 0; // TODO
+    readonly RENDERBUFFER_ALPHA_SIZE = 0; // TODO
+    readonly RENDERBUFFER_BINDING = 0; // TODO
+    readonly RENDERBUFFER_BLUE_SIZE = 0; // TODO
+    readonly RENDERBUFFER_DEPTH_SIZE = 0; // TODO
+    readonly RENDERBUFFER_GREEN_SIZE = 0; // TODO
+    readonly RENDERBUFFER_HEIGHT = 0; // TODO
+    readonly RENDERBUFFER_INTERNAL_FORMAT = 0; // TODO
+    readonly RENDERBUFFER_RED_SIZE = 0; // TODO
+    readonly RENDERBUFFER_STENCIL_SIZE = 0; // TODO
+    readonly RENDERBUFFER_WIDTH = 0; // TODO
+    readonly RENDERER = 0; // TODO
+    readonly REPEAT = 0; // TODO
+    readonly REPLACE = 0; // TODO
+    readonly RGB = 0; // TODO
+    readonly RGB5_A1 = 0; // TODO
+    readonly RGB565 = 0; // TODO
+    readonly RGBA = 0; // TODO
+    readonly RGBA4 = 0; // TODO
+    readonly SAMPLER_2D = 0; // TODO
+    readonly SAMPLER_CUBE = 0; // TODO
+    readonly SAMPLES = 0; // TODO
+    readonly SAMPLE_ALPHA_TO_COVERAGE = 0; // TODO
+    readonly SAMPLE_BUFFERS = 0; // TODO
+    readonly SAMPLE_COVERAGE = 0; // TODO
+    readonly SAMPLE_COVERAGE_INVERT = 0; // TODO
+    readonly SAMPLE_COVERAGE_VALUE = 0; // TODO
+    readonly SCISSOR_BOX = 0; // TODO
+    readonly SCISSOR_TEST = 0; // TODO
+    readonly SHADER_TYPE = 0; // TODO
+    readonly SHADING_LANGUAGE_VERSION = 0; // TODO
+    readonly SHORT = 0; // TODO
+    readonly SRC_ALPHA = 0; // TODO
+    readonly SRC_ALPHA_SATURATE = 0; // TODO
+    readonly SRC_COLOR = 0; // TODO
+    readonly STATIC_DRAW = 0; // TODO
+    readonly STENCIL_ATTACHMENT = 0; // TODO
+    readonly STENCIL_BACK_FAIL = 0; // TODO
+    readonly STENCIL_BACK_FUNC = 0; // TODO
+    readonly STENCIL_BACK_PASS_DEPTH_FAIL = 0; // TODO
+    readonly STENCIL_BACK_PASS_DEPTH_PASS = 0; // TODO
+    readonly STENCIL_BACK_REF = 0; // TODO
+    readonly STENCIL_BACK_VALUE_MASK = 0; // TODO
+    readonly STENCIL_BACK_WRITEMASK = 0; // TODO
+    readonly STENCIL_BITS = 0; // TODO
+    readonly STENCIL_BUFFER_BIT = 0; // TODO
+    readonly STENCIL_CLEAR_VALUE = 0; // TODO
+    readonly STENCIL_FAIL = 0; // TODO
+    readonly STENCIL_FUNC = 0; // TODO
+    readonly STENCIL_INDEX = 0; // TODO
+    readonly STENCIL_INDEX8 = 0; // TODO
+    readonly STENCIL_PASS_DEPTH_FAIL = 0; // TODO
+    readonly STENCIL_PASS_DEPTH_PASS = 0; // TODO
+    readonly STENCIL_REF = 0; // TODO
+    readonly STENCIL_TEST = 0; // TODO
+    readonly STENCIL_VALUE_MASK = 0; // TODO
+    readonly STENCIL_WRITEMASK = 0; // TODO
+    readonly STREAM_DRAW = 0; // TODO
+    readonly SUBPIXEL_BITS = 0; // TODO
+    readonly TEXTURE = 0; // TODO
+    readonly TEXTURE_2D = 0; // TODO
+    readonly TEXTURE_BINDING_2D = 0; // TODO
+    readonly TEXTURE_BINDING_CUBE_MAP = 0; // TODO
+    readonly TEXTURE_CUBE_MAP = 0; // TODO
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_X = 0; // TODO
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_Y = 0; // TODO
+    readonly TEXTURE_CUBE_MAP_NEGATIVE_Z = 0; // TODO
+    readonly TEXTURE_CUBE_MAP_POSITIVE_X = 0; // TODO
+    readonly TEXTURE_CUBE_MAP_POSITIVE_Y = 0; // TODO
+    readonly TEXTURE_CUBE_MAP_POSITIVE_Z = 0; // TODO
+    readonly TEXTURE_MAG_FILTER = 0; // TODO
+    readonly TEXTURE_MIN_FILTER = 0; // TODO
+    readonly TEXTURE_WRAP_S = 0; // TODO
+    readonly TEXTURE_WRAP_T = 0; // TODO
+    readonly TEXTURE0 = 0; // TODO
+    readonly TEXTURE1 = 0; // TODO
+    readonly TEXTURE2 = 0; // TODO
+    readonly TEXTURE3 = 0; // TODO
+    readonly TEXTURE4 = 0; // TODO
+    readonly TEXTURE5 = 0; // TODO
+    readonly TEXTURE6 = 0; // TODO
+    readonly TEXTURE7 = 0; // TODO
+    readonly TEXTURE8 = 0; // TODO
+    readonly TEXTURE9 = 0; // TODO
+    readonly TEXTURE10 = 0; // TODO
+    readonly TEXTURE11 = 0; // TODO
+    readonly TEXTURE12 = 0; // TODO
+    readonly TEXTURE13 = 0; // TODO
+    readonly TEXTURE14 = 0; // TODO
+    readonly TEXTURE15 = 0; // TODO
+    readonly TEXTURE16 = 0; // TODO
+    readonly TEXTURE17 = 0; // TODO
+    readonly TEXTURE18 = 0; // TODO
+    readonly TEXTURE19 = 0; // TODO
+    readonly TEXTURE20 = 0; // TODO
+    readonly TEXTURE21 = 0; // TODO
+    readonly TEXTURE22 = 0; // TODO
+    readonly TEXTURE23 = 0; // TODO
+    readonly TEXTURE24 = 0; // TODO
+    readonly TEXTURE25 = 0; // TODO
+    readonly TEXTURE26 = 0; // TODO
+    readonly TEXTURE27 = 0; // TODO
+    readonly TEXTURE28 = 0; // TODO
+    readonly TEXTURE29 = 0; // TODO
+    readonly TEXTURE30 = 0; // TODO
+    readonly TEXTURE31 = 0; // TODO
+    readonly TEXTURE32 = 0; // TODO
+    readonly TRIANGLE_FAN = 0; // TODO
+    readonly TRIANGLE_STRIP = 0; // TODO
+    readonly TRIANGLES = 0; // TODO
+    readonly UNPACK_ALIGNMENT = 0; // TODO
+    readonly UNPACK_COLORSPACE_CONVERSION_WEBGL = 0; // TODO
+    readonly UNPACK_FLIP_Y_WEBGL = 0; // TODO
+    readonly UNPACK_PREMULTIPLY_ALPHA_WEBGL = 0; // TODO
+    readonly UNSIGNED_BYTE = 0; // TODO
+    readonly UNSIGNED_INT = 0; // TODO
+    readonly UNSIGNED_SHORT = 0; // TODO
+    readonly UNSIGNED_SHORT_4_4_4_4 = 0; // TODO
+    readonly UNSIGNED_SHORT_5_5_5_1 = 0; // TODO
+    readonly UNSIGNED_SHORT_5_6_5 = 0; // TODO
+    readonly VALIDATE_STATUS = 0; // TODO
+    readonly VENDOR = 0; // TODO
+    readonly VERSION = 0; // TODO
+    readonly VERTEX_ATTRIB_ARRAY_BUFFER_BINDING = 0; // TODO
+    readonly VERTEX_ATTRIB_ARRAY_ENABLED = 0; // TODO
+    readonly VERTEX_ATTRIB_ARRAY_NORMALIZED = 0; // TODO
+    readonly VERTEX_ATTRIB_ARRAY_POINTER = 0; // TODO
+    readonly VERTEX_ATTRIB_ARRAY_SIZE = 0; // TODO
+    readonly VERTEX_ATTRIB_ARRAY_STRIDE = 0; // TODO
+    readonly VERTEX_ATTRIB_ARRAY_TYPE = 0; // TODO
+    readonly VERTEX_SHADER = 0; // TODO
+    readonly VIEWPORT = 0; // TODO
+    readonly ZERO = 0; // TODO
+
     readonly READ_BUFFER: number = 0x0C02;
     readonly UNPACK_ROW_LENGTH: number = 0x0CF2;
     readonly UNPACK_SKIP_ROWS: number = 0x0CF3;
@@ -167,6 +465,7 @@ export class WebGL2RenderingContextMock implements WebGL2RenderingContext {
     readonly RENDERBUFFER_SAMPLES: number = 0x8CAB;
     readonly FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER: number = 0x8CD4;
     readonly MAX_COLOR_ATTACHMENTS: number = 0x8CDF;
+    readonly COLOR_ATTACHMENT0: number = 0x8CE0;
     readonly COLOR_ATTACHMENT1: number = 0x8CE1;
     readonly COLOR_ATTACHMENT2: number = 0x8CE2;
     readonly COLOR_ATTACHMENT3: number = 0x8CE3;
@@ -350,6 +649,7 @@ export class WebGL2RenderingContextMock implements WebGL2RenderingContext {
     deleteTransformFeedback(): void { return; }
     deleteQuery(): void { return; }
     deleteSync(): void { return; }
+    deleteVertexArray(): void { return; }
     depthFunc(): void { return; }
     depthMask(): void { return; }
     depthRange(): void { return; }
@@ -376,6 +676,9 @@ export class WebGL2RenderingContextMock implements WebGL2RenderingContext {
     generateMipmap(): void { return; }
     getActiveAttrib(): WebGLActiveInfo | null { return null; }
     getActiveUniform(): WebGLActiveInfo | null { return null; }
+    getActiveUniforms(): WebGLActiveInfo | null { return null; }
+    getActiveUniformBlockName(): string | null { return null; }
+    getActiveUniformBlockParameter(): WebGLActiveInfo | null { return null; }
     getAttachedShaders(): WebGLShader[] | null { return null; }
     getAttribLocation(): number { return 0; }
     getBufferParameter(): unknown { return {}; }
@@ -403,6 +706,7 @@ export class WebGL2RenderingContextMock implements WebGL2RenderingContext {
     getQuery(): WebGLQuery | null { return {}; }
     getQueryParameter(): unknown { return {}; }
     getUniform(): unknown { return {}; }
+    getUniformBlockIndex(): number { return 0; }
     getUniformIndices(): number[] | null { return []; }
     getUniformLocation(): WebGLUniformLocation | null { return {}; }
     getVertexAttrib(): unknown { return {}; }
@@ -419,6 +723,7 @@ export class WebGL2RenderingContextMock implements WebGL2RenderingContext {
     isSampler(): boolean { return true; }
     isShader(): boolean { return true; }
     isSync(): boolean { return true; }
+    isVertexArray(): boolean { return true; }
     isTexture(): boolean { return true; }
     isTransformFeedback(): boolean { return true; }
     isQuery(): boolean { return true; }
@@ -452,6 +757,7 @@ export class WebGL2RenderingContextMock implements WebGL2RenderingContext {
     texSubImage2D(): void { return; }
     texSubImage3D(): void { return; }
     transformFeedbackVaryings(): void { return; }
+    uniformBlockBinding(): void { return; }
     uniform1f(): void { return; }
     uniform1fv(): void { return; }
     uniform1i(): void { return; }

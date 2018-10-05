@@ -12,8 +12,13 @@ function mockContext(): WebGL2RenderingContext {
     });
 }
 
+function createDevice(): Device {
+    const gl = mockContext();
+    return Device.withContext(gl, { pixelRatio: 1 });
+}
+
 test("Normal usage does not trigger any errors", (t) => t.notThrows(() => {
-    const dev = Device.mock();
+    const dev = createDevice();
     const cmd = Command.create(
         dev,
         `#version 300 es
