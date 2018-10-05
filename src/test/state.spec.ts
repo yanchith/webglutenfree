@@ -28,6 +28,65 @@ test("Normal usage does not error", (t) => {
     });
 });
 
+test("Normal fbo usage does not error", (t) => {
+    t.notThrows(() => {
+        const dev = createDevice();
+        const cmd = createCommand(dev);
+        const attrs = createAttributes(dev);
+        const tex = createTexture(dev);
+        const fbo = createFramebuffer(dev, tex);
+        fbo.target((rt) => {
+            rt.clear(BufferBits.COLOR);
+            rt.draw(cmd, attrs);
+        });
+        dev.target((rt) => {
+            rt.blit(fbo, BufferBits.COLOR);
+        });
+    });
+});
+
+test("Multiple devices can bind Targets (even nested)", (t) => {
+    t.notThrows(() => {
+        const dev1 = createDevice();
+        const dev2 = createDevice();
+
+        dev1.target(() => void 0);
+        dev2.target(() => void 0);
+
+        // Not sure why anyone would EVER do this, but these devices are
+        // independent and our validations should not interfere
+        dev1.target(() => {
+            dev2.target(() => void 0);
+        });
+    });
+});
+
+test("Multiple devices can bind Commands (even nested)", (t) => {
+    t.notThrows(() => {
+        const dev1 = createDevice();
+        const dev2 = createDevice();
+        const cmd1 = createCommand(dev1);
+        const cmd2 = createCommand(dev2);
+        const attrs1 = createAttributes(dev1);
+        const attrs2 = createAttributes(dev2);
+
+        // Not sure why anyone would EVER do this, but these devices are
+        // independent and our validations should not interfere
+        dev1.target((rt1) => {
+            dev2.target((rt2) => {
+                rt1.batch(cmd1, (draw1) => {
+                    rt2.draw(cmd2, attrs2, void 0);
+                    rt2.batch(cmd2, (draw2) => {
+                        draw2(attrs2, void 0);
+                        draw1(attrs1, void 0);
+                    });
+                    draw1(attrs1, void 0);
+                })
+            });
+        });
+    });
+});
+
 test("Nested bound Command with Target#draw should error", (t) => {
     const dev = createDevice();
     const cmd = createCommand(dev);
