@@ -2,8 +2,7 @@ import * as assert from "./util/assert";
 import { InternalFormat } from "./types";
 import { State } from "./state";
 import { Target } from "./target";
-
-export type Texture<F> = import("./texture").Texture<F>;
+import { Texture } from "./texture";
 
 export type TextureColorInternalFormat =
 

@@ -6,10 +6,8 @@ import {
     StencilTestDescriptor,
     BlendDescriptor,
 } from "./state";
-
-export type Texture<T> = import("./texture").Texture<T>;
-export type TextureInternalFormat = import("./texture").TextureInternalFormat;
-export type AttributesConfig = import("./attributes").AttributesConfig;
+import { AttributesConfig } from "./attributes";
+import { Texture, TextureInternalFormat } from "./texture";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;

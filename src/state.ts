@@ -1,7 +1,7 @@
 export class DepthTestDescriptor {
     static equals(
         left: DepthTestDescriptor | null,
-        right: DepthTestDescriptor | null
+        right: DepthTestDescriptor | null,
     ) {
         if (left === right) { return true; }
         if (!left || !right) { return false; }

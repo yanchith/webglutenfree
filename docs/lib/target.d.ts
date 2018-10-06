@@ -1,10 +1,8 @@
 import { BufferBits, Filter } from "./types";
 import { State } from "./state";
-export declare type Command<P> = import("./command").Command<P>;
-export declare type UniformDescriptor<P> = import("./command").UniformDescriptor<P>;
-export declare type TextureAccessor<P> = import("./command").TextureAccessor<P>;
-export declare type Attributes = import("./attributes").Attributes;
-export declare type Framebuffer = import("./framebuffer").Framebuffer;
+import { Command } from "./command";
+import { Attributes } from "./attributes";
+import { Framebuffer } from "./framebuffer";
 export interface TargetClearOptions {
     r?: number;
     g?: number;

@@ -1,15 +1,14 @@
 import * as assert from "./util/assert";
 import { BufferBits, Filter, Primitive } from "./types";
 import { State } from "./state";
+import { Command, UniformDescriptor, TextureAccessor } from "./command";
+import { Attributes } from "./attributes";
+import { Framebuffer } from "./framebuffer";
 
-export type Command<P> = import("./command").Command<P>;
-export type UniformDescriptor<P> = import("./command").UniformDescriptor<P>;
-export type TextureAccessor<P> = import("./command").TextureAccessor<P>;
-export type Attributes = import("./attributes").Attributes;
-export type Framebuffer = import("./framebuffer").Framebuffer;
 
 const GL_NONE = 0;
 const DRAW_BUFFERS_NONE = [GL_NONE];
+
 
 export interface TargetClearOptions {
     r?: number;
