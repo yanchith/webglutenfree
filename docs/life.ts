@@ -13,10 +13,7 @@
 
 import {
     Device,
-    Command,
-    Attributes,
     Texture,
-    Framebuffer,
     BufferBits,
     Primitive,
     DataType,
@@ -34,11 +31,11 @@ const [lifeWidth, lifeHeight] = [
 
 // Use textures with only one channel. By using REPEAT in both directions, we
 // create a cyclic universe
-const pingTex = Texture.create(dev, lifeWidth, lifeHeight, InternalFormat.R8, {
+const pingTex = dev.createTexture(lifeWidth, lifeHeight, InternalFormat.R8, {
     wrapS: Wrap.REPEAT,
     wrapT: Wrap.REPEAT,
 });
-const pongTex = Texture.create(dev, lifeWidth, lifeHeight, InternalFormat.R8, {
+const pongTex = dev.createTexture(lifeWidth, lifeHeight, InternalFormat.R8, {
     wrapS: Wrap.REPEAT,
     wrapT: Wrap.REPEAT,
 });
@@ -53,8 +50,8 @@ pingTex.store(
     DataType.UNSIGNED_BYTE,
 );
 
-const pingFbo = Framebuffer.create(dev, lifeWidth, lifeHeight, pingTex);
-const pongFbo = Framebuffer.create(dev, lifeWidth, lifeHeight, pongTex);
+const pingFbo = dev.createFramebuffer(lifeWidth, lifeHeight, pingTex);
+const pongFbo = dev.createFramebuffer(lifeWidth, lifeHeight, pongTex);
 
 // Performs a step by step simulation by reading previous state of the
 // universe from one texture and writing the result to another.
@@ -63,8 +60,7 @@ interface CmdProps {
     tex: Texture<InternalFormat>;
 }
 
-const cmd = Command.create<CmdProps>(
-    dev,
+const cmd = dev.createCommand<CmdProps>(
     `#version 300 es
     precision mediump float;
 
@@ -127,7 +123,7 @@ const cmd = Command.create<CmdProps>(
     { textures: { u_universe: ({ tex }) => tex } },
 );
 
-const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
+const attrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
 
 let ping = { tex: pingTex, fbo: pingFbo };
 let pong = { tex: pongTex, fbo: pongFbo };

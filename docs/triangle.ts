@@ -4,23 +4,21 @@
  * happening at every step.
  */
 
-import { Device, Command, Attributes, Primitive } from "./lib/webglutenfree.js";
+import { Device, Primitive } from "./lib/webglutenfree.js";
 
 // The device is the entry point to the API, analogous to a WebGL context.
 // It has multiple constructors, Device.create() being the most convenient, as
 // it creates the canvas and acquires the WebGL context for you. For more
-// control, see Device.withCanvas() and Device.withContext(). All constructors
-// take an options object, allowing you to customize various properties related
-// context acquisition, or other WebGL related properties.
+// control, see Device.createWithCanvas() and Device.createWithContext().
+// All constructors take an options object, allowing you to customize various
+// properties related context acquisition, or other WebGL related properties.
 const dev = Device.create();
 
-// Commands are used to draw (or compute) stuff. Notice that it takes the device
-// as a first argument. This will be true for all webglutenfree objects.
-// Commands consist of a vertex and fragment shaders, and optionally can be
-// passed an options object, allowing us to control uniform variables, and to
-// customize WebGL graphics pipeline stages, such as depth testing, and blending.
-const cmd = Command.create(
-    dev,
+// Commands are used to draw or compute and consist of a vertex and fragment
+// shaders, and optionally can be passed an options object, allowing us to
+// control uniform variables, and to customize WebGL graphics pipeline stages,
+// such as depth testing or blending.
+const cmd = dev.createCommand(
     `#version 300 es
     precision mediump float;
 
@@ -53,7 +51,7 @@ const cmd = Command.create(
 // Attributes can usually infer the size and count of your data, and create
 // the neccessary buffers for you, but they can always be passed explicitely,
 // when more control is needed (eg for updating buffers during runtime)
-const attrs = Attributes.create(dev, Primitive.TRIANGLES, {
+const attrs = dev.createAttributes(Primitive.TRIANGLES, {
     // The 0-th attribute is the vertex position (a_position)
     0: [
         [-0.3, -0.5],
@@ -68,12 +66,11 @@ const attrs = Attributes.create(dev, Primitive.TRIANGLES, {
     ],
 });
 
-// Finally we get to the drawing! We always need a target to draw to. Luckilly,
-// the device instance has one handy! Once acquired, the target is used to
-// draw stuff. There are also other operations you can do with the target,
-// such as clearing or copying/blitting subrects. It is important to first ask
-// for a render target and then draw to it in batch, as switching framebuffers
-// can be fairly costly on some hardware/drivers.
+// Finally we get to drawing! We always need a target to draw to. Luckilly,
+// the device instance has one handy! There are also other operations you can
+// do with the target, such as clearing or blitting subrects. It is important
+// to first ask for a render target and then draw to it in batch, as switching
+// framebuffers can be fairly costly.
 dev.target((rt) => {
     // The target is ready for drawing
     rt.draw(cmd, attrs);

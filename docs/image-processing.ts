@@ -6,7 +6,7 @@
  * https://webgl2fundamentals.org/webgl/lessons/webgl-image-processing.html
  */
 
-import { Device, Command, Attributes, Texture } from "./lib/webglutenfree.js";
+import { Device } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 import { loadImage } from "./libx/load-image.js";
 
@@ -45,12 +45,11 @@ const KERNEL = kernels.edgeDetect;
 const dev = Device.create();
 const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
-async function run() {
+async function run(): Promise<void> {
     const imageData = await loadImage("img/lenna.png", true);
-    const imageTexture = Texture.withImage(dev, imageData);
+    const imageTexture = dev.createTextureWithImage(imageData);
 
-    const cmd = Command.create(
-        dev,
+    const cmd = dev.createCommand(
         `#version 300 es
         precision mediump float;
 
@@ -126,7 +125,7 @@ async function run() {
         },
     );
 
-    const attrs = Attributes.create(dev, square.elements, cmd.locate({
+    const attrs = dev.createAttributes(square.elements, cmd.locate({
         a_position: square.positions,
         a_uv: square.uvs,
     }));

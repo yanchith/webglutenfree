@@ -1,28 +1,10 @@
 import { BufferBits, Filter } from "./types";
-export declare type Device = import("./device").Device;
+import { State } from "./state";
 export declare type Command<P> = import("./command").Command<P>;
-export declare type DepthTestDescriptor = import("./command").DepthTestDescriptor;
-export declare type StencilTestDescriptor = import("./command").StencilTestDescriptor;
-export declare type BlendDescriptor = import("./command").BlendDescriptor;
 export declare type UniformDescriptor<P> = import("./command").UniformDescriptor<P>;
 export declare type TextureAccessor<P> = import("./command").TextureAccessor<P>;
 export declare type Attributes = import("./attributes").Attributes;
 export declare type Framebuffer = import("./framebuffer").Framebuffer;
-/**
- * Tracks binding of `Target`s for each `Device`. Each `Device` must have at most
- * one `Target` bound at any time. Nested target binding is not supported even
- * though it is not prohibited by the shape of the API:
- *
- * // This produces a runtime error
- * fbo.target((fbort) => {
- *     dev.target((rt) => rt.draw(...));
- *     fbort.draw(...);
- * });
- *
- * WeakSet is used instead of `private static` variables, as there can be
- * multiple `Device`s owning the targets.
- */
-export declare const TARGET_BINDINGS: WeakSet<import("./device").Device>;
 export interface TargetClearOptions {
     r?: number;
     g?: number;
@@ -66,12 +48,12 @@ export interface TargetDrawOptions {
  * `device.target()` or `framebuffer.target()`.
  */
 export declare class Target {
-    private dev;
+    private state;
     private glDrawBuffers;
     private glFramebuffer;
     private surfaceWidth?;
     private surfaceHeight?;
-    constructor(dev: Device, glDrawBuffers: number[], glFramebuffer: WebGLFramebuffer | null, surfaceWidth?: number | undefined, surfaceHeight?: number | undefined);
+    constructor(state: State, glDrawBuffers: number[], glFramebuffer: WebGLFramebuffer | null, surfaceWidth?: number | undefined, surfaceHeight?: number | undefined);
     /**
      * Run the callback with the target bound. This is called automatically,
      * when obtaining a target via `device.target()` or `framebuffer.target()`.
@@ -111,8 +93,5 @@ export declare class Target {
     private drawElements;
     private textures;
     private uniforms;
-    private depthTest;
-    private stencilTest;
-    private blend;
 }
 //# sourceMappingURL=target.d.ts.map

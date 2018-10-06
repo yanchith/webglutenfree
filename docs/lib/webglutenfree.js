@@ -301,24 +301,652 @@ function sizeOf(type) {
     }
 }
 
+/**
+ * Checks whether array has at least two dimensions.
+ * Asserts array is not jagged. Only checks first two dimensions.
+ * Returns false if array is degenerate (either dimension is 0), as 0d array
+ * is not 2d array.
+ */
+function is2(array) {
+    if (!array.length) {
+        return false;
+    }
+    const length2 = Array.isArray(array[0]) ? array[0].length : -1;
+    // Do some asserts if not production
+    if (process.env.NODE_ENV !== "production") {
+        array.forEach((sub) => {
+            const isSubArray = Array.isArray(sub);
+            if (length2 !== -1) {
+                isTrue(isSubArray);
+                equal(sub.length, length2);
+            }
+            else {
+                isFalse(isSubArray);
+            }
+        });
+    }
+    // if length2 === 0, array is degenerate
+    // if length2 === -1, array is 1d
+    return length2 > 0;
+}
+/**
+ * Returns first two dimensions of array. Assumes nonjagged array and does no
+ * checks to prove so. Accepts degenerate arrays.
+ */
+function shape2(array) {
+    const outer = array.length;
+    const inner = outer ? array[0].length : 0;
+    return [outer, inner];
+}
+/**
+ * Take an unraveled 2d array and a shape. Returns new flat array with all
+ * elements from the original unraveled array. Assumes unraveled array is not
+ * jagged and shape matches the unraveled dimensions and makes no checks to
+ * prove so. Accepts degenerate arrays if shape matches them.
+ */
+function ravel2(unraveled, shape) {
+    const [outer, inner] = shape;
+    const raveled = new Array(inner * outer);
+    unraveled.forEach((arr, i) => {
+        arr.forEach((elem, j) => {
+            raveled[inner * i + j] = elem;
+        });
+    });
+    return raveled;
+}
+
+class DepthTestDescriptor {
+    constructor(func, mask, rangeStart, rangeEnd) {
+        this.func = func;
+        this.mask = mask;
+        this.rangeStart = rangeStart;
+        this.rangeEnd = rangeEnd;
+    }
+    static equals(left, right) {
+        if (left === right) {
+            return true;
+        }
+        if (!left || !right) {
+            return false;
+        }
+        if (left.func !== right.func) {
+            return false;
+        }
+        if (left.mask !== right.mask) {
+            return false;
+        }
+        if (left.rangeStart !== right.rangeStart) {
+            return false;
+        }
+        if (left.rangeEnd !== right.rangeEnd) {
+            return false;
+        }
+        return true;
+    }
+}
+class StencilTestDescriptor {
+    constructor(fFn, bFn, fFnRef, bFnRef, fFnMask, bFnMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass) {
+        this.fFn = fFn;
+        this.bFn = bFn;
+        this.fFnRef = fFnRef;
+        this.bFnRef = bFnRef;
+        this.fFnMask = fFnMask;
+        this.bFnMask = bFnMask;
+        this.fMask = fMask;
+        this.bMask = bMask;
+        this.fOpFail = fOpFail;
+        this.bOpFail = bOpFail;
+        this.fOpZFail = fOpZFail;
+        this.bOpZFail = bOpZFail;
+        this.fOpZPass = fOpZPass;
+        this.bOpZPass = bOpZPass;
+    }
+    static equals(left, right) {
+        if (left === right) {
+            return true;
+        }
+        if (!left || !right) {
+            return false;
+        }
+        if (left.fFn !== right.fFn) {
+            return false;
+        }
+        if (left.bFn !== right.bFn) {
+            return false;
+        }
+        if (left.fFnRef !== right.fFnRef) {
+            return false;
+        }
+        if (left.bFnRef !== right.bFnRef) {
+            return false;
+        }
+        if (left.fFnMask !== right.fFnMask) {
+            return false;
+        }
+        if (left.bFnMask !== right.bFnMask) {
+            return false;
+        }
+        if (left.fMask !== right.fMask) {
+            return false;
+        }
+        if (left.bMask !== right.bMask) {
+            return false;
+        }
+        if (left.fOpFail !== right.fOpFail) {
+            return false;
+        }
+        if (left.bOpFail !== right.bOpFail) {
+            return false;
+        }
+        if (left.fOpZFail !== right.fOpZFail) {
+            return false;
+        }
+        if (left.bOpZFail !== right.bOpZFail) {
+            return false;
+        }
+        if (left.fOpZPass !== right.fOpZPass) {
+            return false;
+        }
+        if (left.bOpZPass !== right.bOpZPass) {
+            return false;
+        }
+        return true;
+    }
+}
+class BlendDescriptor {
+    constructor(srcRGB, srcAlpha, dstRGB, dstAlpha, eqnRGB, eqnAlpha, color) {
+        this.srcRGB = srcRGB;
+        this.srcAlpha = srcAlpha;
+        this.dstRGB = dstRGB;
+        this.dstAlpha = dstAlpha;
+        this.eqnRGB = eqnRGB;
+        this.eqnAlpha = eqnAlpha;
+        this.color = color;
+    }
+    static equals(left, right) {
+        if (left === right) {
+            return true;
+        }
+        if (!left || !right) {
+            return false;
+        }
+        if (left.srcRGB !== right.srcRGB) {
+            return false;
+        }
+        if (left.srcAlpha !== right.srcAlpha) {
+            return false;
+        }
+        if (left.dstRGB !== right.dstRGB) {
+            return false;
+        }
+        if (left.dstAlpha !== right.dstAlpha) {
+            return false;
+        }
+        if (left.eqnRGB !== right.eqnRGB) {
+            return false;
+        }
+        if (left.eqnAlpha !== right.eqnAlpha) {
+            return false;
+        }
+        if (left.color === right.color) {
+            return true;
+        }
+        if (!left.color || !right.color) {
+            return false;
+        }
+        if (left.color[0] !== right.color[0]) {
+            return false;
+        }
+        if (left.color[1] !== right.color[1]) {
+            return false;
+        }
+        if (left.color[2] !== right.color[2]) {
+            return false;
+        }
+        if (left.color[3] !== right.color[3]) {
+            return false;
+        }
+        return true;
+    }
+}
+class State {
+    constructor(gl) {
+        this.depthTest = null;
+        this.stencilTest = null;
+        this.blend = null;
+        this.target = null;
+        this.command = null;
+        this.gl = gl;
+    }
+    setDepthTest(depthTest) {
+        if (!DepthTestDescriptor.equals(this.depthTest, depthTest)) {
+            this.depthTest = depthTest;
+            this.applyDepthTest();
+        }
+    }
+    setStencilTest(stencilTest) {
+        if (!StencilTestDescriptor.equals(this.stencilTest, stencilTest)) {
+            this.stencilTest = stencilTest;
+            this.applyStencilTest();
+        }
+    }
+    setBlend(blend) {
+        if (!BlendDescriptor.equals(this.blend, blend)) {
+            this.blend = blend;
+            this.applyBlend();
+        }
+    }
+    /**
+     * Tracks binding of `Target`s for this `State`. Each `Device` must have at
+     * most one `Target` bound at any time. Nested target binding is not
+     * supported even though it is not prohibited by the shape of the API:
+     *
+     * // This produces a runtime error
+     * fbo.target((fbort) => {
+     *     dev.target((rt) => rt.draw(...));
+     *     fbort.draw(...);
+     * });
+     */
+    trackTargetBinding(target) {
+        if (this.target && target) {
+            throw new Error("Cannot have two Targets bound at the same time");
+        }
+        this.target = target;
+    }
+    /**
+     * Tracks binding of `Command`s for this `State`. Each `Device` must have at
+     * most one `Command` bound at any time. Nested command binding is not
+     * supported even though it is not prohibited by the shape of the API:
+     *
+     * // This produces a runtime error
+     * dev.target((rt) => {
+     *     rt.batch(cmd, (draw) => {
+     *         rt.draw(cmd, attrs, props);
+     *     });
+     * });
+     */
+    trackCommandBinding(command) {
+        if (this.command && command) {
+            throw new Error("Cannot have two Commands bound at the same time");
+        }
+        this.command = command;
+    }
+    assertTargetBound(op) {
+        if (!this.target) {
+            throw new Error(`Need to have a Target bound to perform ${op}`);
+        }
+    }
+    assertCommandBound(op) {
+        if (!this.command) {
+            throw new Error(`Need to have a Command bound to perform ${op}`);
+        }
+    }
+    assertTargetUnbound() {
+        if (this.target) {
+            throw new Error("A Target is already bound, cannot bind twice");
+        }
+    }
+    assertCommandUnbound() {
+        if (this.command) {
+            throw new Error("A Command is already bound, cannot bind twice");
+        }
+    }
+    applyDepthTest() {
+        const { gl, depthTest } = this;
+        if (depthTest) {
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(depthTest.func);
+            gl.depthMask(depthTest.mask);
+            gl.depthRange(depthTest.rangeStart, depthTest.rangeEnd);
+        }
+        else {
+            gl.disable(gl.DEPTH_TEST);
+        }
+    }
+    applyStencilTest() {
+        const { gl, stencilTest } = this;
+        if (stencilTest) {
+            const { fFn, bFn, fFnRef, bFnRef, fFnMask, bFnMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = stencilTest;
+            gl.enable(gl.STENCIL_TEST);
+            gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
+            gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
+            gl.stencilMaskSeparate(gl.FRONT, fMask);
+            gl.stencilMaskSeparate(gl.BACK, bMask);
+            gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
+            gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
+        }
+        else {
+            gl.disable(gl.STENCIL_TEST);
+        }
+    }
+    applyBlend() {
+        const { gl, blend } = this;
+        if (blend) {
+            gl.enable(gl.BLEND);
+            gl.blendFuncSeparate(blend.srcRGB, blend.dstRGB, blend.srcAlpha, blend.dstAlpha);
+            gl.blendEquationSeparate(blend.eqnRGB, blend.eqnAlpha);
+            if (blend.color) {
+                const [r, g, b, a] = blend.color;
+                gl.blendColor(r, g, b, a);
+            }
+        }
+        else {
+            gl.disable(gl.BLEND);
+        }
+    }
+}
+
+const GL_NONE = 0;
+const DRAW_BUFFERS_NONE = [GL_NONE];
+/**
+ * Target represents a drawable surface. Get hold of targets with
+ * `device.target()` or `framebuffer.target()`.
+ */
+class Target {
+    constructor(state, glDrawBuffers, glFramebuffer, surfaceWidth, surfaceHeight) {
+        this.state = state;
+        this.glDrawBuffers = glDrawBuffers;
+        this.glFramebuffer = glFramebuffer;
+        this.surfaceWidth = surfaceWidth;
+        this.surfaceHeight = surfaceHeight;
+    }
+    /**
+     * Run the callback with the target bound. This is called automatically,
+     * when obtaining a target via `device.target()` or `framebuffer.target()`.
+     *
+     * All writes/drawing to the target MUST be done within the callback.
+     */
+    with(cb) {
+        const { state, state: { gl }, glFramebuffer, glDrawBuffers, } = this;
+        // We would overwrite the currently bound DRAW_FRAMEBUFFER unless we
+        // checked
+        state.assertTargetUnbound();
+        state.trackTargetBinding(this);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
+        gl.drawBuffers(glDrawBuffers);
+        cb(this);
+        gl.drawBuffers(DRAW_BUFFERS_NONE);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+        state.trackTargetBinding(null);
+    }
+    /**
+     * Clear selected buffers to provided values.
+     */
+    clear(bits, { r = 0, g = 0, b = 0, a = 1, depth = 1, stencil = 0, scissorX = 0, scissorY = 0, scissorWidth = this.surfaceWidth === void 0
+        ? this.state.gl.drawingBufferWidth
+        : this.surfaceWidth, scissorHeight = this.surfaceHeight === void 0
+        ? this.state.gl.drawingBufferHeight
+        : this.surfaceHeight, } = {}) {
+        const { state, state: { gl } } = this;
+        state.assertTargetBound("clear");
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        if (bits & BufferBits.COLOR) {
+            gl.clearColor(r, g, b, a);
+        }
+        if (bits & BufferBits.DEPTH) {
+            gl.clearDepth(depth);
+        }
+        if (bits & BufferBits.STENCIL) {
+            gl.clearStencil(stencil);
+        }
+        gl.clear(bits);
+    }
+    /**
+     * Blit source framebuffer onto this render target. Use buffer bits to
+     * choose buffers to blit.
+     */
+    blit(source, bits, { srcX = 0, srcY = 0, srcWidth = source.width, srcHeight = source.height, dstX = 0, dstY = 0, dstWidth = this.surfaceWidth === void 0
+        ? this.state.gl.drawingBufferWidth
+        : this.surfaceWidth, dstHeight = this.surfaceHeight === void 0
+        ? this.state.gl.drawingBufferHeight
+        : this.surfaceHeight, filter = Filter.NEAREST, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
+        const { state, state: { gl } } = this;
+        state.assertTargetBound("blit");
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        gl.blitFramebuffer(srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, bits, filter);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+    }
+    /**
+     * Draw to this target with a command, attributes, and command properties.
+     * The properties are passed to the command's uniform or texture callbacks,
+     * if used.
+     *
+     * This is a unified header to stisfy the typechecker.
+     */
+    draw(cmd, attrs, props, { viewportX = 0, viewportY = 0, viewportWidth = this.surfaceWidth === void 0
+        ? this.state.gl.drawingBufferWidth
+        : this.surfaceWidth, viewportHeight = this.surfaceHeight === void 0
+        ? this.state.gl.drawingBufferHeight
+        : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
+        const { state, state: { gl } } = this;
+        state.assertTargetBound("draw");
+        state.assertCommandUnbound();
+        const { glProgram, depthTestDescr, stencilTestDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
+        state.setDepthTest(depthTestDescr);
+        state.setStencilTest(stencilTestDescr);
+        state.setBlend(blendDescr);
+        gl.useProgram(glProgram);
+        this.textures(textureAccessors, props, 0);
+        this.uniforms(uniformDescrs, props, 0);
+        // Only bind the VAO if it is not null - we always assume we cleaned
+        // up after ourselves so it SHOULD be unbound prior to this point
+        if (attrs.glVertexArray) {
+            gl.bindVertexArray(attrs.glVertexArray);
+        }
+        gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        if (attrs.indexed) {
+            this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
+            attrs.instanceCount);
+        }
+        else {
+            this.drawArrays(attrs.primitive, attrs.count, 0, // offset
+            attrs.instanceCount);
+        }
+        // Clean up after ourselves if we bound something
+        if (attrs.glVertexArray) {
+            gl.bindVertexArray(null);
+        }
+        gl.useProgram(null);
+    }
+    /**
+     * Perform multiple draws to this target with the same command, but multiple
+     * attributes and command properties. The properties are passed to the
+     * command's uniform or texture callbacks, if used.
+     *
+     * All drawing should be performed within the callback to prevent
+     * unnecesasry rebinding.
+     */
+    batch(cmd, cb, { viewportX = 0, viewportY = 0, viewportWidth = this.surfaceWidth === void 0
+        ? this.state.gl.drawingBufferWidth
+        : this.surfaceWidth, viewportHeight = this.surfaceHeight === void 0
+        ? this.state.gl.drawingBufferHeight
+        : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
+        const { state, state: { gl } } = this;
+        state.assertTargetBound("batch-draw");
+        state.assertCommandUnbound();
+        const { glProgram, depthTestDescr, stencilTestDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
+        // The price for gl.useProgram, enabling depth/stencil tests and
+        // blending is paid only once for all draw calls in batch
+        state.setDepthTest(depthTestDescr);
+        state.setStencilTest(stencilTestDescr);
+        state.setBlend(blendDescr);
+        state.trackCommandBinding(this);
+        gl.useProgram(glProgram);
+        let i = 0;
+        cb((attrs, props) => {
+            // Did the user do anything sneaky?
+            // TODO: assert the command and target is the same one
+            state.assertTargetBound("batch-draw");
+            state.assertCommandBound("batch-draw");
+            i++;
+            this.textures(textureAccessors, props, i);
+            this.uniforms(uniformDescrs, props, i);
+            // Only bind the VAO if it is not null - we always assume we
+            // cleaned up after ourselves so it SHOULD be unbound prior to
+            // this point
+            if (attrs.glVertexArray) {
+                gl.bindVertexArray(attrs.glVertexArray);
+            }
+            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
+            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+            if (attrs.indexed) {
+                this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
+                attrs.instanceCount);
+            }
+            else {
+                this.drawArrays(attrs.primitive, attrs.count, 0, // offset
+                attrs.instanceCount);
+            }
+            // Clean up after ourselves if we bound something. We can't
+            // leave this bound as an optimisation, as we assume everywhere
+            // it is not bound in beginning of our methods.
+            if (attrs.glVertexArray) {
+                gl.bindVertexArray(null);
+            }
+        });
+        gl.useProgram(null);
+        state.trackCommandBinding(null);
+    }
+    drawArrays(primitive, count, offset, instanceCount) {
+        if (instanceCount) {
+            this.state.gl.drawArraysInstanced(primitive, offset, count, instanceCount);
+        }
+        else {
+            this.state.gl.drawArrays(primitive, offset, count);
+        }
+    }
+    drawElements(primitive, count, type, offset, instCount) {
+        if (instCount) {
+            this.state.gl.drawElementsInstanced(primitive, count, type, offset, instCount);
+        }
+        else {
+            this.state.gl.drawElements(primitive, count, type, offset);
+        }
+    }
+    textures(textureAccessors, props, index) {
+        const gl = this.state.gl;
+        textureAccessors.forEach((accessor, i) => {
+            const tex = access(props, index, accessor);
+            gl.activeTexture(gl.TEXTURE0 + i);
+            gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
+        });
+    }
+    uniforms(uniformDescrs, props, index) {
+        const gl = this.state.gl;
+        uniformDescrs.forEach(({ identifier: ident, location: loc, definition: def, }) => {
+            switch (def.type) {
+                case "1f":
+                    gl.uniform1f(loc, access(props, index, def.value));
+                    break;
+                case "1fv":
+                    gl.uniform1fv(loc, access(props, index, def.value));
+                    break;
+                case "1i":
+                    gl.uniform1i(loc, access(props, index, def.value));
+                    break;
+                case "1iv":
+                    gl.uniform1iv(loc, access(props, index, def.value));
+                    break;
+                case "1ui":
+                    gl.uniform1ui(loc, access(props, index, def.value));
+                    break;
+                case "1uiv":
+                    gl.uniform1uiv(loc, access(props, index, def.value));
+                    break;
+                case "2f": {
+                    const [x, y] = access(props, index, def.value);
+                    gl.uniform2f(loc, x, y);
+                    break;
+                }
+                case "2fv":
+                    gl.uniform2fv(loc, access(props, index, def.value));
+                    break;
+                case "2i": {
+                    const [x, y] = access(props, index, def.value);
+                    gl.uniform2i(loc, x, y);
+                    break;
+                }
+                case "2iv":
+                    gl.uniform2iv(loc, access(props, index, def.value));
+                    break;
+                case "2ui": {
+                    const [x, y] = access(props, index, def.value);
+                    gl.uniform2ui(loc, x, y);
+                    break;
+                }
+                case "2uiv":
+                    gl.uniform2uiv(loc, access(props, index, def.value));
+                    break;
+                case "3f": {
+                    const [x, y, z] = access(props, index, def.value);
+                    gl.uniform3f(loc, x, y, z);
+                    break;
+                }
+                case "3fv":
+                    gl.uniform3fv(loc, access(props, index, def.value));
+                    break;
+                case "3i": {
+                    const [x, y, z] = access(props, index, def.value);
+                    gl.uniform3i(loc, x, y, z);
+                    break;
+                }
+                case "3iv":
+                    gl.uniform3iv(loc, access(props, index, def.value));
+                    break;
+                case "3ui": {
+                    const [x, y, z] = access(props, index, def.value);
+                    gl.uniform3ui(loc, x, y, z);
+                    break;
+                }
+                case "3uiv":
+                    gl.uniform3uiv(loc, access(props, index, def.value));
+                    break;
+                case "4f": {
+                    const [x, y, z, w] = access(props, index, def.value);
+                    gl.uniform4f(loc, x, y, z, w);
+                    break;
+                }
+                case "4fv":
+                    gl.uniform4fv(loc, access(props, index, def.value));
+                    break;
+                case "4i": {
+                    const [x, y, z, w] = access(props, index, def.value);
+                    gl.uniform4i(loc, x, y, z, w);
+                    break;
+                }
+                case "4iv":
+                    gl.uniform4iv(loc, access(props, index, def.value));
+                    break;
+                case "4ui": {
+                    const [x, y, z, w] = access(props, index, def.value);
+                    gl.uniform4ui(loc, x, y, z, w);
+                    break;
+                }
+                case "4uiv":
+                    gl.uniform4uiv(loc, access(props, index, def.value));
+                    break;
+                case "matrix2fv":
+                    gl.uniformMatrix2fv(loc, false, access(props, index, def.value));
+                    break;
+                case "matrix3fv":
+                    gl.uniformMatrix3fv(loc, false, access(props, index, def.value));
+                    break;
+                case "matrix4fv":
+                    gl.uniformMatrix4fv(loc, false, access(props, index, def.value));
+                    break;
+                default:
+                    unreachable(def, () => `Unknown uniform: ${ident}`);
+                    break;
+            }
+        });
+    }
+}
+function access(props, index, value) { return typeof value === "function" ? value(props, index) : value; }
+
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
-/**
- * Tracks binding of `Command`s for each `Device`. Each `Device` must have at
- * most one `Command` bound at any time. Nested command binding is not supported
- * even though it is not prohibited by the shape of the API:
- *
- * // This produces a runtime error
- * dev.target((rt) => {
- *     rt.batch(cmd, (draw) => {
- *         rt.draw(cmd, attrs, props);
- *     });
- * });
- *
- * WeakSet is used instead of `private static` variables, as there can be
- * multiple `Device`s owning the commands.
- */
-const COMMAND_BINDINGS = new WeakSet();
 var DepthFunc;
 (function (DepthFunc) {
     DepthFunc[DepthFunc["ALWAYS"] = 519] = "ALWAYS";
@@ -378,8 +1006,8 @@ var BlendEquation;
     BlendEquation[BlendEquation["MAX"] = 32776] = "MAX";
 })(BlendEquation || (BlendEquation = {}));
 class Command {
-    constructor(dev, vsSource, fsSource, textures, uniforms, depthDescr, stencilDescr, blendDescr) {
-        this.dev = dev;
+    constructor(state, vsSource, fsSource, textures, uniforms, depthDescr, stencilDescr, blendDescr) {
+        this.state = state;
         this.vsSource = vsSource;
         this.fsSource = fsSource;
         this.textures = textures;
@@ -390,20 +1018,12 @@ class Command {
         this.glProgram = null;
         this.init();
     }
-    static create(dev, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
-        nonNull(vert, fmtParamNonNull("vert"));
-        nonNull(frag, fmtParamNonNull("frag"));
-        const depthDescr = parseDepth(depth);
-        const stencilDescr = parseStencil(stencil);
-        const blendDescr = parseBlend(blend);
-        return new Command(dev, vert, frag, textures, uniforms, depthDescr, stencilDescr, blendDescr);
-    }
     /**
      * Reinitialize invalid buffer, eg. after context is lost.
      */
     restore() {
-        const { dev: { _gl }, glProgram } = this;
-        if (!_gl.isProgram(glProgram)) {
+        const { state: { gl }, glProgram } = this;
+        if (!gl.isProgram(glProgram)) {
             this.init();
         }
     }
@@ -412,14 +1032,14 @@ class Command {
      * actual attribute locations for the program in this command.
      */
     locate(attributes) {
-        const { dev: { _gl }, glProgram } = this;
+        const { state: { gl }, glProgram } = this;
         return Object.entries(attributes)
             .reduce((accum, [identifier, definition]) => {
             if (INT_PATTERN.test(identifier)) {
                 accum[identifier] = definition;
             }
             else {
-                const location = _gl.getAttribLocation(glProgram, identifier);
+                const location = gl.getAttribLocation(glProgram, identifier);
                 if (location === UNKNOWN_ATTRIB_LOCATION) {
                     throw new Error(`No location for attrib: ${identifier}`);
                 }
@@ -429,11 +1049,9 @@ class Command {
         }, {});
     }
     init() {
-        const { dev, dev: { _gl: gl }, vsSource, fsSource, textures, uniforms, } = this;
+        const { state, state: { gl }, vsSource, fsSource, textures, uniforms, } = this;
         // We would overwrite the currently bound program unless we checked
-        if (COMMAND_BINDINGS.has(dev)) {
-            throw new Error("A command for this device is already bound");
-        }
+        state.assertCommandUnbound();
         const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
         const prog = createProgram(gl, vs, fs);
@@ -590,149 +1208,12 @@ class Command {
         this.uniformDescrs = uniformDescrs;
     }
 }
-class DepthTestDescriptor {
-    constructor(func, mask, rangeStart, rangeEnd) {
-        this.func = func;
-        this.mask = mask;
-        this.rangeStart = rangeStart;
-        this.rangeEnd = rangeEnd;
-    }
-}
-class StencilTestDescriptor {
-    constructor(fFn, bFn, fFnRef, bFnRef, fFnMask, bFnMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass) {
-        this.fFn = fFn;
-        this.bFn = bFn;
-        this.fFnRef = fFnRef;
-        this.bFnRef = bFnRef;
-        this.fFnMask = fFnMask;
-        this.bFnMask = bFnMask;
-        this.fMask = fMask;
-        this.bMask = bMask;
-        this.fOpFail = fOpFail;
-        this.bOpFail = bOpFail;
-        this.fOpZFail = fOpZFail;
-        this.bOpZFail = bOpZFail;
-        this.fOpZPass = fOpZPass;
-        this.bOpZPass = bOpZPass;
-    }
-}
-class BlendDescriptor {
-    constructor(srcRGB, srcAlpha, dstRGB, dstAlpha, eqnRGB, eqnAlpha, color) {
-        this.srcRGB = srcRGB;
-        this.srcAlpha = srcAlpha;
-        this.dstRGB = dstRGB;
-        this.dstAlpha = dstAlpha;
-        this.eqnRGB = eqnRGB;
-        this.eqnAlpha = eqnAlpha;
-        this.color = color;
-    }
-}
 class UniformDescriptor {
     constructor(identifier, location, definition) {
         this.identifier = identifier;
         this.location = location;
         this.definition = definition;
     }
-}
-function parseDepth(depth) {
-    if (!depth) {
-        return undefined;
-    }
-    nonNull(depth.func, fmtParamNonNull("depth.func"));
-    return new DepthTestDescriptor(depth.func || DepthFunc.LESS, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
-}
-function parseStencil(stencil) {
-    if (!stencil) {
-        return undefined;
-    }
-    nonNull(stencil.func, fmtParamNonNull("stencil.func"));
-    // TODO: complete stencil validation... validation framework?
-    return new StencilTestDescriptor(typeof stencil.func.func === "object"
-        ? stencil.func.func.front
-        : stencil.func.func, typeof stencil.func.func === "object"
-        ? stencil.func.func.back
-        : stencil.func.func, typeof stencil.func.ref !== "undefined"
-        ? typeof stencil.func.ref === "object"
-            ? stencil.func.ref.front
-            : stencil.func.ref
-        : 1, typeof stencil.func.ref !== "undefined"
-        ? typeof stencil.func.ref === "object"
-            ? stencil.func.ref.back
-            : stencil.func.ref
-        : 1, typeof stencil.func.mask !== "undefined"
-        ? typeof stencil.func.mask === "object"
-            ? stencil.func.mask.front
-            : stencil.func.mask
-        : 0xFF, typeof stencil.func.mask !== "undefined"
-        ? typeof stencil.func.mask === "object"
-            ? stencil.func.mask.back
-            : stencil.func.mask
-        : 0xFF, typeof stencil.mask !== "undefined"
-        ? typeof stencil.mask === "object"
-            ? stencil.mask.front
-            : stencil.mask
-        : 0xFF, typeof stencil.mask !== "undefined"
-        ? typeof stencil.mask === "object"
-            ? stencil.mask.back
-            : stencil.mask
-        : 0xFF, stencil.op
-        ? typeof stencil.op.fail === "object"
-            ? stencil.op.fail.front
-            : stencil.op.fail
-        : StencilOp.KEEP, stencil.op
-        ? typeof stencil.op.fail === "object"
-            ? stencil.op.fail.back
-            : stencil.op.fail
-        : StencilOp.KEEP, stencil.op
-        ? typeof stencil.op.zfail === "object"
-            ? stencil.op.zfail.front
-            : stencil.op.zfail
-        : StencilOp.KEEP, stencil.op
-        ? typeof stencil.op.zfail === "object"
-            ? stencil.op.zfail.back
-            : stencil.op.zfail
-        : StencilOp.KEEP, stencil.op
-        ? typeof stencil.op.zpass === "object"
-            ? stencil.op.zpass.front
-            : stencil.op.zpass
-        : StencilOp.KEEP, stencil.op
-        ? typeof stencil.op.zpass === "object"
-            ? stencil.op.zpass.back
-            : stencil.op.zpass
-        : StencilOp.KEEP);
-}
-function parseBlend(blend) {
-    if (!blend) {
-        return undefined;
-    }
-    nonNull(blend.func, fmtParamNonNull("blend.func"));
-    nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
-    nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
-    if (typeof blend.func.src === "object") {
-        nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
-        nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
-    }
-    if (typeof blend.func.dst === "object") {
-        nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
-        nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
-    }
-    return new BlendDescriptor(typeof blend.func.src === "object"
-        ? blend.func.src.rgb
-        : blend.func.src, typeof blend.func.src === "object"
-        ? blend.func.src.alpha
-        : blend.func.src, typeof blend.func.dst === "object"
-        ? blend.func.dst.rgb
-        : blend.func.dst, typeof blend.func.dst === "object"
-        ? blend.func.dst.alpha
-        : blend.func.dst, blend.equation
-        ? typeof blend.equation === "object"
-            ? blend.equation.rgb
-            : blend.equation
-        : BlendEquation.FUNC_ADD, blend.equation
-        ? typeof blend.equation === "object"
-            ? blend.equation.alpha
-            : blend.equation
-        : BlendEquation.FUNC_ADD, blend.color);
 }
 function createProgram(gl, vertex, fragment) {
     const program = gl.createProgram();
@@ -929,405 +1410,410 @@ function validateUniformDeclaration(gl, info, type) {
         default: unreachable(type);
     }
 }
-function fmtParamNonNull(name) {
-    return () => `Missing parameter ${name}`;
-}
 function fmtTyMismatch(name) {
     return () => `Type mismatch for uniform field ${name}`;
 }
 
 /**
- * Tracks binding of `Target`s for each `Device`. Each `Device` must have at most
- * one `Target` bound at any time. Nested target binding is not supported even
- * though it is not prohibited by the shape of the API:
- *
- * // This produces a runtime error
- * fbo.target((fbort) => {
- *     dev.target((rt) => rt.draw(...));
- *     fbort.draw(...);
- * });
- *
- * WeakSet is used instead of `private static` variables, as there can be
- * multiple `Device`s owning the targets.
+ * Vertex buffers contain GPU accessible data. Accessing them is usually done
+ * via setting up an attribute that reads the buffer.
  */
-const TARGET_BINDINGS = new WeakSet();
-const GL_NONE = 0;
-const DRAW_BUFFERS_NONE = [GL_NONE];
+class VertexBuffer {
+    constructor(gl, type, length, byteLength, usage) {
+        this.gl = gl;
+        this.type = type;
+        this.length = length;
+        this.byteLength = byteLength;
+        this.usage = usage;
+        this.glBuffer = null;
+        this.init();
+    }
+    /**
+     * Reinitialize invalid buffer, eg. after context is lost.
+     */
+    restore() {
+        const { gl, glBuffer } = this;
+        if (!gl.isBuffer(glBuffer)) {
+            this.init();
+        }
+    }
+    /**
+     * Upload new data to buffer. Does not take ownership of data.
+     */
+    store(data, { offset = 0 } = {}) {
+        const { type, gl, glBuffer } = this;
+        const buffer = Array.isArray(data)
+            ? createBuffer(type, data)
+            // WebGL bug causes Uint8ClampedArray to be read incorrectly
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            : data instanceof Uint8ClampedArray
+                // Both buffers are u8 -> do not copy, just change lens
+                ? new Uint8Array(data.buffer)
+                // Other buffer types are fine
+                : data;
+        const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
+        gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, byteOffset, buffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        return this;
+    }
+    init() {
+        const { usage, byteLength, gl } = this;
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, byteLength, usage);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        this.glBuffer = buffer;
+    }
+}
+function createBuffer(type, arr) {
+    switch (type) {
+        case DataType.BYTE: return new Int8Array(arr);
+        case DataType.SHORT: return new Int16Array(arr);
+        case DataType.INT: return new Int32Array(arr);
+        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
+        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
+        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
+        case DataType.FLOAT: return new Float32Array(arr);
+        default: return unreachable(type, (p) => {
+            return `Invalid buffer type: ${p}`;
+        });
+    }
+}
+
 /**
- * Target represents a drawable surface. Get hold of targets with
- * `device.target()` or `framebuffer.target()`.
+ * Element buffers contain indices for accessing vertex buffer data.
  */
-class Target {
-    constructor(dev, glDrawBuffers, glFramebuffer, surfaceWidth, surfaceHeight) {
-        this.dev = dev;
-        this.glDrawBuffers = glDrawBuffers;
-        this.glFramebuffer = glFramebuffer;
-        this.surfaceWidth = surfaceWidth;
-        this.surfaceHeight = surfaceHeight;
+class ElementBuffer {
+    constructor(gl, type, primitive, length, byteLength, usage) {
+        this.gl = gl;
+        this.type = type;
+        this.primitive = primitive;
+        this.length = length;
+        this.byteLength = byteLength;
+        this.usage = usage;
+        this.glBuffer = null;
+        this.init();
     }
     /**
-     * Run the callback with the target bound. This is called automatically,
-     * when obtaining a target via `device.target()` or `framebuffer.target()`.
-     *
-     * All writes/drawing to the target MUST be done within the callback.
+     * Reinitialize invalid buffer, eg. after context is lost.
      */
-    with(cb) {
-        const { dev, dev: { _gl: gl }, glFramebuffer, glDrawBuffers, } = this;
-        // We would overwrite the currently bound DRAW_FRAMEBUFFER unless we
-        // checked
-        if (TARGET_BINDINGS.has(dev)) {
-            throw new Error("A target for this device is already bound");
+    restore() {
+        const { gl, glBuffer } = this;
+        if (!gl.isBuffer(glBuffer)) {
+            this.init();
         }
-        TARGET_BINDINGS.add(dev);
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
-        gl.drawBuffers(glDrawBuffers);
-        cb(this);
-        gl.drawBuffers(DRAW_BUFFERS_NONE);
+    }
+    /**
+     * Upload new data to buffer. Does not take ownership of data.
+     */
+    store(data, { offset = 0 } = {}) {
+        const { type, gl, glBuffer } = this;
+        const buffer = Array.isArray(data)
+            ? createBuffer$1(type, data)
+            // WebGL bug causes Uint8ClampedArray to be read incorrectly
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            : data instanceof Uint8ClampedArray
+                // Both buffers are u8 -> do not copy, just change lens
+                ? new Uint8Array(data.buffer)
+                // Other buffer types are fine
+                : data;
+        const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glBuffer);
+        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, byteOffset, buffer);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        return this;
+    }
+    init() {
+        const { usage, byteLength, gl } = this;
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteLength, usage);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        this.glBuffer = buffer;
+    }
+}
+function createBuffer$1(type, arr) {
+    switch (type) {
+        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
+        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
+        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
+        default: return unreachable(type, (p) => {
+            return `invalid buffer type: ${p}`;
+        });
+    }
+}
+
+/**
+ * Attribute type for reading vertex buffers. POINTER provides normalization
+ * options for converting integer values to floats. IPOINTER always retains
+ * integers types.
+ */
+var AttributeType;
+(function (AttributeType) {
+    AttributeType["POINTER"] = "pointer";
+    AttributeType["IPOINTER"] = "ipointer";
+})(AttributeType || (AttributeType = {}));
+/**
+ * Attributes store vertex buffers, an element buffer, and attributes with the
+ * vertex format for provided vertex buffers.
+ */
+class Attributes {
+    constructor(state, primitive, attributes, count, instanceCount, elements) {
+        this.state = state;
+        this.primitive = primitive;
+        this.elementBuffer = elements;
+        this.attributes = attributes;
+        this.count = count;
+        this.elementCount = elements ? elements.length : 0;
+        this.instanceCount = instanceCount;
+        this.glVertexArray = null;
+        this.init();
+    }
+    get indexed() {
+        return !!this.elementBuffer;
+    }
+    get indexType() {
+        return this.elementBuffer && this.elementBuffer.type;
+    }
+    /**
+     * Reinitialize invalid vertex array, eg. after context is lost. Also tries
+     * to reinitialize vertex buffer and element buffer dependencies.
+     */
+    restore() {
+        const { state: { gl }, glVertexArray, attributes, elementBuffer } = this;
+        if (elementBuffer) {
+            elementBuffer.restore();
+        }
+        attributes.forEach((attr) => attr.buffer.restore());
+        // If we have no attributes nor elements, there is no need to restore
+        // any GPU state
+        if (this.hasAttribs() && !gl.isVertexArray(glVertexArray)) {
+            this.init();
+        }
+    }
+    init() {
+        // Do not create the gl vao if there are no buffers to bind
+        if (!this.hasAttribs()) {
+            return;
+        }
+        const { state: { gl }, attributes, elementBuffer } = this;
+        const vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
+        attributes.forEach(({ location, type, buffer: { glBuffer, type: glBufferType }, size, normalized = false, divisor, }) => {
+            // Enable sending attribute arrays for location
+            gl.enableVertexAttribArray(location);
+            // Send buffer
+            gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
+            switch (type) {
+                case AttributeType.POINTER:
+                    gl.vertexAttribPointer(location, size, glBufferType, normalized, 0, 0);
+                    break;
+                case AttributeType.IPOINTER:
+                    gl.vertexAttribIPointer(location, size, glBufferType, 0, 0);
+                    break;
+                default: unreachable(type);
+            }
+            if (divisor) {
+                gl.vertexAttribDivisor(location, divisor);
+            }
+        });
+        if (elementBuffer) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
+        }
+        gl.bindVertexArray(null);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        if (elementBuffer) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        }
+        this.glVertexArray = vao;
+    }
+    hasAttribs() {
+        // IF we have either attributes or elements, this geometry can not
+        // longer be considered empty.
+        return !!this.elementBuffer || !!this.attributes.length;
+    }
+}
+class AttributeDescriptor {
+    constructor(location, type, buffer, count, size, normalized, divisor) {
+        this.location = location;
+        this.type = type;
+        this.buffer = buffer;
+        this.count = count;
+        this.size = size;
+        this.normalized = normalized;
+        this.divisor = divisor;
+    }
+}
+
+/**
+ * Textures are images of 2D data, where each texel can contain multiple
+ * information channels of a certain type.
+ */
+class Texture {
+    constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
+        this.gl = gl;
+        this.width = width;
+        this.height = height;
+        this.format = format;
+        this.wrapS = wrapS;
+        this.wrapT = wrapT;
+        this.minFilter = minFilter;
+        this.magFilter = magFilter;
+        this.glTexture = null;
+        this.init();
+    }
+    /**
+     * Reinitialize invalid texture, eg. after context is lost.
+     */
+    restore() {
+        const { gl, glTexture } = this;
+        if (!gl.isTexture(glTexture)) {
+            this.init();
+        }
+    }
+    /**
+     * Upload new data to texture. Does not take ownership of data.
+     */
+    store(data, format, type, { xOffset = 0, yOffset = 0, width = this.width, height = this.height, mipmap = false, } = {}) {
+        const { gl, glTexture } = this;
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        // This pixel row alignment is theoretically smaller than needed
+        // TODO: find greatest correct unpack alignment for pixel rows
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, data.BYTES_PER_ELEMENT);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, // level
+        xOffset, yOffset, width, height, format, type, 
+        // WebGL bug causes Uint8ClampedArray to be read incorrectly
+        // https://github.com/KhronosGroup/WebGL/issues/1533
+        data instanceof Uint8ClampedArray
+            // Both buffers are u8 -> do not copy, just change lens
+            ? new Uint8Array(data.buffer)
+            // Other buffer types are fine
+            : data);
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_2D);
+        }
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        return this;
+    }
+    /**
+     * Generate mipmap levels for the current data.
+     */
+    mipmap() {
+        const { gl, glTexture } = this;
+        gl.bindTexture(gl.TEXTURE_2D, glTexture);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+    init() {
+        const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        this.glTexture = texture;
+    }
+}
+
+/**
+ * Framebuffers store the list of attachments to write to during a draw
+ * operation. They can be a draw target via `framebuffer.target()`
+ */
+class Framebuffer {
+    constructor(state, width, height, colors, depthStencil) {
+        this.state = state;
+        this.width = width;
+        this.height = height;
+        this.colors = colors;
+        this.depthStencil = depthStencil;
+        this.glColorAttachments = colors
+            .map((_, i) => state.gl.COLOR_ATTACHMENT0 + i);
+        this.glFramebuffer = null;
+        this.framebufferTarget = null;
+        this.init();
+    }
+    /**
+     * Reinitialize invalid framebuffer, eg. after context is lost.
+     */
+    restore() {
+        const { state: { gl }, glFramebuffer, colors, depthStencil, } = this;
+        colors.forEach((buffer) => buffer.restore());
+        if (depthStencil) {
+            depthStencil.restore();
+        }
+        if (!gl.isFramebuffer(glFramebuffer)) {
+            this.init();
+        }
+    }
+    /**
+     * Request a render target from this framebuffer to draw into. The target
+     * will contain all attached color buffers.
+     *
+     * Drawing should be done within the callback by
+     * calling `ratget.clear()` or `target.draw()` family of methods.
+     *
+     * Also see `device.target()`.
+     */
+    target(cb) {
+        if (this.framebufferTarget) {
+            this.framebufferTarget.with(cb);
+        }
+    }
+    init() {
+        const { width, height, state, state: { gl }, glColorAttachments, colors, depthStencil, } = this;
+        // This would overwrite a the currently bound `Target`s FBO
+        state.assertTargetUnbound();
+        const fbo = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
+        colors.forEach((buffer, i) => {
+            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
+        });
+        if (depthStencil) {
+            switch (depthStencil.format) {
+                case InternalFormat.DEPTH24_STENCIL8:
+                case InternalFormat.DEPTH32F_STENCIL8:
+                    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
+                    break;
+                case InternalFormat.DEPTH_COMPONENT16:
+                case InternalFormat.DEPTH_COMPONENT24:
+                case InternalFormat.DEPTH_COMPONENT32F:
+                    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
+                    break;
+                default: unreachable(depthStencil, (p) => {
+                    return `Unsupported attachment: ${p}`;
+                });
+            }
+        }
+        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-        TARGET_BINDINGS.delete(dev);
-    }
-    /**
-     * Clear selected buffers to provided values.
-     */
-    clear(bits, { r = 0, g = 0, b = 0, a = 1, depth = 1, stencil = 0, scissorX = 0, scissorY = 0, scissorWidth = this.surfaceWidth === void 0
-        ? this.dev._gl.drawingBufferWidth
-        : this.surfaceWidth, scissorHeight = this.surfaceHeight === void 0
-        ? this.dev._gl.drawingBufferHeight
-        : this.surfaceHeight, } = {}) {
-        const { dev, dev: { _gl: gl } } = this;
-        if (!TARGET_BINDINGS.has(dev)) {
-            throw new Error("A target must be bound to perform clear");
-        }
-        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-        if (bits & BufferBits.COLOR) {
-            gl.clearColor(r, g, b, a);
-        }
-        if (bits & BufferBits.DEPTH) {
-            gl.clearDepth(depth);
-        }
-        if (bits & BufferBits.STENCIL) {
-            gl.clearStencil(stencil);
-        }
-        gl.clear(bits);
-    }
-    /**
-     * Blit source framebuffer onto this render target. Use buffer bits to
-     * choose buffers to blit.
-     */
-    blit(source, bits, { srcX = 0, srcY = 0, srcWidth = source.width, srcHeight = source.height, dstX = 0, dstY = 0, dstWidth = this.surfaceWidth === void 0
-        ? this.dev._gl.drawingBufferWidth
-        : this.surfaceWidth, dstHeight = this.surfaceHeight === void 0
-        ? this.dev._gl.drawingBufferHeight
-        : this.surfaceHeight, filter = Filter.NEAREST, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
-        const { dev, dev: { _gl: gl } } = this;
-        if (!TARGET_BINDINGS.has(dev)) {
-            throw new Error("A target must be bound to perform blit");
-        }
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
-        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-        gl.blitFramebuffer(srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, bits, filter);
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
-    }
-    /**
-     * Draw to this target with a command, attributes, and command properties.
-     * The properties are passed to the command's uniform or texture callbacks,
-     * if used.
-     *
-     * This is a unified header to stisfy the typechecker.
-     */
-    draw(cmd, attrs, props, { viewportX = 0, viewportY = 0, viewportWidth = this.surfaceWidth === void 0
-        ? this.dev._gl.drawingBufferWidth
-        : this.surfaceWidth, viewportHeight = this.surfaceHeight === void 0
-        ? this.dev._gl.drawingBufferHeight
-        : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
-        const { dev, dev: { _gl: gl } } = this;
-        if (!TARGET_BINDINGS.has(dev)) {
-            throw new Error("A target must be bound to perform draw");
-        }
-        const { glProgram, depthTestDescr, stencilTestDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
-        if (COMMAND_BINDINGS.has(dev)) {
-            throw new Error("Command already bound, cannot bind twice");
-        }
-        this.depthTest(depthTestDescr);
-        this.stencilTest(stencilTestDescr);
-        this.blend(blendDescr);
-        gl.useProgram(glProgram);
-        this.textures(textureAccessors, props, 0);
-        this.uniforms(uniformDescrs, props, 0);
-        // Only bind the VAO if it is not null - we always assume we cleaned
-        // up after ourselves so it SHOULD be unbound prior to this point
-        if (attrs.glVertexArray) {
-            gl.bindVertexArray(attrs.glVertexArray);
-        }
-        gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
-        gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-        if (attrs.indexed) {
-            this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
-            attrs.instanceCount);
-        }
-        else {
-            this.drawArrays(attrs.primitive, attrs.count, 0, // offset
-            attrs.instanceCount);
-        }
-        // Clean up after ourselves if we bound something
-        if (attrs.glVertexArray) {
-            gl.bindVertexArray(null);
-        }
-        gl.useProgram(null);
-        this.blend(null);
-        this.stencilTest(null);
-        this.depthTest(null);
-    }
-    /**
-     * Perform multiple draws to this target with the same command, but multiple
-     * attributes and command properties. The properties are passed to the
-     * command's uniform or texture callbacks, if used.
-     *
-     * All drawing should be performed within the callback to prevent
-     * unnecesasry rebinding.
-     */
-    batch(cmd, cb, { viewportX = 0, viewportY = 0, viewportWidth = this.surfaceWidth === void 0
-        ? this.dev._gl.drawingBufferWidth
-        : this.surfaceWidth, viewportHeight = this.surfaceHeight === void 0
-        ? this.dev._gl.drawingBufferHeight
-        : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
-        const { dev, dev: { _gl: gl } } = this;
-        if (!TARGET_BINDINGS.has(dev)) {
-            throw new Error("A target must be bound to perform batch");
-        }
-        const { glProgram, depthTestDescr, stencilTestDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
-        // The price for gl.useProgram, enabling depth/stencil tests and
-        // blending is paid only once for all draw calls in batch
-        // Perform shared batch setup, but first ensure no concurrency
-        if (COMMAND_BINDINGS.has(dev)) {
-            throw new Error("Command already bound, cannot bind twice");
-        }
-        COMMAND_BINDINGS.add(dev);
-        this.depthTest(depthTestDescr);
-        this.stencilTest(stencilTestDescr);
-        this.blend(blendDescr);
-        gl.useProgram(glProgram);
-        let i = 0;
-        cb((attrs, props) => {
-            if (!TARGET_BINDINGS.has(dev)) {
-                throw new Error("A target must be bound to batch draw");
-            }
-            if (!COMMAND_BINDINGS.has(dev)) {
-                throw new Error("A command must be bound to batch draw");
-            }
-            i++;
-            this.textures(textureAccessors, props, i);
-            this.uniforms(uniformDescrs, props, i);
-            // Only bind the VAO if it is not null - we always assume we
-            // cleaned up after ourselves so it SHOULD be unbound prior to
-            // this point
-            if (attrs.glVertexArray) {
-                gl.bindVertexArray(attrs.glVertexArray);
-            }
-            gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
-            gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-            if (attrs.indexed) {
-                this.drawElements(attrs.primitive, attrs.elementCount, attrs.indexType, 0, // offset
-                attrs.instanceCount);
-            }
-            else {
-                this.drawArrays(attrs.primitive, attrs.count, 0, // offset
-                attrs.instanceCount);
-            }
-            // Clean up after ourselves if we bound something. We can't
-            // leave this bound as an optimisation, as we assume everywhere
-            // it is not bound in beginning of our methods.
-            if (attrs.glVertexArray) {
-                gl.bindVertexArray(null);
-            }
-        });
-        gl.useProgram(null);
-        this.blend(null);
-        this.stencilTest(null);
-        this.depthTest(null);
-        COMMAND_BINDINGS.delete(dev);
-    }
-    drawArrays(primitive, count, offset, instanceCount) {
-        const gl = this.dev._gl;
-        if (instanceCount) {
-            gl.drawArraysInstanced(primitive, offset, count, instanceCount);
-        }
-        else {
-            gl.drawArrays(primitive, offset, count);
-        }
-    }
-    drawElements(primitive, count, type, offset, instCount) {
-        const gl = this.dev._gl;
-        if (instCount) {
-            gl.drawElementsInstanced(primitive, count, type, offset, instCount);
-        }
-        else {
-            gl.drawElements(primitive, count, type, offset);
-        }
-    }
-    textures(textureAccessors, props, index) {
-        const gl = this.dev._gl;
-        textureAccessors.forEach((accessor, i) => {
-            const tex = access(props, index, accessor);
-            gl.activeTexture(gl.TEXTURE0 + i);
-            gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
-        });
-    }
-    uniforms(uniformDescrs, props, index) {
-        const gl = this.dev._gl;
-        uniformDescrs.forEach(({ identifier: ident, location: loc, definition: def, }) => {
-            switch (def.type) {
-                case "1f":
-                    gl.uniform1f(loc, access(props, index, def.value));
-                    break;
-                case "1fv":
-                    gl.uniform1fv(loc, access(props, index, def.value));
-                    break;
-                case "1i":
-                    gl.uniform1i(loc, access(props, index, def.value));
-                    break;
-                case "1iv":
-                    gl.uniform1iv(loc, access(props, index, def.value));
-                    break;
-                case "1ui":
-                    gl.uniform1ui(loc, access(props, index, def.value));
-                    break;
-                case "1uiv":
-                    gl.uniform1uiv(loc, access(props, index, def.value));
-                    break;
-                case "2f": {
-                    const [x, y] = access(props, index, def.value);
-                    gl.uniform2f(loc, x, y);
-                    break;
-                }
-                case "2fv":
-                    gl.uniform2fv(loc, access(props, index, def.value));
-                    break;
-                case "2i": {
-                    const [x, y] = access(props, index, def.value);
-                    gl.uniform2i(loc, x, y);
-                    break;
-                }
-                case "2iv":
-                    gl.uniform2iv(loc, access(props, index, def.value));
-                    break;
-                case "2ui": {
-                    const [x, y] = access(props, index, def.value);
-                    gl.uniform2ui(loc, x, y);
-                    break;
-                }
-                case "2uiv":
-                    gl.uniform2uiv(loc, access(props, index, def.value));
-                    break;
-                case "3f": {
-                    const [x, y, z] = access(props, index, def.value);
-                    gl.uniform3f(loc, x, y, z);
-                    break;
-                }
-                case "3fv":
-                    gl.uniform3fv(loc, access(props, index, def.value));
-                    break;
-                case "3i": {
-                    const [x, y, z] = access(props, index, def.value);
-                    gl.uniform3i(loc, x, y, z);
-                    break;
-                }
-                case "3iv":
-                    gl.uniform3iv(loc, access(props, index, def.value));
-                    break;
-                case "3ui": {
-                    const [x, y, z] = access(props, index, def.value);
-                    gl.uniform3ui(loc, x, y, z);
-                    break;
-                }
-                case "3uiv":
-                    gl.uniform3uiv(loc, access(props, index, def.value));
-                    break;
-                case "4f": {
-                    const [x, y, z, w] = access(props, index, def.value);
-                    gl.uniform4f(loc, x, y, z, w);
-                    break;
-                }
-                case "4fv":
-                    gl.uniform4fv(loc, access(props, index, def.value));
-                    break;
-                case "4i": {
-                    const [x, y, z, w] = access(props, index, def.value);
-                    gl.uniform4i(loc, x, y, z, w);
-                    break;
-                }
-                case "4iv":
-                    gl.uniform4iv(loc, access(props, index, def.value));
-                    break;
-                case "4ui": {
-                    const [x, y, z, w] = access(props, index, def.value);
-                    gl.uniform4ui(loc, x, y, z, w);
-                    break;
-                }
-                case "4uiv":
-                    gl.uniform4uiv(loc, access(props, index, def.value));
-                    break;
-                case "matrix2fv":
-                    gl.uniformMatrix2fv(loc, false, access(props, index, def.value));
-                    break;
-                case "matrix3fv":
-                    gl.uniformMatrix3fv(loc, false, access(props, index, def.value));
-                    break;
-                case "matrix4fv":
-                    gl.uniformMatrix4fv(loc, false, access(props, index, def.value));
-                    break;
-                default:
-                    unreachable(def, () => `Unknown uniform: ${ident}`);
-                    break;
-            }
-        });
-    }
-    depthTest(desc) {
-        const gl = this.dev._gl;
-        if (desc) {
-            gl.enable(gl.DEPTH_TEST);
-            gl.depthFunc(desc.func);
-            gl.depthMask(desc.mask);
-            gl.depthRange(desc.rangeStart, desc.rangeEnd);
-        }
-        else {
-            gl.disable(gl.DEPTH_TEST);
-        }
-    }
-    stencilTest(desc) {
-        const gl = this.dev._gl;
-        if (desc) {
-            const { fFn, bFn, fFnRef, bFnRef, fFnMask, bFnMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = desc;
-            gl.enable(gl.STENCIL_TEST);
-            gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
-            gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
-            gl.stencilMaskSeparate(gl.FRONT, fMask);
-            gl.stencilMaskSeparate(gl.BACK, bMask);
-            gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
-            gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
-        }
-        else {
-            gl.disable(gl.STENCIL_TEST);
-        }
-    }
-    blend(desc) {
-        const gl = this.dev._gl;
-        if (desc) {
-            gl.enable(gl.BLEND);
-            gl.blendFuncSeparate(desc.srcRGB, desc.dstRGB, desc.srcAlpha, desc.dstAlpha);
-            gl.blendEquationSeparate(desc.eqnRGB, desc.eqnAlpha);
-            if (desc.color) {
-                const [r, g, b, a] = desc.color;
-                gl.blendColor(r, g, b, a);
+        if (status !== gl.FRAMEBUFFER_COMPLETE) {
+            gl.deleteFramebuffer(fbo);
+            switch (status) {
+                case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+                case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+                case gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
+                case gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+                    throw new Error("FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
+                case gl.FRAMEBUFFER_UNSUPPORTED:
+                    throw new Error("FRAMEBUFFER_UNSUPPORTED");
+                default: throw new Error("Framebuffer incomplete");
             }
         }
-        else {
-            gl.disable(gl.BLEND);
+        this.glFramebuffer = fbo;
+        if (fbo) {
+            this.framebufferTarget = new Target(state, glColorAttachments, fbo, width, height);
         }
     }
 }
-function access(props, index, value) { return typeof value === "function" ? value(props, index) : value; }
 
+const INT_PATTERN$1 = /^0|[1-9]\d*$/;
 /**
  * Available extensions.
  */
@@ -1344,17 +1830,17 @@ class Device {
     static create(options = {}) {
         const { element = document.body } = options;
         if (element instanceof HTMLCanvasElement) {
-            return Device.withCanvas(element, options);
+            return Device.createWithCanvas(element, options);
         }
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        return Device.withCanvas(canvas, options);
+        return Device.createWithCanvas(canvas, options);
     }
     /**
      * Create a new device from existing canvas. Does not take ownership of
      * canvas.
      */
-    static withCanvas(canvas, options = {}) {
+    static createWithCanvas(canvas, options = {}) {
         const { alpha = true, antialias = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options;
         const gl = canvas.getContext("webgl2", {
             alpha,
@@ -1366,14 +1852,14 @@ class Device {
         if (!gl) {
             throw new Error("Could not get webgl2 context");
         }
-        return Device.withContext(gl, options);
+        return Device.createWithContext(gl, options);
     }
     /**
      * Create a new device from existing gl context. Does not take ownership of
      * context, but concurrent usage of it voids the warranty. Only use
      * concurrently when absolutely necessary.
      */
-    static withContext(gl, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, } = {}) {
+    static createWithContext(gl, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, } = {}) {
         if (extensions) {
             extensions.forEach((ext) => {
                 // We currently do not have extensions with callable API
@@ -1403,7 +1889,8 @@ class Device {
         this.explicitViewportWidth = explicitViewportWidth;
         this.explicitViewportHeight = explicitViewportHeight;
         this.update();
-        this.backbufferTarget = new Target(this, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        this.state = new State(gl);
+        this.backbufferTarget = new Target(this.state, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
         // Enable scissor test globally. Practically everywhere you would want
         // it disbled you can pass explicit scissor box instead. The impact on
         // perf is negligent
@@ -1485,166 +1972,34 @@ class Device {
     target(cb) {
         this.backbufferTarget.with(cb);
     }
-}
-function createDebugFunc(gl, key) {
-    return function debugWrapper() {
-        console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
-        return gl[key].apply(gl, arguments);
-    };
-}
-
-/**
- * Vertex buffers contain GPU accessible data. Accessing them is usually done
- * via setting up an attribute that reads the buffer.
- */
-class VertexBuffer {
-    constructor(gl, type, length, byteLength, usage) {
-        this.gl = gl;
-        this.type = type;
-        this.length = length;
-        this.byteLength = byteLength;
-        this.usage = usage;
-        this.glBuffer = null;
-        this.init();
+    /**
+     * TODO
+     */
+    createCommand(vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
+        nonNull(vert, fmtParamNonNull("vert"));
+        nonNull(frag, fmtParamNonNull("frag"));
+        const depthDescr = parseDepth(depth);
+        const stencilDescr = parseStencil(stencil);
+        const blendDescr = parseBlend(blend);
+        return new Command(this.state, vert, frag, textures, uniforms, depthDescr, stencilDescr, blendDescr);
     }
     /**
      * Create a new vertex buffer with given type and of given size.
      */
-    static create(dev, type, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
-        return new VertexBuffer(dev._gl, type, size, size * sizeOf(type), usage);
+    createVertexBuffer(type, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
+        return new VertexBuffer(this._gl, type, size, size * sizeOf(type), usage);
     }
     /**
      * Create a new vertex buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    static withTypedArray(dev, type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
-        return new VertexBuffer(dev._gl, type, data.length, data.length * sizeOf(type), usage).store(data);
-    }
-    /**
-     * Reinitialize invalid buffer, eg. after context is lost.
-     */
-    restore() {
-        const { gl, glBuffer } = this;
-        if (!gl.isBuffer(glBuffer)) {
-            this.init();
-        }
-    }
-    /**
-     * Upload new data to buffer. Does not take ownership of data.
-     */
-    store(data, { offset = 0 } = {}) {
-        const { type, gl, glBuffer } = this;
-        const buffer = Array.isArray(data)
-            ? createBuffer(type, data)
-            // WebGL bug causes Uint8ClampedArray to be read incorrectly
-            // https://github.com/KhronosGroup/WebGL/issues/1533
-            : data instanceof Uint8ClampedArray
-                // Both buffers are u8 -> do not copy, just change lens
-                ? new Uint8Array(data.buffer)
-                // Other buffer types are fine
-                : data;
-        const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
-        gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, byteOffset, buffer);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        return this;
-    }
-    init() {
-        const { usage, byteLength, gl } = this;
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, byteLength, usage);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        this.glBuffer = buffer;
-    }
-}
-function createBuffer(type, arr) {
-    switch (type) {
-        case DataType.BYTE: return new Int8Array(arr);
-        case DataType.SHORT: return new Int16Array(arr);
-        case DataType.INT: return new Int32Array(arr);
-        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
-        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
-        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        case DataType.FLOAT: return new Float32Array(arr);
-        default: return unreachable(type, (p) => {
-            return `Invalid buffer type: ${p}`;
-        });
-    }
-}
-
-/**
- * Checks whether array has at least two dimensions.
- * Asserts array is not jagged. Only checks first two dimensions.
- * Returns false if array is degenerate (either dimension is 0), as 0d array
- * is not 2d array.
- */
-function is2(array) {
-    if (!array.length) {
-        return false;
-    }
-    const length2 = Array.isArray(array[0]) ? array[0].length : -1;
-    // Do some asserts if not production
-    if (process.env.NODE_ENV !== "production") {
-        array.forEach((sub) => {
-            const isSubArray = Array.isArray(sub);
-            if (length2 !== -1) {
-                isTrue(isSubArray);
-                equal(sub.length, length2);
-            }
-            else {
-                isFalse(isSubArray);
-            }
-        });
-    }
-    // if length2 === 0, array is degenerate
-    // if length2 === -1, array is 1d
-    return length2 > 0;
-}
-/**
- * Returns first two dimensions of array. Assumes nonjagged array and does no
- * checks to prove so. Accepts degenerate arrays.
- */
-function shape2(array) {
-    const outer = array.length;
-    const inner = outer ? array[0].length : 0;
-    return [outer, inner];
-}
-/**
- * Take an unraveled 2d array and a shape. Returns new flat array with all
- * elements from the original unraveled array. Assumes unraveled array is not
- * jagged and shape matches the unraveled dimensions and makes no checks to
- * prove so. Accepts degenerate arrays if shape matches them.
- */
-function ravel2(unraveled, shape) {
-    const [outer, inner] = shape;
-    const raveled = new Array(inner * outer);
-    unraveled.forEach((arr, i) => {
-        arr.forEach((elem, j) => {
-            raveled[inner * i + j] = elem;
-        });
-    });
-    return raveled;
-}
-
-/**
- * Element buffers contain indices for accessing vertex buffer data.
- */
-class ElementBuffer {
-    constructor(gl, type, primitive, length, byteLength, usage) {
-        this.gl = gl;
-        this.type = type;
-        this.primitive = primitive;
-        this.length = length;
-        this.byteLength = byteLength;
-        this.usage = usage;
-        this.glBuffer = null;
-        this.init();
+    createVertexBufferWithTypedArray(type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
+        return new VertexBuffer(this._gl, type, data.length, data.length * sizeOf(type), usage).store(data);
     }
     /**
      * Create a new element buffer with given type, primitive, and size.
      */
-    static create(dev, type, primitive, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
+    createElementBuffer(dev, type, primitive, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
         return new ElementBuffer(dev._gl, type, primitive, size, size * sizeOf(type), usage);
     }
     /**
@@ -1655,7 +2010,7 @@ class ElementBuffer {
      *   [number, number, number][] -> TRIANGLES
      * Does not take ownership of data.
      */
-    static withArray(dev, data, options) {
+    createElementBufferWithArray(data, options) {
         if (is2(data)) {
             const shape = shape2(data);
             rangeInclusive(shape[1], 2, 3, (p) => {
@@ -1665,82 +2020,17 @@ class ElementBuffer {
             const primitive = shape[1] === 3
                 ? Primitive.TRIANGLES
                 : Primitive.LINES;
-            return ElementBuffer.withTypedArray(dev, DataType.UNSIGNED_INT, primitive, ravel);
+            return this.createElementBufferWithTypedArray(DataType.UNSIGNED_INT, primitive, ravel);
         }
-        return ElementBuffer.withTypedArray(dev, DataType.UNSIGNED_INT, Primitive.POINTS, data, options);
+        return this.createElementBufferWithTypedArray(DataType.UNSIGNED_INT, Primitive.POINTS, data, options);
     }
     /**
      * Create a new element buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    static withTypedArray(dev, type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
-        return new ElementBuffer(dev._gl, type, primitive, data.length, data.length * sizeOf(type), usage).store(data);
+    createElementBufferWithTypedArray(type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
+        return new ElementBuffer(this._gl, type, primitive, data.length, data.length * sizeOf(type), usage).store(data);
     }
-    /**
-     * Reinitialize invalid buffer, eg. after context is lost.
-     */
-    restore() {
-        const { gl, glBuffer } = this;
-        if (!gl.isBuffer(glBuffer)) {
-            this.init();
-        }
-    }
-    /**
-     * Upload new data to buffer. Does not take ownership of data.
-     */
-    store(data, { offset = 0 } = {}) {
-        const { type, gl, glBuffer } = this;
-        const buffer = Array.isArray(data)
-            ? createBuffer$1(type, data)
-            // WebGL bug causes Uint8ClampedArray to be read incorrectly
-            // https://github.com/KhronosGroup/WebGL/issues/1533
-            : data instanceof Uint8ClampedArray
-                // Both buffers are u8 -> do not copy, just change lens
-                ? new Uint8Array(data.buffer)
-                // Other buffer types are fine
-                : data;
-        const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glBuffer);
-        gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, byteOffset, buffer);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-        return this;
-    }
-    init() {
-        const { usage, byteLength, gl } = this;
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, byteLength, usage);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-        this.glBuffer = buffer;
-    }
-}
-function createBuffer$1(type, arr) {
-    switch (type) {
-        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
-        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
-        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        default: return unreachable(type, (p) => {
-            return `invalid buffer type: ${p}`;
-        });
-    }
-}
-
-const INT_PATTERN$1 = /^0|[1-9]\d*$/;
-/**
- * Attribute type for reading vertex buffers. POINTER provides normalization
- * options for converting integer values to floats. IPOINTER always retains
- * integers types.
- */
-var AttributeType;
-(function (AttributeType) {
-    AttributeType["POINTER"] = "pointer";
-    AttributeType["IPOINTER"] = "ipointer";
-})(AttributeType || (AttributeType = {}));
-/**
- * Attributes store vertex buffers, an element buffer, and attributes with the
- * vertex format for provided vertex buffers.
- */
-class Attributes {
     /**
      * Create new attributes with element and attribute definitions, and an
      * optional count limit.
@@ -1756,7 +2046,7 @@ class Attributes {
      * given, there will be no underlying vertex array object created, only the
      * count will be given to gl.drawArrays()
      */
-    static create(dev, elements, attributes, { countLimit } = {}) {
+    createAttributes(elements, attributes, { countLimit } = {}) {
         if (typeof countLimit === "number") {
             gt(countLimit, 0, (p) => {
                 return `Count limit must be greater than 0, got: ${p}`;
@@ -1768,7 +2058,19 @@ class Attributes {
                 throw new Error("Location not a number. Use Command#locate");
             }
             const location = parseInt(locationStr, 10);
-            return AttributeDescriptor.create(dev, location, definition);
+            if (Array.isArray(definition)) {
+                if (is2(definition)) {
+                    const s = shape2(definition);
+                    const r = ravel2(definition, s);
+                    return new AttributeDescriptor(location, AttributeType.POINTER, this.createVertexBufferWithTypedArray(DataType.FLOAT, r), s[0], s[1], false, 0);
+                }
+                return new AttributeDescriptor(location, AttributeType.POINTER, this.createVertexBufferWithTypedArray(DataType.FLOAT, definition), definition.length, 1, false, 0);
+            }
+            return new AttributeDescriptor(location, definition.type, Array.isArray(definition.buffer)
+                ? this.createVertexBufferWithTypedArray(DataType.FLOAT, definition.buffer)
+                : definition.buffer, definition.count, definition.size, definition.type === AttributeType.POINTER
+                ? (definition.normalized || false)
+                : false, definition.divisor || 0);
         });
         let primitive;
         let elementBuffer;
@@ -1778,7 +2080,7 @@ class Attributes {
         else {
             elementBuffer = elements instanceof ElementBuffer
                 ? elements
-                : ElementBuffer.withArray(dev, elements);
+                : this.createElementBufferWithArray(elements);
             primitive = elementBuffer.primitive;
         }
         const inferredCount = elementBuffer
@@ -1797,149 +2099,28 @@ class Attributes {
                 .map((attr) => attr.count * attr.divisor)
                 .reduce((min, curr) => Math.min(min, curr))
             : 0;
-        return new Attributes(dev, primitive, attrs, count, instanceCount, elementBuffer);
+        return new Attributes(this.state, primitive, attrs, count, instanceCount, elementBuffer);
     }
     /**
      * Create empty attributes of a given primitive. This actually performs no
      * gl calls, only remembers the count for `gl.drawArrays()`
      */
-    static empty(dev, primitive, count) {
-        return new Attributes(dev, primitive, [], count, 0);
-    }
-    constructor(dev, primitive, attributes, count, instanceCount, elements) {
-        this.dev = dev;
-        this.primitive = primitive;
-        this.elementBuffer = elements;
-        this.attributes = attributes;
-        this.count = count;
-        this.elementCount = elements ? elements.length : 0;
-        this.instanceCount = instanceCount;
-        this.glVertexArray = null;
-        this.init();
-    }
-    get indexed() {
-        return !!this.elementBuffer;
-    }
-    get indexType() {
-        return this.elementBuffer && this.elementBuffer.type;
-    }
-    /**
-     * Reinitialize invalid vertex array, eg. after context is lost. Also tries
-     * to reinitialize vertex buffer and element buffer dependencies.
-     */
-    restore() {
-        const { dev: { _gl }, glVertexArray, attributes, elementBuffer } = this;
-        if (elementBuffer) {
-            elementBuffer.restore();
-        }
-        attributes.forEach((attr) => attr.buffer.restore());
-        // If we have no attributes nor elements, there is no need to restore
-        // any GPU state
-        if (this.hasAttribs() && !_gl.isVertexArray(glVertexArray)) {
-            this.init();
-        }
-    }
-    init() {
-        // Do not create the gl vao if there are no buffers to bind
-        if (!this.hasAttribs()) {
-            return;
-        }
-        const { dev: { _gl: gl }, attributes, elementBuffer } = this;
-        const vao = gl.createVertexArray();
-        gl.bindVertexArray(vao);
-        attributes.forEach(({ location, type, buffer: { glBuffer, type: glBufferType }, size, normalized = false, divisor, }) => {
-            // Enable sending attribute arrays for location
-            gl.enableVertexAttribArray(location);
-            // Send buffer
-            gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
-            switch (type) {
-                case AttributeType.POINTER:
-                    gl.vertexAttribPointer(location, size, glBufferType, normalized, 0, 0);
-                    break;
-                case AttributeType.IPOINTER:
-                    gl.vertexAttribIPointer(location, size, glBufferType, 0, 0);
-                    break;
-                default: unreachable(type);
-            }
-            if (divisor) {
-                gl.vertexAttribDivisor(location, divisor);
-            }
-        });
-        if (elementBuffer) {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer.glBuffer);
-        }
-        gl.bindVertexArray(null);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        if (elementBuffer) {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-        }
-        this.glVertexArray = vao;
-    }
-    hasAttribs() {
-        // IF we have either attributes or elements, this geometry can not
-        // longer be considered empty.
-        return !!this.elementBuffer || !!this.attributes.length;
-    }
-}
-// TODO: this could use some further refactoring. Currently its just former
-// public API made private.
-class AttributeDescriptor {
-    constructor(location, type, buffer, count, size, normalized, divisor) {
-        this.location = location;
-        this.type = type;
-        this.buffer = buffer;
-        this.count = count;
-        this.size = size;
-        this.normalized = normalized;
-        this.divisor = divisor;
-    }
-    static create(dev, location, props) {
-        if (Array.isArray(props)) {
-            if (is2(props)) {
-                const s = shape2(props);
-                const r = ravel2(props, s);
-                return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.withTypedArray(dev, DataType.FLOAT, r), s[0], s[1], false, 0);
-            }
-            return new AttributeDescriptor(location, AttributeType.POINTER, VertexBuffer.withTypedArray(dev, DataType.FLOAT, props), props.length, 1, false, 0);
-        }
-        return new AttributeDescriptor(location, props.type, Array.isArray(props.buffer)
-            ? VertexBuffer.withTypedArray(dev, DataType.FLOAT, props.buffer)
-            : props.buffer, props.count, props.size, props.type === AttributeType.POINTER
-            ? (props.normalized || false)
-            : false, props.divisor || 0);
-    }
-}
-
-/**
- * Textures are images of 2D data, where each texel can contain multiple
- * information channels of a certain type.
- */
-class Texture {
-    constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
-        this.gl = gl;
-        this.width = width;
-        this.height = height;
-        this.format = format;
-        this.wrapS = wrapS;
-        this.wrapT = wrapT;
-        this.minFilter = minFilter;
-        this.magFilter = magFilter;
-        this.glTexture = null;
-        this.init();
+    createEmptyAttributes(primitive, count) {
+        return new Attributes(this.state, primitive, [], count, 0);
     }
     /**
      * Create a new texture with given width, height, and internal format.
      * The internal format determines, what kind of data is possible to store.
      */
-    static create(dev, width, height, internalFormat, { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = {}) {
-        return new Texture(dev._gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+    createTexture(width, height, internalFormat, { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = {}) {
+        return new Texture(this._gl, width, height, internalFormat, wrapS, wrapT, min, mag);
     }
     /**
      * Create a new texture with width and height equal to the given image, and
      * store the image in the texture.
      */
-    static withImage(dev, image, options) {
-        return Texture.withTypedArray(dev, image.width, image.height, InternalFormat.RGBA8, image.data, Format.RGBA, DataType.UNSIGNED_BYTE, options);
+    createTextureWithImage(image, options) {
+        return this.createTextureWithTypedArray(image.width, image.height, InternalFormat.RGBA8, image.data, Format.RGBA, DataType.UNSIGNED_BYTE, options);
     }
     /**
      * Create a new texture with given width, height, and internal format.
@@ -1947,71 +2128,10 @@ class Texture {
      * Store data of given format and type contained in a typed array to the
      * texture.
      */
-    static withTypedArray(dev, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
+    createTextureWithTypedArray(width, height, internalFormat, data, dataFormat, dataType, options = {}) {
         const { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = options;
-        return new Texture(dev._gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
+        return new Texture(this._gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
     }
-    /**
-     * Reinitialize invalid texture, eg. after context is lost.
-     */
-    restore() {
-        const { gl, glTexture } = this;
-        if (!gl.isTexture(glTexture)) {
-            this.init();
-        }
-    }
-    /**
-     * Upload new data to texture. Does not take ownership of data.
-     */
-    store(data, format, type, { xOffset = 0, yOffset = 0, width = this.width, height = this.height, mipmap = false, } = {}) {
-        const { gl, glTexture } = this;
-        gl.bindTexture(gl.TEXTURE_2D, glTexture);
-        // This pixel row alignment is theoretically smaller than needed
-        // TODO: find greatest correct unpack alignment for pixel rows
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, data.BYTES_PER_ELEMENT);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, // level
-        xOffset, yOffset, width, height, format, type, 
-        // WebGL bug causes Uint8ClampedArray to be read incorrectly
-        // https://github.com/KhronosGroup/WebGL/issues/1533
-        data instanceof Uint8ClampedArray
-            // Both buffers are u8 -> do not copy, just change lens
-            ? new Uint8Array(data.buffer)
-            // Other buffer types are fine
-            : data);
-        if (mipmap) {
-            gl.generateMipmap(gl.TEXTURE_2D);
-        }
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        return this;
-    }
-    /**
-     * Generate mipmap levels for the current data.
-     */
-    mipmap() {
-        const { gl, glTexture } = this;
-        gl.bindTexture(gl.TEXTURE_2D, glTexture);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-    }
-    init() {
-        const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
-        const texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        this.glTexture = texture;
-    }
-}
-
-/**
- * Framebuffers store the list of attachments to write to during a draw
- * operation. They can be a draw target via `framebuffer.target()`
- */
-class Framebuffer {
     /**
      * Create a framebuffer containg one or more color buffers and a
      * depth or depth-stencil buffer with given width and height.
@@ -2020,7 +2140,7 @@ class Framebuffer {
      * It is still an error to use the attachments while they are written to
      * via the framebuffer, however.
      */
-    static create(dev, width, height, color, depthStencil) {
+    createFramebuffer(width, height, color, depthStencil) {
         const colors = Array.isArray(color) ? color : [color];
         nonEmpty(colors, () => {
             return "Framebuffer color attachments must not be empty";
@@ -2041,97 +2161,117 @@ class Framebuffer {
                 return `Expected attachment height ${expected}, got ${got}`;
             });
         }
-        return new Framebuffer(dev, width, height, colors, depthStencil);
+        return new Framebuffer(this.state, width, height, colors, depthStencil);
     }
-    constructor(dev, width, height, colors, depthStencil) {
-        this.dev = dev;
-        this.width = width;
-        this.height = height;
-        this.colors = colors;
-        this.depthStencil = depthStencil;
-        this.glColorAttachments = colors
-            .map((_, i) => dev._gl.COLOR_ATTACHMENT0 + i);
-        this.glFramebuffer = null;
-        this.framebufferTarget = null;
-        this.init();
+}
+function parseDepth(depth) {
+    if (!depth) {
+        return undefined;
     }
-    /**
-     * Reinitialize invalid framebuffer, eg. after context is lost.
-     */
-    restore() {
-        const { dev: { _gl }, glFramebuffer, colors, depthStencil, } = this;
-        colors.forEach((buffer) => buffer.restore());
-        if (depthStencil) {
-            depthStencil.restore();
-        }
-        if (!_gl.isFramebuffer(glFramebuffer)) {
-            this.init();
-        }
+    nonNull(depth.func, fmtParamNonNull("depth.func"));
+    return new DepthTestDescriptor(depth.func || DepthFunc.LESS, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
+}
+function parseStencil(stencil) {
+    if (!stencil) {
+        return undefined;
     }
-    /**
-     * Request a render target from this framebuffer to draw into. The target
-     * will contain all attached color buffers.
-     *
-     * Drawing should be done within the callback by
-     * calling `ratget.clear()` or `target.draw()` family of methods.
-     *
-     * Also see `device.target()`.
-     */
-    target(cb) {
-        if (this.framebufferTarget) {
-            this.framebufferTarget.with(cb);
-        }
+    nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+    // TODO: complete stencil validation... validation framework?
+    return new StencilTestDescriptor(typeof stencil.func.func === "object"
+        ? stencil.func.func.front
+        : stencil.func.func, typeof stencil.func.func === "object"
+        ? stencil.func.func.back
+        : stencil.func.func, typeof stencil.func.ref !== "undefined"
+        ? typeof stencil.func.ref === "object"
+            ? stencil.func.ref.front
+            : stencil.func.ref
+        : 1, typeof stencil.func.ref !== "undefined"
+        ? typeof stencil.func.ref === "object"
+            ? stencil.func.ref.back
+            : stencil.func.ref
+        : 1, typeof stencil.func.mask !== "undefined"
+        ? typeof stencil.func.mask === "object"
+            ? stencil.func.mask.front
+            : stencil.func.mask
+        : 0xFF, typeof stencil.func.mask !== "undefined"
+        ? typeof stencil.func.mask === "object"
+            ? stencil.func.mask.back
+            : stencil.func.mask
+        : 0xFF, typeof stencil.mask !== "undefined"
+        ? typeof stencil.mask === "object"
+            ? stencil.mask.front
+            : stencil.mask
+        : 0xFF, typeof stencil.mask !== "undefined"
+        ? typeof stencil.mask === "object"
+            ? stencil.mask.back
+            : stencil.mask
+        : 0xFF, stencil.op
+        ? typeof stencil.op.fail === "object"
+            ? stencil.op.fail.front
+            : stencil.op.fail
+        : StencilOp.KEEP, stencil.op
+        ? typeof stencil.op.fail === "object"
+            ? stencil.op.fail.back
+            : stencil.op.fail
+        : StencilOp.KEEP, stencil.op
+        ? typeof stencil.op.zfail === "object"
+            ? stencil.op.zfail.front
+            : stencil.op.zfail
+        : StencilOp.KEEP, stencil.op
+        ? typeof stencil.op.zfail === "object"
+            ? stencil.op.zfail.back
+            : stencil.op.zfail
+        : StencilOp.KEEP, stencil.op
+        ? typeof stencil.op.zpass === "object"
+            ? stencil.op.zpass.front
+            : stencil.op.zpass
+        : StencilOp.KEEP, stencil.op
+        ? typeof stencil.op.zpass === "object"
+            ? stencil.op.zpass.back
+            : stencil.op.zpass
+        : StencilOp.KEEP);
+}
+function parseBlend(blend) {
+    if (!blend) {
+        return undefined;
     }
-    init() {
-        const { width, height, dev, dev: { _gl: gl }, glColorAttachments, colors, depthStencil, } = this;
-        // This would overwrite a the currently bound `Target`s FBO
-        if (TARGET_BINDINGS.has(dev)) {
-            throw new Error("Cannot bind framebuffers while a Target is bound");
-        }
-        const fbo = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
-        colors.forEach((buffer, i) => {
-            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
-        });
-        if (depthStencil) {
-            switch (depthStencil.format) {
-                case InternalFormat.DEPTH24_STENCIL8:
-                case InternalFormat.DEPTH32F_STENCIL8:
-                    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
-                    break;
-                case InternalFormat.DEPTH_COMPONENT16:
-                case InternalFormat.DEPTH_COMPONENT24:
-                case InternalFormat.DEPTH_COMPONENT32F:
-                    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
-                    break;
-                default: unreachable(depthStencil, (p) => {
-                    return `Unsupported attachment: ${p}`;
-                });
-            }
-        }
-        const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-        if (status !== gl.FRAMEBUFFER_COMPLETE) {
-            gl.deleteFramebuffer(fbo);
-            switch (status) {
-                case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-                    throw new Error("FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-                case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-                    throw new Error("FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-                case gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
-                    throw new Error("FRAMEBUFFER_INCOMPLETE_MULTISAMPLE");
-                case gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-                    throw new Error("FRAMEBUFFER_INCOMPLETE_DIMENSIONS");
-                case gl.FRAMEBUFFER_UNSUPPORTED:
-                    throw new Error("FRAMEBUFFER_UNSUPPORTED");
-                default: throw new Error("Framebuffer incomplete");
-            }
-        }
-        this.glFramebuffer = fbo;
-        if (fbo) {
-            this.framebufferTarget = new Target(dev, glColorAttachments, fbo, width, height);
-        }
+    nonNull(blend.func, fmtParamNonNull("blend.func"));
+    nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+    nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+    if (typeof blend.func.src === "object") {
+        nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
+        nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
     }
+    if (typeof blend.func.dst === "object") {
+        nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
+        nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
+    }
+    return new BlendDescriptor(typeof blend.func.src === "object"
+        ? blend.func.src.rgb
+        : blend.func.src, typeof blend.func.src === "object"
+        ? blend.func.src.alpha
+        : blend.func.src, typeof blend.func.dst === "object"
+        ? blend.func.dst.rgb
+        : blend.func.dst, typeof blend.func.dst === "object"
+        ? blend.func.dst.alpha
+        : blend.func.dst, blend.equation
+        ? typeof blend.equation === "object"
+            ? blend.equation.rgb
+            : blend.equation
+        : BlendEquation.FUNC_ADD, blend.equation
+        ? typeof blend.equation === "object"
+            ? blend.equation.alpha
+            : blend.equation
+        : BlendEquation.FUNC_ADD, blend.color);
+}
+function fmtParamNonNull(name) {
+    return () => `Missing parameter ${name}`;
+}
+function createDebugFunc(gl, key) {
+    return function debugWrapper() {
+        console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
+        return gl[key].apply(gl, arguments);
+    };
 }
 
 export { BufferBits, BufferUsage, DataType, InternalFormat, Format, Filter, Wrap, Primitive, Device, Extension, Target, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, Framebuffer };

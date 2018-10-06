@@ -7,11 +7,8 @@
 
 import {
     Device,
-    Command,
-    DepthFunc,
-    Attributes,
     Texture,
-    Framebuffer,
+    DepthFunc,
     BufferBits,
     Primitive,
     InternalFormat,
@@ -25,15 +22,15 @@ const PERSISTENCE_FACTOR = 0.8;
 const dev = Device.create({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const newFrameTex = Texture.create(dev, width, height, InternalFormat.RGBA8);
-const depthTex = Texture.create(dev, width, height, InternalFormat.DEPTH_COMPONENT24);
-const newFrameFbo = Framebuffer.create(dev, width, height, newFrameTex, depthTex);
+const newFrameTex = dev.createTexture(width, height, InternalFormat.RGBA8);
+const depthTex = dev.createTexture(width, height, InternalFormat.DEPTH_COMPONENT24);
+const newFrameFbo = dev.createFramebuffer(width, height, newFrameTex, depthTex);
 
-const pingTex = Texture.create(dev, width, height, InternalFormat.RGBA8);
-const pingFbo = Framebuffer.create(dev, width, height, pingTex);
+const pingTex = dev.createTexture(width, height, InternalFormat.RGBA8);
+const pingFbo = dev.createFramebuffer(width, height, pingTex);
 
-const pongTex = Texture.create(dev, width, height, InternalFormat.RGBA8);
-const pongFbo = Framebuffer.create(dev, width, height, pongTex);
+const pongTex = dev.createTexture(width, height, InternalFormat.RGBA8);
+const pongFbo = dev.createFramebuffer(width, height, pongTex);
 
 const viewMatrix = mat4.create();
 
@@ -41,8 +38,7 @@ interface CmdDrawProps {
     time: number;
 }
 
-const cmdDraw = Command.create<CmdDrawProps>(
-    dev,
+const cmdDraw = dev.createCommand<CmdDrawProps>(
     `#version 300 es
     precision mediump float;
 
@@ -114,8 +110,7 @@ interface CmdBlendProps {
     prevFrame: Texture<InternalFormat>;
 }
 
-const cmdBlend = Command.create<CmdBlendProps>(
-    dev,
+const cmdBlend = dev.createCommand<CmdBlendProps>(
     `#version 300 es
     precision mediump float;
 
@@ -172,8 +167,8 @@ const cmdBlend = Command.create<CmdBlendProps>(
     },
 );
 
-const screenspaceAttrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
-const bunnyAttrs = Attributes.create(dev, bunny.elements, cmdDraw.locate({
+const screenspaceAttrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
+const bunnyAttrs = dev.createAttributes(bunny.elements, cmdDraw.locate({
     a_position: bunny.positions,
     a_normal: bunny.normals,
 }));
@@ -190,8 +185,8 @@ let pong = {
 };
 
 const loop = (time: number): void => {
-    // By repeating the following process, we gain a buildup of past frame memory
-    // in our ping/pong buffers, with an exponential falloff.
+    // By repeating the following process, we gain a buildup of past frame
+    // memory in our ping/pong buffers, with an exponential falloff.
 
     // First draw the scene to a "newFrame" fbo
     newFrameFbo.target((rt) => {

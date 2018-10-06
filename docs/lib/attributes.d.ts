@@ -1,8 +1,8 @@
 /// <reference types="webgl2" />
 import { Primitive, DataType } from "./types";
+import { State } from "./state";
 import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
-import { ElementBuffer, ElementBufferType, ElementArray } from "./element-buffer";
-export declare type Device = import("./device").Device;
+import { ElementBuffer, ElementBufferType } from "./element-buffer";
 /**
  * Attribute type for reading vertex buffers. POINTER provides normalization
  * options for converting integer values to floats. IPOINTER always retains
@@ -43,36 +43,15 @@ export interface AttributesCreateOptions {
  * vertex format for provided vertex buffers.
  */
 export declare class Attributes {
-    /**
-     * Create new attributes with element and attribute definitions, and an
-     * optional count limit.
-     *
-     * Element definitions can either be a primitive definition, reference an
-     * existing element buffer, or have enough information to create an element
-     * buffer.
-     *
-     * Attribute definitions can either reference an existing vertex buffer,
-     * or have enough information to create a vertex buffer.
-     *
-     * Empty attribute definitions are valid. If no attributes nor elements
-     * given, there will be no underlying vertex array object created, only the
-     * count will be given to gl.drawArrays()
-     */
-    static create(dev: Device, elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>, attributes: AttributesConfig, { countLimit }?: AttributesCreateOptions): Attributes;
-    /**
-     * Create empty attributes of a given primitive. This actually performs no
-     * gl calls, only remembers the count for `gl.drawArrays()`
-     */
-    static empty(dev: Device, primitive: Primitive, count: number): Attributes;
     readonly primitive: Primitive;
     readonly count: number;
     readonly elementCount: number;
     readonly instanceCount: number;
     readonly glVertexArray: WebGLVertexArrayObject | null;
-    private dev;
+    private state;
     private attributes;
     private elementBuffer?;
-    private constructor();
+    constructor(state: State, primitive: Primitive, attributes: AttributeDescriptor[], count: number, instanceCount: number, elements?: ElementBuffer<ElementBufferType> | undefined);
     readonly indexed: boolean;
     readonly indexType: ElementBufferType | undefined;
     /**
@@ -82,5 +61,15 @@ export declare class Attributes {
     restore(): void;
     private init;
     private hasAttribs;
+}
+export declare class AttributeDescriptor {
+    readonly location: number;
+    readonly type: AttributeType;
+    readonly buffer: VertexBuffer<VertexBufferType>;
+    readonly count: number;
+    readonly size: number;
+    readonly normalized: boolean;
+    readonly divisor: number;
+    constructor(location: number, type: AttributeType, buffer: VertexBuffer<VertexBufferType>, count: number, size: number, normalized: boolean, divisor: number);
 }
 //# sourceMappingURL=attributes.d.ts.map

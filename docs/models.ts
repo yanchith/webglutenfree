@@ -5,9 +5,7 @@
 
 import {
     Device,
-    Command,
     DepthFunc,
-    Attributes,
     BufferBits,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
@@ -26,8 +24,7 @@ interface CmdProps {
     modelMatrix: mat4;
 }
 
-const cmd = Command.create<CmdProps>(
-    dev,
+const cmd = dev.createCommand<CmdProps>(
     `#version 300 es
     precision mediump float;
 
@@ -108,7 +105,7 @@ const objs = models.map((m, i) => {
     mat4.scale(modelMatrix, modelMatrix, [scale, scale, scale]);
     return {
         modelMatrix,
-        attrs: Attributes.create(dev, m.elements, {
+        attrs: dev.createAttributes(m.elements, {
             0: m.positions,
             1: m.normals,
         }),

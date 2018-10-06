@@ -1,5 +1,5 @@
+/// <reference types="webgl2" />
 import { DataType, Filter, Wrap, InternalFormat, Format } from "./types";
-export declare type Device = import("./device").Device;
 export declare type TextureDataType = DataType;
 export declare type TextureInternalFormat = InternalFormat;
 export declare type TextureFormat = Format;
@@ -150,7 +150,7 @@ export interface InternalFormatToTypedArray {
     [InternalFormat.DEPTH32F_STENCIL8]: never;
     [p: number]: ArrayBufferView;
 }
-export interface TextureOptions {
+export interface TextureCreateOptions {
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
     wrapS?: TextureWrap;
@@ -168,23 +168,6 @@ export interface TextureStoreOptions {
  * information channels of a certain type.
  */
 export declare class Texture<F extends TextureInternalFormat> {
-    /**
-     * Create a new texture with given width, height, and internal format.
-     * The internal format determines, what kind of data is possible to store.
-     */
-    static create<F extends TextureInternalFormat>(dev: Device, width: number, height: number, internalFormat: F, { min, mag, wrapS, wrapT, }?: TextureOptions): Texture<F>;
-    /**
-     * Create a new texture with width and height equal to the given image, and
-     * store the image in the texture.
-     */
-    static withImage(dev: Device, image: ImageData, options?: TextureOptions & TextureStoreOptions): Texture<InternalFormat.RGBA8>;
-    /**
-     * Create a new texture with given width, height, and internal format.
-     * The internal format determines, what kind of data is possible to store.
-     * Store data of given format and type contained in a typed array to the
-     * texture.
-     */
-    static withTypedArray<F extends TextureInternalFormat>(dev: Device, width: number, height: number, internalFormat: F, data: InternalFormatToTypedArray[F], dataFormat: InternalFormatToDataFormat[F], dataType: InternalFormatToDataType[F], options?: TextureOptions & TextureStoreOptions): Texture<F>;
     readonly width: number;
     readonly height: number;
     readonly format: F;
@@ -194,7 +177,7 @@ export declare class Texture<F extends TextureInternalFormat> {
     readonly magFilter: TextureMagFilter;
     readonly glTexture: WebGLTexture | null;
     private gl;
-    private constructor();
+    constructor(gl: WebGL2RenderingContext, width: number, height: number, format: F, wrapS: TextureWrap, wrapT: TextureWrap, minFilter: TextureMinFilter, magFilter: TextureMagFilter);
     /**
      * Reinitialize invalid texture, eg. after context is lost.
      */

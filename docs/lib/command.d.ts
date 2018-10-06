@@ -1,23 +1,7 @@
-export declare type Device = import("./device").Device;
+import { State, DepthTestDescriptor, StencilTestDescriptor, BlendDescriptor } from "./state";
 export declare type Texture<T> = import("./texture").Texture<T>;
 export declare type TextureInternalFormat = import("./texture").TextureInternalFormat;
 export declare type AttributesConfig = import("./attributes").AttributesConfig;
-/**
- * Tracks binding of `Command`s for each `Device`. Each `Device` must have at
- * most one `Command` bound at any time. Nested command binding is not supported
- * even though it is not prohibited by the shape of the API:
- *
- * // This produces a runtime error
- * dev.target((rt) => {
- *     rt.batch(cmd, (draw) => {
- *         rt.draw(cmd, attrs, props);
- *     });
- * });
- *
- * WeakSet is used instead of `private static` variables, as there can be
- * multiple `Device`s owning the commands.
- */
-export declare const COMMAND_BINDINGS: WeakSet<import("./device").Device>;
 export declare type Accessor<P, R> = R | ((props: P, index: number) => R);
 export declare type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
 export interface Textures<P> {
@@ -34,7 +18,7 @@ export declare type SingleOrSeparateRgbAlpha<T> = T | {
     rgb: T;
     alpha: T;
 };
-export interface CommandOptions<P> {
+export interface CommandCreateOptions<P> {
     textures?: Textures<P>;
     uniforms?: Uniforms<P>;
     depth?: {
@@ -227,19 +211,18 @@ export declare enum BlendEquation {
     MAX = 32776
 }
 export declare class Command<P> {
-    static create<P = void>(dev: Device, vert: string, frag: string, { textures, uniforms, depth, stencil, blend, }?: CommandOptions<P>): Command<P>;
     readonly glProgram: WebGLProgram | null;
     readonly depthTestDescr: DepthTestDescriptor | null;
     readonly stencilTestDescr: StencilTestDescriptor | null;
     readonly blendDescr: BlendDescriptor | null;
     readonly textureAccessors: TextureAccessor<P>[];
     readonly uniformDescrs: UniformDescriptor<P>[];
-    private dev;
+    private state;
     private vsSource;
     private fsSource;
     private textures;
     private uniforms;
-    private constructor();
+    constructor(state: State, vsSource: string, fsSource: string, textures: Textures<P>, uniforms: Uniforms<P>, depthDescr?: DepthTestDescriptor, stencilDescr?: StencilTestDescriptor, blendDescr?: BlendDescriptor);
     /**
      * Reinitialize invalid buffer, eg. after context is lost.
      */
@@ -250,40 +233,6 @@ export declare class Command<P> {
      */
     locate(attributes: AttributesConfig): AttributesConfig;
     private init;
-}
-export declare class DepthTestDescriptor {
-    readonly func: number;
-    readonly mask: boolean;
-    readonly rangeStart: number;
-    readonly rangeEnd: number;
-    constructor(func: number, mask: boolean, rangeStart: number, rangeEnd: number);
-}
-export declare class StencilTestDescriptor {
-    readonly fFn: number;
-    readonly bFn: number;
-    readonly fFnRef: number;
-    readonly bFnRef: number;
-    readonly fFnMask: number;
-    readonly bFnMask: number;
-    readonly fMask: number;
-    readonly bMask: number;
-    readonly fOpFail: number;
-    readonly bOpFail: number;
-    readonly fOpZFail: number;
-    readonly bOpZFail: number;
-    readonly fOpZPass: number;
-    readonly bOpZPass: number;
-    constructor(fFn: number, bFn: number, fFnRef: number, bFnRef: number, fFnMask: number, bFnMask: number, fMask: number, bMask: number, fOpFail: number, bOpFail: number, fOpZFail: number, bOpZFail: number, fOpZPass: number, bOpZPass: number);
-}
-export declare class BlendDescriptor {
-    readonly srcRGB: number;
-    readonly srcAlpha: number;
-    readonly dstRGB: number;
-    readonly dstAlpha: number;
-    readonly eqnRGB: number;
-    readonly eqnAlpha: number;
-    readonly color?: [number, number, number, number] | undefined;
-    constructor(srcRGB: number, srcAlpha: number, dstRGB: number, dstAlpha: number, eqnRGB: number, eqnAlpha: number, color?: [number, number, number, number] | undefined);
 }
 export declare class UniformDescriptor<P> {
     readonly identifier: string;

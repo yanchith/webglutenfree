@@ -6,8 +6,6 @@
 
 import {
     Device,
-    Command,
-    Attributes,
     DepthFunc,
     StencilFunc,
     StencilOp,
@@ -37,8 +35,7 @@ interface CmdDrawProps {
     modelMatrix: mat4;
 }
 
-const cmdDraw = Command.create<CmdDrawProps>(
-    dev,
+const cmdDraw = dev.createCommand<CmdDrawProps>(
     `#version 300 es
     precision mediump float;
 
@@ -112,8 +109,7 @@ interface CmdDrawOutlinesProps {
     modelMatrix: mat4;
 }
 
-const cmdDrawOutlines = Command.create<CmdDrawOutlinesProps>(
-    dev,
+const cmdDrawOutlines = dev.createCommand<CmdDrawOutlinesProps>(
     `#version 300 es
         precision mediump float;
 
@@ -180,7 +176,7 @@ const objs = models.map((m, i) => {
     mat4.scale(modelMatrix, modelMatrix, [scale, scale, scale]);
     return {
         modelMatrix,
-        attrs: Attributes.create(dev, m.elements, { 0: m.positions }),
+        attrs: dev.createAttributes(m.elements, { 0: m.positions }),
     };
 });
 
