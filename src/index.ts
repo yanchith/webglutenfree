@@ -11,10 +11,10 @@ export {
 
 export {
     Device,
-    Extension,
     DeviceCreateOptions,
-    DeviceWithCanvasOptions,
-    DeviceWithContextOptions,
+    DeviceCreateWithCanvasOptions,
+    DeviceCreateWithContextOptions,
+    Extension,
 } from "./device";
 
 export {
@@ -26,7 +26,7 @@ export {
 
 export {
     Command,
-    CommandOptions,
+    CommandCreateOptions,
     DepthFunc,
     StencilFunc,
     StencilOp,
@@ -70,34 +70,34 @@ export {
 
 export {
     VertexBuffer,
-    VertexBufferType,
-    VertexBufferOptions,
+    VertexBufferCreateOptions,
     VertexBufferStoreOptions,
+    VertexBufferType,
 } from "./vertex-buffer";
 
 export {
     ElementBuffer,
-    ElementBufferType,
-    ElementBufferOptions,
+    ElementBufferCreateOptions,
     ElementBufferStoreOptions,
+    ElementBufferType,
 } from "./element-buffer";
 
 export {
     Attributes,
-    AttributeType,
     AttributesCreateOptions,
+    AttributeType,
 } from "./attributes";
 
 export {
     Texture,
+    TextureCreateOptions,
+    TextureStoreOptions,
     TextureMinFilter,
     TextureMagFilter,
     TextureWrap,
     TextureInternalFormat,
     TextureFormat,
     TextureDataType,
-    TextureOptions,
-    TextureStoreOptions,
 } from "./texture";
 
 export {

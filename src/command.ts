@@ -23,7 +23,7 @@ export interface Uniforms<P> { [name: string]: Uniform<P>; }
 export type SingleOrSeparateFrontBack<T> = T | { front: T, back: T };
 export type SingleOrSeparateRgbAlpha<T> = T | { rgb: T, alpha: T };
 
-export interface CommandOptions<P> {
+export interface CommandCreateOptions<P> {
     textures?: Textures<P>;
     uniforms?: Uniforms<P>;
     depth?: {

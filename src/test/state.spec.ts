@@ -199,7 +199,7 @@ function mockContext(): WebGL2RenderingContext {
 
 function createDevice(): Device {
     const gl = mockContext();
-    return Device.withContext(gl, { pixelRatio: 1 });
+    return Device.createWithContext(gl, { pixelRatio: 1 });
 }
 
 function createCommand(dev: Device): Command<void> {

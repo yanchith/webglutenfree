@@ -1,8 +1,6 @@
 import * as assert from "./util/assert";
 import { BufferUsage, DataType, Primitive } from "./types";
 
-export type Device = import("./device").Device;
-
 export type ElementArray =
     | number[] // infers POINTS
     | [number, number][] // infers LINES
@@ -39,7 +37,7 @@ export interface ElementBufferTypeToTypedArray {
     [p: number]: ElementBufferTypedArray;
 }
 
-export interface ElementBufferOptions {
+export interface ElementBufferCreateOptions {
     usage?: BufferUsage;
 }
 

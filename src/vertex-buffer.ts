@@ -37,7 +37,7 @@ export interface VertexBufferTypeToTypedArray {
     [p: number]: VertexBufferTypedArray;
 }
 
-export interface VertexBufferOptions {
+export interface VertexBufferCreateOptions {
     usage?: BufferUsage;
 }
 

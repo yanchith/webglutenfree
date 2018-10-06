@@ -19,20 +19,20 @@ import {
 import { Target } from "./target";
 import {
     Command,
-    CommandOptions,
+    CommandCreateOptions,
     DepthFunc,
     StencilOp,
     BlendEquation,
 } from "./command";
 import {
     VertexBuffer,
-    VertexBufferOptions,
+    VertexBufferCreateOptions,
     VertexBufferType,
     VertexBufferTypeToTypedArray,
 } from "./vertex-buffer";
 import {
     ElementBuffer,
-    ElementBufferOptions,
+    ElementBufferCreateOptions,
     ElementArray,
     ElementBufferType,
     ElementBufferTypeToTypedArray,
@@ -46,7 +46,7 @@ import {
 } from "./attributes";
 import {
     Texture,
-    TextureOptions,
+    TextureCreateOptions,
     TextureStoreOptions,
     TextureInternalFormat,
     InternalFormatToTypedArray,
@@ -63,6 +63,13 @@ import {
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 
+/**
+ * Available extensions.
+ */
+export enum Extension {
+    EXTColorBufferFloat = "EXT_color_buffer_float",
+    OESTextureFloatLinear = "OES_texture_float_linear",
+}
 
 export interface DeviceCreateOptions {
     element?: HTMLElement;
@@ -78,7 +85,7 @@ export interface DeviceCreateOptions {
     viewportHeight?: number;
 }
 
-export interface DeviceWithCanvasOptions {
+export interface DeviceCreateWithCanvasOptions {
     alpha?: boolean;
     antialias?: boolean;
     depth?: boolean;
@@ -91,20 +98,12 @@ export interface DeviceWithCanvasOptions {
     viewportHeight?: number;
 }
 
-export interface DeviceWithContextOptions {
+export interface DeviceCreateWithContextOptions {
     extensions?: Extension[];
     debug?: boolean;
     pixelRatio?: number;
     viewportWidth?: number;
     viewportHeight?: number;
-}
-
-/**
- * Available extensions.
- */
-export enum Extension {
-    EXTColorBufferFloat = "EXT_color_buffer_float",
-    OESTextureFloatLinear = "OES_texture_float_linear",
 }
 
 export class Device {
@@ -116,21 +115,21 @@ export class Device {
     static create(options: DeviceCreateOptions = {}): Device {
         const { element = document.body } = options;
         if (element instanceof HTMLCanvasElement) {
-            return Device.withCanvas(element, options);
+            return Device.createWithCanvas(element, options);
         }
 
         const canvas = document.createElement("canvas");
         element.appendChild(canvas);
-        return Device.withCanvas(canvas, options);
+        return Device.createWithCanvas(canvas, options);
     }
 
     /**
      * Create a new device from existing canvas. Does not take ownership of
      * canvas.
      */
-    static withCanvas(
+    static createWithCanvas(
         canvas: HTMLCanvasElement,
-        options: DeviceWithCanvasOptions = {},
+        options: DeviceCreateWithCanvasOptions = {},
     ): Device {
         const {
             alpha = true,
@@ -147,7 +146,7 @@ export class Device {
             preserveDrawingBuffer,
         });
         if (!gl) { throw new Error("Could not get webgl2 context"); }
-        return Device.withContext(gl, options);
+        return Device.createWithContext(gl, options);
     }
 
     /**
@@ -155,7 +154,7 @@ export class Device {
      * context, but concurrent usage of it voids the warranty. Only use
      * concurrently when absolutely necessary.
      */
-    static withContext(
+    static createWithContext(
         gl: WebGL2RenderingContext,
         {
             pixelRatio,
@@ -163,7 +162,7 @@ export class Device {
             viewportHeight,
             extensions,
             debug,
-        }: DeviceWithContextOptions = {},
+        }: DeviceCreateWithContextOptions = {},
     ): Device {
         if (extensions) {
             extensions.forEach((ext) => {
@@ -321,7 +320,7 @@ export class Device {
             depth,
             stencil,
             blend,
-        }: CommandOptions<P> = {},
+        }: CommandCreateOptions<P> = {},
     ): Command<P> {
         assert.nonNull(vert, fmtParamNonNull("vert"));
         assert.nonNull(frag, fmtParamNonNull("frag"));
@@ -348,7 +347,7 @@ export class Device {
     createVertexBuffer<T extends VertexBufferType>(
         type: T,
         size: number,
-        { usage = BufferUsage.DYNAMIC_DRAW }: VertexBufferOptions = {},
+        { usage = BufferUsage.DYNAMIC_DRAW }: VertexBufferCreateOptions = {},
     ): VertexBuffer<T> {
         return new VertexBuffer(
             this._gl,
@@ -366,7 +365,7 @@ export class Device {
     createVertexBufferWithTypedArray<T extends VertexBufferType>(
         type: T,
         data: VertexBufferTypeToTypedArray[T] | number[],
-        { usage = BufferUsage.STATIC_DRAW }: VertexBufferOptions = {},
+        { usage = BufferUsage.STATIC_DRAW }: VertexBufferCreateOptions = {},
     ): VertexBuffer<T> {
         return new VertexBuffer(
             this._gl,
@@ -385,7 +384,7 @@ export class Device {
         type: T,
         primitive: Primitive,
         size: number,
-        { usage = BufferUsage.DYNAMIC_DRAW }: ElementBufferOptions = {},
+        { usage = BufferUsage.DYNAMIC_DRAW }: ElementBufferCreateOptions = {},
     ): ElementBuffer<T> {
         return new ElementBuffer(
             dev._gl,
@@ -407,7 +406,7 @@ export class Device {
      */
     createElementBufferWithArray(
         data: ElementArray,
-        options?: ElementBufferOptions,
+        options?: ElementBufferCreateOptions,
     ): ElementBuffer<DataType.UNSIGNED_INT> {
         if (array.is2(data)) {
             const shape = array.shape2(data);
@@ -440,7 +439,7 @@ export class Device {
         type: T,
         primitive: Primitive,
         data: ElementBufferTypeToTypedArray[T] | number[],
-        { usage = BufferUsage.STATIC_DRAW }: ElementBufferOptions = {},
+        { usage = BufferUsage.STATIC_DRAW }: ElementBufferCreateOptions = {},
     ): ElementBuffer<T> {
         return new ElementBuffer(
             this._gl,
@@ -596,7 +595,7 @@ export class Device {
             mag = Filter.NEAREST,
             wrapS = Wrap.CLAMP_TO_EDGE,
             wrapT = Wrap.CLAMP_TO_EDGE,
-        }: TextureOptions = {},
+        }: TextureCreateOptions = {},
     ): Texture<F> {
         return new Texture(
             this._gl,
@@ -613,7 +612,7 @@ export class Device {
      */
     createTextureWithImage(
         image: ImageData,
-        options?: TextureOptions & TextureStoreOptions,
+        options?: TextureCreateOptions & TextureStoreOptions,
     ): Texture<InternalFormat.RGBA8> {
         return this.createTextureWithTypedArray(
             image.width,
@@ -639,7 +638,7 @@ export class Device {
         data: InternalFormatToTypedArray[F],
         dataFormat: InternalFormatToDataFormat[F],
         dataType: InternalFormatToDataType[F],
-        options: TextureOptions & TextureStoreOptions = {},
+        options: TextureCreateOptions & TextureStoreOptions = {},
     ): Texture<F> {
         const {
             min = Filter.NEAREST,
@@ -701,7 +700,7 @@ export class Device {
 }
 
 function parseDepth(
-    depth: CommandOptions<void>["depth"],
+    depth: CommandCreateOptions<void>["depth"],
 ): DepthTestDescriptor | undefined {
     if (!depth) { return undefined; }
     assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
@@ -714,7 +713,7 @@ function parseDepth(
 }
 
 function parseStencil(
-    stencil: CommandOptions<void>["stencil"],
+    stencil: CommandCreateOptions<void>["stencil"],
 ): StencilTestDescriptor | undefined {
     if (!stencil) { return undefined; }
     assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
@@ -790,7 +789,7 @@ function parseStencil(
 }
 
 function parseBlend(
-    blend: CommandOptions<void>["blend"],
+    blend: CommandCreateOptions<void>["blend"],
 ): BlendDescriptor | undefined {
     if (!blend) { return undefined; }
     assert.nonNull(blend.func, fmtParamNonNull("blend.func"));

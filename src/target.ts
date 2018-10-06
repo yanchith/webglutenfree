@@ -2,7 +2,6 @@ import * as assert from "./util/assert";
 import { BufferBits, Filter, Primitive } from "./types";
 import { State } from "./state";
 
-export type Device = import("./device").Device;
 export type Command<P> = import("./command").Command<P>;
 export type UniformDescriptor<P> = import("./command").UniformDescriptor<P>;
 export type TextureAccessor<P> = import("./command").TextureAccessor<P>;

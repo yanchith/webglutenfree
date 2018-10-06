@@ -1,7 +1,5 @@
 import { DataType, Filter, Wrap, InternalFormat, Format } from "./types";
 
-export type Device = import("./device").Device;
-
 export type TextureDataType = DataType;
 export type TextureInternalFormat = InternalFormat;
 export type TextureFormat = Format;
@@ -198,7 +196,7 @@ export interface InternalFormatToTypedArray {
     [p: number]: ArrayBufferView;
 }
 
-export interface TextureOptions {
+export interface TextureCreateOptions {
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
     wrapS?: TextureWrap;
