@@ -203,8 +203,7 @@ function createDevice(): Device {
 }
 
 function createCommand(dev: Device): Command<void> {
-    return Command.create(
-        dev,
+    return dev.createCommand(
         `#version 300 es
         precision mediump float;
 
@@ -255,5 +254,5 @@ function createFramebuffer(
     dev: Device,
     tex: Texture<InternalFormat.RGBA8>,
 ): Framebuffer {
-    return Framebuffer.create(dev, WIDTH, HEIGHT, tex);
+    return dev.createFramebuffer(WIDTH, HEIGHT, tex);
 }

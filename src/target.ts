@@ -1,32 +1,13 @@
 import * as assert from "./util/assert";
-import { COMMAND_BINDINGS } from "./command";
 import { BufferBits, Filter, Primitive } from "./types";
+import { State } from "./state";
 
-export type Device = import ("./device").Device;
-export type Command<P> = import ("./command").Command<P>;
-export type DepthTestDescriptor = import ("./command").DepthTestDescriptor;
-export type StencilTestDescriptor = import ("./command").StencilTestDescriptor;
-export type BlendDescriptor = import ("./command").BlendDescriptor;
-export type UniformDescriptor<P> = import ("./command").UniformDescriptor<P>;
-export type TextureAccessor<P> = import ("./command").TextureAccessor<P>;
-export type Attributes = import ("./attributes").Attributes;
-export type Framebuffer = import ("./framebuffer").Framebuffer;
-
-/**
- * Tracks binding of `Target`s for each `Device`. Each `Device` must have at most
- * one `Target` bound at any time. Nested target binding is not supported even
- * though it is not prohibited by the shape of the API:
- *
- * // This produces a runtime error
- * fbo.target((fbort) => {
- *     dev.target((rt) => rt.draw(...));
- *     fbort.draw(...);
- * });
- *
- * WeakSet is used instead of `private static` variables, as there can be
- * multiple `Device`s owning the targets.
- */
-export const TARGET_BINDINGS = new WeakSet<Device>();
+export type Device = import("./device").Device;
+export type Command<P> = import("./command").Command<P>;
+export type UniformDescriptor<P> = import("./command").UniformDescriptor<P>;
+export type TextureAccessor<P> = import("./command").TextureAccessor<P>;
+export type Attributes = import("./attributes").Attributes;
+export type Framebuffer = import("./framebuffer").Framebuffer;
 
 const GL_NONE = 0;
 const DRAW_BUFFERS_NONE = [GL_NONE];
@@ -79,7 +60,7 @@ export interface TargetDrawOptions {
 export class Target {
 
     constructor(
-        private dev: Device,
+        private state: State,
         private glDrawBuffers: number[],
         private glFramebuffer: WebGLFramebuffer | null,
         private surfaceWidth?: number,
@@ -94,19 +75,17 @@ export class Target {
      */
     with(cb: (rt: Target) => void): void {
         const {
-            dev,
-            dev: { _gl: gl },
+            state,
+            state: { gl },
             glFramebuffer,
             glDrawBuffers,
         } = this;
 
         // We would overwrite the currently bound DRAW_FRAMEBUFFER unless we
         // checked
-        if (TARGET_BINDINGS.has(dev)) {
-            throw new Error("A target for this device is already bound");
-        }
+        state.assertTargetUnbound();
+        state.trackTargetBinding(this);
 
-        TARGET_BINDINGS.add(dev);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
         gl.drawBuffers(glDrawBuffers);
 
@@ -114,7 +93,8 @@ export class Target {
 
         gl.drawBuffers(DRAW_BUFFERS_NONE);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-        TARGET_BINDINGS.delete(dev);
+
+        state.trackTargetBinding(null);
     }
 
     /**
@@ -132,17 +112,15 @@ export class Target {
             scissorX = 0,
             scissorY = 0,
             scissorWidth = this.surfaceWidth === void 0
-                ? this.dev._gl.drawingBufferWidth
+                ? this.state.gl.drawingBufferWidth
                 : this.surfaceWidth,
             scissorHeight = this.surfaceHeight === void 0
-                ? this.dev._gl.drawingBufferHeight
+                ? this.state.gl.drawingBufferHeight
                 : this.surfaceHeight,
         }: TargetClearOptions = {},
     ): void {
-        const { dev, dev: { _gl: gl } } = this;
-        if (!TARGET_BINDINGS.has(dev)) {
-            throw new Error("A target must be bound to perform clear");
-        }
+        const { state, state: { gl } } = this;
+        state.assertTargetBound("clear");
 
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
@@ -168,10 +146,10 @@ export class Target {
             dstX = 0,
             dstY = 0,
             dstWidth = this.surfaceWidth === void 0
-                ? this.dev._gl.drawingBufferWidth
+                ? this.state.gl.drawingBufferWidth
                 : this.surfaceWidth,
             dstHeight = this.surfaceHeight === void 0
-                ? this.dev._gl.drawingBufferHeight
+                ? this.state.gl.drawingBufferHeight
                 : this.surfaceHeight,
             filter = Filter.NEAREST,
             scissorX = dstX,
@@ -180,10 +158,8 @@ export class Target {
             scissorHeight = dstHeight,
         }: TargetBlitOptions = {},
     ): void {
-        const { dev, dev: { _gl: gl } } = this;
-        if (!TARGET_BINDINGS.has(dev)) {
-            throw new Error("A target must be bound to perform blit");
-        }
+        const { state, state: { gl } } = this;
+        state.assertTargetBound("blit");
 
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
@@ -232,10 +208,10 @@ export class Target {
             viewportX = 0,
             viewportY = 0,
             viewportWidth = this.surfaceWidth === void 0
-                ? this.dev._gl.drawingBufferWidth
+                ? this.state.gl.drawingBufferWidth
                 : this.surfaceWidth,
             viewportHeight = this.surfaceHeight === void 0
-                ? this.dev._gl.drawingBufferHeight
+                ? this.state.gl.drawingBufferHeight
                 : this.surfaceHeight,
             scissorX = viewportX,
             scissorY = viewportY,
@@ -243,10 +219,10 @@ export class Target {
             scissorHeight = viewportHeight,
         }: TargetDrawOptions = {},
     ): void {
-        const { dev, dev: { _gl: gl } } = this;
-        if (!TARGET_BINDINGS.has(dev)) {
-            throw new Error("A target must be bound to perform draw");
-        }
+        const { state, state: { gl } } = this;
+
+        state.assertTargetBound("draw");
+        state.assertCommandUnbound();
 
         const {
             glProgram,
@@ -257,13 +233,9 @@ export class Target {
             uniformDescrs,
         } = cmd;
 
-        if (COMMAND_BINDINGS.has(dev)) {
-            throw new Error("Command already bound, cannot bind twice");
-        }
-
-        this.depthTest(depthTestDescr);
-        this.stencilTest(stencilTestDescr);
-        this.blend(blendDescr);
+        state.setDepthTest(depthTestDescr);
+        state.setStencilTest(stencilTestDescr);
+        state.setBlend(blendDescr);
 
         gl.useProgram(glProgram);
 
@@ -302,10 +274,6 @@ export class Target {
         }
 
         gl.useProgram(null);
-
-        this.blend(null);
-        this.stencilTest(null);
-        this.depthTest(null);
     }
 
     /**
@@ -323,10 +291,10 @@ export class Target {
             viewportX = 0,
             viewportY = 0,
             viewportWidth = this.surfaceWidth === void 0
-                ? this.dev._gl.drawingBufferWidth
+                ? this.state.gl.drawingBufferWidth
                 : this.surfaceWidth,
             viewportHeight = this.surfaceHeight === void 0
-                ? this.dev._gl.drawingBufferHeight
+                ? this.state.gl.drawingBufferHeight
                 : this.surfaceHeight,
             scissorX = viewportX,
             scissorY = viewportY,
@@ -334,10 +302,10 @@ export class Target {
             scissorHeight = viewportHeight,
         }: TargetDrawOptions = {},
     ): void {
-        const { dev, dev: { _gl: gl } } = this;
-        if (!TARGET_BINDINGS.has(dev)) {
-            throw new Error("A target must be bound to perform batch");
-        }
+        const { state, state: { gl } } = this;
+
+        state.assertTargetBound("batch-draw");
+        state.assertCommandUnbound();
 
         const {
             glProgram,
@@ -351,29 +319,21 @@ export class Target {
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch
 
-        // Perform shared batch setup, but first ensure no concurrency
+        state.setDepthTest(depthTestDescr);
+        state.setStencilTest(stencilTestDescr);
+        state.setBlend(blendDescr);
 
-        if (COMMAND_BINDINGS.has(dev)) {
-            throw new Error("Command already bound, cannot bind twice");
-        }
-
-        COMMAND_BINDINGS.add(dev);
-
-        this.depthTest(depthTestDescr);
-        this.stencilTest(stencilTestDescr);
-        this.blend(blendDescr);
+        state.trackCommandBinding(this);
 
         gl.useProgram(glProgram);
 
         let i = 0;
 
         cb((attrs: Attributes, props: P) => {
-            if (!TARGET_BINDINGS.has(dev)) {
-                throw new Error("A target must be bound to batch draw");
-            }
-            if (!COMMAND_BINDINGS.has(dev)) {
-                throw new Error("A command must be bound to batch draw");
-            }
+            // Did the user do anything sneaky?
+            // TODO: assert the command and target is the same one
+            state.assertTargetBound("batch-draw");
+            state.assertCommandBound("batch-draw");
 
             i++;
 
@@ -416,12 +376,7 @@ export class Target {
         });
 
         gl.useProgram(null);
-
-        this.blend(null);
-        this.stencilTest(null);
-        this.depthTest(null);
-
-        COMMAND_BINDINGS.delete(dev);
+        state.trackCommandBinding(null);
     }
 
     private drawArrays(
@@ -430,16 +385,15 @@ export class Target {
         offset: number,
         instanceCount: number,
     ): void {
-        const gl = this.dev._gl;
         if (instanceCount) {
-            gl.drawArraysInstanced(
+            this.state.gl.drawArraysInstanced(
                 primitive,
                 offset,
                 count,
                 instanceCount,
             );
         } else {
-            gl.drawArrays(primitive, offset, count);
+            this.state.gl.drawArrays(primitive, offset, count);
         }
     }
 
@@ -450,9 +404,8 @@ export class Target {
         offset: number,
         instCount: number,
     ): void {
-        const gl = this.dev._gl;
         if (instCount) {
-            gl.drawElementsInstanced(
+            this.state.gl.drawElementsInstanced(
                 primitive,
                 count,
                 type,
@@ -460,7 +413,7 @@ export class Target {
                 instCount,
             );
         } else {
-            gl.drawElements(
+            this.state.gl.drawElements(
                 primitive,
                 count,
                 type,
@@ -474,7 +427,7 @@ export class Target {
         props: P,
         index: number,
     ): void {
-        const gl = this.dev._gl;
+        const gl = this.state.gl;
         textureAccessors.forEach((accessor, i) => {
             const tex = access(props, index, accessor);
             gl.activeTexture(gl.TEXTURE0 + i);
@@ -487,7 +440,7 @@ export class Target {
         props: P,
         index: number,
     ): void {
-        const gl = this.dev._gl;
+        const gl = this.state.gl;
         uniformDescrs.forEach(({
             identifier: ident,
             location: loc,
@@ -610,76 +563,6 @@ export class Target {
                     break;
             }
         });
-    }
-
-    private depthTest(desc: DepthTestDescriptor | null): void {
-        const gl = this.dev._gl;
-        if (desc) {
-            gl.enable(gl.DEPTH_TEST);
-            gl.depthFunc(desc.func);
-            gl.depthMask(desc.mask);
-            gl.depthRange(desc.rangeStart, desc.rangeEnd);
-        } else { gl.disable(gl.DEPTH_TEST); }
-    }
-
-    private stencilTest(desc: StencilTestDescriptor | null): void {
-        const gl = this.dev._gl;
-        if (desc) {
-            const {
-                fFn,
-                bFn,
-                fFnRef,
-                bFnRef,
-                fFnMask,
-                bFnMask,
-                fMask,
-                bMask,
-                fOpFail,
-                bOpFail,
-                fOpZFail,
-                bOpZFail,
-                fOpZPass,
-                bOpZPass,
-            } = desc;
-            gl.enable(gl.STENCIL_TEST);
-            gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
-            gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
-            gl.stencilMaskSeparate(gl.FRONT, fMask);
-            gl.stencilMaskSeparate(gl.BACK, bMask);
-            gl.stencilOpSeparate(
-                gl.FRONT,
-                fOpFail,
-                fOpZFail,
-                fOpZPass,
-            );
-            gl.stencilOpSeparate(
-                gl.BACK,
-                bOpFail,
-                bOpZFail,
-                bOpZPass,
-            );
-        } else { gl.disable(gl.STENCIL_TEST); }
-    }
-
-    private blend(desc: BlendDescriptor | null): void {
-        const gl = this.dev._gl;
-        if (desc) {
-            gl.enable(gl.BLEND);
-            gl.blendFuncSeparate(
-                desc.srcRGB,
-                desc.dstRGB,
-                desc.srcAlpha,
-                desc.dstAlpha,
-            );
-            gl.blendEquationSeparate(
-                desc.eqnRGB,
-                desc.eqnAlpha,
-            );
-            if (desc.color) {
-                const [r, g, b, a] = desc.color;
-                gl.blendColor(r, g, b, a);
-            }
-        } else { gl.disable(gl.BLEND); }
     }
 }
 

@@ -1,4 +1,27 @@
+import * as assert from "./util/assert";
+import {
+    State,
+    DepthTestDescriptor,
+    StencilTestDescriptor,
+    BlendDescriptor,
+} from "./state";
 import { Target } from "./target";
+import {
+    Command,
+    CommandOptions,
+    DepthFunc,
+    StencilOp,
+    BlendEquation,
+} from "./command";
+import {
+    Texture,
+} from "./texture";
+import {
+    Framebuffer,
+    TextureColorInternalFormat,
+    TextureDepthInternalFormat,
+    TextureDepthStencilInternalFormat,
+} from "./framebuffer";
 
 export interface DeviceCreateOptions {
     element?: HTMLElement;
@@ -132,6 +155,7 @@ export class Device {
     private explicitViewportWidth?: number;
     private explicitViewportHeight?: number;
 
+    private state: State;
     private backbufferTarget: Target;
 
     private constructor(
@@ -148,8 +172,9 @@ export class Device {
 
         this.update();
 
+        this.state = new State(gl);
         this.backbufferTarget = new Target(
-            this,
+            this.state,
             [gl.BACK],
             null,
             gl.drawingBufferWidth,
@@ -242,6 +267,229 @@ export class Device {
     target(cb: (rt: Target) => void): void {
         this.backbufferTarget.with(cb);
     }
+
+    /**
+     * TODO
+     */
+    createCommand<P = void>(
+        vert: string,
+        frag: string,
+        {
+            textures = {},
+            uniforms = {},
+            depth,
+            stencil,
+            blend,
+        }: CommandOptions<P> = {},
+    ): Command<P> {
+        assert.nonNull(vert, fmtParamNonNull("vert"));
+        assert.nonNull(frag, fmtParamNonNull("frag"));
+
+        const depthDescr = parseDepth(depth);
+        const stencilDescr = parseStencil(stencil);
+        const blendDescr = parseBlend(blend);
+
+        return new Command(
+            this.state,
+            vert,
+            frag,
+            textures,
+            uniforms,
+            depthDescr,
+            stencilDescr,
+            blendDescr,
+        );
+    }
+
+    /**
+     * Create a framebuffer containg one or more color buffers and a
+     * depth or depth-stencil buffer with given width and height.
+     *
+     * Does not take ownership of provided attachments, only references them.
+     * It is still an error to use the attachments while they are written to
+     * via the framebuffer, however.
+     */
+    createFramebuffer(
+        width: number,
+        height: number,
+        color:
+            | Texture<TextureColorInternalFormat>
+            | Texture<TextureColorInternalFormat>[],
+        depthStencil?:
+            | Texture<TextureDepthInternalFormat>
+            | Texture<TextureDepthStencilInternalFormat>,
+    ): Framebuffer {
+        const colors = Array.isArray(color) ? color : [color];
+        assert.nonEmpty(colors, () => {
+            return "Framebuffer color attachments must not be empty";
+        });
+        colors.forEach((buffer) => {
+            assert.equal(width, buffer.width, (got, expected) => {
+                return `Expected attachment width ${expected}, got ${got}`;
+            });
+            assert.equal(height, buffer.height, (got, expected) => {
+                return `Expected attachment height ${expected}, got ${got}`;
+            });
+        });
+
+        if (depthStencil) {
+            assert.equal(width, depthStencil.width, (got, expected) => {
+                return `Expected attachment width ${expected}, got ${got}`;
+            });
+            assert.equal(height, depthStencil.height, (got, expected) => {
+                return `Expected attachment height ${expected}, got ${got}`;
+            });
+        }
+
+        return new Framebuffer(this.state, width, height, colors, depthStencil);
+    }
+}
+
+function parseDepth(
+    depth: CommandOptions<void>["depth"],
+): DepthTestDescriptor | undefined {
+    if (!depth) { return undefined; }
+    assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
+    return new DepthTestDescriptor(
+        depth.func || DepthFunc.LESS,
+        typeof depth.mask === "boolean" ? depth.mask : true,
+        depth.range ? depth.range[0] : 0,
+        depth.range ? depth.range[1] : 1,
+    );
+}
+
+function parseStencil(
+    stencil: CommandOptions<void>["stencil"],
+): StencilTestDescriptor | undefined {
+    if (!stencil) { return undefined; }
+    assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+    // TODO: complete stencil validation... validation framework?
+    return new StencilTestDescriptor(
+        typeof stencil.func.func === "object"
+            ? stencil.func.func.front
+            : stencil.func.func,
+        typeof stencil.func.func === "object"
+            ? stencil.func.func.back
+            : stencil.func.func,
+        typeof stencil.func.ref !== "undefined"
+            ? typeof stencil.func.ref === "object"
+                ? stencil.func.ref.front
+                : stencil.func.ref
+            : 1,
+        typeof stencil.func.ref !== "undefined"
+            ? typeof stencil.func.ref === "object"
+                ? stencil.func.ref.back
+                : stencil.func.ref
+            : 1,
+        typeof stencil.func.mask !== "undefined"
+            ? typeof stencil.func.mask === "object"
+                ? stencil.func.mask.front
+                : stencil.func.mask
+            : 0xFF,
+        typeof stencil.func.mask !== "undefined"
+            ? typeof stencil.func.mask === "object"
+                ? stencil.func.mask.back
+                : stencil.func.mask
+            : 0xFF,
+        typeof stencil.mask !== "undefined"
+            ? typeof stencil.mask === "object"
+                ? stencil.mask.front
+                : stencil.mask
+            : 0xFF,
+        typeof stencil.mask !== "undefined"
+            ? typeof stencil.mask === "object"
+                ? stencil.mask.back
+                : stencil.mask
+            : 0xFF,
+        stencil.op
+            ? typeof stencil.op.fail === "object"
+                ? stencil.op.fail.front
+                : stencil.op.fail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.fail === "object"
+                ? stencil.op.fail.back
+                : stencil.op.fail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zfail === "object"
+                ? stencil.op.zfail.front
+                : stencil.op.zfail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zfail === "object"
+                ? stencil.op.zfail.back
+                : stencil.op.zfail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zpass === "object"
+                ? stencil.op.zpass.front
+                : stencil.op.zpass
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zpass === "object"
+                ? stencil.op.zpass.back
+                : stencil.op.zpass
+            : StencilOp.KEEP,
+    );
+}
+
+function parseBlend(
+    blend: CommandOptions<void>["blend"],
+): BlendDescriptor | undefined {
+    if (!blend) { return undefined; }
+    assert.nonNull(blend.func, fmtParamNonNull("blend.func"));
+    assert.nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+    assert.nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+    if (typeof blend.func.src === "object") {
+        assert.nonNull(
+            blend.func.src.rgb,
+            fmtParamNonNull("blend.func.src.rgb"),
+        );
+        assert.nonNull(
+            blend.func.src.alpha,
+            fmtParamNonNull("blend.func.src.alpha"),
+        );
+    }
+    if (typeof blend.func.dst === "object") {
+        assert.nonNull(
+            blend.func.dst.rgb,
+            fmtParamNonNull("blend.func.dst.rgb"),
+        );
+        assert.nonNull(
+            blend.func.dst.alpha,
+            fmtParamNonNull("blend.func.dst.alpha"),
+        );
+    }
+    return new BlendDescriptor(
+        typeof blend.func.src === "object"
+            ? blend.func.src.rgb
+            : blend.func.src,
+        typeof blend.func.src === "object"
+            ? blend.func.src.alpha
+            : blend.func.src,
+        typeof blend.func.dst === "object"
+            ? blend.func.dst.rgb
+            : blend.func.dst,
+        typeof blend.func.dst === "object"
+            ? blend.func.dst.alpha
+            : blend.func.dst,
+        blend.equation
+            ? typeof blend.equation === "object"
+                ? blend.equation.rgb
+                : blend.equation
+            : BlendEquation.FUNC_ADD,
+        blend.equation
+            ? typeof blend.equation === "object"
+                ? blend.equation.alpha
+                : blend.equation
+            : BlendEquation.FUNC_ADD,
+        blend.color,
+    );
+}
+
+function fmtParamNonNull(name: string): () => string {
+    return () => `Missing parameter ${name}`;
 }
 
 function createDebugFunc(gl: any, key: string): (...args: any[]) => any {

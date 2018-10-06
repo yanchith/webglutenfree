@@ -1,30 +1,18 @@
 import * as assert from "./util/assert";
 import { process } from "./util/process-shim";
+import {
+    State,
+    DepthTestDescriptor,
+    StencilTestDescriptor,
+    BlendDescriptor,
+} from "./state";
 
-export type Device = import ("./device").Device;
-export type Texture<T> = import ("./texture").Texture<T>;
-export type TextureInternalFormat = import ("./texture").TextureInternalFormat;
-export type AttributesConfig = import ("./attributes").AttributesConfig;
+export type Texture<T> = import("./texture").Texture<T>;
+export type TextureInternalFormat = import("./texture").TextureInternalFormat;
+export type AttributesConfig = import("./attributes").AttributesConfig;
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
-
-/**
- * Tracks binding of `Command`s for each `Device`. Each `Device` must have at
- * most one `Command` bound at any time. Nested command binding is not supported
- * even though it is not prohibited by the shape of the API:
- *
- * // This produces a runtime error
- * dev.target((rt) => {
- *     rt.batch(cmd, (draw) => {
- *         rt.draw(cmd, attrs, props);
- *     });
- * });
- *
- * WeakSet is used instead of `private static` variables, as there can be
- * multiple `Device`s owning the commands.
- */
-export const COMMAND_BINDINGS = new WeakSet<Device>();
 
 export type Accessor<P, R> = R | ((props: P, index: number) => R);
 export type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
@@ -273,37 +261,6 @@ export enum BlendEquation {
 
 export class Command<P> {
 
-    static create<P = void>(
-        dev: Device,
-        vert: string,
-        frag: string,
-        {
-            textures = {},
-            uniforms = {},
-            depth,
-            stencil,
-            blend,
-        }: CommandOptions<P> = {},
-    ): Command<P> {
-        assert.nonNull(vert, fmtParamNonNull("vert"));
-        assert.nonNull(frag, fmtParamNonNull("frag"));
-
-        const depthDescr = parseDepth(depth);
-        const stencilDescr = parseStencil(stencil);
-        const blendDescr = parseBlend(blend);
-
-        return new Command(
-            dev,
-            vert,
-            frag,
-            textures,
-            uniforms,
-            depthDescr,
-            stencilDescr,
-            blendDescr,
-        );
-    }
-
     readonly glProgram: WebGLProgram | null;
     readonly depthTestDescr: DepthTestDescriptor | null;
     readonly stencilTestDescr: StencilTestDescriptor | null;
@@ -311,14 +268,14 @@ export class Command<P> {
     readonly textureAccessors!: TextureAccessor<P>[];
     readonly uniformDescrs!: UniformDescriptor<P>[];
 
-    private dev: Device;
+    private state: State;
     private vsSource: string;
     private fsSource: string;
     private textures: Textures<P>;
     private uniforms: Uniforms<P>;
 
-    private constructor(
-        dev: Device,
+    constructor(
+        state: State,
         vsSource: string,
         fsSource: string,
         textures: Textures<P>,
@@ -327,7 +284,7 @@ export class Command<P> {
         stencilDescr?: StencilTestDescriptor,
         blendDescr?: BlendDescriptor,
     ) {
-        this.dev = dev;
+        this.state = state;
         this.vsSource = vsSource;
         this.fsSource = fsSource;
         this.textures = textures;
@@ -344,8 +301,8 @@ export class Command<P> {
      * Reinitialize invalid buffer, eg. after context is lost.
      */
     restore(): void {
-        const { dev: { _gl }, glProgram } = this;
-        if (!_gl.isProgram(glProgram)) { this.init(); }
+        const { state: { gl }, glProgram } = this;
+        if (!gl.isProgram(glProgram)) { this.init(); }
     }
 
     /**
@@ -353,13 +310,13 @@ export class Command<P> {
      * actual attribute locations for the program in this command.
      */
     locate(attributes: AttributesConfig): AttributesConfig {
-        const { dev: { _gl }, glProgram } = this;
+        const { state: { gl }, glProgram } = this;
         return Object.entries(attributes)
             .reduce<AttributesConfig>((accum, [identifier, definition]) => {
                 if (INT_PATTERN.test(identifier)) {
                     accum[identifier] = definition;
                 } else {
-                    const location = _gl.getAttribLocation(
+                    const location = gl.getAttribLocation(
                         glProgram,
                         identifier,
                     );
@@ -374,8 +331,8 @@ export class Command<P> {
 
     private init(): void {
         const {
-            dev,
-            dev: { _gl: gl },
+            state,
+            state: { gl },
             vsSource,
             fsSource,
             textures,
@@ -383,9 +340,7 @@ export class Command<P> {
         } = this;
 
         // We would overwrite the currently bound program unless we checked
-        if (COMMAND_BINDINGS.has(dev)) {
-            throw new Error("A command for this device is already bound");
-        }
+        state.assertCommandUnbound();
 
         const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
@@ -565,46 +520,6 @@ export class Command<P> {
     }
 }
 
-export class DepthTestDescriptor {
-    constructor(
-        readonly func: number,
-        readonly mask: boolean,
-        readonly rangeStart: number,
-        readonly rangeEnd: number,
-    ) { }
-}
-
-export class StencilTestDescriptor {
-    constructor(
-        readonly fFn: number,
-        readonly bFn: number,
-        readonly fFnRef: number,
-        readonly bFnRef: number,
-        readonly fFnMask: number,
-        readonly bFnMask: number,
-        readonly fMask: number,
-        readonly bMask: number,
-        readonly fOpFail: number,
-        readonly bOpFail: number,
-        readonly fOpZFail: number,
-        readonly bOpZFail: number,
-        readonly fOpZPass: number,
-        readonly bOpZPass: number,
-    ) { }
-}
-
-export class BlendDescriptor {
-    constructor(
-        readonly srcRGB: number,
-        readonly srcAlpha: number,
-        readonly dstRGB: number,
-        readonly dstAlpha: number,
-        readonly eqnRGB: number,
-        readonly eqnAlpha: number,
-        readonly color?: [number, number, number, number],
-    ) { }
-}
-
 export class UniformDescriptor<P> {
     constructor(
         readonly identifier: string,
@@ -613,148 +528,6 @@ export class UniformDescriptor<P> {
     ) { }
 }
 
-function parseDepth(
-    depth: CommandOptions<void>["depth"],
-): DepthTestDescriptor | undefined {
-    if (!depth) { return undefined; }
-    assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
-    return new DepthTestDescriptor(
-        depth.func || DepthFunc.LESS,
-        typeof depth.mask === "boolean" ? depth.mask : true,
-        depth.range ? depth.range[0] : 0,
-        depth.range ? depth.range[1] : 1,
-    );
-}
-
-function parseStencil(
-    stencil: CommandOptions<void>["stencil"],
-): StencilTestDescriptor | undefined {
-    if (!stencil) { return undefined; }
-    assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
-    // TODO: complete stencil validation... validation framework?
-    return new StencilTestDescriptor(
-        typeof stencil.func.func === "object"
-            ? stencil.func.func.front
-            : stencil.func.func,
-        typeof stencil.func.func === "object"
-            ? stencil.func.func.back
-            : stencil.func.func,
-        typeof stencil.func.ref !== "undefined"
-            ? typeof stencil.func.ref === "object"
-                ? stencil.func.ref.front
-                : stencil.func.ref
-            : 1,
-        typeof stencil.func.ref !== "undefined"
-            ? typeof stencil.func.ref === "object"
-                ? stencil.func.ref.back
-                : stencil.func.ref
-            : 1,
-        typeof stencil.func.mask !== "undefined"
-            ? typeof stencil.func.mask === "object"
-                ? stencil.func.mask.front
-                : stencil.func.mask
-            : 0xFF,
-        typeof stencil.func.mask !== "undefined"
-            ? typeof stencil.func.mask === "object"
-                ? stencil.func.mask.back
-                : stencil.func.mask
-            : 0xFF,
-        typeof stencil.mask !== "undefined"
-            ? typeof stencil.mask === "object"
-                ? stencil.mask.front
-                : stencil.mask
-            : 0xFF,
-        typeof stencil.mask !== "undefined"
-            ? typeof stencil.mask === "object"
-                ? stencil.mask.back
-                : stencil.mask
-            : 0xFF,
-        stencil.op
-            ? typeof stencil.op.fail === "object"
-                ? stencil.op.fail.front
-                : stencil.op.fail
-            : StencilOp.KEEP,
-        stencil.op
-            ? typeof stencil.op.fail === "object"
-                ? stencil.op.fail.back
-                : stencil.op.fail
-            : StencilOp.KEEP,
-        stencil.op
-            ? typeof stencil.op.zfail === "object"
-                ? stencil.op.zfail.front
-                : stencil.op.zfail
-            : StencilOp.KEEP,
-        stencil.op
-            ? typeof stencil.op.zfail === "object"
-                ? stencil.op.zfail.back
-                : stencil.op.zfail
-            : StencilOp.KEEP,
-        stencil.op
-            ? typeof stencil.op.zpass === "object"
-                ? stencil.op.zpass.front
-                : stencil.op.zpass
-            : StencilOp.KEEP,
-        stencil.op
-            ? typeof stencil.op.zpass === "object"
-                ? stencil.op.zpass.back
-                : stencil.op.zpass
-            : StencilOp.KEEP,
-    );
-}
-
-function parseBlend(
-    blend: CommandOptions<void>["blend"],
-): BlendDescriptor | undefined {
-    if (!blend) { return undefined; }
-    assert.nonNull(blend.func, fmtParamNonNull("blend.func"));
-    assert.nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
-    assert.nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
-    if (typeof blend.func.src === "object") {
-        assert.nonNull(
-            blend.func.src.rgb,
-            fmtParamNonNull("blend.func.src.rgb"),
-        );
-        assert.nonNull(
-            blend.func.src.alpha,
-            fmtParamNonNull("blend.func.src.alpha"),
-        );
-    }
-    if (typeof blend.func.dst === "object") {
-        assert.nonNull(
-            blend.func.dst.rgb,
-            fmtParamNonNull("blend.func.dst.rgb"),
-        );
-        assert.nonNull(
-            blend.func.dst.alpha,
-            fmtParamNonNull("blend.func.dst.alpha"),
-        );
-    }
-    return new BlendDescriptor(
-        typeof blend.func.src === "object"
-            ? blend.func.src.rgb
-            : blend.func.src,
-        typeof blend.func.src === "object"
-            ? blend.func.src.alpha
-            : blend.func.src,
-        typeof blend.func.dst === "object"
-            ? blend.func.dst.rgb
-            : blend.func.dst,
-        typeof blend.func.dst === "object"
-            ? blend.func.dst.alpha
-            : blend.func.dst,
-        blend.equation
-            ? typeof blend.equation === "object"
-                ? blend.equation.rgb
-                : blend.equation
-            : BlendEquation.FUNC_ADD,
-        blend.equation
-            ? typeof blend.equation === "object"
-                ? blend.equation.alpha
-                : blend.equation
-            : BlendEquation.FUNC_ADD,
-        blend.color,
-    );
-}
 
 function createProgram(
     gl: WebGL2RenderingContext,
@@ -985,10 +758,6 @@ function validateUniformDeclaration(
             break;
         default: assert.unreachable(type);
     }
-}
-
-function fmtParamNonNull(name: string): () => string {
-    return () => `Missing parameter ${name}`;
 }
 
 function fmtTyMismatch(name: string): () => string {
