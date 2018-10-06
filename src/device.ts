@@ -1,6 +1,15 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
-import { BufferUsage, Primitive, DataType, sizeOf } from "./types";
+import {
+    BufferUsage,
+    Primitive,
+    DataType,
+    Format,
+    InternalFormat,
+    Filter,
+    Wrap,
+    sizeOf,
+} from "./types";
 import {
     State,
     DepthTestDescriptor,
@@ -35,7 +44,15 @@ import {
     AttributeDescriptor,
     AttributeType,
 } from "./attributes";
-import { Texture } from "./texture";
+import {
+    Texture,
+    TextureOptions,
+    TextureStoreOptions,
+    TextureInternalFormat,
+    InternalFormatToTypedArray,
+    InternalFormatToDataFormat,
+    InternalFormatToDataType,
+} from "./texture";
 import {
     Framebuffer,
     TextureColorInternalFormat,
@@ -559,11 +576,88 @@ export class Device {
      * Create empty attributes of a given primitive. This actually performs no
      * gl calls, only remembers the count for `gl.drawArrays()`
      */
-    createEmptyAttrubutes(
+    createEmptyAttributes(
         primitive: Primitive,
         count: number,
     ): Attributes {
         return new Attributes(this.state, primitive, [], count, 0);
+    }
+
+    /**
+     * Create a new texture with given width, height, and internal format.
+     * The internal format determines, what kind of data is possible to store.
+     */
+    createTexture<F extends TextureInternalFormat>(
+        dev: Device,
+        width: number,
+        height: number,
+        internalFormat: F,
+        {
+            min = Filter.NEAREST,
+            mag = Filter.NEAREST,
+            wrapS = Wrap.CLAMP_TO_EDGE,
+            wrapT = Wrap.CLAMP_TO_EDGE,
+        }: TextureOptions = {},
+    ): Texture<F> {
+        return new Texture(
+            dev._gl,
+            width, height,
+            internalFormat,
+            wrapS, wrapT,
+            min, mag,
+        );
+    }
+
+    /**
+     * Create a new texture with width and height equal to the given image, and
+     * store the image in the texture.
+     */
+    createTextureWithImage(
+        dev: Device,
+        image: ImageData,
+        options?: TextureOptions & TextureStoreOptions,
+    ): Texture<InternalFormat.RGBA8> {
+        return this.createTextureWithTypedArray(
+            dev,
+            image.width,
+            image.height,
+            InternalFormat.RGBA8,
+            image.data,
+            Format.RGBA,
+            DataType.UNSIGNED_BYTE,
+            options,
+        );
+    }
+
+    /**
+     * Create a new texture with given width, height, and internal format.
+     * The internal format determines, what kind of data is possible to store.
+     * Store data of given format and type contained in a typed array to the
+     * texture.
+     */
+    createTextureWithTypedArray<F extends TextureInternalFormat>(
+        dev: Device,
+        width: number,
+        height: number,
+        internalFormat: F,
+        data: InternalFormatToTypedArray[F],
+        dataFormat: InternalFormatToDataFormat[F],
+        dataType: InternalFormatToDataType[F],
+        options: TextureOptions & TextureStoreOptions = {},
+    ): Texture<F> {
+        const {
+            min = Filter.NEAREST,
+            mag = Filter.NEAREST,
+            wrapS = Wrap.CLAMP_TO_EDGE,
+            wrapT = Wrap.CLAMP_TO_EDGE,
+        } = options;
+        return new Texture(
+            dev._gl,
+            width, height,
+            internalFormat,
+            wrapS, wrapT,
+            min, mag,
+        ).store(data, dataFormat, dataType, options);
     }
 
     /**
