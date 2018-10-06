@@ -588,7 +588,6 @@ export class Device {
      * The internal format determines, what kind of data is possible to store.
      */
     createTexture<F extends TextureInternalFormat>(
-        dev: Device,
         width: number,
         height: number,
         internalFormat: F,
@@ -600,7 +599,7 @@ export class Device {
         }: TextureOptions = {},
     ): Texture<F> {
         return new Texture(
-            dev._gl,
+            this._gl,
             width, height,
             internalFormat,
             wrapS, wrapT,
@@ -613,12 +612,10 @@ export class Device {
      * store the image in the texture.
      */
     createTextureWithImage(
-        dev: Device,
         image: ImageData,
         options?: TextureOptions & TextureStoreOptions,
     ): Texture<InternalFormat.RGBA8> {
         return this.createTextureWithTypedArray(
-            dev,
             image.width,
             image.height,
             InternalFormat.RGBA8,
@@ -636,7 +633,6 @@ export class Device {
      * texture.
      */
     createTextureWithTypedArray<F extends TextureInternalFormat>(
-        dev: Device,
         width: number,
         height: number,
         internalFormat: F,
@@ -652,7 +648,7 @@ export class Device {
             wrapT = Wrap.CLAMP_TO_EDGE,
         } = options;
         return new Texture(
-            dev._gl,
+            this._gl,
             width, height,
             internalFormat,
             wrapS, wrapT,

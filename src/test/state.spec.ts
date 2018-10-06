@@ -247,7 +247,7 @@ function createAttributes(dev: Device): Attributes {
 }
 
 function createTexture(dev: Device): Texture<InternalFormat.RGBA8> {
-    return dev.createTexture(dev, WIDTH, HEIGHT, InternalFormat.RGBA8);
+    return dev.createTexture(WIDTH, HEIGHT, InternalFormat.RGBA8);
 }
 
 function createFramebuffer(
