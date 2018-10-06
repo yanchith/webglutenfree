@@ -1,12 +1,8 @@
 import * as assert from "./util/assert";
-import * as array from "./util/array";
 import { Primitive, DataType } from "./types";
+import { State } from "./state";
 import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
-import { ElementBuffer, ElementBufferType, ElementArray } from "./element-buffer";
-
-export type Device = import ("./device").Device;
-
-const INT_PATTERN = /^0|[1-9]\d*$/;
+import { ElementBuffer, ElementBufferType } from "./element-buffer";
 
 
 /**
@@ -83,93 +79,6 @@ export interface AttributesCreateOptions {
  */
 export class Attributes {
 
-    /**
-     * Create new attributes with element and attribute definitions, and an
-     * optional count limit.
-     *
-     * Element definitions can either be a primitive definition, reference an
-     * existing element buffer, or have enough information to create an element
-     * buffer.
-     *
-     * Attribute definitions can either reference an existing vertex buffer,
-     * or have enough information to create a vertex buffer.
-     *
-     * Empty attribute definitions are valid. If no attributes nor elements
-     * given, there will be no underlying vertex array object created, only the
-     * count will be given to gl.drawArrays()
-     */
-    static create(
-        dev: Device,
-        elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>,
-        attributes: AttributesConfig,
-        { countLimit }: AttributesCreateOptions = {},
-    ): Attributes {
-        if (typeof countLimit === "number") {
-            assert.gt(countLimit, 0, (p) => {
-                return `Count limit must be greater than 0, got: ${p}`;
-            });
-        }
-
-        const attrs = Object.entries(attributes)
-            .map(([locationStr, definition]) => {
-                if (!INT_PATTERN.test(locationStr)) {
-                    throw new Error("Location not a number. Use Command#locate");
-                }
-                const location = parseInt(locationStr, 10);
-                return AttributeDescriptor.create(dev, location, definition);
-            });
-
-        let primitive: Primitive;
-        let elementBuffer: ElementBuffer<ElementBufferType> | undefined;
-        if (typeof elements === "number") {
-            primitive = elements;
-        } else {
-            elementBuffer = elements instanceof ElementBuffer
-                ? elements
-                : ElementBuffer.withArray(dev, elements);
-            primitive = elementBuffer.primitive;
-        }
-
-        const inferredCount = elementBuffer
-            ? elementBuffer.length
-            : attrs.length
-                ? attrs
-                    .map((attr) => attr.count)
-                    .reduce((min, curr) => Math.min(min, curr))
-                : 0;
-        const count = typeof countLimit === "number"
-            ? Math.min(countLimit, inferredCount)
-            : inferredCount;
-
-        const instAttrs = attrs.filter((attr) => !!attr.divisor);
-        const instanceCount = instAttrs.length
-            ? instAttrs
-                .map((attr) => attr.count * attr.divisor)
-                .reduce((min, curr) => Math.min(min, curr))
-            : 0;
-
-        return new Attributes(
-            dev,
-            primitive,
-            attrs,
-            count,
-            instanceCount,
-            elementBuffer,
-        );
-    }
-
-    /**
-     * Create empty attributes of a given primitive. This actually performs no
-     * gl calls, only remembers the count for `gl.drawArrays()`
-     */
-    static empty(
-        dev: Device,
-        primitive: Primitive,
-        count: number,
-    ): Attributes {
-        return new Attributes(dev, primitive, [], count, 0);
-    }
-
     readonly primitive: Primitive;
     readonly count: number;
     readonly elementCount: number;
@@ -177,21 +86,21 @@ export class Attributes {
 
     readonly glVertexArray: WebGLVertexArrayObject | null;
 
-    private dev: Device;
+    private state: State;
 
     // The buffers
     private attributes: AttributeDescriptor[];
     private elementBuffer?: ElementBuffer<ElementBufferType>;
 
-    private constructor(
-        dev: Device,
+    constructor(
+        state: State,
         primitive: Primitive,
         attributes: AttributeDescriptor[],
         count: number,
         instanceCount: number,
         elements?: ElementBuffer<ElementBufferType> | undefined,
     ) {
-        this.dev = dev;
+        this.state = state;
         this.primitive = primitive;
         this.elementBuffer = elements;
         this.attributes = attributes;
@@ -216,12 +125,12 @@ export class Attributes {
      * to reinitialize vertex buffer and element buffer dependencies.
      */
     restore(): void {
-        const { dev: { _gl }, glVertexArray, attributes, elementBuffer } = this;
+        const { state: { gl }, glVertexArray, attributes, elementBuffer } = this;
         if (elementBuffer) { elementBuffer.restore(); }
         attributes.forEach((attr) => attr.buffer.restore());
         // If we have no attributes nor elements, there is no need to restore
         // any GPU state
-        if (this.hasAttribs() && !_gl.isVertexArray(glVertexArray)) {
+        if (this.hasAttribs() && !gl.isVertexArray(glVertexArray)) {
             this.init();
         }
     }
@@ -230,7 +139,7 @@ export class Attributes {
         // Do not create the gl vao if there are no buffers to bind
         if (!this.hasAttribs()) { return; }
 
-        const { dev: { _gl: gl }, attributes, elementBuffer } = this;
+        const { state: { gl }, attributes, elementBuffer } = this;
 
         const vao = gl.createVertexArray();
         gl.bindVertexArray(vao);
@@ -294,60 +203,8 @@ export class Attributes {
     }
 }
 
-// TODO: this could use some further refactoring. Currently its just former
-// public API made private.
-class AttributeDescriptor {
-
-    static create(
-        dev: Device,
-        location: number,
-        props: AttributeConfig,
-    ): AttributeDescriptor {
-        if (Array.isArray(props)) {
-            if (array.is2(props)) {
-                const s = array.shape2(props);
-                const r = array.ravel2(props, s);
-                return new AttributeDescriptor(
-                    location,
-                    AttributeType.POINTER,
-                    VertexBuffer.withTypedArray(dev, DataType.FLOAT, r),
-                    s[0],
-                    s[1],
-                    false,
-                    0,
-                );
-            }
-            return new AttributeDescriptor(
-                location,
-                AttributeType.POINTER,
-                VertexBuffer.withTypedArray(dev, DataType.FLOAT, props),
-                props.length,
-                1,
-                false,
-                0,
-            );
-        }
-
-        return new AttributeDescriptor(
-            location,
-            props.type,
-            Array.isArray(props.buffer)
-                ? VertexBuffer.withTypedArray(
-                    dev,
-                    DataType.FLOAT,
-                    props.buffer,
-                )
-                : props.buffer,
-            props.count,
-            props.size,
-            props.type === AttributeType.POINTER
-                ? (props.normalized || false)
-                : false,
-            props.divisor || 0,
-        );
-    }
-
-    private constructor(
+export class AttributeDescriptor {
+    constructor(
         readonly location: number,
         readonly type: AttributeType,
         readonly buffer: VertexBuffer<VertexBufferType>,

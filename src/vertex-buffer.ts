@@ -1,7 +1,5 @@
 import * as assert from "./util/assert";
-import { BufferUsage, DataType, sizeOf } from "./types";
-
-export type Device = import ("./device").Device;
+import { BufferUsage, DataType } from "./types";
 
 /**
  * Possible data types of vertex buffers.
@@ -53,43 +51,6 @@ export interface VertexBufferStoreOptions {
  */
 export class VertexBuffer<T extends VertexBufferType> {
 
-    /**
-     * Create a new vertex buffer with given type and of given size.
-     */
-    static create<T extends VertexBufferType>(
-        dev: Device,
-        type: T,
-        size: number,
-        { usage = BufferUsage.DYNAMIC_DRAW } = {},
-    ): VertexBuffer<T> {
-        return new VertexBuffer(
-            dev._gl,
-            type,
-            size,
-            size * sizeOf(type),
-            usage,
-        );
-    }
-
-    /**
-     * Create a new vertex buffer of given type with provided data. Does not
-     * take ownership of data.
-     */
-    static withTypedArray<T extends VertexBufferType>(
-        dev: Device,
-        type: T,
-        data: VertexBufferTypeToTypedArray[T] | number[],
-        { usage = BufferUsage.STATIC_DRAW }: VertexBufferOptions = {},
-    ): VertexBuffer<T> {
-        return new VertexBuffer(
-            dev._gl,
-            type,
-            data.length,
-            data.length * sizeOf(type),
-            usage,
-        ).store(data);
-    }
-
     readonly type: T;
     readonly length: number;
     readonly byteLength: number;
@@ -99,7 +60,7 @@ export class VertexBuffer<T extends VertexBufferType> {
 
     private gl: WebGL2RenderingContext;
 
-    private constructor(
+    constructor(
         gl: WebGL2RenderingContext,
         type: T,
         length: number,

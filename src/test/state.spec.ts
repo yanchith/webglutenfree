@@ -232,7 +232,7 @@ function createCommand(dev: Device): Command<void> {
 }
 
 function createAttributes(dev: Device): Attributes {
-    return Attributes.create(dev, Primitive.TRIANGLES, {
+    return dev.createAttributes(Primitive.TRIANGLES, {
         0: [
             [-0.3, -0.5],
             [0.3, -0.5],

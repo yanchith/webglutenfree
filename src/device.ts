@@ -1,4 +1,6 @@
 import * as assert from "./util/assert";
+import * as array from "./util/array";
+import { BufferUsage, Primitive, DataType, sizeOf } from "./types";
 import {
     State,
     DepthTestDescriptor,
@@ -14,14 +16,36 @@ import {
     BlendEquation,
 } from "./command";
 import {
-    Texture,
-} from "./texture";
+    VertexBuffer,
+    VertexBufferOptions,
+    VertexBufferType,
+    VertexBufferTypeToTypedArray,
+} from "./vertex-buffer";
+import {
+    ElementBuffer,
+    ElementBufferOptions,
+    ElementArray,
+    ElementBufferType,
+    ElementBufferTypeToTypedArray,
+} from "./element-buffer";
+import {
+    Attributes,
+    AttributesConfig,
+    AttributesCreateOptions,
+    AttributeDescriptor,
+    AttributeType,
+} from "./attributes";
+import { Texture } from "./texture";
 import {
     Framebuffer,
     TextureColorInternalFormat,
     TextureDepthInternalFormat,
     TextureDepthStencilInternalFormat,
 } from "./framebuffer";
+
+
+const INT_PATTERN = /^0|[1-9]\d*$/;
+
 
 export interface DeviceCreateOptions {
     element?: HTMLElement;
@@ -299,6 +323,247 @@ export class Device {
             stencilDescr,
             blendDescr,
         );
+    }
+
+    /**
+     * Create a new vertex buffer with given type and of given size.
+     */
+    createVertexBuffer<T extends VertexBufferType>(
+        type: T,
+        size: number,
+        { usage = BufferUsage.DYNAMIC_DRAW }: VertexBufferOptions = {},
+    ): VertexBuffer<T> {
+        return new VertexBuffer(
+            this._gl,
+            type,
+            size,
+            size * sizeOf(type),
+            usage,
+        );
+    }
+
+    /**
+     * Create a new vertex buffer of given type with provided data. Does not
+     * take ownership of data.
+     */
+    createVertexBufferWithTypedArray<T extends VertexBufferType>(
+        type: T,
+        data: VertexBufferTypeToTypedArray[T] | number[],
+        { usage = BufferUsage.STATIC_DRAW }: VertexBufferOptions = {},
+    ): VertexBuffer<T> {
+        return new VertexBuffer(
+            this._gl,
+            type,
+            data.length,
+            data.length * sizeOf(type),
+            usage,
+        ).store(data);
+    }
+
+    /**
+     * Create a new element buffer with given type, primitive, and size.
+     */
+    createElementBuffer<T extends ElementBufferType>(
+        dev: Device,
+        type: T,
+        primitive: Primitive,
+        size: number,
+        { usage = BufferUsage.DYNAMIC_DRAW }: ElementBufferOptions = {},
+    ): ElementBuffer<T> {
+        return new ElementBuffer(
+            dev._gl,
+            type,
+            primitive,
+            size,
+            size * sizeOf(type),
+            usage,
+        );
+    }
+
+    /**
+     * Create a new element buffer from potentially nested array. Infers
+     * Primitive from the array's shape:
+     *   number[] -> POINTS
+     *   [number, number][] -> LINES
+     *   [number, number, number][] -> TRIANGLES
+     * Does not take ownership of data.
+     */
+    createElementBufferWithArray(
+        data: ElementArray,
+        options?: ElementBufferOptions,
+    ): ElementBuffer<DataType.UNSIGNED_INT> {
+        if (array.is2(data)) {
+            const shape = array.shape2(data);
+            assert.rangeInclusive(shape[1], 2, 3, (p) => {
+                return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;
+            });
+            const ravel = array.ravel2(data, shape);
+            const primitive = shape[1] === 3
+                ? Primitive.TRIANGLES
+                : Primitive.LINES;
+            return this.createElementBufferWithTypedArray(
+                DataType.UNSIGNED_INT,
+                primitive,
+                ravel,
+            );
+        }
+        return this.createElementBufferWithTypedArray(
+            DataType.UNSIGNED_INT,
+            Primitive.POINTS,
+            data,
+            options,
+        );
+    }
+
+    /**
+     * Create a new element buffer of given type with provided data. Does not
+     * take ownership of data.
+     */
+    createElementBufferWithTypedArray<T extends ElementBufferType>(
+        type: T,
+        primitive: Primitive,
+        data: ElementBufferTypeToTypedArray[T] | number[],
+        { usage = BufferUsage.STATIC_DRAW }: ElementBufferOptions = {},
+    ): ElementBuffer<T> {
+        return new ElementBuffer(
+            this._gl,
+            type,
+            primitive,
+            data.length,
+            data.length * sizeOf(type),
+            usage,
+        ).store(data);
+    }
+
+    /**
+     * Create new attributes with element and attribute definitions, and an
+     * optional count limit.
+     *
+     * Element definitions can either be a primitive definition, reference an
+     * existing element buffer, or have enough information to create an element
+     * buffer.
+     *
+     * Attribute definitions can either reference an existing vertex buffer,
+     * or have enough information to create a vertex buffer.
+     *
+     * Empty attribute definitions are valid. If no attributes nor elements
+     * given, there will be no underlying vertex array object created, only the
+     * count will be given to gl.drawArrays()
+     */
+    createAttributes(
+        elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>,
+        attributes: AttributesConfig,
+        { countLimit }: AttributesCreateOptions = {},
+    ): Attributes {
+        if (typeof countLimit === "number") {
+            assert.gt(countLimit, 0, (p) => {
+                return `Count limit must be greater than 0, got: ${p}`;
+            });
+        }
+
+        const attrs = Object.entries(attributes)
+            .map(([locationStr, definition]) => {
+                if (!INT_PATTERN.test(locationStr)) {
+                    throw new Error("Location not a number. Use Command#locate");
+                }
+                const location = parseInt(locationStr, 10);
+                if (Array.isArray(definition)) {
+                    if (array.is2(definition)) {
+                        const s = array.shape2(definition);
+                        const r = array.ravel2(definition, s);
+                        return new AttributeDescriptor(
+                            location,
+                            AttributeType.POINTER,
+                            this.createVertexBufferWithTypedArray(
+                                DataType.FLOAT,
+                                r,
+                            ),
+                            s[0],
+                            s[1],
+                            false,
+                            0,
+                        );
+                    }
+                    return new AttributeDescriptor(
+                        location,
+                        AttributeType.POINTER,
+                        this.createVertexBufferWithTypedArray(
+                            DataType.FLOAT,
+                            definition,
+                        ),
+                        definition.length,
+                        1,
+                        false,
+                        0,
+                    );
+                }
+
+                return new AttributeDescriptor(
+                    location,
+                    definition.type,
+                    Array.isArray(definition.buffer)
+                        ? this.createVertexBufferWithTypedArray(
+                            DataType.FLOAT,
+                            definition.buffer,
+                        )
+                        : definition.buffer,
+                    definition.count,
+                    definition.size,
+                    definition.type === AttributeType.POINTER
+                        ? (definition.normalized || false)
+                        : false,
+                    definition.divisor || 0,
+                );
+            });
+
+        let primitive: Primitive;
+        let elementBuffer: ElementBuffer<ElementBufferType> | undefined;
+        if (typeof elements === "number") {
+            primitive = elements;
+        } else {
+            elementBuffer = elements instanceof ElementBuffer
+                ? elements
+                : this.createElementBufferWithArray(elements);
+            primitive = elementBuffer.primitive;
+        }
+
+        const inferredCount = elementBuffer
+            ? elementBuffer.length
+            : attrs.length
+                ? attrs
+                    .map((attr) => attr.count)
+                    .reduce((min, curr) => Math.min(min, curr))
+                : 0;
+        const count = typeof countLimit === "number"
+            ? Math.min(countLimit, inferredCount)
+            : inferredCount;
+
+        const instAttrs = attrs.filter((attr) => !!attr.divisor);
+        const instanceCount = instAttrs.length
+            ? instAttrs
+                .map((attr) => attr.count * attr.divisor)
+                .reduce((min, curr) => Math.min(min, curr))
+            : 0;
+
+        return new Attributes(
+            this.state,
+            primitive,
+            attrs,
+            count,
+            instanceCount,
+            elementBuffer,
+        );
+    }
+
+    /**
+     * Create empty attributes of a given primitive. This actually performs no
+     * gl calls, only remembers the count for `gl.drawArrays()`
+     */
+    createEmptyAttrubutes(
+        primitive: Primitive,
+        count: number,
+    ): Attributes {
+        return new Attributes(this.state, primitive, [], count, 0);
     }
 
     /**
