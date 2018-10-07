@@ -6,10 +6,6 @@ import { Attributes } from "./attributes";
 import { Framebuffer } from "./framebuffer";
 
 
-const GL_NONE = 0;
-const DRAW_BUFFERS_NONE = [GL_NONE];
-
-
 export interface TargetClearOptions {
     r?: number;
     g?: number;
@@ -74,25 +70,15 @@ export class Target {
     with(cb: (rt: Target) => void): void {
         const {
             state,
-            state: { gl },
             glFramebuffer,
             glDrawBuffers,
         } = this;
 
         // We would overwrite the currently bound DRAW_FRAMEBUFFER unless we
         // checked
-        state.assertTargetUnbound();
-        state.trackTargetBinding(this);
-
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
-        gl.drawBuffers(glDrawBuffers);
-
+        state.bindTarget(this, glFramebuffer, glDrawBuffers);
         cb(this);
-
-        gl.drawBuffers(DRAW_BUFFERS_NONE);
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-
-        state.trackTargetBinding(null);
+        state.unbindTarget();
     }
 
     /**
@@ -118,7 +104,7 @@ export class Target {
         }: TargetClearOptions = {},
     ): void {
         const { state, state: { gl } } = this;
-        state.assertTargetBound("clear");
+        state.assertTargetBound(this, "clear");
 
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
@@ -157,7 +143,7 @@ export class Target {
         }: TargetBlitOptions = {},
     ): void {
         const { state, state: { gl } } = this;
-        state.assertTargetBound("blit");
+        state.assertTargetBound(this, "blit");
 
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
@@ -218,10 +204,6 @@ export class Target {
         }: TargetDrawOptions = {},
     ): void {
         const { state, state: { gl } } = this;
-
-        state.assertTargetBound("draw");
-        state.assertCommandUnbound();
-
         const {
             glProgram,
             depthTestDescr,
@@ -231,11 +213,12 @@ export class Target {
             uniformDescrs,
         } = cmd;
 
+        state.assertTargetBound(this, "draw");
+        state.bindCommand(cmd, glProgram);
+
         state.setDepthTest(depthTestDescr);
         state.setStencilTest(stencilTestDescr);
         state.setBlend(blendDescr);
-
-        gl.useProgram(glProgram);
 
         this.textures(textureAccessors, props, 0);
         this.uniforms(uniformDescrs, props, 0);
@@ -271,7 +254,7 @@ export class Target {
             gl.bindVertexArray(null);
         }
 
-        gl.useProgram(null);
+        state.unbindCommand();
     }
 
     /**
@@ -301,10 +284,6 @@ export class Target {
         }: TargetDrawOptions = {},
     ): void {
         const { state, state: { gl } } = this;
-
-        state.assertTargetBound("batch-draw");
-        state.assertCommandUnbound();
-
         const {
             glProgram,
             depthTestDescr,
@@ -317,21 +296,20 @@ export class Target {
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch
 
+        state.assertTargetBound(this, "batch-draw");
+        state.bindCommand(this, glProgram);
+
         state.setDepthTest(depthTestDescr);
         state.setStencilTest(stencilTestDescr);
         state.setBlend(blendDescr);
-
-        state.trackCommandBinding(this);
-
-        gl.useProgram(glProgram);
 
         let i = 0;
 
         cb((attrs: Attributes, props: P) => {
             // Did the user do anything sneaky?
             // TODO: assert the command and target is the same one
-            state.assertTargetBound("batch-draw");
-            state.assertCommandBound("batch-draw");
+            state.assertTargetBound(this, "batch-draw");
+            state.assertCommandBound(this, "batch-draw");
 
             i++;
 
@@ -373,8 +351,7 @@ export class Target {
             }
         });
 
-        gl.useProgram(null);
-        state.trackCommandBinding(null);
+        state.unbindCommand();
     }
 
     private drawArrays(

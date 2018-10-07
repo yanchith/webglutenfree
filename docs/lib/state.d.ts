@@ -38,17 +38,20 @@ export declare class BlendDescriptor {
 }
 export declare class State {
     readonly gl: WebGL2RenderingContext;
+    private target;
+    private command;
+    private glProgram;
+    private glDrawFramebuffer;
+    private glDrawBuffers;
     private depthTest;
     private stencilTest;
     private blend;
-    private target;
-    private command;
     constructor(gl: WebGL2RenderingContext);
     setDepthTest(depthTest: DepthTestDescriptor | null): void;
     setStencilTest(stencilTest: StencilTestDescriptor | null): void;
     setBlend(blend: BlendDescriptor | null): void;
     /**
-     * Tracks binding of `Target`s for this `State`. Each `Device` must have at
+     * Bind a `Target` for this `State`. Each `Device` must have at
      * most one `Target` bound at any time. Nested target binding is not
      * supported even though it is not prohibited by the shape of the API:
      *
@@ -58,9 +61,14 @@ export declare class State {
      *     fbort.draw(...);
      * });
      */
-    trackTargetBinding(target: object | null): void;
+    bindTarget(target: object, glDrawFramebuffer: WebGLFramebuffer | null, glDrawBuffers: number[]): void;
     /**
-     * Tracks binding of `Command`s for this `State`. Each `Device` must have at
+     * Unbind currently bound target. Only forgets the target from `State`,
+     * does not unbind the WebGL framebuffer.
+     */
+    unbindTarget(): void;
+    /**
+     * Bind a `Command` for this `State`. Each `Device` must have at
      * most one `Command` bound at any time. Nested command binding is not
      * supported even though it is not prohibited by the shape of the API:
      *
@@ -71,9 +79,14 @@ export declare class State {
      *     });
      * });
      */
-    trackCommandBinding(command: object | null): void;
-    assertTargetBound(op: "draw" | "batch-draw" | "blit" | "clear"): void;
-    assertCommandBound(op: "batch-draw"): void;
+    bindCommand(command: object, glProgram: WebGLProgram | null): void;
+    /**
+     * Unbind currently bound command. Only forgets the command from `State`,
+     * does not unbind the WebGL program.
+     */
+    unbindCommand(): void;
+    assertTargetBound(target: object, op: "draw" | "batch-draw" | "blit" | "clear"): void;
+    assertCommandBound(command: object, op: "batch-draw"): void;
     assertTargetUnbound(): void;
     assertCommandUnbound(): void;
     private applyDepthTest;

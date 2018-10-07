@@ -509,14 +509,28 @@ class BlendDescriptor {
         return true;
     }
 }
+function arrayEquals(left, right) {
+    if (left.length !== right.length) {
+        return false;
+    }
+    for (let i = 0; i < left.length; ++i) {
+        if (left[i] !== right[i]) {
+            return false;
+        }
+    }
+    return true;
+}
 class State {
     constructor(gl) {
+        this.target = null;
+        this.command = null;
+        this.glProgram = null;
+        this.glDrawFramebuffer = null;
         this.depthTest = null;
         this.stencilTest = null;
         this.blend = null;
-        this.target = null;
-        this.command = null;
         this.gl = gl;
+        this.glDrawBuffers = [gl.BACK];
     }
     setDepthTest(depthTest) {
         if (!DepthTestDescriptor.equals(this.depthTest, depthTest)) {
@@ -537,7 +551,7 @@ class State {
         }
     }
     /**
-     * Tracks binding of `Target`s for this `State`. Each `Device` must have at
+     * Bind a `Target` for this `State`. Each `Device` must have at
      * most one `Target` bound at any time. Nested target binding is not
      * supported even though it is not prohibited by the shape of the API:
      *
@@ -547,14 +561,33 @@ class State {
      *     fbort.draw(...);
      * });
      */
-    trackTargetBinding(target) {
-        if (this.target && target) {
+    bindTarget(target, glDrawFramebuffer, glDrawBuffers) {
+        if (this.target) {
             throw new Error("Cannot have two Targets bound at the same time");
+        }
+        const gl = this.gl;
+        if (this.glDrawFramebuffer !== glDrawFramebuffer) {
+            this.gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glDrawFramebuffer);
+            this.glDrawFramebuffer = glDrawFramebuffer;
+        }
+        if (!arrayEquals(this.glDrawBuffers, glDrawBuffers)) {
+            this.gl.drawBuffers(glDrawBuffers);
+            this.glDrawBuffers = glDrawBuffers;
         }
         this.target = target;
     }
     /**
-     * Tracks binding of `Command`s for this `State`. Each `Device` must have at
+     * Unbind currently bound target. Only forgets the target from `State`,
+     * does not unbind the WebGL framebuffer.
+     */
+    unbindTarget() {
+        if (!this.target) {
+            throw new Error("Cannot unbind target, none bound");
+        }
+        this.target = null;
+    }
+    /**
+     * Bind a `Command` for this `State`. Each `Device` must have at
      * most one `Command` bound at any time. Nested command binding is not
      * supported even though it is not prohibited by the shape of the API:
      *
@@ -565,20 +598,34 @@ class State {
      *     });
      * });
      */
-    trackCommandBinding(command) {
-        if (this.command && command) {
+    bindCommand(command, glProgram) {
+        if (this.command) {
             throw new Error("Cannot have two Commands bound at the same time");
+        }
+        if (this.glProgram !== glProgram) {
+            this.gl.useProgram(glProgram);
+            this.glProgram = glProgram;
         }
         this.command = command;
     }
-    assertTargetBound(op) {
-        if (!this.target) {
-            throw new Error(`Need to have a Target bound to perform ${op}`);
+    /**
+     * Unbind currently bound command. Only forgets the command from `State`,
+     * does not unbind the WebGL program.
+     */
+    unbindCommand() {
+        if (!this.command) {
+            throw new Error("Cannot unbind command, none bound");
+        }
+        this.command = null;
+    }
+    assertTargetBound(target, op) {
+        if (this.target !== target) {
+            throw new Error(`Trying to perform ${op}, expected target ${target}, got: ${this.target}`);
         }
     }
-    assertCommandBound(op) {
-        if (!this.command) {
-            throw new Error(`Need to have a Command bound to perform ${op}`);
+    assertCommandBound(command, op) {
+        if (this.command !== command) {
+            throw new Error(`Trying to perform ${op}, expected command ${command}, got: ${this.command}`);
         }
     }
     assertTargetUnbound() {
@@ -636,8 +683,6 @@ class State {
     }
 }
 
-const GL_NONE = 0;
-const DRAW_BUFFERS_NONE = [GL_NONE];
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
@@ -657,17 +702,12 @@ class Target {
      * All writes/drawing to the target MUST be done within the callback.
      */
     with(cb) {
-        const { state, state: { gl }, glFramebuffer, glDrawBuffers, } = this;
+        const { state, glFramebuffer, glDrawBuffers, } = this;
         // We would overwrite the currently bound DRAW_FRAMEBUFFER unless we
         // checked
-        state.assertTargetUnbound();
-        state.trackTargetBinding(this);
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glFramebuffer);
-        gl.drawBuffers(glDrawBuffers);
+        state.bindTarget(this, glFramebuffer, glDrawBuffers);
         cb(this);
-        gl.drawBuffers(DRAW_BUFFERS_NONE);
-        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-        state.trackTargetBinding(null);
+        state.unbindTarget();
     }
     /**
      * Clear selected buffers to provided values.
@@ -678,7 +718,7 @@ class Target {
         ? this.state.gl.drawingBufferHeight
         : this.surfaceHeight, } = {}) {
         const { state, state: { gl } } = this;
-        state.assertTargetBound("clear");
+        state.assertTargetBound(this, "clear");
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
         if (bits & BufferBits.COLOR) {
             gl.clearColor(r, g, b, a);
@@ -701,7 +741,7 @@ class Target {
         ? this.state.gl.drawingBufferHeight
         : this.surfaceHeight, filter = Filter.NEAREST, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
         const { state, state: { gl } } = this;
-        state.assertTargetBound("blit");
+        state.assertTargetBound(this, "blit");
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
         gl.blitFramebuffer(srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, bits, filter);
@@ -720,13 +760,12 @@ class Target {
         ? this.state.gl.drawingBufferHeight
         : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
         const { state, state: { gl } } = this;
-        state.assertTargetBound("draw");
-        state.assertCommandUnbound();
         const { glProgram, depthTestDescr, stencilTestDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
+        state.assertTargetBound(this, "draw");
+        state.bindCommand(cmd, glProgram);
         state.setDepthTest(depthTestDescr);
         state.setStencilTest(stencilTestDescr);
         state.setBlend(blendDescr);
-        gl.useProgram(glProgram);
         this.textures(textureAccessors, props, 0);
         this.uniforms(uniformDescrs, props, 0);
         // Only bind the VAO if it is not null - we always assume we cleaned
@@ -748,7 +787,7 @@ class Target {
         if (attrs.glVertexArray) {
             gl.bindVertexArray(null);
         }
-        gl.useProgram(null);
+        state.unbindCommand();
     }
     /**
      * Perform multiple draws to this target with the same command, but multiple
@@ -764,22 +803,20 @@ class Target {
         ? this.state.gl.drawingBufferHeight
         : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
         const { state, state: { gl } } = this;
-        state.assertTargetBound("batch-draw");
-        state.assertCommandUnbound();
         const { glProgram, depthTestDescr, stencilTestDescr, blendDescr, textureAccessors, uniformDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch
+        state.assertTargetBound(this, "batch-draw");
+        state.bindCommand(this, glProgram);
         state.setDepthTest(depthTestDescr);
         state.setStencilTest(stencilTestDescr);
         state.setBlend(blendDescr);
-        state.trackCommandBinding(this);
-        gl.useProgram(glProgram);
         let i = 0;
         cb((attrs, props) => {
             // Did the user do anything sneaky?
             // TODO: assert the command and target is the same one
-            state.assertTargetBound("batch-draw");
-            state.assertCommandBound("batch-draw");
+            state.assertTargetBound(this, "batch-draw");
+            state.assertCommandBound(this, "batch-draw");
             i++;
             this.textures(textureAccessors, props, i);
             this.uniforms(uniformDescrs, props, i);
@@ -806,8 +843,7 @@ class Target {
                 gl.bindVertexArray(null);
             }
         });
-        gl.useProgram(null);
-        state.trackCommandBinding(null);
+        state.unbindCommand();
     }
     drawArrays(primitive, count, offset, instanceCount) {
         if (instanceCount) {

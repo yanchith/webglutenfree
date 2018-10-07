@@ -92,19 +92,39 @@ export class BlendDescriptor {
     ) { }
 }
 
+function arrayEquals(left: number[], right: number[]): boolean {
+    if (left.length !== right.length) {
+        return false;
+    }
+
+    for (let i = 0; i < left.length; ++i) {
+        if (left[i] !== right[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 export class State {
 
     readonly gl: WebGL2RenderingContext;
+
+    private target: object | null = null;
+    private command: object | null = null;
+
+    private glProgram: WebGLProgram | null = null;
+    private glDrawFramebuffer: WebGLFramebuffer | null = null;
+    private glDrawBuffers: number[];
 
     private depthTest: DepthTestDescriptor | null = null;
     private stencilTest: StencilTestDescriptor | null = null;
     private blend: BlendDescriptor | null = null;
 
-    private target: object | null = null;
-    private command: object | null = null;
 
     constructor(gl: WebGL2RenderingContext) {
         this.gl = gl;
+        this.glDrawBuffers = [gl.BACK];
     }
 
     setDepthTest(depthTest: DepthTestDescriptor | null): void {
@@ -129,7 +149,7 @@ export class State {
     }
 
     /**
-     * Tracks binding of `Target`s for this `State`. Each `Device` must have at
+     * Bind a `Target` for this `State`. Each `Device` must have at
      * most one `Target` bound at any time. Nested target binding is not
      * supported even though it is not prohibited by the shape of the API:
      *
@@ -139,15 +159,41 @@ export class State {
      *     fbort.draw(...);
      * });
      */
-    trackTargetBinding(target: object | null): void {
-        if (this.target && target) {
+    bindTarget(
+        target: object,
+        glDrawFramebuffer: WebGLFramebuffer | null,
+        glDrawBuffers: number[],
+    ): void {
+        if (this.target) {
             throw new Error("Cannot have two Targets bound at the same time");
+        }
+
+        const gl = this.gl;
+        if (this.glDrawFramebuffer !== glDrawFramebuffer) {
+            this.gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glDrawFramebuffer);
+            this.glDrawFramebuffer = glDrawFramebuffer;
+        }
+        if (!arrayEquals(this.glDrawBuffers, glDrawBuffers)) {
+            this.gl.drawBuffers(glDrawBuffers);
+            this.glDrawBuffers = glDrawBuffers;
         }
         this.target = target;
     }
 
     /**
-     * Tracks binding of `Command`s for this `State`. Each `Device` must have at
+     * Unbind currently bound target. Only forgets the target from `State`,
+     * does not unbind the WebGL framebuffer.
+     */
+    unbindTarget(): void {
+        if (!this.target) {
+            throw new Error("Cannot unbind target, none bound");
+        }
+
+        this.target = null;
+    }
+
+    /**
+     * Bind a `Command` for this `State`. Each `Device` must have at
      * most one `Command` bound at any time. Nested command binding is not
      * supported even though it is not prohibited by the shape of the API:
      *
@@ -158,22 +204,42 @@ export class State {
      *     });
      * });
      */
-    trackCommandBinding(command: object | null): void {
-        if (this.command && command) {
+    bindCommand(command: object, glProgram: WebGLProgram | null): void {
+        if (this.command) {
             throw new Error("Cannot have two Commands bound at the same time");
+        }
+
+        if (this.glProgram !== glProgram) {
+            this.gl.useProgram(glProgram);
+            this.glProgram = glProgram;
         }
         this.command = command;
     }
 
-    assertTargetBound(op: "draw" | "batch-draw" | "blit" | "clear"): void {
-        if (!this.target) {
-            throw new Error(`Need to have a Target bound to perform ${op}`);
+    /**
+     * Unbind currently bound command. Only forgets the command from `State`,
+     * does not unbind the WebGL program.
+     */
+    unbindCommand(): void {
+        if (!this.command) {
+            throw new Error("Cannot unbind command, none bound");
+        }
+
+        this.command = null;
+    }
+
+    assertTargetBound(
+        target: object,
+        op: "draw" | "batch-draw" | "blit" | "clear",
+    ): void {
+        if (this.target !== target) {
+            throw new Error(`Trying to perform ${op}, expected target ${target}, got: ${this.target}`);
         }
     }
 
-    assertCommandBound(op: "batch-draw"): void {
-        if (!this.command) {
-            throw new Error(`Need to have a Command bound to perform ${op}`);
+    assertCommandBound(command: object, op: "batch-draw"): void {
+        if (this.command !== command) {
+            throw new Error(`Trying to perform ${op}, expected command ${command}, got: ${this.command}`);
         }
     }
 

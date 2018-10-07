@@ -188,6 +188,9 @@ test("Unbound draw callback should error", (t) => {
     t.throws(() => (sneakyDraw!)(attrs, void 0));
 });
 
+// TODO: Add tests for same target/command bound assertions
+// TODO: Add tests asserting against creating commands/framebuffers while bound
+
 function mockContext(): WebGL2RenderingContext {
     return new WebGL2RenderingContextMock({
         width: WIDTH,
