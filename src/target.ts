@@ -307,10 +307,8 @@ export class Target {
 
         cb((attrs: Attributes, props: P) => {
             // Did the user do anything sneaky?
-            // TODO: assert the command and target is the same one
             state.assertTargetBound(this, "batch-draw");
             state.assertCommandBound(cmd, "batch-draw");
-
             i++;
 
             this.textures(textureAccessors, props, i);

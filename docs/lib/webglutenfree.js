@@ -760,7 +760,6 @@ class Target {
         let i = 0;
         cb((attrs, props) => {
             // Did the user do anything sneaky?
-            // TODO: assert the command and target is the same one
             state.assertTargetBound(this, "batch-draw");
             state.assertCommandBound(cmd, "batch-draw");
             i++;
@@ -2231,7 +2230,14 @@ class Device {
         this.backbufferTarget.with(cb);
     }
     /**
-     * TODO
+     * Create a new command with given vertex and fragment shader.
+     *
+     * Commands contain WebGL programs, but also WebGL configuration needed
+     * for drawing: blend, depth test and stencil test configurations, and
+     * uniform callbacks. Uniform callbacks transform recieved props into
+     * uniform values when the command is executed, but if constant, they
+     * will eagerly upload the uniform values to the shaders and not do
+     * at in execution time.
      */
     createCommand(vert, frag, options) {
         return _createCommand(this.state, vert, frag, options);
