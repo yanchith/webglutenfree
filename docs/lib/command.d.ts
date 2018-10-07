@@ -209,6 +209,7 @@ export declare enum BlendEquation {
     MIN = 32775,
     MAX = 32776
 }
+export declare function _createCommand<P = void>(state: State, vert: string, frag: string, { textures, uniforms, depth, stencil, blend, }?: CommandCreateOptions<P>): Command<P>;
 export declare class Command<P> {
     readonly glProgram: WebGLProgram | null;
     readonly depthTestDescr: DepthTestDescriptor | null;

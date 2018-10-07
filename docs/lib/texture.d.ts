@@ -163,6 +163,8 @@ export interface TextureStoreOptions {
     width?: number;
     height?: number;
 }
+export declare function _createTexture<F extends TextureInternalFormat>(gl: WebGL2RenderingContext, width: number, height: number, internalFormat: F, { min, mag, wrapS, wrapT, }?: TextureCreateOptions): Texture<F>;
+export declare function _createTextureWithTypedArray<F extends TextureInternalFormat>(gl: WebGL2RenderingContext, width: number, height: number, internalFormat: F, data: InternalFormatToTypedArray[F], dataFormat: InternalFormatToDataFormat[F], dataType: InternalFormatToDataType[F], options?: TextureCreateOptions & TextureStoreOptions): Texture<F>;
 /**
  * Textures are images of 2D data, where each texel can contain multiple
  * information channels of a certain type.

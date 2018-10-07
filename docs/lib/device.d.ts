@@ -119,20 +119,20 @@ export declare class Device {
     /**
      * TODO
      */
-    createCommand<P = void>(vert: string, frag: string, { textures, uniforms, depth, stencil, blend, }?: CommandCreateOptions<P>): Command<P>;
+    createCommand<P = void>(vert: string, frag: string, options?: CommandCreateOptions<P>): Command<P>;
     /**
      * Create a new vertex buffer with given type and of given size.
      */
-    createVertexBuffer<T extends VertexBufferType>(type: T, size: number, { usage }?: VertexBufferCreateOptions): VertexBuffer<T>;
+    createVertexBuffer<T extends VertexBufferType>(type: T, size: number, options?: VertexBufferCreateOptions): VertexBuffer<T>;
     /**
      * Create a new vertex buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    createVertexBufferWithTypedArray<T extends VertexBufferType>(type: T, data: VertexBufferTypeToTypedArray[T] | number[], { usage }?: VertexBufferCreateOptions): VertexBuffer<T>;
+    createVertexBufferWithTypedArray<T extends VertexBufferType>(type: T, data: VertexBufferTypeToTypedArray[T] | number[], options?: VertexBufferCreateOptions): VertexBuffer<T>;
     /**
      * Create a new element buffer with given type, primitive, and size.
      */
-    createElementBuffer<T extends ElementBufferType>(dev: Device, type: T, primitive: Primitive, size: number, { usage }?: ElementBufferCreateOptions): ElementBuffer<T>;
+    createElementBuffer<T extends ElementBufferType>(type: T, primitive: Primitive, size: number, options?: ElementBufferCreateOptions): ElementBuffer<T>;
     /**
      * Create a new element buffer from potentially nested array. Infers
      * Primitive from the array's shape:
@@ -146,7 +146,7 @@ export declare class Device {
      * Create a new element buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    createElementBufferWithTypedArray<T extends ElementBufferType>(type: T, primitive: Primitive, data: ElementBufferTypeToTypedArray[T] | number[], { usage }?: ElementBufferCreateOptions): ElementBuffer<T>;
+    createElementBufferWithTypedArray<T extends ElementBufferType>(type: T, primitive: Primitive, data: ElementBufferTypeToTypedArray[T] | number[], options?: ElementBufferCreateOptions): ElementBuffer<T>;
     /**
      * Create new attributes with element and attribute definitions, and an
      * optional count limit.
@@ -162,7 +162,7 @@ export declare class Device {
      * given, there will be no underlying vertex array object created, only the
      * count will be given to gl.drawArrays()
      */
-    createAttributes(elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>, attributes: AttributesConfig, { countLimit }?: AttributesCreateOptions): Attributes;
+    createAttributes(elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>, attributes: AttributesConfig, options?: AttributesCreateOptions): Attributes;
     /**
      * Create empty attributes of a given primitive. This actually performs no
      * gl calls, only remembers the count for `gl.drawArrays()`
@@ -172,7 +172,7 @@ export declare class Device {
      * Create a new texture with given width, height, and internal format.
      * The internal format determines, what kind of data is possible to store.
      */
-    createTexture<F extends TextureInternalFormat>(width: number, height: number, internalFormat: F, { min, mag, wrapS, wrapT, }?: TextureCreateOptions): Texture<F>;
+    createTexture<F extends TextureInternalFormat>(width: number, height: number, internalFormat: F, options?: TextureCreateOptions): Texture<F>;
     /**
      * Create a new texture with width and height equal to the given image, and
      * store the image in the texture.
@@ -190,8 +190,8 @@ export declare class Device {
      * depth or depth-stencil buffer with given width and height.
      *
      * Does not take ownership of provided attachments, only references them.
-     * It is still an error to use the attachments while they are written to
-     * via the framebuffer, however.
+     * WebGL will synchronize their usage so they can either be written to via
+     * the framebuffer, or written to or read via their own methods.
      */
     createFramebuffer(width: number, height: number, color: Texture<TextureColorInternalFormat> | Texture<TextureColorInternalFormat>[], depthStencil?: Texture<TextureDepthInternalFormat> | Texture<TextureDepthStencilInternalFormat>): Framebuffer;
 }

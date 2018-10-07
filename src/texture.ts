@@ -211,6 +211,52 @@ export interface TextureStoreOptions {
     height?: number;
 }
 
+export function _createTexture<F extends TextureInternalFormat>(
+    gl: WebGL2RenderingContext,
+    width: number,
+    height: number,
+    internalFormat: F,
+    {
+        min = Filter.NEAREST,
+        mag = Filter.NEAREST,
+        wrapS = Wrap.CLAMP_TO_EDGE,
+        wrapT = Wrap.CLAMP_TO_EDGE,
+    }: TextureCreateOptions = {},
+): Texture<F> {
+    return new Texture(
+        gl,
+        width, height,
+        internalFormat,
+        wrapS, wrapT,
+        min, mag,
+    );
+}
+
+export function _createTextureWithTypedArray<F extends TextureInternalFormat>(
+    gl: WebGL2RenderingContext,
+    width: number,
+    height: number,
+    internalFormat: F,
+    data: InternalFormatToTypedArray[F],
+    dataFormat: InternalFormatToDataFormat[F],
+    dataType: InternalFormatToDataType[F],
+    options: TextureCreateOptions & TextureStoreOptions = {},
+): Texture<F> {
+    const {
+        min = Filter.NEAREST,
+        mag = Filter.NEAREST,
+        wrapS = Wrap.CLAMP_TO_EDGE,
+        wrapT = Wrap.CLAMP_TO_EDGE,
+    } = options;
+    return new Texture(
+        gl,
+        width, height,
+        internalFormat,
+        wrapS, wrapT,
+        min, mag,
+    ).store(data, dataFormat, dataType, options);
+}
+
 /**
  * Textures are images of 2D data, where each texel can contain multiple
  * information channels of a certain type.

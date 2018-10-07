@@ -301,60 +301,6 @@ function sizeOf(type) {
     }
 }
 
-/**
- * Checks whether array has at least two dimensions.
- * Asserts array is not jagged. Only checks first two dimensions.
- * Returns false if array is degenerate (either dimension is 0), as 0d array
- * is not 2d array.
- */
-function is2(array) {
-    if (!array.length) {
-        return false;
-    }
-    const length2 = Array.isArray(array[0]) ? array[0].length : -1;
-    // Do some asserts if not production
-    if (process.env.NODE_ENV !== "production") {
-        array.forEach((sub) => {
-            const isSubArray = Array.isArray(sub);
-            if (length2 !== -1) {
-                isTrue(isSubArray);
-                equal(sub.length, length2);
-            }
-            else {
-                isFalse(isSubArray);
-            }
-        });
-    }
-    // if length2 === 0, array is degenerate
-    // if length2 === -1, array is 1d
-    return length2 > 0;
-}
-/**
- * Returns first two dimensions of array. Assumes nonjagged array and does no
- * checks to prove so. Accepts degenerate arrays.
- */
-function shape2(array) {
-    const outer = array.length;
-    const inner = outer ? array[0].length : 0;
-    return [outer, inner];
-}
-/**
- * Take an unraveled 2d array and a shape. Returns new flat array with all
- * elements from the original unraveled array. Assumes unraveled array is not
- * jagged and shape matches the unraveled dimensions and makes no checks to
- * prove so. Accepts degenerate arrays if shape matches them.
- */
-function ravel2(unraveled, shape) {
-    const [outer, inner] = shape;
-    const raveled = new Array(inner * outer);
-    unraveled.forEach((arr, i) => {
-        arr.forEach((elem, j) => {
-            raveled[inner * i + j] = elem;
-        });
-    });
-    return raveled;
-}
-
 class DepthTestDescriptor {
     constructor(func, mask, rangeStart, rangeEnd) {
         this.func = func;
@@ -807,7 +753,7 @@ class Target {
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch
         state.assertTargetBound(this, "batch-draw");
-        state.bindCommand(this, glProgram);
+        state.bindCommand(cmd, glProgram);
         state.setDepthTest(depthTestDescr);
         state.setStencilTest(stencilTestDescr);
         state.setBlend(blendDescr);
@@ -816,7 +762,7 @@ class Target {
             // Did the user do anything sneaky?
             // TODO: assert the command and target is the same one
             state.assertTargetBound(this, "batch-draw");
-            state.assertCommandBound(this, "batch-draw");
+            state.assertCommandBound(cmd, "batch-draw");
             i++;
             this.textures(textureAccessors, props, i);
             this.uniforms(uniformDescrs, props, i);
@@ -1041,6 +987,14 @@ var BlendEquation;
     BlendEquation[BlendEquation["MIN"] = 32775] = "MIN";
     BlendEquation[BlendEquation["MAX"] = 32776] = "MAX";
 })(BlendEquation || (BlendEquation = {}));
+function _createCommand(state, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
+    nonNull(vert, fmtParamNonNull("vert"));
+    nonNull(frag, fmtParamNonNull("frag"));
+    const depthDescr = parseDepth(depth);
+    const stencilDescr = parseStencil(stencil);
+    const blendDescr = parseBlend(blend);
+    return new Command(state, vert, frag, textures, uniforms, depthDescr, stencilDescr, blendDescr);
+}
 class Command {
     constructor(state, vsSource, fsSource, textures, uniforms, depthDescr, stencilDescr, blendDescr) {
         this.state = state;
@@ -1446,10 +1400,119 @@ function validateUniformDeclaration(gl, info, type) {
         default: unreachable(type);
     }
 }
+function parseDepth(depth) {
+    if (!depth) {
+        return undefined;
+    }
+    nonNull(depth.func, fmtParamNonNull("depth.func"));
+    return new DepthTestDescriptor(depth.func || DepthFunc.LESS, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
+}
+function parseStencil(stencil) {
+    if (!stencil) {
+        return undefined;
+    }
+    nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+    // TODO: complete stencil validation... validation framework?
+    return new StencilTestDescriptor(typeof stencil.func.func === "object"
+        ? stencil.func.func.front
+        : stencil.func.func, typeof stencil.func.func === "object"
+        ? stencil.func.func.back
+        : stencil.func.func, typeof stencil.func.ref !== "undefined"
+        ? typeof stencil.func.ref === "object"
+            ? stencil.func.ref.front
+            : stencil.func.ref
+        : 1, typeof stencil.func.ref !== "undefined"
+        ? typeof stencil.func.ref === "object"
+            ? stencil.func.ref.back
+            : stencil.func.ref
+        : 1, typeof stencil.func.mask !== "undefined"
+        ? typeof stencil.func.mask === "object"
+            ? stencil.func.mask.front
+            : stencil.func.mask
+        : 0xFF, typeof stencil.func.mask !== "undefined"
+        ? typeof stencil.func.mask === "object"
+            ? stencil.func.mask.back
+            : stencil.func.mask
+        : 0xFF, typeof stencil.mask !== "undefined"
+        ? typeof stencil.mask === "object"
+            ? stencil.mask.front
+            : stencil.mask
+        : 0xFF, typeof stencil.mask !== "undefined"
+        ? typeof stencil.mask === "object"
+            ? stencil.mask.back
+            : stencil.mask
+        : 0xFF, stencil.op
+        ? typeof stencil.op.fail === "object"
+            ? stencil.op.fail.front
+            : stencil.op.fail
+        : StencilOp.KEEP, stencil.op
+        ? typeof stencil.op.fail === "object"
+            ? stencil.op.fail.back
+            : stencil.op.fail
+        : StencilOp.KEEP, stencil.op
+        ? typeof stencil.op.zfail === "object"
+            ? stencil.op.zfail.front
+            : stencil.op.zfail
+        : StencilOp.KEEP, stencil.op
+        ? typeof stencil.op.zfail === "object"
+            ? stencil.op.zfail.back
+            : stencil.op.zfail
+        : StencilOp.KEEP, stencil.op
+        ? typeof stencil.op.zpass === "object"
+            ? stencil.op.zpass.front
+            : stencil.op.zpass
+        : StencilOp.KEEP, stencil.op
+        ? typeof stencil.op.zpass === "object"
+            ? stencil.op.zpass.back
+            : stencil.op.zpass
+        : StencilOp.KEEP);
+}
+function parseBlend(blend) {
+    if (!blend) {
+        return undefined;
+    }
+    nonNull(blend.func, fmtParamNonNull("blend.func"));
+    nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+    nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+    if (typeof blend.func.src === "object") {
+        nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
+        nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
+    }
+    if (typeof blend.func.dst === "object") {
+        nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
+        nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
+    }
+    return new BlendDescriptor(typeof blend.func.src === "object"
+        ? blend.func.src.rgb
+        : blend.func.src, typeof blend.func.src === "object"
+        ? blend.func.src.alpha
+        : blend.func.src, typeof blend.func.dst === "object"
+        ? blend.func.dst.rgb
+        : blend.func.dst, typeof blend.func.dst === "object"
+        ? blend.func.dst.alpha
+        : blend.func.dst, blend.equation
+        ? typeof blend.equation === "object"
+            ? blend.equation.rgb
+            : blend.equation
+        : BlendEquation.FUNC_ADD, blend.equation
+        ? typeof blend.equation === "object"
+            ? blend.equation.alpha
+            : blend.equation
+        : BlendEquation.FUNC_ADD, blend.color);
+}
+function fmtParamNonNull(name) {
+    return () => `Missing parameter ${name}`;
+}
 function fmtTyMismatch(name) {
     return () => `Type mismatch for uniform field ${name}`;
 }
 
+function _createVertexBuffer(gl, type, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
+    return new VertexBuffer(gl, type, size, size * sizeOf(type), usage);
+}
+function _createVertexBufferWithTypedArray(gl, type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
+    return new VertexBuffer(gl, type, data.length, data.length * sizeOf(type), usage).store(data);
+}
 /**
  * Vertex buffers contain GPU accessible data. Accessing them is usually done
  * via setting up an attribute that reads the buffer.
@@ -1518,6 +1581,80 @@ function createBuffer(type, arr) {
 }
 
 /**
+ * Checks whether array has at least two dimensions.
+ * Asserts array is not jagged. Only checks first two dimensions.
+ * Returns false if array is degenerate (either dimension is 0), as 0d array
+ * is not 2d array.
+ */
+function is2(array) {
+    if (!array.length) {
+        return false;
+    }
+    const length2 = Array.isArray(array[0]) ? array[0].length : -1;
+    // Do some asserts if not production
+    if (process.env.NODE_ENV !== "production") {
+        array.forEach((sub) => {
+            const isSubArray = Array.isArray(sub);
+            if (length2 !== -1) {
+                isTrue(isSubArray);
+                equal(sub.length, length2);
+            }
+            else {
+                isFalse(isSubArray);
+            }
+        });
+    }
+    // if length2 === 0, array is degenerate
+    // if length2 === -1, array is 1d
+    return length2 > 0;
+}
+/**
+ * Returns first two dimensions of array. Assumes nonjagged array and does no
+ * checks to prove so. Accepts degenerate arrays.
+ */
+function shape2(array) {
+    const outer = array.length;
+    const inner = outer ? array[0].length : 0;
+    return [outer, inner];
+}
+/**
+ * Take an unraveled 2d array and a shape. Returns new flat array with all
+ * elements from the original unraveled array. Assumes unraveled array is not
+ * jagged and shape matches the unraveled dimensions and makes no checks to
+ * prove so. Accepts degenerate arrays if shape matches them.
+ */
+function ravel2(unraveled, shape) {
+    const [outer, inner] = shape;
+    const raveled = new Array(inner * outer);
+    unraveled.forEach((arr, i) => {
+        arr.forEach((elem, j) => {
+            raveled[inner * i + j] = elem;
+        });
+    });
+    return raveled;
+}
+
+function _createElementBuffer(gl, type, primitive, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
+    return new ElementBuffer(gl, type, primitive, size, size * sizeOf(type), usage);
+}
+function _createElementBufferWithArray(gl, data, options) {
+    if (is2(data)) {
+        const shape = shape2(data);
+        rangeInclusive(shape[1], 2, 3, (p) => {
+            return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;
+        });
+        const ravel = ravel2(data, shape);
+        const primitive = shape[1] === 3
+            ? Primitive.TRIANGLES
+            : Primitive.LINES;
+        return _createElementBufferWithTypedArray(gl, DataType.UNSIGNED_INT, primitive, ravel);
+    }
+    return _createElementBufferWithTypedArray(gl, DataType.UNSIGNED_INT, Primitive.POINTS, data, options);
+}
+function _createElementBufferWithTypedArray(gl, type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
+    return new ElementBuffer(gl, type, primitive, data.length, data.length * sizeOf(type), usage).store(data);
+}
+/**
  * Element buffers contain indices for accessing vertex buffer data.
  */
 class ElementBuffer {
@@ -1580,6 +1717,7 @@ function createBuffer$1(type, arr) {
     }
 }
 
+const INT_PATTERN$1 = /^0|[1-9]\d*$/;
 /**
  * Attribute type for reading vertex buffers. POINTER provides normalization
  * options for converting integer values to floats. IPOINTER always retains
@@ -1590,6 +1728,61 @@ var AttributeType;
     AttributeType["POINTER"] = "pointer";
     AttributeType["IPOINTER"] = "ipointer";
 })(AttributeType || (AttributeType = {}));
+function _createAttributes(state, elements, attributes, { countLimit } = {}) {
+    if (typeof countLimit === "number") {
+        gt(countLimit, 0, (p) => {
+            return `Count limit must be greater than 0, got: ${p}`;
+        });
+    }
+    const attrs = Object.entries(attributes)
+        .map(([locationStr, definition]) => {
+        if (!INT_PATTERN$1.test(locationStr)) {
+            throw new Error("Location not a number. Use Command#locate");
+        }
+        const location = parseInt(locationStr, 10);
+        if (Array.isArray(definition)) {
+            if (is2(definition)) {
+                const s = shape2(definition);
+                const r = ravel2(definition, s);
+                return new AttributeDescriptor(location, AttributeType.POINTER, _createVertexBufferWithTypedArray(state.gl, DataType.FLOAT, r), s[0], s[1], false, 0);
+            }
+            return new AttributeDescriptor(location, AttributeType.POINTER, _createVertexBufferWithTypedArray(state.gl, DataType.FLOAT, definition), definition.length, 1, false, 0);
+        }
+        return new AttributeDescriptor(location, definition.type, Array.isArray(definition.buffer)
+            ? _createVertexBufferWithTypedArray(state.gl, DataType.FLOAT, definition.buffer)
+            : definition.buffer, definition.count, definition.size, definition.type === AttributeType.POINTER
+            ? (definition.normalized || false)
+            : false, definition.divisor || 0);
+    });
+    let primitive;
+    let elementBuffer;
+    if (typeof elements === "number") {
+        primitive = elements;
+    }
+    else {
+        elementBuffer = elements instanceof ElementBuffer
+            ? elements
+            : _createElementBufferWithArray(state.gl, elements);
+        primitive = elementBuffer.primitive;
+    }
+    const inferredCount = elementBuffer
+        ? elementBuffer.length
+        : attrs.length
+            ? attrs
+                .map((attr) => attr.count)
+                .reduce((min, curr) => Math.min(min, curr))
+            : 0;
+    const count = typeof countLimit === "number"
+        ? Math.min(countLimit, inferredCount)
+        : inferredCount;
+    const instAttrs = attrs.filter((attr) => !!attr.divisor);
+    const instanceCount = instAttrs.length
+        ? instAttrs
+            .map((attr) => attr.count * attr.divisor)
+            .reduce((min, curr) => Math.min(min, curr))
+        : 0;
+    return new Attributes(state, primitive, attrs, count, instanceCount, elementBuffer);
+}
 /**
  * Attributes store vertex buffers, an element buffer, and attributes with the
  * vertex format for provided vertex buffers.
@@ -1682,6 +1875,13 @@ class AttributeDescriptor {
     }
 }
 
+function _createTexture(gl, width, height, internalFormat, { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = {}) {
+    return new Texture(gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+}
+function _createTextureWithTypedArray(gl, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
+    const { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = options;
+    return new Texture(gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
+}
 /**
  * Textures are images of 2D data, where each texel can contain multiple
  * information channels of a certain type.
@@ -1755,6 +1955,29 @@ class Texture {
     }
 }
 
+function _createFramebuffer(state, width, height, color, depthStencil) {
+    const colors = Array.isArray(color) ? color : [color];
+    nonEmpty(colors, () => {
+        return "Framebuffer color attachments must not be empty";
+    });
+    colors.forEach((buffer) => {
+        equal(width, buffer.width, (got, expected) => {
+            return `Expected attachment width ${expected}, got ${got}`;
+        });
+        equal(height, buffer.height, (got, expected) => {
+            return `Expected attachment height ${expected}, got ${got}`;
+        });
+    });
+    if (depthStencil) {
+        equal(width, depthStencil.width, (got, expected) => {
+            return `Expected attachment width ${expected}, got ${got}`;
+        });
+        equal(height, depthStencil.height, (got, expected) => {
+            return `Expected attachment height ${expected}, got ${got}`;
+        });
+    }
+    return new Framebuffer(state, width, height, colors, depthStencil);
+}
 /**
  * Framebuffers store the list of attachments to write to during a draw
  * operation. They can be a draw target via `framebuffer.target()`
@@ -1849,7 +2072,6 @@ class Framebuffer {
     }
 }
 
-const INT_PATTERN$1 = /^0|[1-9]\d*$/;
 /**
  * Available extensions.
  */
@@ -2011,32 +2233,27 @@ class Device {
     /**
      * TODO
      */
-    createCommand(vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
-        nonNull(vert, fmtParamNonNull("vert"));
-        nonNull(frag, fmtParamNonNull("frag"));
-        const depthDescr = parseDepth(depth);
-        const stencilDescr = parseStencil(stencil);
-        const blendDescr = parseBlend(blend);
-        return new Command(this.state, vert, frag, textures, uniforms, depthDescr, stencilDescr, blendDescr);
+    createCommand(vert, frag, options) {
+        return _createCommand(this.state, vert, frag, options);
     }
     /**
      * Create a new vertex buffer with given type and of given size.
      */
-    createVertexBuffer(type, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
-        return new VertexBuffer(this._gl, type, size, size * sizeOf(type), usage);
+    createVertexBuffer(type, size, options) {
+        return _createVertexBuffer(this._gl, type, size, options);
     }
     /**
      * Create a new vertex buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    createVertexBufferWithTypedArray(type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
-        return new VertexBuffer(this._gl, type, data.length, data.length * sizeOf(type), usage).store(data);
+    createVertexBufferWithTypedArray(type, data, options) {
+        return _createVertexBufferWithTypedArray(this._gl, type, data, options);
     }
     /**
      * Create a new element buffer with given type, primitive, and size.
      */
-    createElementBuffer(dev, type, primitive, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
-        return new ElementBuffer(dev._gl, type, primitive, size, size * sizeOf(type), usage);
+    createElementBuffer(type, primitive, size, options) {
+        return _createElementBuffer(this._gl, type, primitive, size, options);
     }
     /**
      * Create a new element buffer from potentially nested array. Infers
@@ -2047,25 +2264,14 @@ class Device {
      * Does not take ownership of data.
      */
     createElementBufferWithArray(data, options) {
-        if (is2(data)) {
-            const shape = shape2(data);
-            rangeInclusive(shape[1], 2, 3, (p) => {
-                return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;
-            });
-            const ravel = ravel2(data, shape);
-            const primitive = shape[1] === 3
-                ? Primitive.TRIANGLES
-                : Primitive.LINES;
-            return this.createElementBufferWithTypedArray(DataType.UNSIGNED_INT, primitive, ravel);
-        }
-        return this.createElementBufferWithTypedArray(DataType.UNSIGNED_INT, Primitive.POINTS, data, options);
+        return _createElementBufferWithArray(this._gl, data, options);
     }
     /**
      * Create a new element buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    createElementBufferWithTypedArray(type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
-        return new ElementBuffer(this._gl, type, primitive, data.length, data.length * sizeOf(type), usage).store(data);
+    createElementBufferWithTypedArray(type, primitive, data, options) {
+        return _createElementBufferWithTypedArray(this._gl, type, primitive, data, options);
     }
     /**
      * Create new attributes with element and attribute definitions, and an
@@ -2082,60 +2288,8 @@ class Device {
      * given, there will be no underlying vertex array object created, only the
      * count will be given to gl.drawArrays()
      */
-    createAttributes(elements, attributes, { countLimit } = {}) {
-        if (typeof countLimit === "number") {
-            gt(countLimit, 0, (p) => {
-                return `Count limit must be greater than 0, got: ${p}`;
-            });
-        }
-        const attrs = Object.entries(attributes)
-            .map(([locationStr, definition]) => {
-            if (!INT_PATTERN$1.test(locationStr)) {
-                throw new Error("Location not a number. Use Command#locate");
-            }
-            const location = parseInt(locationStr, 10);
-            if (Array.isArray(definition)) {
-                if (is2(definition)) {
-                    const s = shape2(definition);
-                    const r = ravel2(definition, s);
-                    return new AttributeDescriptor(location, AttributeType.POINTER, this.createVertexBufferWithTypedArray(DataType.FLOAT, r), s[0], s[1], false, 0);
-                }
-                return new AttributeDescriptor(location, AttributeType.POINTER, this.createVertexBufferWithTypedArray(DataType.FLOAT, definition), definition.length, 1, false, 0);
-            }
-            return new AttributeDescriptor(location, definition.type, Array.isArray(definition.buffer)
-                ? this.createVertexBufferWithTypedArray(DataType.FLOAT, definition.buffer)
-                : definition.buffer, definition.count, definition.size, definition.type === AttributeType.POINTER
-                ? (definition.normalized || false)
-                : false, definition.divisor || 0);
-        });
-        let primitive;
-        let elementBuffer;
-        if (typeof elements === "number") {
-            primitive = elements;
-        }
-        else {
-            elementBuffer = elements instanceof ElementBuffer
-                ? elements
-                : this.createElementBufferWithArray(elements);
-            primitive = elementBuffer.primitive;
-        }
-        const inferredCount = elementBuffer
-            ? elementBuffer.length
-            : attrs.length
-                ? attrs
-                    .map((attr) => attr.count)
-                    .reduce((min, curr) => Math.min(min, curr))
-                : 0;
-        const count = typeof countLimit === "number"
-            ? Math.min(countLimit, inferredCount)
-            : inferredCount;
-        const instAttrs = attrs.filter((attr) => !!attr.divisor);
-        const instanceCount = instAttrs.length
-            ? instAttrs
-                .map((attr) => attr.count * attr.divisor)
-                .reduce((min, curr) => Math.min(min, curr))
-            : 0;
-        return new Attributes(this.state, primitive, attrs, count, instanceCount, elementBuffer);
+    createAttributes(elements, attributes, options) {
+        return _createAttributes(this.state, elements, attributes, options);
     }
     /**
      * Create empty attributes of a given primitive. This actually performs no
@@ -2148,15 +2302,15 @@ class Device {
      * Create a new texture with given width, height, and internal format.
      * The internal format determines, what kind of data is possible to store.
      */
-    createTexture(width, height, internalFormat, { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = {}) {
-        return new Texture(this._gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+    createTexture(width, height, internalFormat, options) {
+        return _createTexture(this._gl, width, height, internalFormat, options);
     }
     /**
      * Create a new texture with width and height equal to the given image, and
      * store the image in the texture.
      */
     createTextureWithImage(image, options) {
-        return this.createTextureWithTypedArray(image.width, image.height, InternalFormat.RGBA8, image.data, Format.RGBA, DataType.UNSIGNED_BYTE, options);
+        return _createTextureWithTypedArray(this._gl, image.width, image.height, InternalFormat.RGBA8, image.data, Format.RGBA, DataType.UNSIGNED_BYTE, options);
     }
     /**
      * Create a new texture with given width, height, and internal format.
@@ -2164,144 +2318,20 @@ class Device {
      * Store data of given format and type contained in a typed array to the
      * texture.
      */
-    createTextureWithTypedArray(width, height, internalFormat, data, dataFormat, dataType, options = {}) {
-        const { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = options;
-        return new Texture(this._gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
+    createTextureWithTypedArray(width, height, internalFormat, data, dataFormat, dataType, options) {
+        return _createTextureWithTypedArray(this._gl, width, height, internalFormat, data, dataFormat, dataType, options);
     }
     /**
      * Create a framebuffer containg one or more color buffers and a
      * depth or depth-stencil buffer with given width and height.
      *
      * Does not take ownership of provided attachments, only references them.
-     * It is still an error to use the attachments while they are written to
-     * via the framebuffer, however.
+     * WebGL will synchronize their usage so they can either be written to via
+     * the framebuffer, or written to or read via their own methods.
      */
     createFramebuffer(width, height, color, depthStencil) {
-        const colors = Array.isArray(color) ? color : [color];
-        nonEmpty(colors, () => {
-            return "Framebuffer color attachments must not be empty";
-        });
-        colors.forEach((buffer) => {
-            equal(width, buffer.width, (got, expected) => {
-                return `Expected attachment width ${expected}, got ${got}`;
-            });
-            equal(height, buffer.height, (got, expected) => {
-                return `Expected attachment height ${expected}, got ${got}`;
-            });
-        });
-        if (depthStencil) {
-            equal(width, depthStencil.width, (got, expected) => {
-                return `Expected attachment width ${expected}, got ${got}`;
-            });
-            equal(height, depthStencil.height, (got, expected) => {
-                return `Expected attachment height ${expected}, got ${got}`;
-            });
-        }
-        return new Framebuffer(this.state, width, height, colors, depthStencil);
+        return _createFramebuffer(this.state, width, height, color, depthStencil);
     }
-}
-function parseDepth(depth) {
-    if (!depth) {
-        return undefined;
-    }
-    nonNull(depth.func, fmtParamNonNull("depth.func"));
-    return new DepthTestDescriptor(depth.func || DepthFunc.LESS, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
-}
-function parseStencil(stencil) {
-    if (!stencil) {
-        return undefined;
-    }
-    nonNull(stencil.func, fmtParamNonNull("stencil.func"));
-    // TODO: complete stencil validation... validation framework?
-    return new StencilTestDescriptor(typeof stencil.func.func === "object"
-        ? stencil.func.func.front
-        : stencil.func.func, typeof stencil.func.func === "object"
-        ? stencil.func.func.back
-        : stencil.func.func, typeof stencil.func.ref !== "undefined"
-        ? typeof stencil.func.ref === "object"
-            ? stencil.func.ref.front
-            : stencil.func.ref
-        : 1, typeof stencil.func.ref !== "undefined"
-        ? typeof stencil.func.ref === "object"
-            ? stencil.func.ref.back
-            : stencil.func.ref
-        : 1, typeof stencil.func.mask !== "undefined"
-        ? typeof stencil.func.mask === "object"
-            ? stencil.func.mask.front
-            : stencil.func.mask
-        : 0xFF, typeof stencil.func.mask !== "undefined"
-        ? typeof stencil.func.mask === "object"
-            ? stencil.func.mask.back
-            : stencil.func.mask
-        : 0xFF, typeof stencil.mask !== "undefined"
-        ? typeof stencil.mask === "object"
-            ? stencil.mask.front
-            : stencil.mask
-        : 0xFF, typeof stencil.mask !== "undefined"
-        ? typeof stencil.mask === "object"
-            ? stencil.mask.back
-            : stencil.mask
-        : 0xFF, stencil.op
-        ? typeof stencil.op.fail === "object"
-            ? stencil.op.fail.front
-            : stencil.op.fail
-        : StencilOp.KEEP, stencil.op
-        ? typeof stencil.op.fail === "object"
-            ? stencil.op.fail.back
-            : stencil.op.fail
-        : StencilOp.KEEP, stencil.op
-        ? typeof stencil.op.zfail === "object"
-            ? stencil.op.zfail.front
-            : stencil.op.zfail
-        : StencilOp.KEEP, stencil.op
-        ? typeof stencil.op.zfail === "object"
-            ? stencil.op.zfail.back
-            : stencil.op.zfail
-        : StencilOp.KEEP, stencil.op
-        ? typeof stencil.op.zpass === "object"
-            ? stencil.op.zpass.front
-            : stencil.op.zpass
-        : StencilOp.KEEP, stencil.op
-        ? typeof stencil.op.zpass === "object"
-            ? stencil.op.zpass.back
-            : stencil.op.zpass
-        : StencilOp.KEEP);
-}
-function parseBlend(blend) {
-    if (!blend) {
-        return undefined;
-    }
-    nonNull(blend.func, fmtParamNonNull("blend.func"));
-    nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
-    nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
-    if (typeof blend.func.src === "object") {
-        nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
-        nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
-    }
-    if (typeof blend.func.dst === "object") {
-        nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
-        nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
-    }
-    return new BlendDescriptor(typeof blend.func.src === "object"
-        ? blend.func.src.rgb
-        : blend.func.src, typeof blend.func.src === "object"
-        ? blend.func.src.alpha
-        : blend.func.src, typeof blend.func.dst === "object"
-        ? blend.func.dst.rgb
-        : blend.func.dst, typeof blend.func.dst === "object"
-        ? blend.func.dst.alpha
-        : blend.func.dst, blend.equation
-        ? typeof blend.equation === "object"
-            ? blend.equation.rgb
-            : blend.equation
-        : BlendEquation.FUNC_ADD, blend.equation
-        ? typeof blend.equation === "object"
-            ? blend.equation.alpha
-            : blend.equation
-        : BlendEquation.FUNC_ADD, blend.color);
-}
-function fmtParamNonNull(name) {
-    return () => `Missing parameter ${name}`;
 }
 function createDebugFunc(gl, key) {
     return function debugWrapper() {

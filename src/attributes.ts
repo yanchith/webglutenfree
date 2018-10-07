@@ -1,8 +1,22 @@
 import * as assert from "./util/assert";
+import * as array from "./util/array";
 import { Primitive, DataType } from "./types";
 import { State } from "./state";
-import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
-import { ElementBuffer, ElementBufferType } from "./element-buffer";
+import {
+    VertexBuffer,
+    VertexBufferType,
+    _createVertexBufferWithTypedArray,
+} from "./vertex-buffer";
+import {
+    ElementBuffer,
+    ElementBufferType,
+    ElementArray,
+    _createElementBuffer,
+    _createElementBufferWithArray,
+} from "./element-buffer";
+
+
+const INT_PATTERN = /^0|[1-9]\d*$/;
 
 
 /**
@@ -71,6 +85,115 @@ export interface AttributeIPointerConfig {
 
 export interface AttributesCreateOptions {
     countLimit?: number;
+}
+
+export function _createAttributes(
+    state: State,
+    elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>,
+    attributes: AttributesConfig,
+    { countLimit }: AttributesCreateOptions = {},
+): Attributes {
+    if (typeof countLimit === "number") {
+        assert.gt(countLimit, 0, (p) => {
+            return `Count limit must be greater than 0, got: ${p}`;
+        });
+    }
+
+    const attrs = Object.entries(attributes)
+        .map(([locationStr, definition]) => {
+            if (!INT_PATTERN.test(locationStr)) {
+                throw new Error("Location not a number. Use Command#locate");
+            }
+            const location = parseInt(locationStr, 10);
+            if (Array.isArray(definition)) {
+                if (array.is2(definition)) {
+                    const s = array.shape2(definition);
+                    const r = array.ravel2(definition, s);
+                    return new AttributeDescriptor(
+                        location,
+                        AttributeType.POINTER,
+                        _createVertexBufferWithTypedArray(
+                            state.gl,
+                            DataType.FLOAT,
+                            r,
+                        ),
+                        s[0],
+                        s[1],
+                        false,
+                        0,
+                    );
+                }
+                return new AttributeDescriptor(
+                    location,
+                    AttributeType.POINTER,
+                    _createVertexBufferWithTypedArray(
+                        state.gl,
+                        DataType.FLOAT,
+                        definition,
+                    ),
+                    definition.length,
+                    1,
+                    false,
+                    0,
+                );
+            }
+
+            return new AttributeDescriptor(
+                location,
+                definition.type,
+                Array.isArray(definition.buffer)
+                    ? _createVertexBufferWithTypedArray(
+                        state.gl,
+                        DataType.FLOAT,
+                        definition.buffer,
+                    )
+                    : definition.buffer,
+                definition.count,
+                definition.size,
+                definition.type === AttributeType.POINTER
+                    ? (definition.normalized || false)
+                    : false,
+                definition.divisor || 0,
+            );
+        });
+
+    let primitive: Primitive;
+    let elementBuffer: ElementBuffer<ElementBufferType> | undefined;
+    if (typeof elements === "number") {
+        primitive = elements;
+    } else {
+        elementBuffer = elements instanceof ElementBuffer
+            ? elements
+            : _createElementBufferWithArray(state.gl, elements);
+        primitive = elementBuffer.primitive;
+    }
+
+    const inferredCount = elementBuffer
+        ? elementBuffer.length
+        : attrs.length
+            ? attrs
+                .map((attr) => attr.count)
+                .reduce((min, curr) => Math.min(min, curr))
+            : 0;
+    const count = typeof countLimit === "number"
+        ? Math.min(countLimit, inferredCount)
+        : inferredCount;
+
+    const instAttrs = attrs.filter((attr) => !!attr.divisor);
+    const instanceCount = instAttrs.length
+        ? instAttrs
+            .map((attr) => attr.count * attr.divisor)
+            .reduce((min, curr) => Math.min(min, curr))
+        : 0;
+
+    return new Attributes(
+        state,
+        primitive,
+        attrs,
+        count,
+        instanceCount,
+        elementBuffer,
+    );
 }
 
 /**
@@ -203,7 +326,7 @@ export class Attributes {
     }
 }
 
-export class AttributeDescriptor {
+class AttributeDescriptor {
     constructor(
         readonly location: number,
         readonly type: AttributeType,

@@ -66,6 +66,42 @@ export type TextureDepthStencilInternalFormat =
     | InternalFormat.DEPTH32F_STENCIL8
     ;
 
+export function _createFramebuffer(
+    state: State,
+    width: number,
+    height: number,
+    color:
+        | Texture<TextureColorInternalFormat>
+        | Texture<TextureColorInternalFormat>[],
+    depthStencil?:
+        | Texture<TextureDepthInternalFormat>
+        | Texture<TextureDepthStencilInternalFormat>,
+): Framebuffer {
+    const colors = Array.isArray(color) ? color : [color];
+    assert.nonEmpty(colors, () => {
+        return "Framebuffer color attachments must not be empty";
+    });
+    colors.forEach((buffer) => {
+        assert.equal(width, buffer.width, (got, expected) => {
+            return `Expected attachment width ${expected}, got ${got}`;
+        });
+        assert.equal(height, buffer.height, (got, expected) => {
+            return `Expected attachment height ${expected}, got ${got}`;
+        });
+    });
+
+    if (depthStencil) {
+        assert.equal(width, depthStencil.width, (got, expected) => {
+            return `Expected attachment width ${expected}, got ${got}`;
+        });
+        assert.equal(height, depthStencil.height, (got, expected) => {
+            return `Expected attachment height ${expected}, got ${got}`;
+        });
+    }
+
+    return new Framebuffer(state, width, height, colors, depthStencil);
+}
+
 /**
  * Framebuffers store the list of attachments to write to during a draw
  * operation. They can be a draw target via `framebuffer.target()`

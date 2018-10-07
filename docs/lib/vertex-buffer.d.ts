@@ -21,6 +21,8 @@ export interface VertexBufferCreateOptions {
 export interface VertexBufferStoreOptions {
     offset?: number;
 }
+export declare function _createVertexBuffer<T extends VertexBufferType>(gl: WebGL2RenderingContext, type: T, size: number, { usage }?: VertexBufferCreateOptions): VertexBuffer<T>;
+export declare function _createVertexBufferWithTypedArray<T extends VertexBufferType>(gl: WebGL2RenderingContext, type: T, data: VertexBufferTypeToTypedArray[T] | number[], { usage }?: VertexBufferCreateOptions): VertexBuffer<T>;
 /**
  * Vertex buffers contain GPU accessible data. Accessing them is usually done
  * via setting up an attribute that reads the buffer.

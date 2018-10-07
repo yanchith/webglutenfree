@@ -257,6 +257,37 @@ export enum BlendEquation {
     MAX = 0x8008,
 }
 
+export function _createCommand<P = void>(
+    state: State,
+    vert: string,
+    frag: string,
+    {
+        textures = {},
+        uniforms = {},
+        depth,
+        stencil,
+        blend,
+    }: CommandCreateOptions<P> = {},
+): Command<P> {
+    assert.nonNull(vert, fmtParamNonNull("vert"));
+    assert.nonNull(frag, fmtParamNonNull("frag"));
+
+    const depthDescr = parseDepth(depth);
+    const stencilDescr = parseStencil(stencil);
+    const blendDescr = parseBlend(blend);
+
+    return new Command(
+        state,
+        vert,
+        frag,
+        textures,
+        uniforms,
+        depthDescr,
+        stencilDescr,
+        blendDescr,
+    );
+}
+
 export class Command<P> {
 
     readonly glProgram: WebGLProgram | null;
@@ -756,6 +787,153 @@ function validateUniformDeclaration(
             break;
         default: assert.unreachable(type);
     }
+}
+
+function parseDepth(
+    depth: CommandCreateOptions<void>["depth"],
+): DepthTestDescriptor | undefined {
+    if (!depth) { return undefined; }
+    assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
+    return new DepthTestDescriptor(
+        depth.func || DepthFunc.LESS,
+        typeof depth.mask === "boolean" ? depth.mask : true,
+        depth.range ? depth.range[0] : 0,
+        depth.range ? depth.range[1] : 1,
+    );
+}
+
+function parseStencil(
+    stencil: CommandCreateOptions<void>["stencil"],
+): StencilTestDescriptor | undefined {
+    if (!stencil) { return undefined; }
+    assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+    // TODO: complete stencil validation... validation framework?
+    return new StencilTestDescriptor(
+        typeof stencil.func.func === "object"
+            ? stencil.func.func.front
+            : stencil.func.func,
+        typeof stencil.func.func === "object"
+            ? stencil.func.func.back
+            : stencil.func.func,
+        typeof stencil.func.ref !== "undefined"
+            ? typeof stencil.func.ref === "object"
+                ? stencil.func.ref.front
+                : stencil.func.ref
+            : 1,
+        typeof stencil.func.ref !== "undefined"
+            ? typeof stencil.func.ref === "object"
+                ? stencil.func.ref.back
+                : stencil.func.ref
+            : 1,
+        typeof stencil.func.mask !== "undefined"
+            ? typeof stencil.func.mask === "object"
+                ? stencil.func.mask.front
+                : stencil.func.mask
+            : 0xFF,
+        typeof stencil.func.mask !== "undefined"
+            ? typeof stencil.func.mask === "object"
+                ? stencil.func.mask.back
+                : stencil.func.mask
+            : 0xFF,
+        typeof stencil.mask !== "undefined"
+            ? typeof stencil.mask === "object"
+                ? stencil.mask.front
+                : stencil.mask
+            : 0xFF,
+        typeof stencil.mask !== "undefined"
+            ? typeof stencil.mask === "object"
+                ? stencil.mask.back
+                : stencil.mask
+            : 0xFF,
+        stencil.op
+            ? typeof stencil.op.fail === "object"
+                ? stencil.op.fail.front
+                : stencil.op.fail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.fail === "object"
+                ? stencil.op.fail.back
+                : stencil.op.fail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zfail === "object"
+                ? stencil.op.zfail.front
+                : stencil.op.zfail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zfail === "object"
+                ? stencil.op.zfail.back
+                : stencil.op.zfail
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zpass === "object"
+                ? stencil.op.zpass.front
+                : stencil.op.zpass
+            : StencilOp.KEEP,
+        stencil.op
+            ? typeof stencil.op.zpass === "object"
+                ? stencil.op.zpass.back
+                : stencil.op.zpass
+            : StencilOp.KEEP,
+    );
+}
+
+function parseBlend(
+    blend: CommandCreateOptions<void>["blend"],
+): BlendDescriptor | undefined {
+    if (!blend) { return undefined; }
+    assert.nonNull(blend.func, fmtParamNonNull("blend.func"));
+    assert.nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+    assert.nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+    if (typeof blend.func.src === "object") {
+        assert.nonNull(
+            blend.func.src.rgb,
+            fmtParamNonNull("blend.func.src.rgb"),
+        );
+        assert.nonNull(
+            blend.func.src.alpha,
+            fmtParamNonNull("blend.func.src.alpha"),
+        );
+    }
+    if (typeof blend.func.dst === "object") {
+        assert.nonNull(
+            blend.func.dst.rgb,
+            fmtParamNonNull("blend.func.dst.rgb"),
+        );
+        assert.nonNull(
+            blend.func.dst.alpha,
+            fmtParamNonNull("blend.func.dst.alpha"),
+        );
+    }
+    return new BlendDescriptor(
+        typeof blend.func.src === "object"
+            ? blend.func.src.rgb
+            : blend.func.src,
+        typeof blend.func.src === "object"
+            ? blend.func.src.alpha
+            : blend.func.src,
+        typeof blend.func.dst === "object"
+            ? blend.func.dst.rgb
+            : blend.func.dst,
+        typeof blend.func.dst === "object"
+            ? blend.func.dst.alpha
+            : blend.func.dst,
+        blend.equation
+            ? typeof blend.equation === "object"
+                ? blend.equation.rgb
+                : blend.equation
+            : BlendEquation.FUNC_ADD,
+        blend.equation
+            ? typeof blend.equation === "object"
+                ? blend.equation.alpha
+                : blend.equation
+            : BlendEquation.FUNC_ADD,
+        blend.color,
+    );
+}
+
+function fmtParamNonNull(name: string): () => string {
+    return () => `Missing parameter ${name}`;
 }
 
 function fmtTyMismatch(name: string): () => string {

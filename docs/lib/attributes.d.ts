@@ -2,7 +2,7 @@
 import { Primitive, DataType } from "./types";
 import { State } from "./state";
 import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
-import { ElementBuffer, ElementBufferType } from "./element-buffer";
+import { ElementBuffer, ElementBufferType, ElementArray } from "./element-buffer";
 /**
  * Attribute type for reading vertex buffers. POINTER provides normalization
  * options for converting integer values to floats. IPOINTER always retains
@@ -38,6 +38,7 @@ export interface AttributeIPointerConfig {
 export interface AttributesCreateOptions {
     countLimit?: number;
 }
+export declare function _createAttributes(state: State, elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>, attributes: AttributesConfig, { countLimit }?: AttributesCreateOptions): Attributes;
 /**
  * Attributes store vertex buffers, an element buffer, and attributes with the
  * vertex format for provided vertex buffers.
@@ -62,7 +63,7 @@ export declare class Attributes {
     private init;
     private hasAttribs;
 }
-export declare class AttributeDescriptor {
+declare class AttributeDescriptor {
     readonly location: number;
     readonly type: AttributeType;
     readonly buffer: VertexBuffer<VertexBufferType>;
@@ -72,4 +73,5 @@ export declare class AttributeDescriptor {
     readonly divisor: number;
     constructor(location: number, type: AttributeType, buffer: VertexBuffer<VertexBufferType>, count: number, size: number, normalized: boolean, divisor: number);
 }
+export {};
 //# sourceMappingURL=attributes.d.ts.map

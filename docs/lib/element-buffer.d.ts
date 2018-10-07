@@ -18,6 +18,9 @@ export interface ElementBufferCreateOptions {
 export interface ElementBufferStoreOptions {
     offset?: number;
 }
+export declare function _createElementBuffer<T extends ElementBufferType>(gl: WebGL2RenderingContext, type: T, primitive: Primitive, size: number, { usage }?: ElementBufferCreateOptions): ElementBuffer<T>;
+export declare function _createElementBufferWithArray(gl: WebGL2RenderingContext, data: ElementArray, options?: ElementBufferCreateOptions): ElementBuffer<DataType.UNSIGNED_INT>;
+export declare function _createElementBufferWithTypedArray<T extends ElementBufferType>(gl: WebGL2RenderingContext, type: T, primitive: Primitive, data: ElementBufferTypeToTypedArray[T] | number[], { usage }?: ElementBufferCreateOptions): ElementBuffer<T>;
 /**
  * Element buffers contain indices for accessing vertex buffer data.
  */
