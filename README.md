@@ -44,7 +44,7 @@ Usually, you would acquire a `Device` (WebGL context) and create `Command`s
 at init time. To draw, request a render target from the device and execute
 draw commands with it.
 
-[Triangle](triangle.png)
+![Triangle](triangle.png)
 
 ```typescript
 import { Device, Primitive } from "./webglutenfree";
