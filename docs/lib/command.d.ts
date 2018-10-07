@@ -211,7 +211,7 @@ export declare enum BlendEquation {
 }
 export declare function _createCommand<P = void>(state: State, vert: string, frag: string, { textures, uniforms, depth, stencil, blend, }?: CommandCreateOptions<P>): Command<P>;
 export declare class Command<P> {
-    readonly glProgram: WebGLProgram | null;
+    readonly glProgram: WebGLProgram;
     readonly depthTestDescr: DepthTestDescriptor | null;
     readonly stencilTestDescr: StencilTestDescriptor | null;
     readonly blendDescr: BlendDescriptor | null;

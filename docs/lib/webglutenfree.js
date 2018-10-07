@@ -924,7 +924,11 @@ class Target {
         });
     }
 }
-function access(props, index, value) { return typeof value === "function" ? value(props, index) : value; }
+function access(props, index, value) {
+    return typeof value === "function"
+        ? value(props, index)
+        : value;
+}
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
@@ -1004,7 +1008,6 @@ class Command {
         this.depthTestDescr = depthDescr || null;
         this.stencilTestDescr = stencilDescr || null;
         this.blendDescr = blendDescr || null;
-        this.glProgram = null;
         this.init();
     }
     /**
@@ -1206,6 +1209,9 @@ class UniformDescriptor {
 }
 function createProgram(gl, vertex, fragment) {
     const program = gl.createProgram();
+    if (!program) {
+        throw new Error("Could not create WebGL program");
+    }
     gl.attachShader(program, vertex);
     gl.attachShader(program, fragment);
     gl.linkProgram(program);
@@ -1219,6 +1225,9 @@ function createProgram(gl, vertex, fragment) {
 }
 function createShader(gl, type, source) {
     const shader = gl.createShader(type);
+    if (!shader) {
+        throw new Error("Could not create WebGL shader");
+    }
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);

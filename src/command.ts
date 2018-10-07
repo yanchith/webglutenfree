@@ -290,12 +290,14 @@ export function _createCommand<P = void>(
 
 export class Command<P> {
 
-    readonly glProgram: WebGLProgram | null;
+    readonly glProgram!: WebGLProgram; // Assigned in init()
+
     readonly depthTestDescr: DepthTestDescriptor | null;
     readonly stencilTestDescr: StencilTestDescriptor | null;
     readonly blendDescr: BlendDescriptor | null;
-    readonly textureAccessors!: TextureAccessor<P>[];
-    readonly uniformDescrs!: UniformDescriptor<P>[];
+
+    readonly textureAccessors!: TextureAccessor<P>[]; // Assigned in init()
+    readonly uniformDescrs!: UniformDescriptor<P>[]; // Assigned in init()
 
     private state: State;
     private vsSource: string;
@@ -321,7 +323,6 @@ export class Command<P> {
         this.depthTestDescr = depthDescr || null;
         this.stencilTestDescr = stencilDescr || null;
         this.blendDescr = blendDescr || null;
-        this.glProgram = null;
 
         this.init();
     }
@@ -560,10 +561,13 @@ export class UniformDescriptor<P> {
 
 function createProgram(
     gl: WebGL2RenderingContext,
-    vertex: WebGLShader | null,
-    fragment: WebGLShader | null,
-): WebGLProgram | null {
+    vertex: WebGLShader,
+    fragment: WebGLShader,
+): WebGLProgram {
     const program = gl.createProgram();
+    if (!program) {
+        throw new Error("Could not create WebGL program");
+    }
 
     gl.attachShader(program, vertex);
     gl.attachShader(program, fragment);
@@ -582,8 +586,11 @@ function createShader(
     gl: WebGL2RenderingContext,
     type: number,
     source: string,
-): WebGLShader | null {
+): WebGLShader {
     const shader = gl.createShader(type);
+    if (!shader) {
+        throw new Error("Could not create WebGL shader");
+    }
 
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
