@@ -1,8 +1,9 @@
 import * as assert from "./util/assert";
-import { BufferBits, Filter, Primitive } from "./types";
+import { BufferBits, Filter, Primitive, InternalFormat } from "./types";
 import { State } from "./state";
 import { Command, UniformDescriptor, TextureAccessor } from "./command";
 import { Attributes } from "./attributes";
+import { Texture } from "./texture";
 import { Framebuffer } from "./framebuffer";
 
 
@@ -539,8 +540,21 @@ export class Target {
     }
 }
 
-function access<P, R>(
+type AccessedValue =
+    | number
+    | number[]
+    | Float32Array
+    | Int32Array
+    | Uint32Array
+    | Texture<InternalFormat>
+    ;
+
+function access<P, R extends AccessedValue>(
     props: P,
     index: number,
     value: ((props: P, index: number) => R) | R,
-): R { return typeof value === "function" ? value(props, index) : value; }
+): R {
+    return typeof value === "function"
+        ? value(props, index)
+        : value;
+}
