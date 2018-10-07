@@ -2,8 +2,6 @@ import * as assert from "./util/assert";
 import * as array from "./util/array";
 import { BufferUsage, DataType, Primitive, sizeOf } from "./types";
 
-export type Device = import ("./device").Device;
-
 export type ElementArray =
     | number[] // infers POINTS
     | [number, number][] // infers LINES
@@ -40,7 +38,7 @@ export interface ElementBufferTypeToTypedArray {
     [p: number]: ElementBufferTypedArray;
 }
 
-export interface ElementBufferOptions {
+export interface ElementBufferCreateOptions {
     usage?: BufferUsage;
 }
 
@@ -48,89 +46,74 @@ export interface ElementBufferStoreOptions {
     offset?: number;
 }
 
+export function _createElementBuffer<T extends ElementBufferType>(
+    gl: WebGL2RenderingContext,
+    type: T,
+    primitive: Primitive,
+    size: number,
+    { usage = BufferUsage.DYNAMIC_DRAW }: ElementBufferCreateOptions = {},
+): ElementBuffer<T> {
+    return new ElementBuffer(
+        gl,
+        type,
+        primitive,
+        size,
+        size * sizeOf(type),
+        usage,
+    );
+}
+
+export function _createElementBufferWithArray(
+    gl: WebGL2RenderingContext,
+    data: ElementArray,
+    options?: ElementBufferCreateOptions,
+): ElementBuffer<DataType.UNSIGNED_INT> {
+    if (array.is2(data)) {
+        const shape = array.shape2(data);
+        assert.rangeInclusive(shape[1], 2, 3, (p) => {
+            return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;
+        });
+        const ravel = array.ravel2(data, shape);
+        const primitive = shape[1] === 3
+            ? Primitive.TRIANGLES
+            : Primitive.LINES;
+        return _createElementBufferWithTypedArray(
+            gl,
+            DataType.UNSIGNED_INT,
+            primitive,
+            ravel,
+        );
+    }
+    return _createElementBufferWithTypedArray(
+        gl,
+        DataType.UNSIGNED_INT,
+        Primitive.POINTS,
+        data,
+        options,
+    );
+}
+
+export function _createElementBufferWithTypedArray<T extends ElementBufferType>(
+    gl: WebGL2RenderingContext,
+    type: T,
+    primitive: Primitive,
+    data: ElementBufferTypeToTypedArray[T] | number[],
+    { usage = BufferUsage.STATIC_DRAW }: ElementBufferCreateOptions = {},
+): ElementBuffer<T> {
+    return new ElementBuffer(
+        gl,
+        type,
+        primitive,
+        data.length,
+        data.length * sizeOf(type),
+        usage,
+    ).store(data);
+}
+
 /**
  * Element buffers contain indices for accessing vertex buffer data.
  */
 export class ElementBuffer<T extends ElementBufferType> {
-
-    /**
-     * Create a new element buffer with given type, primitive, and size.
-     */
-    static create<T extends ElementBufferType>(
-        dev: Device,
-        type: T,
-        primitive: Primitive,
-        size: number,
-        { usage = BufferUsage.DYNAMIC_DRAW }: ElementBufferOptions = {},
-    ): ElementBuffer<T> {
-        return new ElementBuffer(
-            dev._gl,
-            type,
-            primitive,
-            size,
-            size * sizeOf(type),
-            usage,
-        );
-    }
-
-    /**
-     * Create a new element buffer from potentially nested array. Infers
-     * Primitive from the array's shape:
-     *   number[] -> POINTS
-     *   [number, number][] -> LINES
-     *   [number, number, number][] -> TRIANGLES
-     * Does not take ownership of data.
-     */
-    static withArray(
-        dev: Device,
-        data: ElementArray,
-        options?: ElementBufferOptions,
-    ): ElementBuffer<DataType.UNSIGNED_INT> {
-        if (array.is2(data)) {
-            const shape = array.shape2(data);
-            assert.rangeInclusive(shape[1], 2, 3, (p) => {
-                return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;
-            });
-            const ravel = array.ravel2(data, shape);
-            const primitive = shape[1] === 3
-                ? Primitive.TRIANGLES
-                : Primitive.LINES;
-            return ElementBuffer.withTypedArray(
-                dev,
-                DataType.UNSIGNED_INT,
-                primitive,
-                ravel,
-            );
-        }
-        return ElementBuffer.withTypedArray(
-            dev,
-            DataType.UNSIGNED_INT,
-            Primitive.POINTS,
-            data,
-            options,
-        );
-    }
-
-    /**
-     * Create a new element buffer of given type with provided data. Does not
-     * take ownership of data.
-     */
-    static withTypedArray<T extends ElementBufferType>(
-        dev: Device,
-        type: T,
-        primitive: Primitive,
-        data: ElementBufferTypeToTypedArray[T] | number[],
-        { usage = BufferUsage.STATIC_DRAW }: ElementBufferOptions = {},
-    ): ElementBuffer<T> {
-        return new ElementBuffer(
-            dev._gl,
-            type,
-            primitive,
-            data.length,
-            data.length * sizeOf(type),
-            usage,
-        ).store(data);
-    }
 
     readonly type: T;
     readonly length: number;
@@ -142,7 +125,7 @@ export class ElementBuffer<T extends ElementBufferType> {
 
     private gl: WebGL2RenderingContext;
 
-    private constructor(
+    constructor(
         gl: WebGL2RenderingContext,
         type: T,
         primitive: Primitive,

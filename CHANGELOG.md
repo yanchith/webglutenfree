@@ -11,6 +11,9 @@
 
 ### Enhancements
 
+- Move all type constructors to `Device`. E.G. vertex buffers are now created
+  with `device.createVertexBuffer()`
+
 (None yet)
 
 ## v0.0.8 (18/06/2018)

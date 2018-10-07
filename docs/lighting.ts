@@ -11,10 +11,8 @@
 import {
     Device,
     BufferBits,
-    Command,
     Uniforms,
     DepthFunc,
-    Attributes,
     Primitive,
 } from "./lib/webglutenfree.js";
 import { mat4, vec3 } from "./libx/gl-matrix.js";
@@ -214,8 +212,7 @@ const createUniformOptions = (nLights: number): Uniforms<CmdDrawLightingProps> =
 };
 
 // Draw an object of concrete material and apply lights to it.
-const cmdDrawLighting = Command.create<CmdDrawLightingProps>(
-    dev,
+const cmdDrawLighting = dev.createCommand<CmdDrawLightingProps>(
     `#version 300 es
     precision mediump float;
 
@@ -310,8 +307,7 @@ interface CmdDrawLightProps {
 }
 
 // Draw each light as it's own geometry centered on position, use diffuse color
-const cmdDrawLight = Command.create<CmdDrawLightProps>(
-    dev,
+const cmdDrawLight = dev.createCommand<CmdDrawLightProps>(
     `#version 300 es
     precision mediump float;
 
@@ -375,14 +371,13 @@ const material: Material = {
 
 const objects = sponza.objects.map(({ positions, normals }) => ({
     material,
-    attrs: Attributes.create(dev, Primitive.TRIANGLES, {
+    attrs: dev.createAttributes(Primitive.TRIANGLES, {
         0: positions,
         1: normals,
     }),
 }));
 
-const lightAttrs = Attributes.create(
-    dev,
+const lightAttrs = dev.createAttributes(
     cube.elements,
     { 0: cube.positions.map(([x, y, z]) => [x / 50, y / 50, z / 50]) },
 );

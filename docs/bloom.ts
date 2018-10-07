@@ -8,13 +8,10 @@
 import {
     Device,
     Extension,
-    Command,
     DepthFunc,
-    Attributes,
     Primitive,
-    Texture,
-    Framebuffer,
     BufferBits,
+    Texture,
     InternalFormat,
     Filter,
 } from "./lib/webglutenfree.js";
@@ -48,26 +45,26 @@ const [blurWidth, blurHeight] = [
     height * BLUR_TEXTURE_SIZE_FACTOR,
 ];
 
-const colorTex = Texture.create(dev, width, height, InternalFormat.RGBA32F, {
+const colorTex = dev.createTexture(width, height, InternalFormat.RGBA32F, {
     min: Filter.LINEAR,
     mag: Filter.LINEAR,
 });
 
-const depthTex = Texture.create(dev, width, height, InternalFormat.DEPTH_COMPONENT24);
+const depthTex = dev.createTexture(width, height, InternalFormat.DEPTH_COMPONENT24);
 
-const pingTex = Texture.create(dev, blurWidth, blurHeight, InternalFormat.RGBA32F, {
+const pingTex = dev.createTexture(blurWidth, blurHeight, InternalFormat.RGBA32F, {
     min: Filter.LINEAR,
     mag: Filter.LINEAR,
 });
 
-const pongTex = Texture.create(dev, blurWidth, blurHeight, InternalFormat.RGBA32F, {
+const pongTex = dev.createTexture(blurWidth, blurHeight, InternalFormat.RGBA32F, {
     min: Filter.LINEAR,
     mag: Filter.LINEAR,
 });
 
-const sceneFbo = Framebuffer.create(dev, width, height, colorTex, depthTex);
-const pingFbo = Framebuffer.create(dev, blurWidth, blurHeight, pingTex);
-const pongFbo = Framebuffer.create(dev, blurWidth, blurHeight, pongTex);
+const sceneFbo = dev.createFramebuffer(width, height, colorTex, depthTex);
+const pingFbo = dev.createFramebuffer(blurWidth, blurHeight, pingTex);
+const pongFbo = dev.createFramebuffer(blurWidth, blurHeight, pongTex);
 
 const viewMatrix = mat4.create();
 
@@ -100,8 +97,7 @@ interface CmdDrawProps {
 }
 
 // Draw the scene as usual
-const cmdDraw = Command.create<CmdDrawProps>(
-    dev,
+const cmdDraw = dev.createCommand<CmdDrawProps>(
     `#version 300 es
         precision mediump float;
 
@@ -181,8 +177,7 @@ const cmdDraw = Command.create<CmdDrawProps>(
 
 // Separate btight pixels into a separate framebuffer. Bloom works by blurring
 // bright areas.
-const cmdSep = Command.create(
-    dev,
+const cmdSep = dev.createCommand(
     screenspaceVS,
     `#version 300 es
         precision mediump float;
@@ -219,8 +214,7 @@ interface CmdBlurProps {
     direction: vec2;
 }
 
-const cmdBlur = Command.create<CmdBlurProps>(
-    dev,
+const cmdBlur = dev.createCommand<CmdBlurProps>(
     screenspaceVS,
     `#version 300 es
         precision mediump float;
@@ -267,8 +261,7 @@ const cmdBlur = Command.create<CmdBlurProps>(
 
 // Merge the original renderd scene with the blurred highlights, performing
 // tonemapping along the way.
-const cmdMerge = Command.create(
-    dev,
+const cmdMerge = dev.createCommand(
     screenspaceVS,
     `#version 300 es
         precision mediump float;
@@ -306,8 +299,8 @@ const cmdMerge = Command.create(
 );
 
 
-const screenspaceAttrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
-const modelAttrs = Attributes.create(dev, uvCube.elements, {
+const screenspaceAttrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
+const modelAttrs = dev.createAttributes(uvCube.elements, {
     0: uvCube.positions,
     1: uvCube.uvs,
 });

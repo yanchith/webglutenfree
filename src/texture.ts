@@ -1,7 +1,5 @@
 import { DataType, Filter, Wrap, InternalFormat, Format } from "./types";
 
-export type Device = import ("./device").Device;
-
 export type TextureDataType = DataType;
 export type TextureInternalFormat = InternalFormat;
 export type TextureFormat = Format;
@@ -198,7 +196,7 @@ export interface InternalFormatToTypedArray {
     [p: number]: ArrayBufferView;
 }
 
-export interface TextureOptions {
+export interface TextureCreateOptions {
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
     wrapS?: TextureWrap;
@@ -213,88 +211,57 @@ export interface TextureStoreOptions {
     height?: number;
 }
 
+export function _createTexture<F extends TextureInternalFormat>(
+    gl: WebGL2RenderingContext,
+    width: number,
+    height: number,
+    internalFormat: F,
+    {
+        min = Filter.NEAREST,
+        mag = Filter.NEAREST,
+        wrapS = Wrap.CLAMP_TO_EDGE,
+        wrapT = Wrap.CLAMP_TO_EDGE,
+    }: TextureCreateOptions = {},
+): Texture<F> {
+    return new Texture(
+        gl,
+        width, height,
+        internalFormat,
+        wrapS, wrapT,
+        min, mag,
+    );
+}
+
+export function _createTextureWithTypedArray<F extends TextureInternalFormat>(
+    gl: WebGL2RenderingContext,
+    width: number,
+    height: number,
+    internalFormat: F,
+    data: InternalFormatToTypedArray[F],
+    dataFormat: InternalFormatToDataFormat[F],
+    dataType: InternalFormatToDataType[F],
+    options: TextureCreateOptions & TextureStoreOptions = {},
+): Texture<F> {
+    const {
+        min = Filter.NEAREST,
+        mag = Filter.NEAREST,
+        wrapS = Wrap.CLAMP_TO_EDGE,
+        wrapT = Wrap.CLAMP_TO_EDGE,
+    } = options;
+    return new Texture(
+        gl,
+        width, height,
+        internalFormat,
+        wrapS, wrapT,
+        min, mag,
+    ).store(data, dataFormat, dataType, options);
+}
+
 /**
  * Textures are images of 2D data, where each texel can contain multiple
  * information channels of a certain type.
  */
 export class Texture<F extends TextureInternalFormat> {
-
-    /**
-     * Create a new texture with given width, height, and internal format.
-     * The internal format determines, what kind of data is possible to store.
-     */
-    static create<F extends TextureInternalFormat>(
-        dev: Device,
-        width: number,
-        height: number,
-        internalFormat: F,
-        {
-            min = Filter.NEAREST,
-            mag = Filter.NEAREST,
-            wrapS = Wrap.CLAMP_TO_EDGE,
-            wrapT = Wrap.CLAMP_TO_EDGE,
-        }: TextureOptions = {},
-    ): Texture<F> {
-        return new Texture(
-            dev._gl,
-            width, height,
-            internalFormat,
-            wrapS, wrapT,
-            min, mag,
-        );
-    }
-
-    /**
-     * Create a new texture with width and height equal to the given image, and
-     * store the image in the texture.
-     */
-    static withImage(
-        dev: Device,
-        image: ImageData,
-        options?: TextureOptions & TextureStoreOptions,
-    ): Texture<InternalFormat.RGBA8> {
-        return Texture.withTypedArray(
-            dev,
-            image.width,
-            image.height,
-            InternalFormat.RGBA8,
-            image.data,
-            Format.RGBA,
-            DataType.UNSIGNED_BYTE,
-            options,
-        );
-    }
-
-    /**
-     * Create a new texture with given width, height, and internal format.
-     * The internal format determines, what kind of data is possible to store.
-     * Store data of given format and type contained in a typed array to the
-     * texture.
-     */
-    static withTypedArray<F extends TextureInternalFormat>(
-        dev: Device,
-        width: number,
-        height: number,
-        internalFormat: F,
-        data: InternalFormatToTypedArray[F],
-        dataFormat: InternalFormatToDataFormat[F],
-        dataType: InternalFormatToDataType[F],
-        options: TextureOptions & TextureStoreOptions = {},
-    ): Texture<F> {
-        const {
-            min = Filter.NEAREST,
-            mag = Filter.NEAREST,
-            wrapS = Wrap.CLAMP_TO_EDGE,
-            wrapT = Wrap.CLAMP_TO_EDGE,
-        } = options;
-        return new Texture(
-            dev._gl,
-            width, height,
-            internalFormat,
-            wrapS, wrapT,
-            min, mag,
-        ).store(data, dataFormat, dataType, options);
-    }
 
     readonly width: number;
     readonly height: number;
@@ -308,7 +275,7 @@ export class Texture<F extends TextureInternalFormat> {
 
     private gl: WebGL2RenderingContext;
 
-    private constructor(
+    constructor(
         gl: WebGL2RenderingContext,
         width: number,
         height: number,

@@ -1,5 +1,5 @@
+/// <reference types="webgl2" />
 import { BufferUsage, DataType } from "./types";
-export declare type Device = import("./device").Device;
 /**
  * Possible data types of vertex buffers.
  */
@@ -15,35 +15,26 @@ export interface VertexBufferTypeToTypedArray {
     [DataType.FLOAT]: Float32Array;
     [p: number]: VertexBufferTypedArray;
 }
-export interface VertexBufferOptions {
+export interface VertexBufferCreateOptions {
     usage?: BufferUsage;
 }
 export interface VertexBufferStoreOptions {
     offset?: number;
 }
+export declare function _createVertexBuffer<T extends VertexBufferType>(gl: WebGL2RenderingContext, type: T, size: number, { usage }?: VertexBufferCreateOptions): VertexBuffer<T>;
+export declare function _createVertexBufferWithTypedArray<T extends VertexBufferType>(gl: WebGL2RenderingContext, type: T, data: VertexBufferTypeToTypedArray[T] | number[], { usage }?: VertexBufferCreateOptions): VertexBuffer<T>;
 /**
  * Vertex buffers contain GPU accessible data. Accessing them is usually done
  * via setting up an attribute that reads the buffer.
  */
 export declare class VertexBuffer<T extends VertexBufferType> {
-    /**
-     * Create a new vertex buffer with given type and of given size.
-     */
-    static create<T extends VertexBufferType>(dev: Device, type: T, size: number, { usage }?: {
-        usage?: BufferUsage | undefined;
-    }): VertexBuffer<T>;
-    /**
-     * Create a new vertex buffer of given type with provided data. Does not
-     * take ownership of data.
-     */
-    static withTypedArray<T extends VertexBufferType>(dev: Device, type: T, data: VertexBufferTypeToTypedArray[T] | number[], { usage }?: VertexBufferOptions): VertexBuffer<T>;
     readonly type: T;
     readonly length: number;
     readonly byteLength: number;
     readonly usage: BufferUsage;
     readonly glBuffer: WebGLBuffer | null;
     private gl;
-    private constructor();
+    constructor(gl: WebGL2RenderingContext, type: T, length: number, byteLength: number, usage: BufferUsage);
     /**
      * Reinitialize invalid buffer, eg. after context is lost.
      */

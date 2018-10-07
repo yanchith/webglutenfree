@@ -188,6 +188,63 @@ test("Unbound draw callback should error", (t) => {
     t.throws(() => (sneakyDraw!)(attrs, void 0));
 });
 
+test("Rebinding targets does not work around assertions", (t) => {
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    const attrs = createAttributes(dev);
+    const tex = createTexture(dev);
+    const fbo = createFramebuffer(dev, tex);
+    let sneakyDraw: ((attrs: Attributes, props: void) => void) | null = null;
+    dev.target((rt) => {
+        rt.batch(cmd, (draw) => {
+            sneakyDraw = draw;
+        });
+    });
+
+    t.truthy(sneakyDraw);
+    fbo.target((rt) => {
+        rt.batch(cmd, () => {
+            t.throws(() => sneakyDraw!(attrs, void 0));
+        });
+    });
+});
+
+test("Rebinding commands does not work around assertions", (t) => {
+    const dev = createDevice();
+    const cmd1 = createCommand(dev);
+    const cmd2 = createCommand(dev);
+    const attrs = createAttributes(dev);
+    let sneakyDraw: ((attrs: Attributes, props: void) => void) | null = null;
+    dev.target((rt) => {
+        rt.batch(cmd1, (draw) => {
+            sneakyDraw = draw;
+        });
+
+        t.truthy(sneakyDraw);
+        rt.batch(cmd2, () => {
+            t.throws(() => sneakyDraw!(attrs, void 0));
+        });
+    });
+});
+
+test("Creating commands while a command is bound is asserted against", (t) => {
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    dev.target((rt) => {
+        rt.batch(cmd, () => {
+            t.throws(() => createCommand(dev));
+        });
+    });
+});
+
+test("Creating framebuffers while a target is bound is asserted against", (t) => {
+    const dev = createDevice();
+    const tex = createTexture(dev);
+    dev.target(() => {
+        t.throws(() => createFramebuffer(dev, tex));
+    });
+});
+
 function mockContext(): WebGL2RenderingContext {
     return new WebGL2RenderingContextMock({
         width: WIDTH,
@@ -199,12 +256,11 @@ function mockContext(): WebGL2RenderingContext {
 
 function createDevice(): Device {
     const gl = mockContext();
-    return Device.withContext(gl, { pixelRatio: 1 });
+    return Device.createWithContext(gl, { pixelRatio: 1 });
 }
 
 function createCommand(dev: Device): Command<void> {
-    return Command.create(
-        dev,
+    return dev.createCommand(
         `#version 300 es
         precision mediump float;
 
@@ -233,7 +289,7 @@ function createCommand(dev: Device): Command<void> {
 }
 
 function createAttributes(dev: Device): Attributes {
-    return Attributes.create(dev, Primitive.TRIANGLES, {
+    return dev.createAttributes(Primitive.TRIANGLES, {
         0: [
             [-0.3, -0.5],
             [0.3, -0.5],
@@ -248,12 +304,12 @@ function createAttributes(dev: Device): Attributes {
 }
 
 function createTexture(dev: Device): Texture<InternalFormat.RGBA8> {
-    return Texture.create(dev, WIDTH, HEIGHT, InternalFormat.RGBA8);
+    return dev.createTexture(WIDTH, HEIGHT, InternalFormat.RGBA8);
 }
 
 function createFramebuffer(
     dev: Device,
     tex: Texture<InternalFormat.RGBA8>,
 ): Framebuffer {
-    return Framebuffer.create(dev, WIDTH, HEIGHT, tex);
+    return dev.createFramebuffer(WIDTH, HEIGHT, tex);
 }

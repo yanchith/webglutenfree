@@ -5,11 +5,8 @@
 
 import {
     Device,
-    Command,
     BlendFunc,
     DepthFunc,
-    VertexBuffer,
-    Attributes,
     AttributeType,
     BufferBits,
     BufferUsage,
@@ -34,8 +31,7 @@ interface CmdProps {
     tick: number;
 }
 
-const cmd = Command.create<CmdProps>(
-    dev,
+const cmd = dev.createCommand<CmdProps>(
     `#version 300 es
     precision mediump float;
 
@@ -132,15 +128,14 @@ for (let i = 0; i < positions.length; i++) {
     positions[i] = Math.random() * 2 - 1;
 }
 
-const buffer = VertexBuffer.withTypedArray(
-    dev,
+const buffer = dev.createVertexBufferWithTypedArray(
     DataType.FLOAT,
     positions,
     { usage: BufferUsage.DYNAMIC_DRAW },
 );
 
 const angle = Math.PI * 2 / 3;
-const attrs = Attributes.create(dev, Primitive.TRIANGLES, cmd.locate({
+const attrs = dev.createAttributes(Primitive.TRIANGLES, cmd.locate({
     // a_position is an instanced buffer containing the particles center
     a_position: {
         type: AttributeType.POINTER,

@@ -1,9 +1,8 @@
 import * as assert from "./util/assert";
 import { InternalFormat } from "./types";
-import { Target, TARGET_BINDINGS } from "./target";
-
-export type Device = import ("./device").Device;
-export type Texture<F> = import ("./texture").Texture<F>;
+import { State } from "./state";
+import { Target } from "./target";
+import { Texture } from "./texture";
 
 export type TextureColorInternalFormat =
 
@@ -67,83 +66,79 @@ export type TextureDepthStencilInternalFormat =
     | InternalFormat.DEPTH32F_STENCIL8
     ;
 
+export function _createFramebuffer(
+    state: State,
+    width: number,
+    height: number,
+    color:
+        | Texture<TextureColorInternalFormat>
+        | Texture<TextureColorInternalFormat>[],
+    depthStencil?:
+        | Texture<TextureDepthInternalFormat>
+        | Texture<TextureDepthStencilInternalFormat>,
+): Framebuffer {
+    const colors = Array.isArray(color) ? color : [color];
+    assert.nonEmpty(colors, () => {
+        return "Framebuffer color attachments must not be empty";
+    });
+    colors.forEach((buffer) => {
+        assert.equal(width, buffer.width, (got, expected) => {
+            return `Expected attachment width ${expected}, got ${got}`;
+        });
+        assert.equal(height, buffer.height, (got, expected) => {
+            return `Expected attachment height ${expected}, got ${got}`;
+        });
+    });
+
+    if (depthStencil) {
+        assert.equal(width, depthStencil.width, (got, expected) => {
+            return `Expected attachment width ${expected}, got ${got}`;
+        });
+        assert.equal(height, depthStencil.height, (got, expected) => {
+            return `Expected attachment height ${expected}, got ${got}`;
+        });
+    }
+
+    return new Framebuffer(state, width, height, colors, depthStencil);
+}
+
 /**
  * Framebuffers store the list of attachments to write to during a draw
  * operation. They can be a draw target via `framebuffer.target()`
  */
 export class Framebuffer {
 
-    /**
-     * Create a framebuffer containg one or more color buffers and a
-     * depth or depth-stencil buffer with given width and height.
-     *
-     * Does not take ownership of provided attachments, only references them.
-     * It is still an error to use the attachments while they are written to
-     * via the framebuffer, however.
-     */
-    static create(
-        dev: Device,
-        width: number,
-        height: number,
-        color:
-            | Texture<TextureColorInternalFormat>
-            | Texture<TextureColorInternalFormat>[],
-        depthStencil?:
-            | Texture<TextureDepthInternalFormat>
-            | Texture<TextureDepthStencilInternalFormat>,
-    ): Framebuffer {
-        const colors = Array.isArray(color) ? color : [color];
-        assert.nonEmpty(colors, () => {
-            return "Framebuffer color attachments must not be empty";
-        });
-        colors.forEach((buffer) => {
-            assert.equal(width, buffer.width, (got, expected) => {
-                return `Expected attachment width ${expected}, got ${got}`;
-            });
-            assert.equal(height, buffer.height, (got, expected) => {
-                return `Expected attachment height ${expected}, got ${got}`;
-            });
-        });
-
-        if (depthStencil) {
-            assert.equal(width, depthStencil.width, (got, expected) => {
-                return `Expected attachment width ${expected}, got ${got}`;
-            });
-            assert.equal(height, depthStencil.height, (got, expected) => {
-                return `Expected attachment height ${expected}, got ${got}`;
-            });
-        }
-
-        return new Framebuffer(dev, width, height, colors, depthStencil);
-    }
-
     readonly width: number;
     readonly height: number;
 
     readonly glFramebuffer: WebGLFramebuffer | null;
 
-    private dev: Device;
+    private state: State;
     private glColorAttachments: number[];
 
     private framebufferTarget: Target | null;
 
     private colors: Texture<TextureColorInternalFormat>[];
-    private depthStencil?: Texture<TextureDepthInternalFormat> | Texture<TextureDepthStencilInternalFormat>;
+    private depthStencil?:
+        | Texture<TextureDepthInternalFormat>
+        | Texture<TextureDepthStencilInternalFormat>;
 
-    private constructor(
-        dev: Device,
+    constructor(
+        state: State,
         width: number,
         height: number,
         colors: Texture<TextureColorInternalFormat>[],
-        depthStencil?: Texture<TextureDepthInternalFormat> | Texture<TextureDepthStencilInternalFormat>,
+        depthStencil?:
+            | Texture<TextureDepthInternalFormat>
+            | Texture<TextureDepthStencilInternalFormat>,
     ) {
-        this.dev = dev;
+        this.state = state;
         this.width = width;
         this.height = height;
         this.colors = colors;
         this.depthStencil = depthStencil;
         this.glColorAttachments = colors
-            .map((_, i) => dev._gl.COLOR_ATTACHMENT0 + i);
+            .map((_, i) => state.gl.COLOR_ATTACHMENT0 + i);
         this.glFramebuffer = null;
         this.framebufferTarget = null;
 
@@ -155,14 +150,14 @@ export class Framebuffer {
      */
     restore(): void {
         const {
-            dev: { _gl },
+            state: { gl },
             glFramebuffer,
             colors,
             depthStencil,
         } = this;
         colors.forEach((buffer) => buffer.restore());
         if (depthStencil) { depthStencil.restore(); }
-        if (!_gl.isFramebuffer(glFramebuffer)) { this.init(); }
+        if (!gl.isFramebuffer(glFramebuffer)) { this.init(); }
     }
 
     /**
@@ -182,17 +177,15 @@ export class Framebuffer {
         const {
             width,
             height,
-            dev,
-            dev: { _gl: gl },
+            state,
+            state: { gl },
             glColorAttachments,
             colors,
             depthStencil,
         } = this;
 
         // This would overwrite a the currently bound `Target`s FBO
-        if (TARGET_BINDINGS.has(dev)) {
-            throw new Error("Cannot bind framebuffers while a Target is bound");
-        }
+        state.assertTargetUnbound();
 
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
@@ -261,7 +254,7 @@ export class Framebuffer {
 
         if (fbo) {
             this.framebufferTarget = new Target(
-                dev,
+                state,
                 glColorAttachments,
                 fbo,
                 width,

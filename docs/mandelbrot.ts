@@ -6,10 +6,7 @@
 import {
     Device,
     Extension,
-    Command,
-    Attributes,
     Texture,
-    Framebuffer,
     Primitive,
     InternalFormat,
 } from "./lib/webglutenfree.js";
@@ -25,11 +22,11 @@ const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 // Note: Even with extensions, RGB32F is not renderable (might be a bug),
 // so we use RGBA32F even when we only use 3 channels
-const pingTex = Texture.create(dev, width, height, InternalFormat.RGBA32F);
-const pongTex = Texture.create(dev, width, height, InternalFormat.RGBA32F);
+const pingTex = dev.createTexture(width, height, InternalFormat.RGBA32F);
+const pongTex = dev.createTexture(width, height, InternalFormat.RGBA32F);
 
-const pingFbo = Framebuffer.create(dev, width, height, pingTex);
-const pongFbo = Framebuffer.create(dev, width, height, pongTex);
+const pingFbo = dev.createFramebuffer(width, height, pingTex);
+const pongFbo = dev.createFramebuffer(width, height, pongTex);
 
 // This vertex shader just renders one huge triangle to cover the screenspace.
 const screenspaceVS = `#version 300 es
@@ -61,8 +58,7 @@ interface CmdComputeProps {
     tick: number;
 }
 
-const cmdCompute = Command.create<CmdComputeProps>(
-    dev,
+const cmdCompute = dev.createCommand<CmdComputeProps>(
     screenspaceVS,
     `#version 300 es
     precision mediump float;
@@ -159,8 +155,7 @@ interface CmdDrawProps {
     tex: Texture<InternalFormat>;
 }
 
-const cmdDraw = Command.create<CmdDrawProps>(
-    dev,
+const cmdDraw = dev.createCommand<CmdDrawProps>(
     screenspaceVS,
     `#version 300 es
     precision mediump float;
@@ -192,7 +187,7 @@ const cmdDraw = Command.create<CmdDrawProps>(
     },
 );
 
-const attrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
+const attrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
 
 let ping = { tex: pingTex, fbo: pingFbo };
 let pong = { tex: pongTex, fbo: pongFbo };

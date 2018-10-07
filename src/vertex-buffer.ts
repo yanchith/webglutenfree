@@ -1,8 +1,6 @@
 import * as assert from "./util/assert";
 import { BufferUsage, DataType, sizeOf } from "./types";
 
-export type Device = import ("./device").Device;
-
 /**
  * Possible data types of vertex buffers.
  */
@@ -39,7 +37,7 @@ export interface VertexBufferTypeToTypedArray {
     [p: number]: VertexBufferTypedArray;
 }
 
-export interface VertexBufferOptions {
+export interface VertexBufferCreateOptions {
     usage?: BufferUsage;
 }
 
@@ -47,48 +45,41 @@ export interface VertexBufferStoreOptions {
     offset?: number;
 }
 
+export function _createVertexBuffer<T extends VertexBufferType>(
+    gl: WebGL2RenderingContext,
+    type: T,
+    size: number,
+    { usage = BufferUsage.DYNAMIC_DRAW }: VertexBufferCreateOptions = {},
+): VertexBuffer<T> {
+    return new VertexBuffer(
+        gl,
+        type,
+        size,
+        size * sizeOf(type),
+        usage,
+    );
+}
+
+export function _createVertexBufferWithTypedArray<T extends VertexBufferType>(
+    gl: WebGL2RenderingContext,
+    type: T,
+    data: VertexBufferTypeToTypedArray[T] | number[],
+    { usage = BufferUsage.STATIC_DRAW }: VertexBufferCreateOptions = {},
+): VertexBuffer<T> {
+    return new VertexBuffer(
+        gl,
+        type,
+        data.length,
+        data.length * sizeOf(type),
+        usage,
+    ).store(data);
+}
+
 /**
  * Vertex buffers contain GPU accessible data. Accessing them is usually done
  * via setting up an attribute that reads the buffer.
  */
 export class VertexBuffer<T extends VertexBufferType> {
-
-    /**
-     * Create a new vertex buffer with given type and of given size.
-     */
-    static create<T extends VertexBufferType>(
-        dev: Device,
-        type: T,
-        size: number,
-        { usage = BufferUsage.DYNAMIC_DRAW } = {},
-    ): VertexBuffer<T> {
-        return new VertexBuffer(
-            dev._gl,
-            type,
-            size,
-            size * sizeOf(type),
-            usage,
-        );
-    }
-
-    /**
-     * Create a new vertex buffer of given type with provided data. Does not
-     * take ownership of data.
-     */
-    static withTypedArray<T extends VertexBufferType>(
-        dev: Device,
-        type: T,
-        data: VertexBufferTypeToTypedArray[T] | number[],
-        { usage = BufferUsage.STATIC_DRAW }: VertexBufferOptions = {},
-    ): VertexBuffer<T> {
-        return new VertexBuffer(
-            dev._gl,
-            type,
-            data.length,
-            data.length * sizeOf(type),
-            usage,
-        ).store(data);
-    }
 
     readonly type: T;
     readonly length: number;
@@ -99,7 +90,7 @@ export class VertexBuffer<T extends VertexBufferType> {
 
     private gl: WebGL2RenderingContext;
 
-    private constructor(
+    constructor(
         gl: WebGL2RenderingContext,
         type: T,
         length: number,

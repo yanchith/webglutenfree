@@ -13,13 +13,10 @@ import {
     Device,
     Extension,
     BufferBits,
-    Command,
     Uniforms,
     DepthFunc,
-    Attributes,
     Primitive,
     Texture,
-    Framebuffer,
     InternalFormat,
 } from "./lib/webglutenfree.js";
 import { mat4, vec3 } from "./libx/gl-matrix.js";
@@ -44,11 +41,11 @@ const PROJ_FOV = Math.PI / 2;
 const dev = Device.create({ extensions: [Extension.EXTColorBufferFloat] });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const gAlbedoSpecular = Texture.create(dev, width, height, InternalFormat.RGBA8);
-const gPosition = Texture.create(dev, width, height, InternalFormat.RGBA32F);
-const gNormal = Texture.create(dev, width, height, InternalFormat.RGBA32F);
-const gDepth = Texture.create(dev, width, height, InternalFormat.DEPTH_COMPONENT24);
-const gBuffer = Framebuffer.create(dev, width, height, [
+const gAlbedoSpecular = dev.createTexture(width, height, InternalFormat.RGBA8);
+const gPosition = dev.createTexture(width, height, InternalFormat.RGBA32F);
+const gNormal = dev.createTexture(width, height, InternalFormat.RGBA32F);
+const gDepth = dev.createTexture(width, height, InternalFormat.DEPTH_COMPONENT24);
+const gBuffer = dev.createFramebuffer(width, height, [
     gAlbedoSpecular,
     gPosition,
     gNormal,
@@ -150,8 +147,7 @@ interface CmdDrawGeometryProps {
     material: Material;
 }
 
-const cmdDrawGeometry = Command.create<CmdDrawGeometryProps>(
-    dev,
+const cmdDrawGeometry = dev.createCommand<CmdDrawGeometryProps>(
     `#version 300 es
     precision mediump float;
 
@@ -270,8 +266,7 @@ const createUniformOptions = (nLights: number): Uniforms<CmdDrawLightingProps> =
     return uniforms;
 };
 
-const cmdDrawLighting = Command.create<CmdDrawLightingProps>(
-    dev,
+const cmdDrawLighting = dev.createCommand<CmdDrawLightingProps>(
     `#version 300 es
     precision mediump float;
 
@@ -367,8 +362,7 @@ interface CmdDrawLightProps {
 }
 
 // Draw each light as it's own geometry centered on position, use diffuse color
-const cmdDrawLight = Command.create<CmdDrawLightProps>(
-    dev,
+const cmdDrawLight = dev.createCommand<CmdDrawLightProps>(
     `#version 300 es
     precision mediump float;
 
@@ -430,18 +424,17 @@ const material: Material = {
 
 const objects = sponza.objects.map(({ positions, normals }) => ({
     material,
-    attrs: Attributes.create(dev, Primitive.TRIANGLES, {
+    attrs: dev.createAttributes(Primitive.TRIANGLES, {
         0: positions,
         1: normals,
     }),
 }));
 
-const lightAttrs = Attributes.create(
-    dev,
+const lightAttrs = dev.createAttributes(
     cube.elements,
     { 0: cube.positions.map(([x, y, z]) => [x / 50, y / 50, z / 50]) },
 );
-const screenspaceAttrs = Attributes.empty(dev, Primitive.TRIANGLES, 3);
+const screenspaceAttrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
 
 let t = window.performance.now();
 const loop = (time: number): void => {

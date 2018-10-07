@@ -2,9 +2,9 @@
  * This example demonstrates the use of instancing - using a single draw
  * call to render multiple similar objects.
  *
- * Instancing in WebGL is done using instanced attributes. These are set up to
- * read the underlying buffer elements more than once, causing more objects to
- * be drawn.
+ * Instancing in WebGL is done using instanced attributes. Every non-instanced
+ * attribute is completely read per each element in instanced attributes,
+ * causing more objects to be drawn.
  *
  * In this example, there is a single attribute containing the geometry, and
  * two instanced atributes containing instance position offsets and colors.
@@ -12,8 +12,6 @@
 
 import {
     Device,
-    Command,
-    Attributes,
     AttributeType,
     VertexBuffer,
     BufferBits,
@@ -27,9 +25,8 @@ const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 const viewMatrix = mat4.identity(mat4.create());
 
 // There is nothing special about this draw command. It uses 3 attributes and
-// does not actually know two of those are instanced.
-const cmd = Command.create(
-    dev,
+// does not actually know that two of those are instanced.
+const cmd = dev.createCommand(
     `#version 300 es
     precision mediump float;
 
@@ -92,9 +89,8 @@ const cmd = Command.create(
 // the complete attribute syntax, describing all of its aspects (type, count,
 // size, ...). Instancing is turned on by adding the "divisor" field, which
 // means: use a value from this attribute N times for each of the non-instanced
-// attributes, before moving on to the next value.
-const attrs = Attributes.create(
-    dev,
+// attribute elements, before moving on to the next value.
+const attrs = dev.createAttributes(
     [
         [0, 3, 2],
         [1, 3, 0],
@@ -110,7 +106,7 @@ const attrs = Attributes.create(
         // Position offset attributes
         1: {
             type: AttributeType.POINTER,
-            buffer: VertexBuffer.withTypedArray(dev, DataType.FLOAT, [
+            buffer: dev.createVertexBufferWithTypedArray(DataType.FLOAT, [
                 3, 3,
                 0, 3,
                 3, 0,
@@ -127,7 +123,7 @@ const attrs = Attributes.create(
         // Color attributes
         2: {
             type: AttributeType.POINTER,
-            buffer: VertexBuffer.withTypedArray(dev, DataType.UNSIGNED_BYTE, [
+            buffer: dev.createVertexBufferWithTypedArray(DataType.UNSIGNED_BYTE, [
                 255, 0, 0, 255,
                 0, 255, 0, 255,
                 0, 0, 255, 255,
