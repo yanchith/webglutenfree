@@ -297,7 +297,7 @@ export class Target {
         // blending is paid only once for all draw calls in batch
 
         state.assertTargetBound(this, "batch-draw");
-        state.bindCommand(this, glProgram);
+        state.bindCommand(cmd, glProgram);
 
         state.setDepthTest(depthTestDescr);
         state.setStencilTest(stencilTestDescr);
@@ -309,7 +309,7 @@ export class Target {
             // Did the user do anything sneaky?
             // TODO: assert the command and target is the same one
             state.assertTargetBound(this, "batch-draw");
-            state.assertCommandBound(this, "batch-draw");
+            state.assertCommandBound(cmd, "batch-draw");
 
             i++;
 
