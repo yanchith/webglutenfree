@@ -44,13 +44,13 @@ Usually, you would acquire a `Device` (WebGL context) and create `Command`s
 at init time. To draw, request a render target from the device and execute
 draw commands with it.
 
+[Triangle](triangle.png)
+
 ```typescript
-import { Device, Command, Attributes, Primitive } from "webglutenfree";
+import { Device, Primitive } from "./webglutenfree";
 
 const dev = Device.create();
-
-const cmd = Command.create(
-    dev,
+const cmd = dev.createCommand(
     `#version 300 es
     precision mediump float;
 
@@ -60,7 +60,7 @@ const cmd = Command.create(
     out vec4 v_color;
 
     void main() {
-    v_color = a_color;
+        v_color = a_color;
         gl_Position = vec4(a_position, 0.0, 1.0);
     }
     `,
@@ -77,7 +77,7 @@ const cmd = Command.create(
     `,
 );
 
-const attrs = Attributes.create(dev, Primitive.TRIANGLES, {
+const attrs = dev.createAttributes(Primitive.TRIANGLES, {
     0: [
         [-0.3, -0.5],
         [0.3, -0.5],
