@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.10 (unreleased)
+
+### Enahancments
+
+- Make all gl enums explicit and typechecked
+
 ## v0.0.9 (17/10/2018)
 
 ### Enhancements
