@@ -15,12 +15,12 @@
 import {
     Device,
     Texture,
-    BufferBits,
-    Primitive,
-    DataType,
-    InternalFormat,
-    Format,
-    Wrap,
+    TargetBufferBitmask,
+    ElementPrimitive,
+    TextureDataType,
+    TextureColorStorageFormat,
+    TextureFormat,
+    TextureWrap,
 } from "./lib/webglutenfree.js";
 
 const [WIDTH, HEIGHT] = [256, 256];
@@ -37,20 +37,24 @@ const ALPHA_M = 0.147;
 const dev = Device.create({ antialias: false });
 
 // By using REPEAT in both directions, we create a cyclic universe
-const pingTex = dev.createTexture(WIDTH, HEIGHT, InternalFormat.RGBA8, {
-    wrapS: Wrap.REPEAT,
-    wrapT: Wrap.REPEAT,
-});
-const pongTex = dev.createTexture(WIDTH, HEIGHT, InternalFormat.RGBA8, {
-    wrapS: Wrap.REPEAT,
-    wrapT: Wrap.REPEAT,
-});
+const pingTex = dev.createTexture(
+    WIDTH,
+    HEIGHT,
+    TextureColorStorageFormat.RGBA8,
+    { wrapS: TextureWrap.REPEAT, wrapT: TextureWrap.REPEAT },
+);
+const pongTex = dev.createTexture(
+    WIDTH,
+    HEIGHT,
+    TextureColorStorageFormat.RGBA8,
+    { wrapS: TextureWrap.REPEAT, wrapT: TextureWrap.REPEAT },
+);
 
 // Store the initial state
 pingTex.store(
     new Uint8Array(createData()),
-    Format.RGBA,
-    DataType.UNSIGNED_BYTE,
+    TextureFormat.RGBA,
+    TextureDataType.UNSIGNED_BYTE,
 );
 
 const pingFbo = dev.createFramebuffer(WIDTH, HEIGHT, pingTex);
@@ -61,7 +65,7 @@ const pongFbo = dev.createFramebuffer(WIDTH, HEIGHT, pongTex);
 // is read, but all RED, GREEN and BLUE channels are written for aesthetics.
 
 interface CmdProps {
-    tex: Texture<InternalFormat>;
+    tex: Texture<TextureColorStorageFormat>;
 }
 
 const cmd = dev.createCommand<CmdProps>(
@@ -166,7 +170,7 @@ const cmd = dev.createCommand<CmdProps>(
     { textures: { u_universe: ({ tex }) => tex } },
 );
 
-const attrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
+const attrs = dev.createEmptyAttributes(ElementPrimitive.TRIANGLE_LIST, 3);
 
 let ping = { tex: pingTex, fbo: pingFbo };
 let pong = { tex: pongTex, fbo: pongFbo };
@@ -179,7 +183,7 @@ const loop = (): void => {
 
     // Update canvas based on pong
     dev.target((rt) => {
-        rt.blit(pong.fbo, BufferBits.COLOR);
+        rt.blit(pong.fbo, TargetBufferBitmask.COLOR);
     });
 
     // ... and swap the pingpong

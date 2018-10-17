@@ -1,6 +1,6 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
-import { BufferUsage, Primitive } from "./types";
+import { BufferUsage } from "./types";
 
 export type ElementArray =
     | number[] // infers POINTS
@@ -13,6 +13,16 @@ export type ElementArray =
     */
     | number[][]
     ;
+
+export enum ElementPrimitive {
+    POINT_LIST = 0x0000,
+    LINE_LIST = 0x0001,
+    LINE_LOOP = 0x0002,
+    LINE_STRIP = 0x0003,
+    TRIANGLE_LIST = 0x0004,
+    TRIANGLE_STRIP = 0x0005,
+    TRIANGLE_FAN = 0x0006,
+}
 
 export const enum ElementBufferDataType {
     UNSIGNED_BYTE = 0x1401,
@@ -37,7 +47,7 @@ export interface ElementBufferStoreOptions {
 export function _createElementBuffer<T extends ElementBufferDataType>(
     gl: WebGL2RenderingContext,
     type: T,
-    primitive: Primitive,
+    primitive: ElementPrimitive,
     size: number,
     { usage = BufferUsage.DYNAMIC_DRAW }: ElementBufferCreateOptions = {},
 ): ElementBuffer<T> {
@@ -63,8 +73,8 @@ export function _createElementBufferWithArray(
         });
         const ravel = array.ravel2(data, shape);
         const primitive = shape[1] === 3
-            ? Primitive.TRIANGLE_LISt
-            : Primitive.LINE_LIST;
+            ? ElementPrimitive.TRIANGLE_LIST
+            : ElementPrimitive.LINE_LIST;
         return _createElementBufferWithTypedArray(
             gl,
             ElementBufferDataType.UNSIGNED_INT,
@@ -76,7 +86,7 @@ export function _createElementBufferWithArray(
     return _createElementBufferWithTypedArray(
         gl,
         ElementBufferDataType.UNSIGNED_INT,
-        Primitive.POINT_LIST,
+        ElementPrimitive.POINT_LIST,
         new Uint32Array(data),
         options,
     );
@@ -85,7 +95,7 @@ export function _createElementBufferWithArray(
 export function _createElementBufferWithTypedArray<T extends ElementBufferDataType>(
     gl: WebGL2RenderingContext,
     type: T,
-    primitive: Primitive,
+    primitive: ElementPrimitive,
     data: ElementBufferDataTypeToTypedArray[T],
     { usage = BufferUsage.STATIC_DRAW }: ElementBufferCreateOptions = {},
 ): ElementBuffer<T> {
@@ -107,7 +117,7 @@ export class ElementBuffer<T extends ElementBufferDataType> {
     readonly type: T;
     readonly length: number;
     readonly byteLength: number;
-    readonly primitive: Primitive;
+    readonly primitive: ElementPrimitive;
     readonly usage: BufferUsage;
 
     readonly glBuffer: WebGLBuffer | null;
@@ -117,7 +127,7 @@ export class ElementBuffer<T extends ElementBufferDataType> {
     constructor(
         gl: WebGL2RenderingContext,
         type: T,
-        primitive: Primitive,
+        primitive: ElementPrimitive,
         length: number,
         byteLength: number,
         usage: BufferUsage,

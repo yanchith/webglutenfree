@@ -1,154 +1,237 @@
 /// <reference types="webgl2" />
-import { DataType, Filter, Wrap, InternalFormat, Format } from "./types";
-export declare type TextureDataType = DataType;
-export declare type TextureInternalFormat = InternalFormat;
-export declare type TextureFormat = Format;
-export declare type TextureWrap = Wrap;
-export declare type TextureMinFilter = Filter;
-export declare type TextureMagFilter = Filter.NEAREST | Filter.LINEAR;
-export interface InternalFormatToDataFormat {
-    [InternalFormat.R8]: Format.RED;
-    [InternalFormat.R8_SNORM]: Format.RED;
-    [InternalFormat.R8UI]: Format.RED_INTEGER;
-    [InternalFormat.R8I]: Format.RED_INTEGER;
-    [InternalFormat.R16UI]: Format.RED_INTEGER;
-    [InternalFormat.R16I]: Format.RED_INTEGER;
-    [InternalFormat.R32UI]: Format.RED_INTEGER;
-    [InternalFormat.R32I]: Format.RED_INTEGER;
-    [InternalFormat.R16F]: Format.RED;
-    [InternalFormat.R32F]: Format.RED;
-    [InternalFormat.RG8]: Format.RG;
-    [InternalFormat.RG8_SNORM]: Format.RG;
-    [InternalFormat.RG8UI]: Format.RG_INTEGER;
-    [InternalFormat.RG8I]: Format.RG_INTEGER;
-    [InternalFormat.RG16UI]: Format.RG_INTEGER;
-    [InternalFormat.RG16I]: Format.RG_INTEGER;
-    [InternalFormat.RG32UI]: Format.RG_INTEGER;
-    [InternalFormat.RG32I]: Format.RG_INTEGER;
-    [InternalFormat.RG16F]: Format.RG;
-    [InternalFormat.RG32F]: Format.RG;
-    [InternalFormat.RGB8]: Format.RGB;
-    [InternalFormat.RGB8_SNORM]: Format.RGB;
-    [InternalFormat.RGB8UI]: Format.RGB_INTEGER;
-    [InternalFormat.RGB8I]: Format.RGB_INTEGER;
-    [InternalFormat.RGB16UI]: Format.RGB_INTEGER;
-    [InternalFormat.RGB16I]: Format.RGB_INTEGER;
-    [InternalFormat.RGB32UI]: Format.RGB_INTEGER;
-    [InternalFormat.RGB32I]: Format.RGB_INTEGER;
-    [InternalFormat.RGB16F]: Format.RGB;
-    [InternalFormat.RGB32F]: Format.RGB;
-    [InternalFormat.RGBA8]: Format.RGBA;
-    [InternalFormat.RGBA8_SNORM]: Format.RGBA;
-    [InternalFormat.RGBA8UI]: Format.RGBA_INTEGER;
-    [InternalFormat.RGBA8I]: Format.RGBA_INTEGER;
-    [InternalFormat.RGBA16UI]: Format.RGBA_INTEGER;
-    [InternalFormat.RGBA16I]: Format.RGBA_INTEGER;
-    [InternalFormat.RGBA32UI]: Format.RGBA_INTEGER;
-    [InternalFormat.RGBA32I]: Format.RGBA_INTEGER;
-    [InternalFormat.RGBA16F]: Format.RGBA;
-    [InternalFormat.RGBA32F]: Format.RGBA;
-    [InternalFormat.DEPTH_COMPONENT16]: Format.DEPTH_COMPONENT;
-    [InternalFormat.DEPTH_COMPONENT24]: Format.DEPTH_COMPONENT;
-    [InternalFormat.DEPTH_COMPONENT32F]: Format.DEPTH_COMPONENT;
-    [InternalFormat.DEPTH24_STENCIL8]: Format.DEPTH_STENCIL;
-    [InternalFormat.DEPTH32F_STENCIL8]: Format.DEPTH_STENCIL;
-    [p: number]: TextureFormat;
+export declare const enum TextureColorStorageFormat {
+    R8 = 33321,
+    R8_SNORM = 36756,
+    R8UI = 33330,
+    R8I = 33329,
+    R16UI = 33332,
+    R16I = 33331,
+    R32UI = 33334,
+    R32I = 33333,
+    R16F = 33325,
+    R32F = 33326,
+    RG8 = 33323,
+    RG8_SNORM = 36757,
+    RG8UI = 33336,
+    RG8I = 33335,
+    RG16UI = 33338,
+    RG16I = 33337,
+    RG32UI = 33340,
+    RG32I = 33339,
+    RG16F = 33327,
+    RG32F = 33328,
+    RGB8 = 32849,
+    RGB8_SNORM = 36758,
+    RGB8UI = 36221,
+    RGB8I = 36239,
+    RGB16UI = 36215,
+    RGB16I = 36233,
+    RGB32UI = 36209,
+    RGB32I = 36227,
+    RGB16F = 34843,
+    RGB32F = 34837,
+    RGBA8 = 32856,
+    RGBA8_SNORM = 36759,
+    RGBA8UI = 36220,
+    RGBA8I = 36238,
+    RGBA16UI = 36214,
+    RGBA16I = 36232,
+    RGBA32UI = 36208,
+    RGBA32I = 36226,
+    RGBA16F = 34842,
+    RGBA32F = 34836
 }
-export interface InternalFormatToDataType {
-    [InternalFormat.R8]: DataType.UNSIGNED_BYTE;
-    [InternalFormat.R8_SNORM]: DataType.BYTE;
-    [InternalFormat.R8UI]: DataType.UNSIGNED_BYTE;
-    [InternalFormat.R8I]: DataType.BYTE;
-    [InternalFormat.R16UI]: DataType.UNSIGNED_SHORT;
-    [InternalFormat.R16I]: DataType.SHORT;
-    [InternalFormat.R32UI]: DataType.UNSIGNED_INT;
-    [InternalFormat.R32I]: DataType.INT;
-    [InternalFormat.R16F]: DataType.HALF_FLOAT | DataType.FLOAT;
-    [InternalFormat.R32F]: DataType.FLOAT;
-    [InternalFormat.RG8]: DataType.UNSIGNED_BYTE;
-    [InternalFormat.RG8_SNORM]: DataType.BYTE;
-    [InternalFormat.RG8UI]: DataType.UNSIGNED_BYTE;
-    [InternalFormat.RG8I]: DataType.BYTE;
-    [InternalFormat.RG16UI]: DataType.UNSIGNED_SHORT;
-    [InternalFormat.RG16I]: DataType.SHORT;
-    [InternalFormat.RG32UI]: DataType.UNSIGNED_INT;
-    [InternalFormat.RG32I]: DataType.INT;
-    [InternalFormat.RG16F]: DataType.HALF_FLOAT | DataType.FLOAT;
-    [InternalFormat.RG32F]: DataType.FLOAT;
-    [InternalFormat.RGB8]: DataType.UNSIGNED_BYTE;
-    [InternalFormat.RGB8_SNORM]: DataType.BYTE;
-    [InternalFormat.RGB8UI]: DataType.UNSIGNED_BYTE;
-    [InternalFormat.RGB8I]: DataType.BYTE;
-    [InternalFormat.RGB16UI]: DataType.UNSIGNED_SHORT;
-    [InternalFormat.RGB16I]: DataType.SHORT;
-    [InternalFormat.RGB32UI]: DataType.UNSIGNED_INT;
-    [InternalFormat.RGB32I]: DataType.INT;
-    [InternalFormat.RGB16F]: DataType.HALF_FLOAT | DataType.FLOAT;
-    [InternalFormat.RGB32F]: DataType.FLOAT;
-    [InternalFormat.RGBA8]: DataType.UNSIGNED_BYTE;
-    [InternalFormat.RGBA8_SNORM]: DataType.BYTE;
-    [InternalFormat.RGBA8UI]: DataType.UNSIGNED_BYTE;
-    [InternalFormat.RGBA8I]: DataType.BYTE;
-    [InternalFormat.RGBA16UI]: DataType.UNSIGNED_SHORT;
-    [InternalFormat.RGBA16I]: DataType.SHORT;
-    [InternalFormat.RGBA32UI]: DataType.UNSIGNED_INT;
-    [InternalFormat.RGBA32I]: DataType.INT;
-    [InternalFormat.RGBA16F]: DataType.HALF_FLOAT | DataType.FLOAT;
-    [InternalFormat.RGBA32F]: DataType.FLOAT;
-    [InternalFormat.DEPTH_COMPONENT16]: DataType.UNSIGNED_SHORT | DataType.UNSIGNED_INT;
-    [InternalFormat.DEPTH_COMPONENT24]: DataType.UNSIGNED_INT;
-    [InternalFormat.DEPTH_COMPONENT32F]: DataType.FLOAT;
-    [InternalFormat.DEPTH24_STENCIL8]: DataType.UNSIGNED_INT_24_8;
-    [InternalFormat.DEPTH32F_STENCIL8]: DataType.FLOAT_32_UNSIGNED_INT_24_8_REV;
-    [p: number]: TextureDataType;
+export declare const enum TextureDepthStorageFormat {
+    DEPTH_COMPONENT16 = 33189,
+    DEPTH_COMPONENT24 = 33190,
+    DEPTH_COMPONENT32F = 36012
 }
-export interface InternalFormatToTypedArray {
-    [InternalFormat.R8]: Uint8Array | Uint8ClampedArray;
-    [InternalFormat.R8_SNORM]: Int8Array;
-    [InternalFormat.R8UI]: Uint8Array | Uint8ClampedArray;
-    [InternalFormat.R8I]: Int8Array;
-    [InternalFormat.R16UI]: Uint16Array;
-    [InternalFormat.R16I]: Int16Array;
-    [InternalFormat.R32UI]: Uint32Array;
-    [InternalFormat.R32I]: Int32Array;
-    [InternalFormat.R16F]: Float32Array;
-    [InternalFormat.R32F]: Float32Array;
-    [InternalFormat.RG8]: Uint8Array | Uint8ClampedArray;
-    [InternalFormat.RG8_SNORM]: Int8Array;
-    [InternalFormat.RG8UI]: Uint8Array | Uint8ClampedArray;
-    [InternalFormat.RG8I]: Int8Array;
-    [InternalFormat.RG16UI]: Uint16Array;
-    [InternalFormat.RG16I]: Int16Array;
-    [InternalFormat.RG32UI]: Uint32Array;
-    [InternalFormat.RG32I]: Int32Array;
-    [InternalFormat.RG16F]: Float32Array;
-    [InternalFormat.RG32F]: Float32Array;
-    [InternalFormat.RGB8]: Uint8Array | Uint8ClampedArray;
-    [InternalFormat.RGB8_SNORM]: Int8Array;
-    [InternalFormat.RGB8UI]: Uint8Array | Uint8ClampedArray;
-    [InternalFormat.RGB8I]: Int8Array;
-    [InternalFormat.RGB16UI]: Uint16Array;
-    [InternalFormat.RGB16I]: Int16Array;
-    [InternalFormat.RGB32UI]: Uint32Array;
-    [InternalFormat.RGB32I]: Int32Array;
-    [InternalFormat.RGB16F]: Float32Array;
-    [InternalFormat.RGB32F]: Float32Array;
-    [InternalFormat.RGBA8]: Uint8Array | Uint8ClampedArray;
-    [InternalFormat.RGBA8_SNORM]: Int8Array;
-    [InternalFormat.RGBA8UI]: Uint8Array | Uint8ClampedArray;
-    [InternalFormat.RGBA8I]: Int8Array;
-    [InternalFormat.RGBA16UI]: Uint16Array;
-    [InternalFormat.RGBA16I]: Int16Array;
-    [InternalFormat.RGBA32UI]: Uint32Array;
-    [InternalFormat.RGBA32I]: Int32Array;
-    [InternalFormat.RGBA16F]: Float32Array;
-    [InternalFormat.RGBA32F]: Float32Array;
-    [InternalFormat.DEPTH_COMPONENT16]: Uint16Array | Uint32Array;
-    [InternalFormat.DEPTH_COMPONENT24]: Uint32Array;
-    [InternalFormat.DEPTH_COMPONENT32F]: Float32Array;
-    [InternalFormat.DEPTH24_STENCIL8]: Uint32Array;
-    [InternalFormat.DEPTH32F_STENCIL8]: never;
-    [p: number]: ArrayBufferView;
+export declare const enum TextureDepthStencilStorageFormat {
+    DEPTH24_STENCIL8 = 35056,
+    DEPTH32F_STENCIL8 = 36013
+}
+export declare type TextureStorageFormat = TextureColorStorageFormat | TextureDepthStorageFormat | TextureDepthStencilStorageFormat;
+export declare const enum TextureFormat {
+    RED = 6403,
+    RG = 33319,
+    RGB = 6407,
+    RGBA = 6408,
+    RED_INTEGER = 36244,
+    RG_INTEGER = 33320,
+    RGB_INTEGER = 36248,
+    RGBA_INTEGER = 36249,
+    DEPTH_COMPONENT = 6402,
+    DEPTH_STENCIL = 34041
+}
+export declare const enum TextureDataType {
+    BYTE = 5120,
+    UNSIGNED_BYTE = 5121,
+    SHORT = 5122,
+    UNSIGNED_SHORT = 5123,
+    INT = 5124,
+    UNSIGNED_INT = 5125,
+    FLOAT = 5126,
+    HALF_FLOAT = 5131,
+    UNSIGNED_INT_24_8 = 34042,
+    FLOAT_32_UNSIGNED_INT_24_8_REV = 36269
+}
+export declare const enum TextureWrap {
+    CLAMP_TO_EDGE = 33071,
+    REPEAT = 10497,
+    MIRRORED_REPEAT = 33648
+}
+export declare const enum TextureMinFilter {
+    NEAREST = 9728,
+    LINEAR = 9729,
+    NEAREST_MIPMAP_NEAREST = 9984,
+    LINEAR_MIPMAP_NEAREST = 9985,
+    NEAREST_MIPMAP_LINEAR = 9986,
+    LINEAR_MIPMAP_LINEAR = 9987
+}
+export declare const enum TextureMagFilter {
+    NEAREST = 9728,
+    LINEAR = 9729
+}
+export interface StorageFormatToFormat {
+    [TextureColorStorageFormat.R8]: TextureFormat.RED;
+    [TextureColorStorageFormat.R8_SNORM]: TextureFormat.RED;
+    [TextureColorStorageFormat.R8UI]: TextureFormat.RED_INTEGER;
+    [TextureColorStorageFormat.R8I]: TextureFormat.RED_INTEGER;
+    [TextureColorStorageFormat.R16UI]: TextureFormat.RED_INTEGER;
+    [TextureColorStorageFormat.R16I]: TextureFormat.RED_INTEGER;
+    [TextureColorStorageFormat.R32UI]: TextureFormat.RED_INTEGER;
+    [TextureColorStorageFormat.R32I]: TextureFormat.RED_INTEGER;
+    [TextureColorStorageFormat.R16F]: TextureFormat.RED;
+    [TextureColorStorageFormat.R32F]: TextureFormat.RED;
+    [TextureColorStorageFormat.RG8]: TextureFormat.RG;
+    [TextureColorStorageFormat.RG8_SNORM]: TextureFormat.RG;
+    [TextureColorStorageFormat.RG8UI]: TextureFormat.RG_INTEGER;
+    [TextureColorStorageFormat.RG8I]: TextureFormat.RG_INTEGER;
+    [TextureColorStorageFormat.RG16UI]: TextureFormat.RG_INTEGER;
+    [TextureColorStorageFormat.RG16I]: TextureFormat.RG_INTEGER;
+    [TextureColorStorageFormat.RG32UI]: TextureFormat.RG_INTEGER;
+    [TextureColorStorageFormat.RG32I]: TextureFormat.RG_INTEGER;
+    [TextureColorStorageFormat.RG16F]: TextureFormat.RG;
+    [TextureColorStorageFormat.RG32F]: TextureFormat.RG;
+    [TextureColorStorageFormat.RGB8]: TextureFormat.RGB;
+    [TextureColorStorageFormat.RGB8_SNORM]: TextureFormat.RGB;
+    [TextureColorStorageFormat.RGB8UI]: TextureFormat.RGB_INTEGER;
+    [TextureColorStorageFormat.RGB8I]: TextureFormat.RGB_INTEGER;
+    [TextureColorStorageFormat.RGB16UI]: TextureFormat.RGB_INTEGER;
+    [TextureColorStorageFormat.RGB16I]: TextureFormat.RGB_INTEGER;
+    [TextureColorStorageFormat.RGB32UI]: TextureFormat.RGB_INTEGER;
+    [TextureColorStorageFormat.RGB32I]: TextureFormat.RGB_INTEGER;
+    [TextureColorStorageFormat.RGB16F]: TextureFormat.RGB;
+    [TextureColorStorageFormat.RGB32F]: TextureFormat.RGB;
+    [TextureColorStorageFormat.RGBA8]: TextureFormat.RGBA;
+    [TextureColorStorageFormat.RGBA8_SNORM]: TextureFormat.RGBA;
+    [TextureColorStorageFormat.RGBA8UI]: TextureFormat.RGBA_INTEGER;
+    [TextureColorStorageFormat.RGBA8I]: TextureFormat.RGBA_INTEGER;
+    [TextureColorStorageFormat.RGBA16UI]: TextureFormat.RGBA_INTEGER;
+    [TextureColorStorageFormat.RGBA16I]: TextureFormat.RGBA_INTEGER;
+    [TextureColorStorageFormat.RGBA32UI]: TextureFormat.RGBA_INTEGER;
+    [TextureColorStorageFormat.RGBA32I]: TextureFormat.RGBA_INTEGER;
+    [TextureColorStorageFormat.RGBA16F]: TextureFormat.RGBA;
+    [TextureColorStorageFormat.RGBA32F]: TextureFormat.RGBA;
+    [TextureDepthStorageFormat.DEPTH_COMPONENT16]: TextureFormat.DEPTH_COMPONENT;
+    [TextureDepthStorageFormat.DEPTH_COMPONENT24]: TextureFormat.DEPTH_COMPONENT;
+    [TextureDepthStorageFormat.DEPTH_COMPONENT32F]: TextureFormat.DEPTH_COMPONENT;
+    [TextureDepthStencilStorageFormat.DEPTH24_STENCIL8]: TextureFormat.DEPTH_STENCIL;
+    [TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8]: TextureFormat.DEPTH_STENCIL;
+}
+export interface StorageFormatToDataType {
+    [TextureColorStorageFormat.R8]: TextureDataType.UNSIGNED_BYTE;
+    [TextureColorStorageFormat.R8_SNORM]: TextureDataType.BYTE;
+    [TextureColorStorageFormat.R8UI]: TextureDataType.UNSIGNED_BYTE;
+    [TextureColorStorageFormat.R8I]: TextureDataType.BYTE;
+    [TextureColorStorageFormat.R16UI]: TextureDataType.UNSIGNED_SHORT;
+    [TextureColorStorageFormat.R16I]: TextureDataType.SHORT;
+    [TextureColorStorageFormat.R32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureColorStorageFormat.R32I]: TextureDataType.INT;
+    [TextureColorStorageFormat.R16F]: TextureDataType.HALF_FLOAT | TextureDataType.FLOAT;
+    [TextureColorStorageFormat.R32F]: TextureDataType.FLOAT;
+    [TextureColorStorageFormat.RG8]: TextureDataType.UNSIGNED_BYTE;
+    [TextureColorStorageFormat.RG8_SNORM]: TextureDataType.BYTE;
+    [TextureColorStorageFormat.RG8UI]: TextureDataType.UNSIGNED_BYTE;
+    [TextureColorStorageFormat.RG8I]: TextureDataType.BYTE;
+    [TextureColorStorageFormat.RG16UI]: TextureDataType.UNSIGNED_SHORT;
+    [TextureColorStorageFormat.RG16I]: TextureDataType.SHORT;
+    [TextureColorStorageFormat.RG32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureColorStorageFormat.RG32I]: TextureDataType.INT;
+    [TextureColorStorageFormat.RG16F]: TextureDataType.HALF_FLOAT | TextureDataType.FLOAT;
+    [TextureColorStorageFormat.RG32F]: TextureDataType.FLOAT;
+    [TextureColorStorageFormat.RGB8]: TextureDataType.UNSIGNED_BYTE;
+    [TextureColorStorageFormat.RGB8_SNORM]: TextureDataType.BYTE;
+    [TextureColorStorageFormat.RGB8UI]: TextureDataType.UNSIGNED_BYTE;
+    [TextureColorStorageFormat.RGB8I]: TextureDataType.BYTE;
+    [TextureColorStorageFormat.RGB16UI]: TextureDataType.UNSIGNED_SHORT;
+    [TextureColorStorageFormat.RGB16I]: TextureDataType.SHORT;
+    [TextureColorStorageFormat.RGB32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureColorStorageFormat.RGB32I]: TextureDataType.INT;
+    [TextureColorStorageFormat.RGB16F]: TextureDataType.HALF_FLOAT | TextureDataType.FLOAT;
+    [TextureColorStorageFormat.RGB32F]: TextureDataType.FLOAT;
+    [TextureColorStorageFormat.RGBA8]: TextureDataType.UNSIGNED_BYTE;
+    [TextureColorStorageFormat.RGBA8_SNORM]: TextureDataType.BYTE;
+    [TextureColorStorageFormat.RGBA8UI]: TextureDataType.UNSIGNED_BYTE;
+    [TextureColorStorageFormat.RGBA8I]: TextureDataType.BYTE;
+    [TextureColorStorageFormat.RGBA16UI]: TextureDataType.UNSIGNED_SHORT;
+    [TextureColorStorageFormat.RGBA16I]: TextureDataType.SHORT;
+    [TextureColorStorageFormat.RGBA32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureColorStorageFormat.RGBA32I]: TextureDataType.INT;
+    [TextureColorStorageFormat.RGBA16F]: TextureDataType.HALF_FLOAT | TextureDataType.FLOAT;
+    [TextureColorStorageFormat.RGBA32F]: TextureDataType.FLOAT;
+    [TextureDepthStorageFormat.DEPTH_COMPONENT16]: TextureDataType.UNSIGNED_SHORT | TextureDataType.UNSIGNED_INT;
+    [TextureDepthStorageFormat.DEPTH_COMPONENT24]: TextureDataType.UNSIGNED_INT;
+    [TextureDepthStorageFormat.DEPTH_COMPONENT32F]: TextureDataType.FLOAT;
+    [TextureDepthStencilStorageFormat.DEPTH24_STENCIL8]: TextureDataType.UNSIGNED_INT_24_8;
+    [TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8]: TextureDataType.FLOAT_32_UNSIGNED_INT_24_8_REV;
+}
+export interface StorageFormatToTypedArray {
+    [TextureColorStorageFormat.R8]: Uint8Array | Uint8ClampedArray;
+    [TextureColorStorageFormat.R8_SNORM]: Int8Array;
+    [TextureColorStorageFormat.R8UI]: Uint8Array | Uint8ClampedArray;
+    [TextureColorStorageFormat.R8I]: Int8Array;
+    [TextureColorStorageFormat.R16UI]: Uint16Array;
+    [TextureColorStorageFormat.R16I]: Int16Array;
+    [TextureColorStorageFormat.R32UI]: Uint32Array;
+    [TextureColorStorageFormat.R32I]: Int32Array;
+    [TextureColorStorageFormat.R16F]: Float32Array;
+    [TextureColorStorageFormat.R32F]: Float32Array;
+    [TextureColorStorageFormat.RG8]: Uint8Array | Uint8ClampedArray;
+    [TextureColorStorageFormat.RG8_SNORM]: Int8Array;
+    [TextureColorStorageFormat.RG8UI]: Uint8Array | Uint8ClampedArray;
+    [TextureColorStorageFormat.RG8I]: Int8Array;
+    [TextureColorStorageFormat.RG16UI]: Uint16Array;
+    [TextureColorStorageFormat.RG16I]: Int16Array;
+    [TextureColorStorageFormat.RG32UI]: Uint32Array;
+    [TextureColorStorageFormat.RG32I]: Int32Array;
+    [TextureColorStorageFormat.RG16F]: Float32Array;
+    [TextureColorStorageFormat.RG32F]: Float32Array;
+    [TextureColorStorageFormat.RGB8]: Uint8Array | Uint8ClampedArray;
+    [TextureColorStorageFormat.RGB8_SNORM]: Int8Array;
+    [TextureColorStorageFormat.RGB8UI]: Uint8Array | Uint8ClampedArray;
+    [TextureColorStorageFormat.RGB8I]: Int8Array;
+    [TextureColorStorageFormat.RGB16UI]: Uint16Array;
+    [TextureColorStorageFormat.RGB16I]: Int16Array;
+    [TextureColorStorageFormat.RGB32UI]: Uint32Array;
+    [TextureColorStorageFormat.RGB32I]: Int32Array;
+    [TextureColorStorageFormat.RGB16F]: Float32Array;
+    [TextureColorStorageFormat.RGB32F]: Float32Array;
+    [TextureColorStorageFormat.RGBA8]: Uint8Array | Uint8ClampedArray;
+    [TextureColorStorageFormat.RGBA8_SNORM]: Int8Array;
+    [TextureColorStorageFormat.RGBA8UI]: Uint8Array | Uint8ClampedArray;
+    [TextureColorStorageFormat.RGBA8I]: Int8Array;
+    [TextureColorStorageFormat.RGBA16UI]: Uint16Array;
+    [TextureColorStorageFormat.RGBA16I]: Int16Array;
+    [TextureColorStorageFormat.RGBA32UI]: Uint32Array;
+    [TextureColorStorageFormat.RGBA32I]: Int32Array;
+    [TextureColorStorageFormat.RGBA16F]: Float32Array;
+    [TextureColorStorageFormat.RGBA32F]: Float32Array;
+    [TextureDepthStorageFormat.DEPTH_COMPONENT16]: Uint16Array | Uint32Array;
+    [TextureDepthStorageFormat.DEPTH_COMPONENT24]: Uint32Array;
+    [TextureDepthStorageFormat.DEPTH_COMPONENT32F]: Float32Array;
+    [TextureDepthStencilStorageFormat.DEPTH24_STENCIL8]: Uint32Array;
+    [TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8]: never;
 }
 export interface TextureCreateOptions {
     min?: TextureMinFilter;
@@ -163,23 +246,23 @@ export interface TextureStoreOptions {
     width?: number;
     height?: number;
 }
-export declare function _createTexture<F extends TextureInternalFormat>(gl: WebGL2RenderingContext, width: number, height: number, internalFormat: F, { min, mag, wrapS, wrapT, }?: TextureCreateOptions): Texture<F>;
-export declare function _createTextureWithTypedArray<F extends TextureInternalFormat>(gl: WebGL2RenderingContext, width: number, height: number, internalFormat: F, data: InternalFormatToTypedArray[F], dataFormat: InternalFormatToDataFormat[F], dataType: InternalFormatToDataType[F], options?: TextureCreateOptions & TextureStoreOptions): Texture<F>;
+export declare function _createTexture<S extends TextureStorageFormat>(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, { min, mag, wrapS, wrapT, }?: TextureCreateOptions): Texture<S>;
+export declare function _createTextureWithTypedArray<S extends TextureStorageFormat>(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, data: StorageFormatToTypedArray[S], dataFormat: StorageFormatToFormat[S], dataType: StorageFormatToDataType[S], options?: TextureCreateOptions & TextureStoreOptions): Texture<S>;
 /**
  * Textures are images of 2D data, where each texel can contain multiple
  * information channels of a certain type.
  */
-export declare class Texture<F extends TextureInternalFormat> {
+export declare class Texture<S extends TextureStorageFormat> {
     readonly width: number;
     readonly height: number;
-    readonly format: F;
+    readonly storageFormat: S;
     readonly wrapS: TextureWrap;
     readonly wrapT: TextureWrap;
     readonly minFilter: TextureMinFilter;
     readonly magFilter: TextureMagFilter;
     readonly glTexture: WebGLTexture | null;
     private gl;
-    constructor(gl: WebGL2RenderingContext, width: number, height: number, format: F, wrapS: TextureWrap, wrapT: TextureWrap, minFilter: TextureMinFilter, magFilter: TextureMagFilter);
+    constructor(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, wrapS: TextureWrap, wrapT: TextureWrap, minFilter: TextureMinFilter, magFilter: TextureMagFilter);
     /**
      * Reinitialize invalid texture, eg. after context is lost.
      */
@@ -187,7 +270,7 @@ export declare class Texture<F extends TextureInternalFormat> {
     /**
      * Upload new data to texture. Does not take ownership of data.
      */
-    store(data: InternalFormatToTypedArray[F], format: InternalFormatToDataFormat[F], type: InternalFormatToDataType[F], { xOffset, yOffset, width, height, mipmap, }?: TextureStoreOptions): this;
+    store(data: StorageFormatToTypedArray[S], format: StorageFormatToFormat[S], type: StorageFormatToDataType[S], { xOffset, yOffset, width, height, mipmap, }?: TextureStoreOptions): this;
     /**
      * Generate mipmap levels for the current data.
      */

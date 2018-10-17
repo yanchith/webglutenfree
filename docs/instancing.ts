@@ -14,8 +14,9 @@ import {
     Device,
     AttributeType,
     VertexBuffer,
-    BufferBits,
-    DataType,
+    TargetBufferBitmask,
+    VertexBufferIntegerDataType,
+    VertexBufferFloatDataType,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 
@@ -106,15 +107,18 @@ const attrs = dev.createAttributes(
         // Position offset attributes
         1: {
             type: AttributeType.POINTER,
-            buffer: dev.createVertexBufferWithTypedArray(DataType.FLOAT, [
-                3, 3,
-                0, 3,
-                3, 0,
-                -3, -3,
-                0, -3,
-                -3, 0,
-                0, 0,
-            ]),
+            buffer: dev.createVertexBufferWithTypedArray(
+                VertexBufferFloatDataType.FLOAT,
+                new Float32Array([
+                    3, 3,
+                    0, 3,
+                    3, 0,
+                    -3, -3,
+                    0, -3,
+                    -3, 0,
+                    0, 0,
+                ]),
+            ),
             count: 7,
             size: 2,
             // Setting the divisor to 1 makes this an instanced attribute
@@ -123,15 +127,18 @@ const attrs = dev.createAttributes(
         // Color attributes
         2: {
             type: AttributeType.POINTER,
-            buffer: dev.createVertexBufferWithTypedArray(DataType.UNSIGNED_BYTE, [
-                255, 0, 0, 255,
-                0, 255, 0, 255,
-                0, 0, 255, 255,
-                0, 255, 255, 255,
-                255, 0, 255, 255,
-                255, 255, 0, 255,
-                255, 255, 255, 255,
-            ]),
+            buffer: dev.createVertexBufferWithTypedArray(
+                VertexBufferIntegerDataType.UNSIGNED_BYTE,
+                new Uint8Array([
+                    255, 0, 0, 255,
+                    0, 255, 0, 255,
+                    0, 0, 255, 255,
+                    0, 255, 255, 255,
+                    255, 0, 255, 255,
+                    255, 255, 0, 255,
+                    255, 255, 255, 255,
+                ]),
+            ),
             count: 7,
             size: 4,
             normalized: true,
@@ -143,7 +150,7 @@ const attrs = dev.createAttributes(
 
 const loop = (): void => {
     dev.target((rt) => {
-        rt.clear(BufferBits.COLOR);
+        rt.clear(TargetBufferBitmask.COLOR);
         rt.draw(cmd, attrs);
     });
     window.requestAnimationFrame(loop);

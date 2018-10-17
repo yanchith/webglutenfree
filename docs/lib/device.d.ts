@@ -1,12 +1,11 @@
 /// <reference types="webgl2" />
-import { Primitive, DataType, InternalFormat } from "./types";
 import { Target } from "./target";
 import { Command, CommandCreateOptions } from "./command";
-import { VertexBuffer, VertexBufferCreateOptions, VertexBufferType, VertexBufferTypeToTypedArray } from "./vertex-buffer";
-import { ElementBuffer, ElementBufferCreateOptions, ElementArray, ElementBufferType, ElementBufferTypeToTypedArray } from "./element-buffer";
+import { VertexBuffer, VertexBufferCreateOptions, VertexBufferDataType, VertexBufferDataTypeToTypedArray } from "./vertex-buffer";
+import { ElementBuffer, ElementBufferCreateOptions, ElementArray, ElementBufferDataType, ElementBufferDataTypeToTypedArray, ElementPrimitive } from "./element-buffer";
 import { Attributes, AttributesConfig, AttributesCreateOptions } from "./attributes";
-import { Texture, TextureCreateOptions, TextureStoreOptions, TextureInternalFormat, InternalFormatToTypedArray, InternalFormatToDataFormat, InternalFormatToDataType } from "./texture";
-import { Framebuffer, TextureColorInternalFormat, TextureDepthInternalFormat, TextureDepthStencilInternalFormat } from "./framebuffer";
+import { Texture, TextureCreateOptions, TextureStoreOptions, TextureStorageFormat, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, StorageFormatToTypedArray, StorageFormatToFormat, StorageFormatToDataType } from "./texture";
+import { Framebuffer } from "./framebuffer";
 /**
  * Available extensions.
  */
@@ -130,16 +129,16 @@ export declare class Device {
     /**
      * Create a new vertex buffer with given type and of given size.
      */
-    createVertexBuffer<T extends VertexBufferType>(type: T, size: number, options?: VertexBufferCreateOptions): VertexBuffer<T>;
+    createVertexBuffer<T extends VertexBufferDataType>(type: T, size: number, options?: VertexBufferCreateOptions): VertexBuffer<T>;
     /**
      * Create a new vertex buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    createVertexBufferWithTypedArray<T extends VertexBufferType>(type: T, data: VertexBufferTypeToTypedArray[T] | number[], options?: VertexBufferCreateOptions): VertexBuffer<T>;
+    createVertexBufferWithTypedArray<T extends VertexBufferDataType>(type: T, data: VertexBufferDataTypeToTypedArray[T], options?: VertexBufferCreateOptions): VertexBuffer<T>;
     /**
      * Create a new element buffer with given type, primitive, and size.
      */
-    createElementBuffer<T extends ElementBufferType>(type: T, primitive: Primitive, size: number, options?: ElementBufferCreateOptions): ElementBuffer<T>;
+    createElementBuffer<T extends ElementBufferDataType>(type: T, primitive: ElementPrimitive, size: number, options?: ElementBufferCreateOptions): ElementBuffer<T>;
     /**
      * Create a new element buffer from potentially nested array. Infers
      * Primitive from the array's shape:
@@ -148,12 +147,12 @@ export declare class Device {
      *   [number, number, number][] -> TRIANGLES
      * Does not take ownership of data.
      */
-    createElementBufferWithArray(data: ElementArray, options?: ElementBufferCreateOptions): ElementBuffer<DataType.UNSIGNED_INT>;
+    createElementBufferWithArray(data: ElementArray, options?: ElementBufferCreateOptions): ElementBuffer<ElementBufferDataType.UNSIGNED_INT>;
     /**
      * Create a new element buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    createElementBufferWithTypedArray<T extends ElementBufferType>(type: T, primitive: Primitive, data: ElementBufferTypeToTypedArray[T] | number[], options?: ElementBufferCreateOptions): ElementBuffer<T>;
+    createElementBufferWithTypedArray<T extends ElementBufferDataType>(type: T, primitive: ElementPrimitive, data: ElementBufferDataTypeToTypedArray[T], options?: ElementBufferCreateOptions): ElementBuffer<T>;
     /**
      * Create new attributes with element and attribute definitions, and an
      * optional count limit.
@@ -169,29 +168,29 @@ export declare class Device {
      * given, there will be no underlying vertex array object created, only the
      * count will be given to gl.drawArrays()
      */
-    createAttributes(elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>, attributes: AttributesConfig, options?: AttributesCreateOptions): Attributes;
+    createAttributes(elements: ElementPrimitive | ElementArray | ElementBuffer<ElementBufferDataType>, attributes: AttributesConfig, options?: AttributesCreateOptions): Attributes;
     /**
      * Create empty attributes of a given primitive. This actually performs no
      * gl calls, only remembers the count for `gl.drawArrays()`
      */
-    createEmptyAttributes(primitive: Primitive, count: number): Attributes;
+    createEmptyAttributes(primitive: ElementPrimitive, count: number): Attributes;
     /**
      * Create a new texture with given width, height, and internal format.
      * The internal format determines, what kind of data is possible to store.
      */
-    createTexture<F extends TextureInternalFormat>(width: number, height: number, internalFormat: F, options?: TextureCreateOptions): Texture<F>;
+    createTexture<S extends TextureStorageFormat>(width: number, height: number, storageFormat: S, options?: TextureCreateOptions): Texture<S>;
     /**
      * Create a new texture with width and height equal to the given image, and
      * store the image in the texture.
      */
-    createTextureWithImage(image: ImageData, options?: TextureCreateOptions & TextureStoreOptions): Texture<InternalFormat.RGBA8>;
+    createTextureWithImage(image: ImageData, options?: TextureCreateOptions & TextureStoreOptions): Texture<TextureColorStorageFormat.RGBA8>;
     /**
      * Create a new texture with given width, height, and internal format.
      * The internal format determines, what kind of data is possible to store.
      * Store data of given format and type contained in a typed array to the
      * texture.
      */
-    createTextureWithTypedArray<F extends TextureInternalFormat>(width: number, height: number, internalFormat: F, data: InternalFormatToTypedArray[F], dataFormat: InternalFormatToDataFormat[F], dataType: InternalFormatToDataType[F], options?: TextureCreateOptions & TextureStoreOptions): Texture<F>;
+    createTextureWithTypedArray<S extends TextureStorageFormat>(width: number, height: number, internalFormat: S, data: StorageFormatToTypedArray[S], dataFormat: StorageFormatToFormat[S], dataType: StorageFormatToDataType[S], options?: TextureCreateOptions & TextureStoreOptions): Texture<S>;
     /**
      * Create a framebuffer containg one or more color buffers and a
      * depth or depth-stencil buffer with given width and height.
@@ -200,6 +199,6 @@ export declare class Device {
      * WebGL will synchronize their usage so they can either be written to via
      * the framebuffer, or written to or read via their own methods.
      */
-    createFramebuffer(width: number, height: number, color: Texture<TextureColorInternalFormat> | Texture<TextureColorInternalFormat>[], depthStencil?: Texture<TextureDepthInternalFormat> | Texture<TextureDepthStencilInternalFormat>): Framebuffer;
+    createFramebuffer(width: number, height: number, color: Texture<TextureColorStorageFormat> | Texture<TextureColorStorageFormat>[], depthStencil?: Texture<TextureDepthStorageFormat> | Texture<TextureDepthStencilStorageFormat>): Framebuffer;
 }
 //# sourceMappingURL=device.d.ts.map

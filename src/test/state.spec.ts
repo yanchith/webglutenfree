@@ -3,13 +3,13 @@ import test from "ava";
 import {
     Device,
     Target,
+    TargetBufferBitmask,
     Command,
     Attributes,
     Texture,
+    TextureColorStorageFormat,
     Framebuffer,
-    Primitive,
-    BufferBits,
-    InternalFormat,
+    ElementPrimitive,
 } from "../index";
 import { WebGL2RenderingContextMock } from "./webgl-mock";
 
@@ -36,11 +36,11 @@ test("Normal fbo usage does not error", (t) => {
         const tex = createTexture(dev);
         const fbo = createFramebuffer(dev, tex);
         fbo.target((rt) => {
-            rt.clear(BufferBits.COLOR);
+            rt.clear(TargetBufferBitmask.COLOR);
             rt.draw(cmd, attrs);
         });
         dev.target((rt) => {
-            rt.blit(fbo, BufferBits.COLOR);
+            rt.blit(fbo, TargetBufferBitmask.COLOR);
         });
     });
 });
@@ -81,7 +81,7 @@ test("Multiple devices can bind Commands (even nested)", (t) => {
                         draw1(attrs1, void 0);
                     });
                     draw1(attrs1, void 0);
-                })
+                });
             });
         });
     });
@@ -103,7 +103,7 @@ test("Nested bound Command with Target#batch should error", (t) => {
     const cmd = createCommand(dev);
     dev.target((rt) => {
         rt.batch(cmd, () => {
-            t.throws(() => rt.batch(cmd, () => void 0))
+            t.throws(() => rt.batch(cmd, () => void 0));
         });
     });
 });
@@ -157,7 +157,7 @@ test("Unbound Target#clear should error", (t) => {
     });
 
     t.truthy(sneakyRt);
-    t.throws(() => sneakyRt!.clear(BufferBits.COLOR));
+    t.throws(() => sneakyRt!.clear(TargetBufferBitmask.COLOR));
 });
 
 test("Unbound Target#blit should error", (t) => {
@@ -170,7 +170,7 @@ test("Unbound Target#blit should error", (t) => {
     });
 
     t.truthy(sneakyRt);
-    t.throws(() => sneakyRt!.blit(fbo, BufferBits.COLOR));
+    t.throws(() => sneakyRt!.blit(fbo, TargetBufferBitmask.COLOR));
 });
 
 test("Unbound draw callback should error", (t) => {
@@ -289,7 +289,7 @@ function createCommand(dev: Device): Command<void> {
 }
 
 function createAttributes(dev: Device): Attributes {
-    return dev.createAttributes(Primitive.TRIANGLES, {
+    return dev.createAttributes(ElementPrimitive.TRIANGLE_LIST, {
         0: [
             [-0.3, -0.5],
             [0.3, -0.5],
@@ -303,13 +303,13 @@ function createAttributes(dev: Device): Attributes {
     });
 }
 
-function createTexture(dev: Device): Texture<InternalFormat.RGBA8> {
-    return dev.createTexture(WIDTH, HEIGHT, InternalFormat.RGBA8);
+function createTexture(dev: Device): Texture<TextureColorStorageFormat.RGBA8> {
+    return dev.createTexture(WIDTH, HEIGHT, TextureColorStorageFormat.RGBA8);
 }
 
 function createFramebuffer(
     dev: Device,
-    tex: Texture<InternalFormat.RGBA8>,
+    tex: Texture<TextureColorStorageFormat.RGBA8>,
 ): Framebuffer {
     return dev.createFramebuffer(WIDTH, HEIGHT, tex);
 }

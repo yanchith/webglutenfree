@@ -14,12 +14,12 @@
 import {
     Device,
     Texture,
-    BufferBits,
-    Primitive,
-    DataType,
-    InternalFormat,
-    Format,
-    Wrap,
+    TargetBufferBitmask,
+    ElementPrimitive,
+    TextureDataType,
+    TextureColorStorageFormat,
+    TextureFormat,
+    TextureWrap,
 } from "./lib/webglutenfree.js";
 
 const dev = Device.create({ antialias: false });
@@ -31,14 +31,18 @@ const [lifeWidth, lifeHeight] = [
 
 // Use textures with only one channel. By using REPEAT in both directions, we
 // create a cyclic universe
-const pingTex = dev.createTexture(lifeWidth, lifeHeight, InternalFormat.R8, {
-    wrapS: Wrap.REPEAT,
-    wrapT: Wrap.REPEAT,
-});
-const pongTex = dev.createTexture(lifeWidth, lifeHeight, InternalFormat.R8, {
-    wrapS: Wrap.REPEAT,
-    wrapT: Wrap.REPEAT,
-});
+const pingTex = dev.createTexture(
+    lifeWidth,
+    lifeHeight,
+    TextureColorStorageFormat.R8,
+    { wrapS: TextureWrap.REPEAT, wrapT: TextureWrap.REPEAT },
+);
+const pongTex = dev.createTexture(
+    lifeWidth,
+    lifeHeight,
+    TextureColorStorageFormat.R8,
+    { wrapS: TextureWrap.REPEAT, wrapT: TextureWrap.REPEAT},
+);
 
 const data = Array(lifeWidth * lifeHeight);
 for (let i = 0; i < lifeWidth * lifeHeight; ++i) {
@@ -46,8 +50,8 @@ for (let i = 0; i < lifeWidth * lifeHeight; ++i) {
 }
 pingTex.store(
     new Uint8Array(data),
-    Format.RED,
-    DataType.UNSIGNED_BYTE,
+    TextureFormat.RED,
+    TextureDataType.UNSIGNED_BYTE,
 );
 
 const pingFbo = dev.createFramebuffer(lifeWidth, lifeHeight, pingTex);
@@ -57,7 +61,7 @@ const pongFbo = dev.createFramebuffer(lifeWidth, lifeHeight, pongTex);
 // universe from one texture and writing the result to another.
 
 interface CmdProps {
-    tex: Texture<InternalFormat>;
+    tex: Texture<TextureColorStorageFormat>;
 }
 
 const cmd = dev.createCommand<CmdProps>(
@@ -123,7 +127,7 @@ const cmd = dev.createCommand<CmdProps>(
     { textures: { u_universe: ({ tex }) => tex } },
 );
 
-const attrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
+const attrs = dev.createEmptyAttributes(ElementPrimitive.TRIANGLE_LIST, 3);
 
 let ping = { tex: pingTex, fbo: pingFbo };
 let pong = { tex: pongTex, fbo: pongFbo };
@@ -136,7 +140,7 @@ const loop = (): void => {
 
     // Update canvas based on pong
     dev.target((rt) => {
-        rt.blit(pong.fbo, BufferBits.COLOR);
+        rt.blit(pong.fbo, TargetBufferBitmask.COLOR);
     });
 
     // ... and swap the pingpong

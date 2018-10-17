@@ -1,4 +1,3 @@
-import { Primitive } from "./types";
 import { State } from "./state";
 import { Target } from "./target";
 import {
@@ -20,6 +19,7 @@ import {
     ElementArray,
     ElementBufferDataType,
     ElementBufferDataTypeToTypedArray,
+    ElementPrimitive,
     _createElementBuffer,
     _createElementBufferWithArray,
     _createElementBufferWithTypedArray,
@@ -346,7 +346,7 @@ export class Device {
      */
     createElementBuffer<T extends ElementBufferDataType>(
         type: T,
-        primitive: Primitive,
+        primitive: ElementPrimitive,
         size: number,
         options?: ElementBufferCreateOptions,
     ): ElementBuffer<T> {
@@ -374,7 +374,7 @@ export class Device {
      */
     createElementBufferWithTypedArray<T extends ElementBufferDataType>(
         type: T,
-        primitive: Primitive,
+        primitive: ElementPrimitive,
         data: ElementBufferDataTypeToTypedArray[T],
         options?: ElementBufferCreateOptions,
     ): ElementBuffer<T> {
@@ -403,7 +403,10 @@ export class Device {
      * count will be given to gl.drawArrays()
      */
     createAttributes(
-        elements: Primitive | ElementArray | ElementBuffer<ElementBufferDataType>,
+        elements:
+            | ElementPrimitive
+            | ElementArray
+            | ElementBuffer<ElementBufferDataType>,
         attributes: AttributesConfig,
         options?: AttributesCreateOptions,
     ): Attributes {
@@ -415,7 +418,7 @@ export class Device {
      * gl calls, only remembers the count for `gl.drawArrays()`
      */
     createEmptyAttributes(
-        primitive: Primitive,
+        primitive: ElementPrimitive,
         count: number,
     ): Attributes {
         return new Attributes(this.state, primitive, [], count, 0);

@@ -9,11 +9,13 @@ import {
     Device,
     Extension,
     DepthFunc,
-    Primitive,
-    BufferBits,
+    ElementPrimitive,
+    TargetBufferBitmask,
     Texture,
-    InternalFormat,
-    Filter,
+    TextureColorStorageFormat,
+    TextureDepthStorageFormat,
+    TextureMinFilter,
+    TextureMagFilter,
 } from "./lib/webglutenfree.js";
 import { vec2, mat4 } from "./libx/gl-matrix.js";
 
@@ -45,22 +47,31 @@ const [blurWidth, blurHeight] = [
     height * BLUR_TEXTURE_SIZE_FACTOR,
 ];
 
-const colorTex = dev.createTexture(width, height, InternalFormat.RGBA32F, {
-    min: Filter.LINEAR,
-    mag: Filter.LINEAR,
-});
+const colorTex = dev.createTexture(
+    width,
+    height,
+    TextureColorStorageFormat.RGBA32F,
+    { min: TextureMinFilter.LINEAR, mag: TextureMagFilter.LINEAR },
+);
 
-const depthTex = dev.createTexture(width, height, InternalFormat.DEPTH_COMPONENT24);
+const depthTex = dev.createTexture(
+    width,
+    height,
+    TextureDepthStorageFormat.DEPTH_COMPONENT24);
 
-const pingTex = dev.createTexture(blurWidth, blurHeight, InternalFormat.RGBA32F, {
-    min: Filter.LINEAR,
-    mag: Filter.LINEAR,
-});
+const pingTex = dev.createTexture(
+    blurWidth,
+    blurHeight,
+    TextureColorStorageFormat.RGBA32F,
+    { min: TextureMinFilter.LINEAR, mag: TextureMagFilter.LINEAR },
+);
 
-const pongTex = dev.createTexture(blurWidth, blurHeight, InternalFormat.RGBA32F, {
-    min: Filter.LINEAR,
-    mag: Filter.LINEAR,
-});
+const pongTex = dev.createTexture(
+    blurWidth,
+    blurHeight,
+    TextureColorStorageFormat.RGBA32F,
+    { min: TextureMinFilter.LINEAR, mag: TextureMagFilter.LINEAR },
+);
 
 const sceneFbo = dev.createFramebuffer(width, height, colorTex, depthTex);
 const pingFbo = dev.createFramebuffer(blurWidth, blurHeight, pingTex);
@@ -210,7 +221,7 @@ const cmdSep = dev.createCommand(
 // allowing us to use fewer blur passes to the same effect.
 
 interface CmdBlurProps {
-    source: Texture<InternalFormat>;
+    source: Texture<TextureColorStorageFormat>;
     direction: vec2;
 }
 
@@ -299,7 +310,10 @@ const cmdMerge = dev.createCommand(
 );
 
 
-const screenspaceAttrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
+const screenspaceAttrs = dev.createEmptyAttributes(
+    ElementPrimitive.TRIANGLE_LIST,
+    3,
+);
 const modelAttrs = dev.createAttributes(uvCube.elements, {
     0: uvCube.positions,
     1: uvCube.uvs,
@@ -312,7 +326,7 @@ const VERTICAL = vec2.fromValues(0, 1);
 const loop = (time: number): void => {
     // Render geometry into texture
     sceneFbo.target((rt) => {
-        rt.clear(BufferBits.COLOR_DEPTH);
+        rt.clear(TargetBufferBitmask.COLOR_DEPTH);
         rt.draw(cmdDraw, modelAttrs, { time });
     });
 

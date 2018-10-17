@@ -1,8 +1,8 @@
 import { State, DepthTestDescriptor, StencilTestDescriptor, BlendDescriptor } from "./state";
 import { AttributesConfig } from "./attributes";
-import { Texture, TextureInternalFormat } from "./texture";
+import { Texture, TextureStorageFormat } from "./texture";
 export declare type Accessor<P, R> = R | ((props: P, index: number) => R);
-export declare type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
+export declare type TextureAccessor<P> = Accessor<P, Texture<TextureStorageFormat>>;
 export interface Textures<P> {
     [name: string]: TextureAccessor<P>;
 }

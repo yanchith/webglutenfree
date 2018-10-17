@@ -10,10 +10,10 @@
 
 import {
     Device,
-    BufferBits,
+    TargetBufferBitmask,
     Uniforms,
     DepthFunc,
-    Primitive,
+    ElementPrimitive,
 } from "./lib/webglutenfree.js";
 import { mat4, vec3 } from "./libx/gl-matrix.js";
 
@@ -371,7 +371,7 @@ const material: Material = {
 
 const objects = sponza.objects.map(({ positions, normals }) => ({
     material,
-    attrs: dev.createAttributes(Primitive.TRIANGLES, {
+    attrs: dev.createAttributes(ElementPrimitive.TRIANGLE_LIST, {
         0: positions,
         1: normals,
     }),
@@ -393,7 +393,7 @@ const loop = (time: number): void => {
     }
 
     dev.target((rt) => {
-        rt.clear(BufferBits.COLOR_DEPTH);
+        rt.clear(TargetBufferBitmask.COLOR_DEPTH);
 
         // Draw each object with the lighting program
         rt.batch(cmdDrawLighting, (draw) => {

@@ -1,8 +1,7 @@
 /// <reference types="webgl2" />
-import { Primitive, DataType } from "./types";
 import { State } from "./state";
-import { VertexBuffer, VertexBufferType } from "./vertex-buffer";
-import { ElementBuffer, ElementBufferType, ElementArray } from "./element-buffer";
+import { VertexBuffer, VertexBufferDataType, VertexBufferIntegerDataType } from "./vertex-buffer";
+import { ElementBuffer, ElementArray, ElementBufferDataType, ElementPrimitive } from "./element-buffer";
 /**
  * Attribute type for reading vertex buffers. POINTER provides normalization
  * options for converting integer values to floats. IPOINTER always retains
@@ -19,10 +18,9 @@ export interface AttributesConfig {
 export declare type AttributeConfig = AttributeArrayConfig | AttributeObjectConfig;
 export declare type AttributeArrayConfig = number[] | [number, number][] | [number, number, number][] | [number, number, number, number][] | number[][];
 export declare type AttributeObjectConfig = AttributePointerConfig | AttributeIPointerConfig;
-export declare type VertexBufferIntegerType = DataType.BYTE | DataType.SHORT | DataType.INT | DataType.UNSIGNED_BYTE | DataType.UNSIGNED_SHORT | DataType.UNSIGNED_INT;
 export interface AttributePointerConfig {
     type: AttributeType.POINTER;
-    buffer: VertexBuffer<VertexBufferType> | number[];
+    buffer: VertexBuffer<VertexBufferDataType>;
     count: number;
     size: number;
     normalized?: boolean;
@@ -30,7 +28,7 @@ export interface AttributePointerConfig {
 }
 export interface AttributeIPointerConfig {
     type: AttributeType.IPOINTER;
-    buffer: VertexBuffer<VertexBufferIntegerType>;
+    buffer: VertexBuffer<VertexBufferIntegerDataType>;
     count: number;
     size: number;
     divisor?: number;
@@ -38,13 +36,13 @@ export interface AttributeIPointerConfig {
 export interface AttributesCreateOptions {
     countLimit?: number;
 }
-export declare function _createAttributes(state: State, elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>, attributes: AttributesConfig, { countLimit }?: AttributesCreateOptions): Attributes;
+export declare function _createAttributes(state: State, elements: ElementPrimitive | ElementArray | ElementBuffer<ElementBufferDataType>, attributes: AttributesConfig, { countLimit }?: AttributesCreateOptions): Attributes;
 /**
  * Attributes store vertex buffers, an element buffer, and attributes with the
  * vertex format for provided vertex buffers.
  */
 export declare class Attributes {
-    readonly primitive: Primitive;
+    readonly primitive: ElementPrimitive;
     readonly count: number;
     readonly elementCount: number;
     readonly instanceCount: number;
@@ -52,9 +50,9 @@ export declare class Attributes {
     private state;
     private attributes;
     private elementBuffer?;
-    constructor(state: State, primitive: Primitive, attributes: AttributeDescriptor[], count: number, instanceCount: number, elements?: ElementBuffer<ElementBufferType> | undefined);
+    constructor(state: State, primitive: ElementPrimitive, attributes: AttributeDescriptor[], count: number, instanceCount: number, elements?: ElementBuffer<ElementBufferDataType> | undefined);
     readonly indexed: boolean;
-    readonly indexType: ElementBufferType | undefined;
+    readonly indexType: ElementBufferDataType | undefined;
     /**
      * Reinitialize invalid vertex array, eg. after context is lost. Also tries
      * to reinitialize vertex buffer and element buffer dependencies.
@@ -66,12 +64,12 @@ export declare class Attributes {
 declare class AttributeDescriptor {
     readonly location: number;
     readonly type: AttributeType;
-    readonly buffer: VertexBuffer<VertexBufferType>;
+    readonly buffer: VertexBuffer<VertexBufferDataType>;
     readonly count: number;
     readonly size: number;
     readonly normalized: boolean;
     readonly divisor: number;
-    constructor(location: number, type: AttributeType, buffer: VertexBuffer<VertexBufferType>, count: number, size: number, normalized: boolean, divisor: number);
+    constructor(location: number, type: AttributeType, buffer: VertexBuffer<VertexBufferDataType>, count: number, size: number, normalized: boolean, divisor: number);
 }
 export {};
 //# sourceMappingURL=attributes.d.ts.map

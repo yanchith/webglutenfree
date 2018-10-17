@@ -1,8 +1,4 @@
-export {
-    BufferBits,
-    BufferUsage,
-    Primitive,
-} from "./types";
+export { BufferUsage } from "./types";
 
 export {
     Device,
@@ -17,6 +13,8 @@ export {
     TargetClearOptions,
     TargetBlitOptions,
     TargetDrawOptions,
+    TargetBufferBitmask,
+    TargetBlitFilter,
 } from "./target";
 
 export {
@@ -77,6 +75,7 @@ export {
     ElementBufferCreateOptions,
     ElementBufferStoreOptions,
     ElementBufferDataType,
+    ElementPrimitive,
 } from "./element-buffer";
 
 export {

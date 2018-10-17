@@ -4,7 +4,7 @@
  * happening at every step.
  */
 
-import { Device, Primitive } from "./lib/webglutenfree.js";
+import { Device, ElementPrimitive } from "./lib/webglutenfree.js";
 
 // The device is the entry point to the API, analogous to a WebGL context.
 // It has multiple constructors, Device.create() being the most convenient, as
@@ -51,7 +51,7 @@ const cmd = dev.createCommand(
 // Attributes can usually infer the size and count of your data, and create
 // the neccessary buffers for you, but they can always be passed explicitely,
 // when more control is needed (eg for updating buffers during runtime)
-const attrs = dev.createAttributes(Primitive.TRIANGLES, {
+const attrs = dev.createAttributes(ElementPrimitive.TRIANGLE_LIST, {
     // The 0-th attribute is the vertex position (a_position)
     0: [
         [-0.3, -0.5],

@@ -1,140 +1,3 @@
-// This file contains facilities for determining whether we are currently in a
-// debug build. Production builds completely dead-code-eliminate its contents
-// and all blocks guarded by `IS_DEBUG_BUILD` throughout the project.
-// For nonproduction builds `IS_DEBUG_BUILD` is not eliminated and always
-// evaluates to `true`, however, consumers can always perform the
-// same dead code elimination further down the road by replacing (or envifying)
-// `process.env.NODE_ENV` with "production".
-const __OPAQUE_TRUE__ = Math.random() > -1;
-const __OPAQUE_ENV__ = __OPAQUE_TRUE__ ? "development" : "production";
-const process = { env: { NODE_ENV: __OPAQUE_ENV__ } };
-/**
- * Are we in a debug build?
- */
-const IS_DEBUG_BUILD = process.env.NODE_ENV !== "production";
-
-function isFalse(got, fmt) {
-    const valueIsFalse = got === false;
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsFalse) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value ${got} not false`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsFalse;
-}
-function isArray(got, fmt) {
-    const valueIsArray = Array.isArray(got);
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsArray) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value ${got} not an array`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsArray;
-}
-function nonNull(got, fmt) {
-    const valueIsNonNull = typeof got !== "undefined"
-        && (typeof got !== "object" || !!got);
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsNonNull) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value undefined or null`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsNonNull;
-}
-function nonEmpty(got, fmt) {
-    const valueIsNonEmpty = !!got.length;
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsNonEmpty) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: string or array value empty`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsNonEmpty;
-}
-function equal(got, expected, fmt) {
-    const valuesAreEqual = got === expected;
-    if (IS_DEBUG_BUILD) {
-        if (!valuesAreEqual) {
-            const msg = fmt
-                ? fmt(got, expected)
-                : `Assertion failed: value ${got} not equal to ${expected}`;
-            throw new Error(msg);
-        }
-    }
-    return valuesAreEqual;
-}
-function oneOf(got, expected, fmt) {
-    const valueIsOneOf = expected.includes(got);
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsOneOf) {
-            const msg = fmt
-                ? fmt(got, expected)
-                : `Assertion failed: value ${got} not in ${expected}`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsOneOf;
-}
-function gt(got, low, fmt) {
-    const valueIsGt = got > low;
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsGt) {
-            const msg = fmt
-                ? fmt(got, low)
-                : `Assertion failed: value ${got} not GT than expected ${low}`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsGt;
-}
-function rangeInclusive(got, low, high, fmt) {
-    const valueIsInRangeInclusive = got >= low && got <= high;
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsInRangeInclusive) {
-            const msg = fmt
-                ? fmt(got, low, high)
-                : `Assertion failed: value ${got} not in range [${low},${high}]`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsInRangeInclusive;
-}
-function unreachable(got, fmt) {
-    // "unreachable" can not be eliminated, as its "return value" is
-    // captured by the type system at the callsite for control-flow analysis.
-    const msg = fmt
-        ? fmt(got)
-        : `Assertion failed: this branch should be unreachable`;
-    throw new Error(msg);
-}
-
-/**
- * Possible buffer targets to operate on.
- */
-var BufferBits;
-(function (BufferBits) {
-    BufferBits[BufferBits["COLOR"] = 16384] = "COLOR";
-    BufferBits[BufferBits["DEPTH"] = 256] = "DEPTH";
-    BufferBits[BufferBits["STENCIL"] = 1024] = "STENCIL";
-    BufferBits[BufferBits["COLOR_DEPTH"] = 16640] = "COLOR_DEPTH";
-    BufferBits[BufferBits["COLOR_STENCIL"] = 17408] = "COLOR_STENCIL";
-    BufferBits[BufferBits["DEPTH_STENCIL"] = 1280] = "DEPTH_STENCIL";
-    BufferBits[BufferBits["COLOR_DEPTH_STENCIL"] = 17664] = "COLOR_DEPTH_STENCIL";
-})(BufferBits || (BufferBits = {}));
-/**
- * Possible buffer usage.
- */
 var BufferUsage;
 (function (BufferUsage) {
     BufferUsage[BufferUsage["STATIC_DRAW"] = 35044] = "STATIC_DRAW";
@@ -147,136 +10,6 @@ var BufferUsage;
     BufferUsage[BufferUsage["DYNAMIC_COPY"] = 35050] = "DYNAMIC_COPY";
     BufferUsage[BufferUsage["STREAM_COPY"] = 35042] = "STREAM_COPY";
 })(BufferUsage || (BufferUsage = {}));
-/**
- * Drawing primitives.
- */
-var Primitive;
-(function (Primitive) {
-    Primitive[Primitive["POINTS"] = 0] = "POINTS";
-    Primitive[Primitive["LINES"] = 1] = "LINES";
-    Primitive[Primitive["LINE_LOOP"] = 2] = "LINE_LOOP";
-    Primitive[Primitive["LINE_STRIP"] = 3] = "LINE_STRIP";
-    Primitive[Primitive["TRIANGLES"] = 4] = "TRIANGLES";
-    Primitive[Primitive["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
-    Primitive[Primitive["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
-})(Primitive || (Primitive = {}));
-/**
- * Possible data types.
- */
-var DataType;
-(function (DataType) {
-    DataType[DataType["BYTE"] = 5120] = "BYTE";
-    DataType[DataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
-    DataType[DataType["SHORT"] = 5122] = "SHORT";
-    DataType[DataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
-    DataType[DataType["INT"] = 5124] = "INT";
-    DataType[DataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
-    DataType[DataType["FLOAT"] = 5126] = "FLOAT";
-    DataType[DataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
-    // TODO: support exotic formats
-    // UNSIGNED_SHORT_4_4_4_4
-    // UNSIGNED_SHORT_5_5_5_1
-    // UNSIGNED_SHORT_5_6_5
-    DataType[DataType["UNSIGNED_INT_24_8"] = 34042] = "UNSIGNED_INT_24_8";
-    // UNSIGNED_INT_5_9_9_9_REV
-    // UNSIGNED_INT_2_10_10_10_REV
-    // UNSIGNED_INT_10F_11F_11F_REV
-    DataType[DataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
-})(DataType || (DataType = {}));
-var InternalFormat;
-(function (InternalFormat) {
-    // RED
-    InternalFormat[InternalFormat["R8"] = 33321] = "R8";
-    InternalFormat[InternalFormat["R8_SNORM"] = 36756] = "R8_SNORM";
-    InternalFormat[InternalFormat["R8UI"] = 33330] = "R8UI";
-    InternalFormat[InternalFormat["R8I"] = 33329] = "R8I";
-    InternalFormat[InternalFormat["R16UI"] = 33332] = "R16UI";
-    InternalFormat[InternalFormat["R16I"] = 33331] = "R16I";
-    InternalFormat[InternalFormat["R32UI"] = 33334] = "R32UI";
-    InternalFormat[InternalFormat["R32I"] = 33333] = "R32I";
-    InternalFormat[InternalFormat["R16F"] = 33325] = "R16F";
-    InternalFormat[InternalFormat["R32F"] = 33326] = "R32F";
-    // RG
-    InternalFormat[InternalFormat["RG8"] = 33323] = "RG8";
-    InternalFormat[InternalFormat["RG8_SNORM"] = 36757] = "RG8_SNORM";
-    InternalFormat[InternalFormat["RG8UI"] = 33336] = "RG8UI";
-    InternalFormat[InternalFormat["RG8I"] = 33335] = "RG8I";
-    InternalFormat[InternalFormat["RG16UI"] = 33338] = "RG16UI";
-    InternalFormat[InternalFormat["RG16I"] = 33337] = "RG16I";
-    InternalFormat[InternalFormat["RG32UI"] = 33340] = "RG32UI";
-    InternalFormat[InternalFormat["RG32I"] = 33339] = "RG32I";
-    InternalFormat[InternalFormat["RG16F"] = 33327] = "RG16F";
-    InternalFormat[InternalFormat["RG32F"] = 33328] = "RG32F";
-    // RGB
-    InternalFormat[InternalFormat["RGB8"] = 32849] = "RGB8";
-    InternalFormat[InternalFormat["RGB8_SNORM"] = 36758] = "RGB8_SNORM";
-    InternalFormat[InternalFormat["RGB8UI"] = 36221] = "RGB8UI";
-    InternalFormat[InternalFormat["RGB8I"] = 36239] = "RGB8I";
-    InternalFormat[InternalFormat["RGB16UI"] = 36215] = "RGB16UI";
-    InternalFormat[InternalFormat["RGB16I"] = 36233] = "RGB16I";
-    InternalFormat[InternalFormat["RGB32UI"] = 36209] = "RGB32UI";
-    InternalFormat[InternalFormat["RGB32I"] = 36227] = "RGB32I";
-    InternalFormat[InternalFormat["RGB16F"] = 34843] = "RGB16F";
-    InternalFormat[InternalFormat["RGB32F"] = 34837] = "RGB32F";
-    // RGBA
-    InternalFormat[InternalFormat["RGBA8"] = 32856] = "RGBA8";
-    InternalFormat[InternalFormat["RGBA8_SNORM"] = 36759] = "RGBA8_SNORM";
-    InternalFormat[InternalFormat["RGBA8UI"] = 36220] = "RGBA8UI";
-    InternalFormat[InternalFormat["RGBA8I"] = 36238] = "RGBA8I";
-    InternalFormat[InternalFormat["RGBA16UI"] = 36214] = "RGBA16UI";
-    InternalFormat[InternalFormat["RGBA16I"] = 36232] = "RGBA16I";
-    InternalFormat[InternalFormat["RGBA32UI"] = 36208] = "RGBA32UI";
-    InternalFormat[InternalFormat["RGBA32I"] = 36226] = "RGBA32I";
-    InternalFormat[InternalFormat["RGBA16F"] = 34842] = "RGBA16F";
-    InternalFormat[InternalFormat["RGBA32F"] = 34836] = "RGBA32F";
-    // TODO: support exotic formats
-    // DEPTH
-    InternalFormat[InternalFormat["DEPTH_COMPONENT16"] = 33189] = "DEPTH_COMPONENT16";
-    InternalFormat[InternalFormat["DEPTH_COMPONENT24"] = 33190] = "DEPTH_COMPONENT24";
-    InternalFormat[InternalFormat["DEPTH_COMPONENT32F"] = 36012] = "DEPTH_COMPONENT32F";
-    // DEPTH STENCIL
-    InternalFormat[InternalFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
-    InternalFormat[InternalFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
-    // ~LUMINANCE ALPHA
-    // LUMINANCE_ALPHA
-    // LUMINANCE
-    // ALPHA
-})(InternalFormat || (InternalFormat = {}));
-var Format;
-(function (Format) {
-    Format[Format["RED"] = 6403] = "RED";
-    Format[Format["RG"] = 33319] = "RG";
-    Format[Format["RGB"] = 6407] = "RGB";
-    Format[Format["RGBA"] = 6408] = "RGBA";
-    Format[Format["RED_INTEGER"] = 36244] = "RED_INTEGER";
-    Format[Format["RG_INTEGER"] = 33320] = "RG_INTEGER";
-    Format[Format["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
-    Format[Format["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
-    // TODO: support exotic formats
-    Format[Format["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
-    Format[Format["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
-    // LUMINANCE_ALPHA
-    // LUMINANCE
-    // ALPHA
-})(Format || (Format = {}));
-var Filter;
-(function (Filter) {
-    Filter[Filter["NEAREST"] = 9728] = "NEAREST";
-    Filter[Filter["LINEAR"] = 9729] = "LINEAR";
-    Filter[Filter["NEAREST_MIPMAP_NEAREST"] = 9984] = "NEAREST_MIPMAP_NEAREST";
-    Filter[Filter["LINEAR_MIPMAP_NEAREST"] = 9985] = "LINEAR_MIPMAP_NEAREST";
-    Filter[Filter["NEAREST_MIPMAP_LINEAR"] = 9986] = "NEAREST_MIPMAP_LINEAR";
-    Filter[Filter["LINEAR_MIPMAP_LINEAR"] = 9987] = "LINEAR_MIPMAP_LINEAR";
-})(Filter || (Filter = {}));
-var Wrap;
-(function (Wrap) {
-    Wrap[Wrap["CLAMP_TO_EDGE"] = 33071] = "CLAMP_TO_EDGE";
-    Wrap[Wrap["REPEAT"] = 10497] = "REPEAT";
-    Wrap[Wrap["MIRRORED_REPEAT"] = 33648] = "MIRRORED_REPEAT";
-})(Wrap || (Wrap = {}));
-/**
- * Possible data types.
- */
 var UniformType;
 (function (UniformType) {
     UniformType[UniformType["FLOAT"] = 5126] = "FLOAT";
@@ -299,25 +32,6 @@ var UniformType;
     // TODO: support exotic types
     // BOOL
 })(UniformType || (UniformType = {}));
-function sizeOf(type) {
-    switch (type) {
-        case DataType.BYTE:
-        case DataType.UNSIGNED_BYTE:
-            return 1;
-        case DataType.SHORT:
-        case DataType.UNSIGNED_SHORT:
-        case DataType.HALF_FLOAT:
-            return 2;
-        case DataType.INT:
-        case DataType.UNSIGNED_INT:
-        case DataType.UNSIGNED_INT_24_8:
-        case DataType.FLOAT:
-            return 4;
-        case DataType.FLOAT_32_UNSIGNED_INT_24_8_REV:
-            return 8;
-        default: return unreachable(type);
-    }
-}
 
 class DepthTestDescriptor {
     constructor(func, mask, rangeStart, rangeEnd) {
@@ -647,6 +361,137 @@ class State {
     }
 }
 
+// This file contains facilities for determining whether we are currently in a
+// debug build. Production builds completely dead-code-eliminate its contents
+// and all blocks guarded by `IS_DEBUG_BUILD` throughout the project.
+// For nonproduction builds `IS_DEBUG_BUILD` is not eliminated and always
+// evaluates to `true`, however, consumers can always perform the
+// same dead code elimination further down the road by replacing (or envifying)
+// `process.env.NODE_ENV` with "production".
+const __OPAQUE_TRUE__ = Math.random() > -1;
+const __OPAQUE_ENV__ = __OPAQUE_TRUE__ ? "development" : "production";
+const process = { env: { NODE_ENV: __OPAQUE_ENV__ } };
+/**
+ * Are we in a debug build?
+ */
+const IS_DEBUG_BUILD = process.env.NODE_ENV !== "production";
+
+function isFalse(got, fmt) {
+    const valueIsFalse = got === false;
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsFalse) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value ${got} not false`;
+            throw new Error(msg);
+        }
+    }
+    return valueIsFalse;
+}
+function isArray(got, fmt) {
+    const valueIsArray = Array.isArray(got);
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsArray) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value ${got} not an array`;
+            throw new Error(msg);
+        }
+    }
+    return valueIsArray;
+}
+function nonNull(got, fmt) {
+    const valueIsNonNull = typeof got !== "undefined"
+        && (typeof got !== "object" || !!got);
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsNonNull) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value undefined or null`;
+            throw new Error(msg);
+        }
+    }
+    return valueIsNonNull;
+}
+function nonEmpty(got, fmt) {
+    const valueIsNonEmpty = !!got.length;
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsNonEmpty) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: string or array value empty`;
+            throw new Error(msg);
+        }
+    }
+    return valueIsNonEmpty;
+}
+function equal(got, expected, fmt) {
+    const valuesAreEqual = got === expected;
+    if (IS_DEBUG_BUILD) {
+        if (!valuesAreEqual) {
+            const msg = fmt
+                ? fmt(got, expected)
+                : `Assertion failed: value ${got} not equal to ${expected}`;
+            throw new Error(msg);
+        }
+    }
+    return valuesAreEqual;
+}
+function oneOf(got, expected, fmt) {
+    const valueIsOneOf = expected.includes(got);
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsOneOf) {
+            const msg = fmt
+                ? fmt(got, expected)
+                : `Assertion failed: value ${got} not in ${expected}`;
+            throw new Error(msg);
+        }
+    }
+    return valueIsOneOf;
+}
+function gt(got, low, fmt) {
+    const valueIsGt = got > low;
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsGt) {
+            const msg = fmt
+                ? fmt(got, low)
+                : `Assertion failed: value ${got} not GT than expected ${low}`;
+            throw new Error(msg);
+        }
+    }
+    return valueIsGt;
+}
+function rangeInclusive(got, low, high, fmt) {
+    const valueIsInRangeInclusive = got >= low && got <= high;
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsInRangeInclusive) {
+            const msg = fmt
+                ? fmt(got, low, high)
+                : `Assertion failed: value ${got} not in range [${low},${high}]`;
+            throw new Error(msg);
+        }
+    }
+    return valueIsInRangeInclusive;
+}
+function unreachable(got, fmt) {
+    // "unreachable" can not be eliminated, as its "return value" is
+    // captured by the type system at the callsite for control-flow analysis.
+    const msg = fmt
+        ? fmt(got)
+        : `Assertion failed: this branch should be unreachable`;
+    throw new Error(msg);
+}
+
+var TargetBufferBitmask;
+(function (TargetBufferBitmask) {
+    TargetBufferBitmask[TargetBufferBitmask["COLOR"] = 16384] = "COLOR";
+    TargetBufferBitmask[TargetBufferBitmask["DEPTH"] = 256] = "DEPTH";
+    TargetBufferBitmask[TargetBufferBitmask["STENCIL"] = 1024] = "STENCIL";
+    TargetBufferBitmask[TargetBufferBitmask["COLOR_DEPTH"] = 16640] = "COLOR_DEPTH";
+    TargetBufferBitmask[TargetBufferBitmask["COLOR_STENCIL"] = 17408] = "COLOR_STENCIL";
+    TargetBufferBitmask[TargetBufferBitmask["DEPTH_STENCIL"] = 1280] = "DEPTH_STENCIL";
+    TargetBufferBitmask[TargetBufferBitmask["COLOR_DEPTH_STENCIL"] = 17664] = "COLOR_DEPTH_STENCIL";
+})(TargetBufferBitmask || (TargetBufferBitmask = {}));
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
@@ -684,13 +529,13 @@ class Target {
         const { state, state: { gl } } = this;
         state.assertTargetBound(this, "clear");
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-        if (bits & BufferBits.COLOR) {
+        if (bits & TargetBufferBitmask.COLOR) {
             gl.clearColor(r, g, b, a);
         }
-        if (bits & BufferBits.DEPTH) {
+        if (bits & TargetBufferBitmask.DEPTH) {
             gl.clearDepth(depth);
         }
-        if (bits & BufferBits.STENCIL) {
+        if (bits & TargetBufferBitmask.STENCIL) {
             gl.clearStencil(stencil);
         }
         gl.clear(bits);
@@ -703,7 +548,7 @@ class Target {
         ? this.state.gl.drawingBufferWidth
         : this.surfaceWidth, dstHeight = this.surfaceHeight === void 0
         ? this.state.gl.drawingBufferHeight
-        : this.surfaceHeight, filter = Filter.NEAREST, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
+        : this.surfaceHeight, filter = 9728 /* NEAREST */, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
         const { state, state: { gl } } = this;
         state.assertTargetBound(this, "blit");
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
@@ -1546,7 +1391,7 @@ function _createVertexBuffer(gl, type, size, { usage = BufferUsage.DYNAMIC_DRAW 
     return new VertexBuffer(gl, type, size, size * sizeOf(type), usage);
 }
 function _createVertexBufferWithTypedArray(gl, type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
-    return new VertexBuffer(gl, type, data.length, data.length * sizeOf(type), usage).store(data);
+    return new VertexBuffer(gl, type, data.length, data.byteLength, usage).store(data);
 }
 /**
  * Vertex buffers contain GPU accessible data. Accessing them is usually done
@@ -1575,16 +1420,14 @@ class VertexBuffer {
      * Upload new data to buffer. Does not take ownership of data.
      */
     store(data, { offset = 0 } = {}) {
-        const { type, gl, glBuffer } = this;
-        const buffer = Array.isArray(data)
-            ? createBuffer(type, data)
-            // WebGL bug causes Uint8ClampedArray to be read incorrectly
-            // https://github.com/KhronosGroup/WebGL/issues/1533
-            : data instanceof Uint8ClampedArray
-                // Both buffers are u8 -> do not copy, just change lens
-                ? new Uint8Array(data.buffer)
-                // Other buffer types are fine
-                : data;
+        const { gl, glBuffer } = this;
+        // WebGL bug causes Uint8ClampedArray to be read incorrectly
+        // https://github.com/KhronosGroup/WebGL/issues/1533
+        const buffer = data instanceof Uint8ClampedArray
+            // Both buffers are u8 -> do not copy, just change lens
+            ? new Uint8Array(data.buffer)
+            // Other buffer types are fine
+            : data;
         const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
         gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, byteOffset, buffer);
@@ -1600,18 +1443,19 @@ class VertexBuffer {
         this.glBuffer = buffer;
     }
 }
-function createBuffer(type, arr) {
+function sizeOf(type) {
     switch (type) {
-        case DataType.BYTE: return new Int8Array(arr);
-        case DataType.SHORT: return new Int16Array(arr);
-        case DataType.INT: return new Int32Array(arr);
-        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
-        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
-        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        case DataType.FLOAT: return new Float32Array(arr);
-        default: return unreachable(type, (p) => {
-            return `Invalid buffer type: ${p}`;
-        });
+        case 5120 /* BYTE */:
+        case 5121 /* UNSIGNED_BYTE */:
+            return 1;
+        case 5122 /* SHORT */:
+        case 5123 /* UNSIGNED_SHORT */:
+            return 2;
+        case 5124 /* INT */:
+        case 5125 /* UNSIGNED_INT */:
+        case 5126 /* FLOAT */:
+            return 4;
+        default: return unreachable(type);
     }
 }
 
@@ -1668,8 +1512,18 @@ function ravel2(unraveled, shape) {
     return raveled;
 }
 
+var ElementPrimitive;
+(function (ElementPrimitive) {
+    ElementPrimitive[ElementPrimitive["POINT_LIST"] = 0] = "POINT_LIST";
+    ElementPrimitive[ElementPrimitive["LINE_LIST"] = 1] = "LINE_LIST";
+    ElementPrimitive[ElementPrimitive["LINE_LOOP"] = 2] = "LINE_LOOP";
+    ElementPrimitive[ElementPrimitive["LINE_STRIP"] = 3] = "LINE_STRIP";
+    ElementPrimitive[ElementPrimitive["TRIANGLE_LIST"] = 4] = "TRIANGLE_LIST";
+    ElementPrimitive[ElementPrimitive["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
+    ElementPrimitive[ElementPrimitive["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
+})(ElementPrimitive || (ElementPrimitive = {}));
 function _createElementBuffer(gl, type, primitive, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
-    return new ElementBuffer(gl, type, primitive, size, size * sizeOf(type), usage);
+    return new ElementBuffer(gl, type, primitive, size, size * sizeOf$1(type), usage);
 }
 function _createElementBufferWithArray(gl, data, options) {
     if (is2(data)) {
@@ -1679,14 +1533,14 @@ function _createElementBufferWithArray(gl, data, options) {
         });
         const ravel = ravel2(data, shape);
         const primitive = shape[1] === 3
-            ? Primitive.TRIANGLES
-            : Primitive.LINES;
-        return _createElementBufferWithTypedArray(gl, DataType.UNSIGNED_INT, primitive, ravel);
+            ? ElementPrimitive.TRIANGLE_LIST
+            : ElementPrimitive.LINE_LIST;
+        return _createElementBufferWithTypedArray(gl, 5125 /* UNSIGNED_INT */, primitive, new Uint32Array(ravel), options);
     }
-    return _createElementBufferWithTypedArray(gl, DataType.UNSIGNED_INT, Primitive.POINTS, data, options);
+    return _createElementBufferWithTypedArray(gl, 5125 /* UNSIGNED_INT */, ElementPrimitive.POINT_LIST, new Uint32Array(data), options);
 }
 function _createElementBufferWithTypedArray(gl, type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
-    return new ElementBuffer(gl, type, primitive, data.length, data.length * sizeOf(type), usage).store(data);
+    return new ElementBuffer(gl, type, primitive, data.length, data.length * sizeOf$1(type), usage).store(data);
 }
 /**
  * Element buffers contain indices for accessing vertex buffer data.
@@ -1715,16 +1569,14 @@ class ElementBuffer {
      * Upload new data to buffer. Does not take ownership of data.
      */
     store(data, { offset = 0 } = {}) {
-        const { type, gl, glBuffer } = this;
-        const buffer = Array.isArray(data)
-            ? createBuffer$1(type, data)
-            // WebGL bug causes Uint8ClampedArray to be read incorrectly
-            // https://github.com/KhronosGroup/WebGL/issues/1533
-            : data instanceof Uint8ClampedArray
-                // Both buffers are u8 -> do not copy, just change lens
-                ? new Uint8Array(data.buffer)
-                // Other buffer types are fine
-                : data;
+        const { gl, glBuffer } = this;
+        // WebGL bug causes Uint8ClampedArray to be read incorrectly
+        // https://github.com/KhronosGroup/WebGL/issues/1533
+        const buffer = data instanceof Uint8ClampedArray
+            // Both buffers are u8 -> do not copy, just change lens
+            ? new Uint8Array(data.buffer)
+            // Other buffer types are fine
+            : data;
         const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glBuffer);
         gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, byteOffset, buffer);
@@ -1740,14 +1592,15 @@ class ElementBuffer {
         this.glBuffer = buffer;
     }
 }
-function createBuffer$1(type, arr) {
+function sizeOf$1(type) {
     switch (type) {
-        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
-        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
-        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        default: return unreachable(type, (p) => {
-            return `invalid buffer type: ${p}`;
-        });
+        case 5121 /* UNSIGNED_BYTE */:
+            return 1;
+        case 5123 /* UNSIGNED_SHORT */:
+            return 2;
+        case 5125 /* UNSIGNED_INT */:
+            return 4;
+        default: return unreachable(type);
     }
 }
 
@@ -1778,13 +1631,11 @@ function _createAttributes(state, elements, attributes, { countLimit } = {}) {
             if (is2(definition)) {
                 const s = shape2(definition);
                 const r = ravel2(definition, s);
-                return new AttributeDescriptor(location, AttributeType.POINTER, _createVertexBufferWithTypedArray(state.gl, DataType.FLOAT, r), s[0], s[1], false, 0);
+                return new AttributeDescriptor(location, AttributeType.POINTER, _createVertexBufferWithTypedArray(state.gl, 5126 /* FLOAT */, new Float32Array(r)), s[0], s[1], false, 0);
             }
-            return new AttributeDescriptor(location, AttributeType.POINTER, _createVertexBufferWithTypedArray(state.gl, DataType.FLOAT, definition), definition.length, 1, false, 0);
+            return new AttributeDescriptor(location, AttributeType.POINTER, _createVertexBufferWithTypedArray(state.gl, 5126 /* FLOAT */, new Float32Array(definition)), definition.length, 1, false, 0);
         }
-        return new AttributeDescriptor(location, definition.type, Array.isArray(definition.buffer)
-            ? _createVertexBufferWithTypedArray(state.gl, DataType.FLOAT, definition.buffer)
-            : definition.buffer, definition.count, definition.size, definition.type === AttributeType.POINTER
+        return new AttributeDescriptor(location, definition.type, definition.buffer, definition.count, definition.size, definition.type === AttributeType.POINTER
             ? (definition.normalized || false)
             : false, definition.divisor || 0);
     });
@@ -1909,23 +1760,23 @@ class AttributeDescriptor {
     }
 }
 
-function _createTexture(gl, width, height, internalFormat, { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = {}) {
-    return new Texture(gl, width, height, internalFormat, wrapS, wrapT, min, mag);
+function _createTexture(gl, width, height, storageFormat, { min = 9728 /* NEAREST */, mag = 9728 /* NEAREST */, wrapS = 33071 /* CLAMP_TO_EDGE */, wrapT = 33071 /* CLAMP_TO_EDGE */, } = {}) {
+    return new Texture(gl, width, height, storageFormat, wrapS, wrapT, min, mag);
 }
-function _createTextureWithTypedArray(gl, width, height, internalFormat, data, dataFormat, dataType, options = {}) {
-    const { min = Filter.NEAREST, mag = Filter.NEAREST, wrapS = Wrap.CLAMP_TO_EDGE, wrapT = Wrap.CLAMP_TO_EDGE, } = options;
-    return new Texture(gl, width, height, internalFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
+function _createTextureWithTypedArray(gl, width, height, storageFormat, data, dataFormat, dataType, options = {}) {
+    const { min = 9728 /* NEAREST */, mag = 9728 /* NEAREST */, wrapS = 33071 /* CLAMP_TO_EDGE */, wrapT = 33071 /* CLAMP_TO_EDGE */, } = options;
+    return new Texture(gl, width, height, storageFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
 }
 /**
  * Textures are images of 2D data, where each texel can contain multiple
  * information channels of a certain type.
  */
 class Texture {
-    constructor(gl, width, height, format, wrapS, wrapT, minFilter, magFilter) {
+    constructor(gl, width, height, storageFormat, wrapS, wrapT, minFilter, magFilter) {
         this.gl = gl;
         this.width = width;
         this.height = height;
-        this.format = format;
+        this.storageFormat = storageFormat;
         this.wrapS = wrapS;
         this.wrapT = wrapT;
         this.minFilter = minFilter;
@@ -1976,10 +1827,10 @@ class Texture {
         gl.bindTexture(gl.TEXTURE_2D, null);
     }
     init() {
-        const { gl, width, height, format, wrapS, wrapT, minFilter, magFilter, } = this;
+        const { gl, width, height, storageFormat, wrapS, wrapT, minFilter, magFilter, } = this;
         const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, storageFormat, width, height);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapS);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapT);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
@@ -2068,14 +1919,14 @@ class Framebuffer {
             gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
         });
         if (depthStencil) {
-            switch (depthStencil.format) {
-                case InternalFormat.DEPTH24_STENCIL8:
-                case InternalFormat.DEPTH32F_STENCIL8:
+            switch (depthStencil.storageFormat) {
+                case 35056 /* DEPTH24_STENCIL8 */:
+                case 36013 /* DEPTH32F_STENCIL8 */:
                     gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
-                case InternalFormat.DEPTH_COMPONENT16:
-                case InternalFormat.DEPTH_COMPONENT24:
-                case InternalFormat.DEPTH_COMPONENT32F:
+                case 33189 /* DEPTH_COMPONENT16 */:
+                case 33190 /* DEPTH_COMPONENT24 */:
+                case 36012 /* DEPTH_COMPONENT32F */:
                     gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
                 default: unreachable(depthStencil, (p) => {
@@ -2345,15 +2196,15 @@ class Device {
      * Create a new texture with given width, height, and internal format.
      * The internal format determines, what kind of data is possible to store.
      */
-    createTexture(width, height, internalFormat, options) {
-        return _createTexture(this._gl, width, height, internalFormat, options);
+    createTexture(width, height, storageFormat, options) {
+        return _createTexture(this._gl, width, height, storageFormat, options);
     }
     /**
      * Create a new texture with width and height equal to the given image, and
      * store the image in the texture.
      */
     createTextureWithImage(image, options) {
-        return _createTextureWithTypedArray(this._gl, image.width, image.height, InternalFormat.RGBA8, image.data, Format.RGBA, DataType.UNSIGNED_BYTE, options);
+        return _createTextureWithTypedArray(this._gl, image.width, image.height, 32856 /* RGBA8 */, image.data, 6408 /* RGBA */, 5121 /* UNSIGNED_BYTE */, options);
     }
     /**
      * Create a new texture with given width, height, and internal format.
@@ -2383,5 +2234,5 @@ function createDebugFunc(gl, key) {
     };
 }
 
-export { BufferBits, BufferUsage, DataType, InternalFormat, Format, Filter, Wrap, Primitive, Device, Extension, Target, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, Attributes, AttributeType, Texture, Framebuffer };
+export { BufferUsage, Device, Extension, Target, TargetBufferBitmask, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, ElementPrimitive, Attributes, AttributeType, Texture, Framebuffer };
 //# sourceMappingURL=webglutenfree.js.map

@@ -1,13 +1,3 @@
-export enum BufferBits {
-    COLOR = 0x00004000,
-    DEPTH = 0x00000100,
-    STENCIL = 0x00000400,
-    COLOR_DEPTH = COLOR | DEPTH,
-    COLOR_STENCIL = COLOR | STENCIL,
-    DEPTH_STENCIL = DEPTH | STENCIL,
-    COLOR_DEPTH_STENCIL = COLOR | DEPTH | STENCIL,
-}
-
 export enum BufferUsage {
     STATIC_DRAW = 0x88E4,
     DYNAMIC_DRAW = 0x88E8,
@@ -18,16 +8,6 @@ export enum BufferUsage {
     STATIC_COPY = 0x88E6,
     DYNAMIC_COPY = 0x88EA,
     STREAM_COPY = 0x88E2,
-}
-
-export enum Primitive {
-    POINT_LIST = 0x0000,
-    LINE_LIST = 0x0001,
-    LINE_LOOP = 0x0002,
-    LINE_STRIP = 0x0003,
-    TRIANGLE_LISt = 0x0004,
-    TRIANGLE_STRIP = 0x0005,
-    TRIANGLE_FAN = 0x0006,
 }
 
 export enum UniformType {

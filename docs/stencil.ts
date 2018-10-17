@@ -9,7 +9,7 @@ import {
     DepthFunc,
     StencilFunc,
     StencilOp,
-    BufferBits,
+    TargetBufferBitmask,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 
@@ -187,7 +187,7 @@ const outlineObjs = objs.map((obj) => ({
 
 const loop = (time: number): void => {
     dev.target((rt) => {
-        rt.clear(BufferBits.COLOR_DEPTH_STENCIL);
+        rt.clear(TargetBufferBitmask.COLOR_DEPTH_STENCIL);
         rt.batch(cmdDraw, (draw) => {
             objs.forEach(({ attrs, modelMatrix }) => {
                 draw(attrs, { time, modelMatrix });

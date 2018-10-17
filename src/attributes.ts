@@ -1,6 +1,5 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
-import { Primitive } from "./types";
 import { State } from "./state";
 import {
     VertexBuffer,
@@ -11,8 +10,9 @@ import {
 } from "./vertex-buffer";
 import {
     ElementBuffer,
-    ElementBufferDataType,
     ElementArray,
+    ElementBufferDataType,
+    ElementPrimitive,
     _createElementBuffer,
     _createElementBufferWithArray,
 } from "./element-buffer";
@@ -61,7 +61,7 @@ export type AttributeObjectConfig =
 
 export interface AttributePointerConfig {
     type: AttributeType.POINTER;
-    buffer: VertexBuffer<VertexBufferFloatDataType>;
+    buffer: VertexBuffer<VertexBufferDataType>;
     count: number;
     size: number;
     normalized?: boolean;
@@ -82,7 +82,10 @@ export interface AttributesCreateOptions {
 
 export function _createAttributes(
     state: State,
-    elements: Primitive | ElementArray | ElementBuffer<ElementBufferDataType>,
+    elements:
+        | ElementPrimitive
+        | ElementArray
+        | ElementBuffer<ElementBufferDataType>,
     attributes: AttributesConfig,
     { countLimit }: AttributesCreateOptions = {},
 ): Attributes {
@@ -144,7 +147,7 @@ export function _createAttributes(
             );
         });
 
-    let primitive: Primitive;
+    let primitive: ElementPrimitive;
     let elementBuffer: ElementBuffer<ElementBufferDataType> | undefined;
     if (typeof elements === "number") {
         primitive = elements;
@@ -189,7 +192,7 @@ export function _createAttributes(
  */
 export class Attributes {
 
-    readonly primitive: Primitive;
+    readonly primitive: ElementPrimitive;
     readonly count: number;
     readonly elementCount: number;
     readonly instanceCount: number;
@@ -204,7 +207,7 @@ export class Attributes {
 
     constructor(
         state: State,
-        primitive: Primitive,
+        primitive: ElementPrimitive,
         attributes: AttributeDescriptor[],
         count: number,
         instanceCount: number,

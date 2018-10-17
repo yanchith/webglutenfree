@@ -12,12 +12,13 @@
 import {
     Device,
     Extension,
-    BufferBits,
+    TargetBufferBitmask,
     Uniforms,
     DepthFunc,
-    Primitive,
+    ElementPrimitive,
     Texture,
-    InternalFormat,
+    TextureColorStorageFormat,
+    TextureDepthStorageFormat,
 } from "./lib/webglutenfree.js";
 import { mat4, vec3 } from "./libx/gl-matrix.js";
 
@@ -41,10 +42,26 @@ const PROJ_FOV = Math.PI / 2;
 const dev = Device.create({ extensions: [Extension.EXTColorBufferFloat] });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const gAlbedoSpecular = dev.createTexture(width, height, InternalFormat.RGBA8);
-const gPosition = dev.createTexture(width, height, InternalFormat.RGBA32F);
-const gNormal = dev.createTexture(width, height, InternalFormat.RGBA32F);
-const gDepth = dev.createTexture(width, height, InternalFormat.DEPTH_COMPONENT24);
+const gAlbedoSpecular = dev.createTexture(
+    width,
+    height,
+    TextureColorStorageFormat.RGBA8,
+);
+const gPosition = dev.createTexture(
+    width,
+    height,
+    TextureColorStorageFormat.RGBA32F,
+);
+const gNormal = dev.createTexture(
+    width,
+    height,
+    TextureColorStorageFormat.RGBA32F,
+);
+const gDepth = dev.createTexture(
+    width,
+    height,
+    TextureDepthStorageFormat.DEPTH_COMPONENT24,
+);
 const gBuffer = dev.createFramebuffer(width, height, [
     gAlbedoSpecular,
     gPosition,
@@ -424,7 +441,7 @@ const material: Material = {
 
 const objects = sponza.objects.map(({ positions, normals }) => ({
     material,
-    attrs: dev.createAttributes(Primitive.TRIANGLES, {
+    attrs: dev.createAttributes(ElementPrimitive.TRIANGLE_LIST, {
         0: positions,
         1: normals,
     }),
@@ -434,7 +451,7 @@ const lightAttrs = dev.createAttributes(
     cube.elements,
     { 0: cube.positions.map(([x, y, z]) => [x / 50, y / 50, z / 50]) },
 );
-const screenspaceAttrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
+const screenspaceAttrs = dev.createEmptyAttributes(ElementPrimitive.TRIANGLE_LIST, 3);
 
 let t = window.performance.now();
 const loop = (time: number): void => {
@@ -447,7 +464,7 @@ const loop = (time: number): void => {
     }
 
     gBuffer.target((rt) => {
-        rt.clear(BufferBits.COLOR_DEPTH);
+        rt.clear(TargetBufferBitmask.COLOR_DEPTH);
         // Perform geometry pass - output gBuffer for all objects
         rt.batch(cmdDrawGeometry, (draw) => {
             objects.forEach((object) => {
@@ -465,7 +482,7 @@ const loop = (time: number): void => {
         if (DRAW_LIGHTS) {
             // Need to blit depth buffer into the back buffer first so that
             // depth test can work
-            rt.blit(gBuffer, BufferBits.DEPTH);
+            rt.blit(gBuffer, TargetBufferBitmask.DEPTH);
             // Draw each light as a small cube
             rt.batch(cmdDrawLight, (draw) => {
                 lights.forEach((light) => {

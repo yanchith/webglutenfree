@@ -8,10 +8,10 @@ import {
     BlendFunc,
     DepthFunc,
     AttributeType,
-    BufferBits,
+    TargetBufferBitmask,
     BufferUsage,
-    Primitive,
-    DataType,
+    ElementPrimitive,
+    VertexBufferFloatDataType,
 } from "./lib/webglutenfree.js";
 import { mat3, mat4 } from "./libx/gl-matrix.js";
 
@@ -129,13 +129,13 @@ for (let i = 0; i < positions.length; i++) {
 }
 
 const buffer = dev.createVertexBufferWithTypedArray(
-    DataType.FLOAT,
+    VertexBufferFloatDataType.FLOAT,
     positions,
     { usage: BufferUsage.DYNAMIC_DRAW },
 );
 
 const angle = Math.PI * 2 / 3;
-const attrs = dev.createAttributes(Primitive.TRIANGLES, cmd.locate({
+const attrs = dev.createAttributes(ElementPrimitive.TRIANGLE_LIST, cmd.locate({
     // a_position is an instanced buffer containing the particles center
     a_position: {
         type: AttributeType.POINTER,
@@ -167,7 +167,7 @@ const loop = (time: number): void => {
     buffer.store(positions);
 
     dev.target((rt) => {
-        rt.clear(BufferBits.COLOR_DEPTH);
+        rt.clear(TargetBufferBitmask.COLOR_DEPTH);
         rt.draw(cmd, attrs, { time, tick: t });
     });
 

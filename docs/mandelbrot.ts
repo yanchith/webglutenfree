@@ -7,8 +7,8 @@ import {
     Device,
     Extension,
     Texture,
-    Primitive,
-    InternalFormat,
+    ElementPrimitive,
+    TextureColorStorageFormat,
 } from "./lib/webglutenfree.js";
 
 const MAX_ITERS = 1 << 8;
@@ -22,8 +22,16 @@ const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 // Note: Even with extensions, RGB32F is not renderable (might be a bug),
 // so we use RGBA32F even when we only use 3 channels
-const pingTex = dev.createTexture(width, height, InternalFormat.RGBA32F);
-const pongTex = dev.createTexture(width, height, InternalFormat.RGBA32F);
+const pingTex = dev.createTexture(
+    width,
+    height,
+    TextureColorStorageFormat.RGBA32F,
+);
+const pongTex = dev.createTexture(
+    width,
+    height,
+    TextureColorStorageFormat.RGBA32F,
+);
 
 const pingFbo = dev.createFramebuffer(width, height, pingTex);
 const pongFbo = dev.createFramebuffer(width, height, pongTex);
@@ -54,7 +62,7 @@ void main() {
 // paint to the screen in the next command.
 
 interface CmdComputeProps {
-    tex: Texture<InternalFormat>;
+    tex: Texture<TextureColorStorageFormat>;
     tick: number;
 }
 
@@ -152,7 +160,7 @@ const cmdCompute = dev.createCommand<CmdComputeProps>(
 // to diverge.
 
 interface CmdDrawProps {
-    tex: Texture<InternalFormat>;
+    tex: Texture<TextureColorStorageFormat>;
 }
 
 const cmdDraw = dev.createCommand<CmdDrawProps>(
@@ -187,7 +195,7 @@ const cmdDraw = dev.createCommand<CmdDrawProps>(
     },
 );
 
-const attrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
+const attrs = dev.createEmptyAttributes(ElementPrimitive.TRIANGLE_LIST, 3);
 
 let ping = { tex: pingTex, fbo: pingFbo };
 let pong = { tex: pongTex, fbo: pongFbo };

@@ -3,7 +3,7 @@
  * buffers at all and instead specifying the number of vertices to draw.
  */
 
-import { Device, Primitive } from "./lib/webglutenfree.js";
+import { Device, ElementPrimitive } from "./lib/webglutenfree.js";
 
 const dev = Device.create();
 
@@ -46,7 +46,7 @@ const cmd = dev.createCommand(
 // .createEmptyAttributes() specifies that there are no attributes to read.
 // We still need to tell WebGL the type ond number of primitives to draw, but
 // internally no WebGL resources are constructed for empty attributes.
-const attrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 150);
+const attrs = dev.createEmptyAttributes(ElementPrimitive.TRIANGLE_LIST, 150);
 
 dev.target((rt) => {
     rt.draw(cmd, attrs);

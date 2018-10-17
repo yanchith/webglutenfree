@@ -9,9 +9,10 @@ import {
     Device,
     Texture,
     DepthFunc,
-    BufferBits,
-    Primitive,
-    InternalFormat,
+    TargetBufferBitmask,
+    ElementPrimitive,
+    TextureColorStorageFormat,
+    TextureDepthStorageFormat,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 
@@ -22,14 +23,14 @@ const PERSISTENCE_FACTOR = 0.8;
 const dev = Device.create({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const newFrameTex = dev.createTexture(width, height, InternalFormat.RGBA8);
-const depthTex = dev.createTexture(width, height, InternalFormat.DEPTH_COMPONENT24);
+const newFrameTex = dev.createTexture(width, height, TextureColorStorageFormat.RGBA8);
+const depthTex = dev.createTexture(width, height, TextureDepthStorageFormat.DEPTH_COMPONENT24);
 const newFrameFbo = dev.createFramebuffer(width, height, newFrameTex, depthTex);
 
-const pingTex = dev.createTexture(width, height, InternalFormat.RGBA8);
+const pingTex = dev.createTexture(width, height, TextureColorStorageFormat.RGBA8);
 const pingFbo = dev.createFramebuffer(width, height, pingTex);
 
-const pongTex = dev.createTexture(width, height, InternalFormat.RGBA8);
+const pongTex = dev.createTexture(width, height, TextureColorStorageFormat.RGBA8);
 const pongFbo = dev.createFramebuffer(width, height, pongTex);
 
 const viewMatrix = mat4.create();
@@ -106,8 +107,8 @@ const cmdDraw = dev.createCommand<CmdDrawProps>(
 );
 
 interface CmdBlendProps {
-    newFrame: Texture<InternalFormat>;
-    prevFrame: Texture<InternalFormat>;
+    newFrame: Texture<TextureColorStorageFormat>;
+    prevFrame: Texture<TextureColorStorageFormat>;
 }
 
 const cmdBlend = dev.createCommand<CmdBlendProps>(
@@ -167,7 +168,10 @@ const cmdBlend = dev.createCommand<CmdBlendProps>(
     },
 );
 
-const screenspaceAttrs = dev.createEmptyAttributes(Primitive.TRIANGLES, 3);
+const screenspaceAttrs = dev.createEmptyAttributes(
+    ElementPrimitive.TRIANGLE_LIST,
+    3,
+);
 const bunnyAttrs = dev.createAttributes(bunny.elements, cmdDraw.locate({
     a_position: bunny.positions,
     a_normal: bunny.normals,
@@ -190,7 +194,7 @@ const loop = (time: number): void => {
 
     // First draw the scene to a "newFrame" fbo
     newFrameFbo.target((rt) => {
-        rt.clear(BufferBits.COLOR_DEPTH);
+        rt.clear(TargetBufferBitmask.COLOR_DEPTH);
         rt.draw(cmdDraw, bunnyAttrs, { time });
     });
 
@@ -205,7 +209,7 @@ const loop = (time: number): void => {
 
     // Lastly copy the contents of pong to canvas
     dev.target((rt) => {
-        rt.blit(pong.fbo, BufferBits.COLOR);
+        rt.blit(pong.fbo, TargetBufferBitmask.COLOR);
     });
 
     // ... and swap the fbos

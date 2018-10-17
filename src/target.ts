@@ -1,11 +1,25 @@
 import * as assert from "./util/assert";
-import { BufferBits, Primitive } from "./types";
 import { State } from "./state";
 import { Command, UniformDescriptor, TextureAccessor } from "./command";
+import { ElementPrimitive } from "./element-buffer";
 import { Attributes } from "./attributes";
 import { Texture, TextureStorageFormat } from "./texture";
 import { Framebuffer } from "./framebuffer";
 
+export enum TargetBufferBitmask {
+    COLOR = 0x00004000,
+    DEPTH = 0x00000100,
+    STENCIL = 0x00000400,
+    COLOR_DEPTH = COLOR | DEPTH,
+    COLOR_STENCIL = COLOR | STENCIL,
+    DEPTH_STENCIL = DEPTH | STENCIL,
+    COLOR_DEPTH_STENCIL = COLOR | DEPTH | STENCIL,
+}
+
+export const enum TargetBlitFilter {
+    NEAREST = 0x2600,
+    LINEAR = 0x2601,
+}
 
 export interface TargetClearOptions {
     r?: number;
@@ -18,11 +32,6 @@ export interface TargetClearOptions {
     scissorY?: number;
     scissorWidth?: number;
     scissorHeight?: number;
-}
-
-export const enum TargetBlitFilter {
-    NEAREST = 0x2600,
-    LINEAR = 0x2601,
 }
 
 export interface TargetBlitOptions {
@@ -90,7 +99,7 @@ export class Target {
      * Clear selected buffers to provided values.
      */
     clear(
-        bits: BufferBits,
+        bits: TargetBufferBitmask,
         {
             r = 0,
             g = 0,
@@ -113,9 +122,9 @@ export class Target {
 
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
-        if (bits & BufferBits.COLOR) { gl.clearColor(r, g, b, a); }
-        if (bits & BufferBits.DEPTH) { gl.clearDepth(depth); }
-        if (bits & BufferBits.STENCIL) { gl.clearStencil(stencil); }
+        if (bits & TargetBufferBitmask.COLOR) { gl.clearColor(r, g, b, a); }
+        if (bits & TargetBufferBitmask.DEPTH) { gl.clearDepth(depth); }
+        if (bits & TargetBufferBitmask.STENCIL) { gl.clearStencil(stencil); }
         gl.clear(bits);
     }
 
@@ -126,7 +135,7 @@ export class Target {
      */
     blit(
         source: Framebuffer,
-        bits: BufferBits,
+        bits: TargetBufferBitmask,
         {
             srcX = 0,
             srcY = 0,
@@ -358,7 +367,7 @@ export class Target {
     }
 
     private drawArrays(
-        primitive: Primitive,
+        primitive: ElementPrimitive,
         count: number,
         offset: number,
         instanceCount: number,
@@ -376,7 +385,7 @@ export class Target {
     }
 
     private drawElements(
-        primitive: Primitive,
+        primitive: ElementPrimitive,
         count: number,
         type: number,
         offset: number,

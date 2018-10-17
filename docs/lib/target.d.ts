@@ -1,8 +1,20 @@
-import { BufferBits, Filter } from "./types";
 import { State } from "./state";
 import { Command } from "./command";
 import { Attributes } from "./attributes";
 import { Framebuffer } from "./framebuffer";
+export declare enum TargetBufferBitmask {
+    COLOR = 16384,
+    DEPTH = 256,
+    STENCIL = 1024,
+    COLOR_DEPTH = 16640,
+    COLOR_STENCIL = 17408,
+    DEPTH_STENCIL = 1280,
+    COLOR_DEPTH_STENCIL = 17664
+}
+export declare const enum TargetBlitFilter {
+    NEAREST = 9728,
+    LINEAR = 9729
+}
 export interface TargetClearOptions {
     r?: number;
     g?: number;
@@ -15,7 +27,6 @@ export interface TargetClearOptions {
     scissorWidth?: number;
     scissorHeight?: number;
 }
-export declare type BlitFilter = Filter.NEAREST | Filter.LINEAR;
 export interface TargetBlitOptions {
     srcX?: number;
     srcY?: number;
@@ -25,7 +36,7 @@ export interface TargetBlitOptions {
     dstY?: number;
     dstWidth?: number;
     dstHeight?: number;
-    filter?: BlitFilter;
+    filter?: TargetBlitFilter;
     scissorX?: number;
     scissorY?: number;
     scissorWidth?: number;
@@ -62,12 +73,12 @@ export declare class Target {
     /**
      * Clear selected buffers to provided values.
      */
-    clear(bits: BufferBits, { r, g, b, a, depth, stencil, scissorX, scissorY, scissorWidth, scissorHeight, }?: TargetClearOptions): void;
+    clear(bits: TargetBufferBitmask, { r, g, b, a, depth, stencil, scissorX, scissorY, scissorWidth, scissorHeight, }?: TargetClearOptions): void;
     /**
      * Blit source framebuffer onto this render target. Use buffer bits to
      * choose buffers to blit.
      */
-    blit(source: Framebuffer, bits: BufferBits, { srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, filter, scissorX, scissorY, scissorWidth, scissorHeight, }?: TargetBlitOptions): void;
+    blit(source: Framebuffer, bits: TargetBufferBitmask, { srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, filter, scissorX, scissorY, scissorWidth, scissorHeight, }?: TargetBlitOptions): void;
     /**
      * Draw to this target with a void command and attributes.
      */
