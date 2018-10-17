@@ -1,7 +1,4 @@
-import {
-    Primitive,
-    DataType,
-} from "./types";
+import { Primitive } from "./types";
 import { State } from "./state";
 import { Target } from "./target";
 import {
@@ -21,8 +18,8 @@ import {
     ElementBuffer,
     ElementBufferCreateOptions,
     ElementArray,
-    ElementBufferType,
-    ElementBufferTypeToTypedArray,
+    ElementBufferDataType,
+    ElementBufferDataTypeToTypedArray,
     _createElementBuffer,
     _createElementBufferWithArray,
     _createElementBufferWithTypedArray,
@@ -347,7 +344,7 @@ export class Device {
     /**
      * Create a new element buffer with given type, primitive, and size.
      */
-    createElementBuffer<T extends ElementBufferType>(
+    createElementBuffer<T extends ElementBufferDataType>(
         type: T,
         primitive: Primitive,
         size: number,
@@ -367,7 +364,7 @@ export class Device {
     createElementBufferWithArray(
         data: ElementArray,
         options?: ElementBufferCreateOptions,
-    ): ElementBuffer<DataType.UNSIGNED_INT> {
+    ): ElementBuffer<ElementBufferDataType.UNSIGNED_INT> {
         return _createElementBufferWithArray(this._gl, data, options);
     }
 
@@ -375,10 +372,10 @@ export class Device {
      * Create a new element buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    createElementBufferWithTypedArray<T extends ElementBufferType>(
+    createElementBufferWithTypedArray<T extends ElementBufferDataType>(
         type: T,
         primitive: Primitive,
-        data: ElementBufferTypeToTypedArray[T] | number[],
+        data: ElementBufferDataTypeToTypedArray[T],
         options?: ElementBufferCreateOptions,
     ): ElementBuffer<T> {
         return _createElementBufferWithTypedArray(
@@ -406,7 +403,7 @@ export class Device {
      * count will be given to gl.drawArrays()
      */
     createAttributes(
-        elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>,
+        elements: Primitive | ElementArray | ElementBuffer<ElementBufferDataType>,
         attributes: AttributesConfig,
         options?: AttributesCreateOptions,
     ): Attributes {

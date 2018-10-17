@@ -1,7 +1,6 @@
 export {
     BufferBits,
     BufferUsage,
-    DataType,
     Primitive,
 } from "./types";
 
@@ -77,7 +76,7 @@ export {
     ElementBuffer,
     ElementBufferCreateOptions,
     ElementBufferStoreOptions,
-    ElementBufferType,
+    ElementBufferDataType,
 } from "./element-buffer";
 
 export {

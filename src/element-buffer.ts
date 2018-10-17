@@ -1,6 +1,6 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
-import { BufferUsage, DataType, Primitive, sizeOf } from "./types";
+import { BufferUsage, Primitive } from "./types";
 
 export type ElementArray =
     | number[] // infers POINTS
@@ -14,28 +14,16 @@ export type ElementArray =
     | number[][]
     ;
 
-/**
- * Possible data types of element buffers.
- */
-export type ElementBufferType =
-    | DataType.UNSIGNED_BYTE
-    | DataType.UNSIGNED_SHORT
-    | DataType.UNSIGNED_INT
-    ;
+export const enum ElementBufferDataType {
+    UNSIGNED_BYTE = 0x1401,
+    UNSIGNED_SHORT = 0x1403,
+    UNSIGNED_INT = 0x1405,
+}
 
-export type ElementBufferTypedArray =
-    | Uint8Array
-    | Uint8ClampedArray
-    | Uint16Array
-    | Uint32Array
-    ;
-
-export interface ElementBufferTypeToTypedArray {
-    [DataType.UNSIGNED_BYTE]: Uint8Array | Uint8ClampedArray;
-    [DataType.UNSIGNED_SHORT]: Uint16Array;
-    [DataType.UNSIGNED_INT]: Uint32Array;
-
-    [p: number]: ElementBufferTypedArray;
+export interface ElementBufferDataTypeToTypedArray {
+    [ElementBufferDataType.UNSIGNED_BYTE]: Uint8Array | Uint8ClampedArray;
+    [ElementBufferDataType.UNSIGNED_SHORT]: Uint16Array;
+    [ElementBufferDataType.UNSIGNED_INT]: Uint32Array;
 }
 
 export interface ElementBufferCreateOptions {
@@ -46,7 +34,7 @@ export interface ElementBufferStoreOptions {
     offset?: number;
 }
 
-export function _createElementBuffer<T extends ElementBufferType>(
+export function _createElementBuffer<T extends ElementBufferDataType>(
     gl: WebGL2RenderingContext,
     type: T,
     primitive: Primitive,
@@ -67,7 +55,7 @@ export function _createElementBufferWithArray(
     gl: WebGL2RenderingContext,
     data: ElementArray,
     options?: ElementBufferCreateOptions,
-): ElementBuffer<DataType.UNSIGNED_INT> {
+): ElementBuffer<ElementBufferDataType.UNSIGNED_INT> {
     if (array.is2(data)) {
         const shape = array.shape2(data);
         assert.rangeInclusive(shape[1], 2, 3, (p) => {
@@ -75,29 +63,30 @@ export function _createElementBufferWithArray(
         });
         const ravel = array.ravel2(data, shape);
         const primitive = shape[1] === 3
-            ? Primitive.TRIANGLES
-            : Primitive.LINES;
+            ? Primitive.TRIANGLE_LISt
+            : Primitive.LINE_LIST;
         return _createElementBufferWithTypedArray(
             gl,
-            DataType.UNSIGNED_INT,
+            ElementBufferDataType.UNSIGNED_INT,
             primitive,
-            ravel,
+            new Uint32Array(ravel),
+            options,
         );
     }
     return _createElementBufferWithTypedArray(
         gl,
-        DataType.UNSIGNED_INT,
-        Primitive.POINTS,
-        data,
+        ElementBufferDataType.UNSIGNED_INT,
+        Primitive.POINT_LIST,
+        new Uint32Array(data),
         options,
     );
 }
 
-export function _createElementBufferWithTypedArray<T extends ElementBufferType>(
+export function _createElementBufferWithTypedArray<T extends ElementBufferDataType>(
     gl: WebGL2RenderingContext,
     type: T,
     primitive: Primitive,
-    data: ElementBufferTypeToTypedArray[T] | number[],
+    data: ElementBufferDataTypeToTypedArray[T],
     { usage = BufferUsage.STATIC_DRAW }: ElementBufferCreateOptions = {},
 ): ElementBuffer<T> {
     return new ElementBuffer(
@@ -113,7 +102,7 @@ export function _createElementBufferWithTypedArray<T extends ElementBufferType>(
 /**
  * Element buffers contain indices for accessing vertex buffer data.
  */
-export class ElementBuffer<T extends ElementBufferType> {
+export class ElementBuffer<T extends ElementBufferDataType> {
 
     readonly type: T;
     readonly length: number;
@@ -156,19 +145,17 @@ export class ElementBuffer<T extends ElementBufferType> {
      * Upload new data to buffer. Does not take ownership of data.
      */
     store(
-        data: ElementBufferTypeToTypedArray[T] | number[],
+        data: ElementBufferDataTypeToTypedArray[T],
         { offset = 0 }: ElementBufferStoreOptions = {},
     ): this {
-        const { type, gl, glBuffer } = this;
-        const buffer = Array.isArray(data)
-            ? createBuffer(type, data)
-            // WebGL bug causes Uint8ClampedArray to be read incorrectly
-            // https://github.com/KhronosGroup/WebGL/issues/1533
-            : data instanceof Uint8ClampedArray
-                // Both buffers are u8 -> do not copy, just change lens
-                ? new Uint8Array(data.buffer)
-                // Other buffer types are fine
-                : data;
+        const { gl, glBuffer } = this;
+        // WebGL bug causes Uint8ClampedArray to be read incorrectly
+        // https://github.com/KhronosGroup/WebGL/issues/1533
+        const buffer = data instanceof Uint8ClampedArray
+            // Both buffers are u8 -> do not copy, just change lens
+            ? new Uint8Array(data.buffer)
+            // Other buffer types are fine
+            : data;
         const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glBuffer);
         gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, byteOffset, buffer);
@@ -188,16 +175,14 @@ export class ElementBuffer<T extends ElementBufferType> {
 
 }
 
-function createBuffer(
-    type: ElementBufferType,
-    arr: number[],
-): ElementBufferTypedArray {
+export function sizeOf(type: ElementBufferDataType): number {
     switch (type) {
-        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
-        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
-        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        default: return assert.unreachable(type, (p) => {
-            return `invalid buffer type: ${p}`;
-        });
+        case ElementBufferDataType.UNSIGNED_BYTE:
+            return 1;
+        case ElementBufferDataType.UNSIGNED_SHORT:
+            return 2;
+        case ElementBufferDataType.UNSIGNED_INT:
+            return 4;
+        default: return assert.unreachable(type);
     }
 }

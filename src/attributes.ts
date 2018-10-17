@@ -11,7 +11,7 @@ import {
 } from "./vertex-buffer";
 import {
     ElementBuffer,
-    ElementBufferType,
+    ElementBufferDataType,
     ElementArray,
     _createElementBuffer,
     _createElementBufferWithArray,
@@ -82,7 +82,7 @@ export interface AttributesCreateOptions {
 
 export function _createAttributes(
     state: State,
-    elements: Primitive | ElementArray | ElementBuffer<ElementBufferType>,
+    elements: Primitive | ElementArray | ElementBuffer<ElementBufferDataType>,
     attributes: AttributesConfig,
     { countLimit }: AttributesCreateOptions = {},
 ): Attributes {
@@ -145,7 +145,7 @@ export function _createAttributes(
         });
 
     let primitive: Primitive;
-    let elementBuffer: ElementBuffer<ElementBufferType> | undefined;
+    let elementBuffer: ElementBuffer<ElementBufferDataType> | undefined;
     if (typeof elements === "number") {
         primitive = elements;
     } else {
@@ -200,7 +200,7 @@ export class Attributes {
 
     // The buffers
     private attributes: AttributeDescriptor[];
-    private elementBuffer?: ElementBuffer<ElementBufferType>;
+    private elementBuffer?: ElementBuffer<ElementBufferDataType>;
 
     constructor(
         state: State,
@@ -208,7 +208,7 @@ export class Attributes {
         attributes: AttributeDescriptor[],
         count: number,
         instanceCount: number,
-        elements?: ElementBuffer<ElementBufferType> | undefined,
+        elements?: ElementBuffer<ElementBufferDataType> | undefined,
     ) {
         this.state = state;
         this.primitive = primitive;
@@ -226,7 +226,7 @@ export class Attributes {
         return !!this.elementBuffer;
     }
 
-    get indexType(): ElementBufferType | undefined {
+    get indexType(): ElementBufferDataType | undefined {
         return this.elementBuffer && this.elementBuffer.type;
     }
 
