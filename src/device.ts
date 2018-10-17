@@ -1,8 +1,6 @@
 import {
     Primitive,
     DataType,
-    Format,
-    InternalFormat,
 } from "./types";
 import { State } from "./state";
 import { Target } from "./target";
@@ -39,20 +37,19 @@ import {
     Texture,
     TextureCreateOptions,
     TextureStoreOptions,
-    TextureInternalFormat,
-    InternalFormatToTypedArray,
-    InternalFormatToDataFormat,
-    InternalFormatToDataType,
+    TextureStorageFormat,
+    TextureColorStorageFormat,
+    TextureDepthStorageFormat,
+    TextureDepthStencilStorageFormat,
+    TextureFormat,
+    TextureDataType,
+    StorageFormatToTypedArray,
+    StorageFormatToFormat,
+    StorageFormatToDataType,
     _createTexture,
     _createTextureWithTypedArray,
 } from "./texture";
-import {
-    Framebuffer,
-    TextureColorInternalFormat,
-    TextureDepthInternalFormat,
-    TextureDepthStencilInternalFormat,
-    _createFramebuffer,
-} from "./framebuffer";
+import { Framebuffer, _createFramebuffer } from "./framebuffer";
 
 
 /**
@@ -431,17 +428,17 @@ export class Device {
      * Create a new texture with given width, height, and internal format.
      * The internal format determines, what kind of data is possible to store.
      */
-    createTexture<F extends TextureInternalFormat>(
+    createTexture<S extends TextureStorageFormat>(
         width: number,
         height: number,
-        internalFormat: F,
+        storageFormat: S,
         options?: TextureCreateOptions,
-    ): Texture<F> {
+    ): Texture<S> {
         return _createTexture(
             this._gl,
             width,
             height,
-            internalFormat,
+            storageFormat,
             options,
         );
     }
@@ -453,15 +450,15 @@ export class Device {
     createTextureWithImage(
         image: ImageData,
         options?: TextureCreateOptions & TextureStoreOptions,
-    ): Texture<InternalFormat.RGBA8> {
+    ): Texture<TextureColorStorageFormat.RGBA8> {
         return _createTextureWithTypedArray(
             this._gl,
             image.width,
             image.height,
-            InternalFormat.RGBA8,
+            TextureColorStorageFormat.RGBA8,
             image.data,
-            Format.RGBA,
-            DataType.UNSIGNED_BYTE,
+            TextureFormat.RGBA,
+            TextureDataType.UNSIGNED_BYTE,
             options,
         );
     }
@@ -472,15 +469,15 @@ export class Device {
      * Store data of given format and type contained in a typed array to the
      * texture.
      */
-    createTextureWithTypedArray<F extends TextureInternalFormat>(
+    createTextureWithTypedArray<S extends TextureStorageFormat>(
         width: number,
         height: number,
-        internalFormat: F,
-        data: InternalFormatToTypedArray[F],
-        dataFormat: InternalFormatToDataFormat[F],
-        dataType: InternalFormatToDataType[F],
+        internalFormat: S,
+        data: StorageFormatToTypedArray[S],
+        dataFormat: StorageFormatToFormat[S],
+        dataType: StorageFormatToDataType[S],
         options?: TextureCreateOptions & TextureStoreOptions,
-    ): Texture<F> {
+    ): Texture<S> {
         return _createTextureWithTypedArray(
             this._gl,
             width,
@@ -505,11 +502,11 @@ export class Device {
         width: number,
         height: number,
         color:
-            | Texture<TextureColorInternalFormat>
-            | Texture<TextureColorInternalFormat>[],
+            | Texture<TextureColorStorageFormat>
+            | Texture<TextureColorStorageFormat>[],
         depthStencil?:
-            | Texture<TextureDepthInternalFormat>
-            | Texture<TextureDepthStencilInternalFormat>,
+            | Texture<TextureDepthStorageFormat>
+            | Texture<TextureDepthStencilStorageFormat>,
     ): Framebuffer {
         return _createFramebuffer(
             this.state,

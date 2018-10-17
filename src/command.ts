@@ -7,13 +7,13 @@ import {
     BlendDescriptor,
 } from "./state";
 import { AttributesConfig } from "./attributes";
-import { Texture, TextureInternalFormat } from "./texture";
+import { Texture, TextureStorageFormat } from "./texture";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 
 export type Accessor<P, R> = R | ((props: P, index: number) => R);
-export type TextureAccessor<P> = Accessor<P, Texture<TextureInternalFormat>>;
+export type TextureAccessor<P> = Accessor<P, Texture<TextureStorageFormat>>;
 
 export interface Textures<P> { [name: string]: TextureAccessor<P>; }
 export interface Uniforms<P> { [name: string]: Uniform<P>; }

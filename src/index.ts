@@ -2,10 +2,6 @@ export {
     BufferBits,
     BufferUsage,
     DataType,
-    InternalFormat,
-    Format,
-    Filter,
-    Wrap,
     Primitive,
 } from "./types";
 
@@ -95,14 +91,12 @@ export {
     TextureMinFilter,
     TextureMagFilter,
     TextureWrap,
-    TextureInternalFormat,
+    TextureStorageFormat,
+    TextureColorStorageFormat,
+    TextureDepthStorageFormat,
+    TextureDepthStencilStorageFormat,
     TextureFormat,
     TextureDataType,
 } from "./texture";
 
-export {
-    Framebuffer,
-    TextureColorInternalFormat,
-    TextureDepthInternalFormat,
-    TextureDepthStencilInternalFormat,
-} from "./framebuffer";
+export { Framebuffer } from "./framebuffer";

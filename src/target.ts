@@ -1,9 +1,9 @@
 import * as assert from "./util/assert";
-import { BufferBits, Filter, Primitive, InternalFormat } from "./types";
+import { BufferBits, Primitive } from "./types";
 import { State } from "./state";
 import { Command, UniformDescriptor, TextureAccessor } from "./command";
 import { Attributes } from "./attributes";
-import { Texture } from "./texture";
+import { Texture, TextureStorageFormat } from "./texture";
 import { Framebuffer } from "./framebuffer";
 
 
@@ -20,7 +20,11 @@ export interface TargetClearOptions {
     scissorHeight?: number;
 }
 
-export type BlitFilter = Filter.NEAREST | Filter.LINEAR;
+export const enum TargetBlitFilter {
+    NEAREST = 0x2600,
+    LINEAR = 0x2601,
+}
+
 export interface TargetBlitOptions {
     srcX?: number;
     srcY?: number;
@@ -30,7 +34,7 @@ export interface TargetBlitOptions {
     dstY?: number;
     dstWidth?: number;
     dstHeight?: number;
-    filter?: BlitFilter;
+    filter?: TargetBlitFilter;
     scissorX?: number;
     scissorY?: number;
     scissorWidth?: number;
@@ -136,7 +140,7 @@ export class Target {
             dstHeight = this.surfaceHeight === void 0
                 ? this.state.gl.drawingBufferHeight
                 : this.surfaceHeight,
-            filter = Filter.NEAREST,
+            filter = TargetBlitFilter.NEAREST,
             scissorX = dstX,
             scissorY = dstY,
             scissorWidth = dstWidth,
@@ -546,7 +550,7 @@ type AccessedValue =
     | Float32Array
     | Int32Array
     | Uint32Array
-    | Texture<InternalFormat>
+    | Texture<TextureStorageFormat>
     ;
 
 function access<P, R extends AccessedValue>(
