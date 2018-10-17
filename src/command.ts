@@ -607,12 +607,12 @@ function createShader(
     throw new Error(`Could not compile shader:\n${msg}\n${prettySource}`);
 }
 
-type UniformTypeDeclaration = Uniform<any>["type"];
+type UniformTypeDeclaration = Uniform<unknown>["type"];
 interface UniformTypeDeclarations {
     [name: string]: { type: UniformTypeDeclaration };
 }
 interface TextureDeclarations {
-    [name: string]: any;
+    [name: string]: unknown;
 }
 
 /**

@@ -166,15 +166,16 @@ export class Device {
         }
 
         if (debug) {
-            const wrapper = {} as any;
+            interface AnyIndexable { [key: string]: any; }
+            const wrapper = {} as AnyIndexable;
             for (const key in gl) {
-                if (typeof (gl as any)[key] === "function") {
+                if (typeof (gl as AnyIndexable)[key] === "function") {
                     wrapper[key] = createDebugFunc(gl, key);
                 } else {
-                    wrapper[key] = (gl as any)[key];
+                    wrapper[key] = (gl as AnyIndexable)[key];
                 }
             }
-            gl = wrapper;
+            gl = wrapper as WebGL2RenderingContext;
         }
 
         return new Device(gl, pixelRatio, viewportWidth, viewportHeight);
@@ -520,7 +521,10 @@ export class Device {
     }
 }
 
-function createDebugFunc(gl: any, key: string): (...args: any[]) => any {
+function createDebugFunc(
+    gl: { [key: string]: any },
+    key: string,
+): (...args: unknown[]) => unknown {
     return function debugWrapper() {
         console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
         return gl[key].apply(gl, arguments);

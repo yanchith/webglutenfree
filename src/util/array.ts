@@ -9,17 +9,17 @@ import { process } from "./process-shim";
  */
 export function is2<T>(array: T[] | T[][]): array is T[][] {
     if (!array.length) { return false; }
-    const length2 = Array.isArray(array[0]) ? (array[0] as any[]).length : -1;
+    const length2 = Array.isArray(array[0]) ? (array[0] as unknown[]).length : -1;
 
     // Do some asserts if not production
     if (process.env.NODE_ENV !== "production") {
-        (array as any[]).forEach((sub) => {
-            const isSubArray = Array.isArray(sub);
+        (array as unknown[]).forEach((sub) => {
             if (length2 !== -1) {
-                assert.isTrue(isSubArray);
-                assert.equal(sub.length, length2);
+                if (assert.isArray(sub)) {
+                    assert.equal(sub.length, length2);
+                }
             } else {
-                assert.isFalse(isSubArray);
+                assert.isFalse(Array.isArray(sub));
             }
         });
     }

@@ -186,9 +186,9 @@ export class Target {
      * This is a unified header to stisfy the typechecker.
      */
     draw(
-        cmd: Command<any>,
+        cmd: Command<unknown>,
         attrs: Attributes,
-        props?: any,
+        props?: unknown,
         {
             viewportX = 0,
             viewportY = 0,
