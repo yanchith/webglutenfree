@@ -1,6 +1,6 @@
 /// <reference types="webgl2" />
 import { BufferUsage } from "./types";
-export declare const enum VertexBufferIntegerDataType {
+export declare enum VertexBufferIntegerDataType {
     BYTE = 5120,
     UNSIGNED_BYTE = 5121,
     SHORT = 5122,
@@ -8,7 +8,7 @@ export declare const enum VertexBufferIntegerDataType {
     INT = 5124,
     UNSIGNED_INT = 5125
 }
-export declare const enum VertexBufferFloatDataType {
+export declare enum VertexBufferFloatDataType {
     FLOAT = 5126
 }
 export declare type VertexBufferDataType = VertexBufferIntegerDataType | VertexBufferFloatDataType;

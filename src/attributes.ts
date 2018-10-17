@@ -26,7 +26,7 @@ const INT_PATTERN = /^0|[1-9]\d*$/;
  * options for converting integer values to floats. IPOINTER always retains
  * integers types.
  */
-export const enum AttributeType {
+export enum AttributeType {
     POINTER = "pointer",
     IPOINTER = "ipointer",
 }

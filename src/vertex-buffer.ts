@@ -1,7 +1,7 @@
 import * as assert from "./util/assert";
 import { BufferUsage } from "./types";
 
-export const enum VertexBufferIntegerDataType {
+export enum VertexBufferIntegerDataType {
     BYTE = 0x1400,
     UNSIGNED_BYTE = 0x1401,
     SHORT = 0x1402,
@@ -10,7 +10,7 @@ export const enum VertexBufferIntegerDataType {
     UNSIGNED_INT = 0x1405,
 }
 
-export const enum VertexBufferFloatDataType {
+export enum VertexBufferFloatDataType {
     FLOAT = 0x1406,
 }
 

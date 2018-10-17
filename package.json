@@ -28,7 +28,7 @@
     "compile:watch": "tsc --outDir build --watch",
     "bundle": "rollup --config",
     "bundle:all": "cross-env ALL=yes yarn bundle",
-    "copy-dts": "cpx \"build/**/{*.d.ts,*d.ts.map}\" dist && mv dist/index.d.ts dist/webglutenfree.d.ts",
+    "copy-dts": "cpx \"build/{*.d.ts,*d.ts.map}\" dist && mv dist/index.d.ts dist/webglutenfree.d.ts",
     "update-lib": "rimraf docs/lib && cpx \"dist/{webglutenfree.js,webglutenfree.js.map,**/*.d.ts}\" docs/lib",
     "test": "cross-env TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ava src/**/*.spec.ts",
     "lint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts\"",

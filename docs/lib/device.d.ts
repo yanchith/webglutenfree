@@ -9,7 +9,7 @@ import { Framebuffer } from "./framebuffer";
 /**
  * Available extensions.
  */
-export declare const enum Extension {
+export declare enum Extension {
     EXTColorBufferFloat = "EXT_color_buffer_float",
     OESTextureFloatLinear = "OES_texture_float_linear"
 }

@@ -2,7 +2,7 @@ import { State } from "./state";
 import { Command } from "./command";
 import { Attributes } from "./attributes";
 import { Framebuffer } from "./framebuffer";
-export declare const enum TargetBufferBitmask {
+export declare enum TargetBufferBitmask {
     COLOR = 16384,
     DEPTH = 256,
     STENCIL = 1024,
@@ -11,7 +11,7 @@ export declare const enum TargetBufferBitmask {
     DEPTH_STENCIL = 1280,
     COLOR_DEPTH_STENCIL = 17664
 }
-export declare const enum TargetBlitFilter {
+export declare enum TargetBlitFilter {
     NEAREST = 9728,
     LINEAR = 9729
 }

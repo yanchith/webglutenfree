@@ -6,7 +6,7 @@ import { Attributes } from "./attributes";
 import { Texture, TextureStorageFormat } from "./texture";
 import { Framebuffer } from "./framebuffer";
 
-export const enum TargetBufferBitmask {
+export enum TargetBufferBitmask {
     COLOR = 0x00004000,
     DEPTH = 0x00000100,
     STENCIL = 0x00000400,
@@ -16,7 +16,7 @@ export const enum TargetBufferBitmask {
     COLOR_DEPTH_STENCIL = COLOR | DEPTH | STENCIL,
 }
 
-export const enum TargetBlitFilter {
+export enum TargetBlitFilter {
     NEAREST = 0x2600,
     LINEAR = 0x2601,
 }

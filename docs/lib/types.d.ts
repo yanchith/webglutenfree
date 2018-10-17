@@ -1,4 +1,4 @@
-export declare const enum BufferUsage {
+export declare enum BufferUsage {
     STATIC_DRAW = 35044,
     DYNAMIC_DRAW = 35048,
     STREAM_DRAW = 35040,
@@ -9,7 +9,7 @@ export declare const enum BufferUsage {
     DYNAMIC_COPY = 35050,
     STREAM_COPY = 35042
 }
-export declare const enum UniformType {
+export declare enum UniformType {
     FLOAT = 5126,
     FLOAT_VEC2 = 35664,
     FLOAT_VEC3 = 35665,

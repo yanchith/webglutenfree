@@ -534,13 +534,13 @@ class Target {
         const { state, state: { gl } } = this;
         state.assertTargetBound(this, "clear");
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-        if (bits & 16384 /* COLOR */) {
+        if (bits & TargetBufferBitmask.COLOR) {
             gl.clearColor(r, g, b, a);
         }
-        if (bits & 256 /* DEPTH */) {
+        if (bits & TargetBufferBitmask.DEPTH) {
             gl.clearDepth(depth);
         }
-        if (bits & 1024 /* STENCIL */) {
+        if (bits & TargetBufferBitmask.STENCIL) {
             gl.clearStencil(stencil);
         }
         gl.clear(bits);
@@ -553,7 +553,7 @@ class Target {
         ? this.state.gl.drawingBufferWidth
         : this.surfaceWidth, dstHeight = this.surfaceHeight === void 0
         ? this.state.gl.drawingBufferHeight
-        : this.surfaceHeight, filter = 9728 /* NEAREST */, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
+        : this.surfaceHeight, filter = TargetBlitFilter.NEAREST, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
         const { state, state: { gl } } = this;
         state.assertTargetBound(this, "blit");
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
@@ -1284,7 +1284,7 @@ function parseDepth(depth) {
     if (IS_DEBUG_BUILD) {
         nonNull(depth.func, fmtParamNonNull("depth.func"));
     }
-    return new DepthTestDescriptor(depth.func || 513 /* LESS */, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
+    return new DepthTestDescriptor(depth.func || DepthFunc.LESS, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
 }
 function parseStencil(stencil) {
     if (!stencil) {
@@ -1327,27 +1327,27 @@ function parseStencil(stencil) {
         ? typeof stencil.op.fail === "object"
             ? stencil.op.fail.front
             : stencil.op.fail
-        : 7680 /* KEEP */, stencil.op
+        : StencilOp.KEEP, stencil.op
         ? typeof stencil.op.fail === "object"
             ? stencil.op.fail.back
             : stencil.op.fail
-        : 7680 /* KEEP */, stencil.op
+        : StencilOp.KEEP, stencil.op
         ? typeof stencil.op.zfail === "object"
             ? stencil.op.zfail.front
             : stencil.op.zfail
-        : 7680 /* KEEP */, stencil.op
+        : StencilOp.KEEP, stencil.op
         ? typeof stencil.op.zfail === "object"
             ? stencil.op.zfail.back
             : stencil.op.zfail
-        : 7680 /* KEEP */, stencil.op
+        : StencilOp.KEEP, stencil.op
         ? typeof stencil.op.zpass === "object"
             ? stencil.op.zpass.front
             : stencil.op.zpass
-        : 7680 /* KEEP */, stencil.op
+        : StencilOp.KEEP, stencil.op
         ? typeof stencil.op.zpass === "object"
             ? stencil.op.zpass.back
             : stencil.op.zpass
-        : 7680 /* KEEP */);
+        : StencilOp.KEEP);
 }
 function parseBlend(blend) {
     if (!blend) {
@@ -1379,11 +1379,11 @@ function parseBlend(blend) {
         ? typeof blend.equation === "object"
             ? blend.equation.rgb
             : blend.equation
-        : 32774 /* FUNC_ADD */, blend.equation
+        : BlendEquation.FUNC_ADD, blend.equation
         ? typeof blend.equation === "object"
             ? blend.equation.alpha
             : blend.equation
-        : 32774 /* FUNC_ADD */, blend.color);
+        : BlendEquation.FUNC_ADD, blend.color);
 }
 function fmtParamNonNull(name) {
     return () => `Missing parameter ${name}`;
@@ -1405,10 +1405,10 @@ var VertexBufferFloatDataType;
 (function (VertexBufferFloatDataType) {
     VertexBufferFloatDataType[VertexBufferFloatDataType["FLOAT"] = 5126] = "FLOAT";
 })(VertexBufferFloatDataType || (VertexBufferFloatDataType = {}));
-function _createVertexBuffer(gl, type, size, { usage = 35048 /* DYNAMIC_DRAW */ } = {}) {
+function _createVertexBuffer(gl, type, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
     return new VertexBuffer(gl, type, size, size * sizeOf(type), usage);
 }
-function _createVertexBufferWithTypedArray(gl, type, data, { usage = 35044 /* STATIC_DRAW */ } = {}) {
+function _createVertexBufferWithTypedArray(gl, type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
     return new VertexBuffer(gl, type, data.length, data.byteLength, usage).store(data);
 }
 /**
@@ -1463,15 +1463,15 @@ class VertexBuffer {
 }
 function sizeOf(type) {
     switch (type) {
-        case 5120 /* BYTE */:
-        case 5121 /* UNSIGNED_BYTE */:
+        case VertexBufferIntegerDataType.BYTE:
+        case VertexBufferIntegerDataType.UNSIGNED_BYTE:
             return 1;
-        case 5122 /* SHORT */:
-        case 5123 /* UNSIGNED_SHORT */:
+        case VertexBufferIntegerDataType.SHORT:
+        case VertexBufferIntegerDataType.UNSIGNED_SHORT:
             return 2;
-        case 5124 /* INT */:
-        case 5125 /* UNSIGNED_INT */:
-        case 5126 /* FLOAT */:
+        case VertexBufferIntegerDataType.INT:
+        case VertexBufferIntegerDataType.UNSIGNED_INT:
+        case VertexBufferFloatDataType.FLOAT:
             return 4;
         default: return unreachable(type);
     }
@@ -1546,7 +1546,7 @@ var ElementBufferDataType;
     ElementBufferDataType[ElementBufferDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
     ElementBufferDataType[ElementBufferDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
 })(ElementBufferDataType || (ElementBufferDataType = {}));
-function _createElementBuffer(gl, type, primitive, size, { usage = 35048 /* DYNAMIC_DRAW */ } = {}) {
+function _createElementBuffer(gl, type, primitive, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
     return new ElementBuffer(gl, type, primitive, size, size * sizeOf$1(type), usage);
 }
 function _createElementBufferWithArray(gl, data, options) {
@@ -1557,13 +1557,13 @@ function _createElementBufferWithArray(gl, data, options) {
         });
         const ravel = ravel2(data, shape);
         const primitive = shape[1] === 3
-            ? 4 /* TRIANGLE_LIST */
-            : 1 /* LINE_LIST */;
-        return _createElementBufferWithTypedArray(gl, 5125 /* UNSIGNED_INT */, primitive, new Uint32Array(ravel), options);
+            ? ElementPrimitive.TRIANGLE_LIST
+            : ElementPrimitive.LINE_LIST;
+        return _createElementBufferWithTypedArray(gl, ElementBufferDataType.UNSIGNED_INT, primitive, new Uint32Array(ravel), options);
     }
-    return _createElementBufferWithTypedArray(gl, 5125 /* UNSIGNED_INT */, 0 /* POINT_LIST */, new Uint32Array(data), options);
+    return _createElementBufferWithTypedArray(gl, ElementBufferDataType.UNSIGNED_INT, ElementPrimitive.POINT_LIST, new Uint32Array(data), options);
 }
-function _createElementBufferWithTypedArray(gl, type, primitive, data, { usage = 35044 /* STATIC_DRAW */ } = {}) {
+function _createElementBufferWithTypedArray(gl, type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
     return new ElementBuffer(gl, type, primitive, data.length, data.length * sizeOf$1(type), usage).store(data);
 }
 /**
@@ -1618,11 +1618,11 @@ class ElementBuffer {
 }
 function sizeOf$1(type) {
     switch (type) {
-        case 5121 /* UNSIGNED_BYTE */:
+        case ElementBufferDataType.UNSIGNED_BYTE:
             return 1;
-        case 5123 /* UNSIGNED_SHORT */:
+        case ElementBufferDataType.UNSIGNED_SHORT:
             return 2;
-        case 5125 /* UNSIGNED_INT */:
+        case ElementBufferDataType.UNSIGNED_INT:
             return 4;
         default: return unreachable(type);
     }
@@ -1655,11 +1655,11 @@ function _createAttributes(state, elements, attributes, { countLimit } = {}) {
             if (is2(definition)) {
                 const s = shape2(definition);
                 const r = ravel2(definition, s);
-                return new AttributeDescriptor(location, "pointer" /* POINTER */, _createVertexBufferWithTypedArray(state.gl, 5126 /* FLOAT */, new Float32Array(r)), s[0], s[1], false, 0);
+                return new AttributeDescriptor(location, AttributeType.POINTER, _createVertexBufferWithTypedArray(state.gl, VertexBufferFloatDataType.FLOAT, new Float32Array(r)), s[0], s[1], false, 0);
             }
-            return new AttributeDescriptor(location, "pointer" /* POINTER */, _createVertexBufferWithTypedArray(state.gl, 5126 /* FLOAT */, new Float32Array(definition)), definition.length, 1, false, 0);
+            return new AttributeDescriptor(location, AttributeType.POINTER, _createVertexBufferWithTypedArray(state.gl, VertexBufferFloatDataType.FLOAT, new Float32Array(definition)), definition.length, 1, false, 0);
         }
-        return new AttributeDescriptor(location, definition.type, definition.buffer, definition.count, definition.size, definition.type === "pointer" /* POINTER */
+        return new AttributeDescriptor(location, definition.type, definition.buffer, definition.count, definition.size, definition.type === AttributeType.POINTER
             ? (definition.normalized || false)
             : false, definition.divisor || 0);
     });
@@ -1744,10 +1744,10 @@ class Attributes {
             // Send buffer
             gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
             switch (type) {
-                case "pointer" /* POINTER */:
+                case AttributeType.POINTER:
                     gl.vertexAttribPointer(location, size, glBufferType, normalized, 0, 0);
                     break;
-                case "ipointer" /* IPOINTER */:
+                case AttributeType.IPOINTER:
                     gl.vertexAttribIPointer(location, size, glBufferType, 0, 0);
                     break;
                 default: unreachable(type);
@@ -1904,11 +1904,11 @@ var TextureMagFilter;
     TextureMagFilter[TextureMagFilter["NEAREST"] = 9728] = "NEAREST";
     TextureMagFilter[TextureMagFilter["LINEAR"] = 9729] = "LINEAR";
 })(TextureMagFilter || (TextureMagFilter = {}));
-function _createTexture(gl, width, height, storageFormat, { min = 9728 /* NEAREST */, mag = 9728 /* NEAREST */, wrapS = 33071 /* CLAMP_TO_EDGE */, wrapT = 33071 /* CLAMP_TO_EDGE */, } = {}) {
+function _createTexture(gl, width, height, storageFormat, { min = TextureMinFilter.NEAREST, mag = TextureMagFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
     return new Texture(gl, width, height, storageFormat, wrapS, wrapT, min, mag);
 }
 function _createTextureWithTypedArray(gl, width, height, storageFormat, data, dataFormat, dataType, options = {}) {
-    const { min = 9728 /* NEAREST */, mag = 9728 /* NEAREST */, wrapS = 33071 /* CLAMP_TO_EDGE */, wrapT = 33071 /* CLAMP_TO_EDGE */, } = options;
+    const { min = TextureMinFilter.NEAREST, mag = TextureMagFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
     return new Texture(gl, width, height, storageFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
 }
 /**
@@ -2064,13 +2064,13 @@ class Framebuffer {
         });
         if (depthStencil) {
             switch (depthStencil.storageFormat) {
-                case 35056 /* DEPTH24_STENCIL8 */:
-                case 36013 /* DEPTH32F_STENCIL8 */:
+                case TextureDepthStencilStorageFormat.DEPTH24_STENCIL8:
+                case TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8:
                     gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
-                case 33189 /* DEPTH_COMPONENT16 */:
-                case 33190 /* DEPTH_COMPONENT24 */:
-                case 36012 /* DEPTH_COMPONENT32F */:
+                case TextureDepthStorageFormat.DEPTH_COMPONENT16:
+                case TextureDepthStorageFormat.DEPTH_COMPONENT24:
+                case TextureDepthStorageFormat.DEPTH_COMPONENT32F:
                     gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
                     break;
                 default: unreachable(depthStencil, (p) => {
@@ -2348,7 +2348,7 @@ class Device {
      * store the image in the texture.
      */
     createTextureWithImage(image, options) {
-        return _createTextureWithTypedArray(this._gl, image.width, image.height, 32856 /* RGBA8 */, image.data, 6408 /* RGBA */, 5121 /* UNSIGNED_BYTE */, options);
+        return _createTextureWithTypedArray(this._gl, image.width, image.height, TextureColorStorageFormat.RGBA8, image.data, TextureFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
     }
     /**
      * Create a new texture with given width, height, and internal format.

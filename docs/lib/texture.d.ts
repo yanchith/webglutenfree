@@ -1,5 +1,5 @@
 /// <reference types="webgl2" />
-export declare const enum TextureColorStorageFormat {
+export declare enum TextureColorStorageFormat {
     R8 = 33321,
     R8_SNORM = 36756,
     R8UI = 33330,
@@ -41,17 +41,17 @@ export declare const enum TextureColorStorageFormat {
     RGBA16F = 34842,
     RGBA32F = 34836
 }
-export declare const enum TextureDepthStorageFormat {
+export declare enum TextureDepthStorageFormat {
     DEPTH_COMPONENT16 = 33189,
     DEPTH_COMPONENT24 = 33190,
     DEPTH_COMPONENT32F = 36012
 }
-export declare const enum TextureDepthStencilStorageFormat {
+export declare enum TextureDepthStencilStorageFormat {
     DEPTH24_STENCIL8 = 35056,
     DEPTH32F_STENCIL8 = 36013
 }
 export declare type TextureStorageFormat = TextureColorStorageFormat | TextureDepthStorageFormat | TextureDepthStencilStorageFormat;
-export declare const enum TextureFormat {
+export declare enum TextureFormat {
     RED = 6403,
     RG = 33319,
     RGB = 6407,
@@ -63,7 +63,7 @@ export declare const enum TextureFormat {
     DEPTH_COMPONENT = 6402,
     DEPTH_STENCIL = 34041
 }
-export declare const enum TextureDataType {
+export declare enum TextureDataType {
     BYTE = 5120,
     UNSIGNED_BYTE = 5121,
     SHORT = 5122,
@@ -75,12 +75,12 @@ export declare const enum TextureDataType {
     UNSIGNED_INT_24_8 = 34042,
     FLOAT_32_UNSIGNED_INT_24_8_REV = 36269
 }
-export declare const enum TextureWrap {
+export declare enum TextureWrap {
     CLAMP_TO_EDGE = 33071,
     REPEAT = 10497,
     MIRRORED_REPEAT = 33648
 }
-export declare const enum TextureMinFilter {
+export declare enum TextureMinFilter {
     NEAREST = 9728,
     LINEAR = 9729,
     NEAREST_MIPMAP_NEAREST = 9984,
@@ -88,7 +88,7 @@ export declare const enum TextureMinFilter {
     NEAREST_MIPMAP_LINEAR = 9986,
     LINEAR_MIPMAP_LINEAR = 9987
 }
-export declare const enum TextureMagFilter {
+export declare enum TextureMagFilter {
     NEAREST = 9728,
     LINEAR = 9729
 }

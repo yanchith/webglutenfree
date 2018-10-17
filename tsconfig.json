@@ -8,8 +8,6 @@
             "es2017"
         ],
 
-        "preserveConstEnums": true,
-
         "sourceMap": true,
         "declaration": true,
         "declarationMap": true,

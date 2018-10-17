@@ -1,4 +1,4 @@
-export const enum BufferUsage {
+export enum BufferUsage {
     STATIC_DRAW = 0x88E4,
     DYNAMIC_DRAW = 0x88E8,
     STREAM_DRAW = 0x88E0,
@@ -10,7 +10,7 @@ export const enum BufferUsage {
     STREAM_COPY = 0x88E2,
 }
 
-export const enum UniformType {
+export enum UniformType {
     FLOAT = 0x1406,
     FLOAT_VEC2 = 0x8B50,
     FLOAT_VEC3 = 0x8B51,

@@ -1,4 +1,4 @@
-export const enum TextureColorStorageFormat {
+export enum TextureColorStorageFormat {
     // RED
     R8 = 0x8229,
     R8_SNORM = 0x8F94,
@@ -55,13 +55,13 @@ export const enum TextureColorStorageFormat {
     // ALPHA
 }
 
-export const enum TextureDepthStorageFormat {
+export enum TextureDepthStorageFormat {
     DEPTH_COMPONENT16 = 0x81A5,
     DEPTH_COMPONENT24 = 0x81A6,
     DEPTH_COMPONENT32F = 0x8CAC,
 }
 
-export const enum TextureDepthStencilStorageFormat {
+export enum TextureDepthStencilStorageFormat {
     DEPTH24_STENCIL8 = 0x88F0,
     DEPTH32F_STENCIL8 = 0x8CAD,
 }
@@ -72,7 +72,7 @@ export type TextureStorageFormat =
     | TextureDepthStencilStorageFormat
     ;
 
-export const enum TextureFormat {
+export enum TextureFormat {
     RED = 0x1903,
     RG = 0x8227,
     RGB = 0x1907,
@@ -91,7 +91,7 @@ export const enum TextureFormat {
     // ALPHA
 }
 
-export const enum TextureDataType {
+export enum TextureDataType {
     BYTE = 0x1400,
     UNSIGNED_BYTE = 0x1401,
     SHORT = 0x1402,
@@ -114,13 +114,13 @@ export const enum TextureDataType {
     FLOAT_32_UNSIGNED_INT_24_8_REV = 0x8DAD,
 }
 
-export const enum TextureWrap {
+export enum TextureWrap {
     CLAMP_TO_EDGE = 0x812F,
     REPEAT = 0x2901,
     MIRRORED_REPEAT = 0x8370,
 }
 
-export const enum TextureMinFilter {
+export enum TextureMinFilter {
     NEAREST = 0x2600,
     LINEAR = 0x2601,
     NEAREST_MIPMAP_NEAREST = 0x2700,
@@ -129,7 +129,7 @@ export const enum TextureMinFilter {
     LINEAR_MIPMAP_LINEAR = 0x2703,
 }
 
-export const enum TextureMagFilter {
+export enum TextureMagFilter {
     NEAREST = 0x2600,
     LINEAR = 0x2601,
 }

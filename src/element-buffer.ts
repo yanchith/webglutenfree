@@ -14,7 +14,7 @@ export type ElementArray =
     | number[][]
     ;
 
-export const enum ElementPrimitive {
+export enum ElementPrimitive {
     POINT_LIST = 0x0000,
     LINE_LIST = 0x0001,
     LINE_LOOP = 0x0002,
@@ -24,7 +24,7 @@ export const enum ElementPrimitive {
     TRIANGLE_FAN = 0x0006,
 }
 
-export const enum ElementBufferDataType {
+export enum ElementBufferDataType {
     UNSIGNED_BYTE = 0x1401,
     UNSIGNED_SHORT = 0x1403,
     UNSIGNED_INT = 0x1405,
