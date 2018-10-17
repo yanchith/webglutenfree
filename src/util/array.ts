@@ -1,5 +1,5 @@
 import * as assert from "./assert";
-import { process } from "./process-shim";
+import { IS_DEBUG_BUILD } from "./env";
 
 /**
  * Checks whether array has at least two dimensions.
@@ -11,8 +11,7 @@ export function is2<T>(array: T[] | T[][]): array is T[][] {
     if (!array.length) { return false; }
     const length2 = Array.isArray(array[0]) ? (array[0] as unknown[]).length : -1;
 
-    // Do some asserts if not production
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         (array as unknown[]).forEach((sub) => {
             if (length2 !== -1) {
                 if (assert.isArray(sub)) {

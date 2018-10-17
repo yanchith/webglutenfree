@@ -1,5 +1,5 @@
 import * as assert from "./util/assert";
-import { process } from "./util/process-shim";
+import { IS_DEBUG_BUILD } from "./util/env";
 import {
     State,
     DepthTestDescriptor,
@@ -381,7 +381,7 @@ export class Command<P> {
 
         // Validation time! (only for nonproduction envs)
 
-        if (process.env.NODE_ENV !== "production") {
+        if (IS_DEBUG_BUILD) {
             if (!prog) {
                 // ctx loss or not, we can panic all we want in nonprod env!
                 throw new Error("Program was not compiled, possible reason: context loss");
@@ -800,7 +800,10 @@ function parseDepth(
     depth: CommandCreateOptions<void>["depth"],
 ): DepthTestDescriptor | undefined {
     if (!depth) { return undefined; }
-    assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
+    // TODO: DCE did not kick in here without help
+    if (IS_DEBUG_BUILD) {
+        assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
+    }
     return new DepthTestDescriptor(
         depth.func || DepthFunc.LESS,
         typeof depth.mask === "boolean" ? depth.mask : true,
@@ -813,8 +816,11 @@ function parseStencil(
     stencil: CommandCreateOptions<void>["stencil"],
 ): StencilTestDescriptor | undefined {
     if (!stencil) { return undefined; }
-    assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
-    // TODO: complete stencil validation... validation framework?
+    // TODO: DCE did not kick in here without help
+    if (IS_DEBUG_BUILD) {
+        assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+    }
+    // TODO: complete stencil validation
     return new StencilTestDescriptor(
         typeof stencil.func.func === "object"
             ? stencil.func.func.front
@@ -889,28 +895,31 @@ function parseBlend(
     blend: CommandCreateOptions<void>["blend"],
 ): BlendDescriptor | undefined {
     if (!blend) { return undefined; }
-    assert.nonNull(blend.func, fmtParamNonNull("blend.func"));
-    assert.nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
-    assert.nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
-    if (typeof blend.func.src === "object") {
-        assert.nonNull(
-            blend.func.src.rgb,
-            fmtParamNonNull("blend.func.src.rgb"),
-        );
-        assert.nonNull(
-            blend.func.src.alpha,
-            fmtParamNonNull("blend.func.src.alpha"),
-        );
-    }
-    if (typeof blend.func.dst === "object") {
-        assert.nonNull(
-            blend.func.dst.rgb,
-            fmtParamNonNull("blend.func.dst.rgb"),
-        );
-        assert.nonNull(
-            blend.func.dst.alpha,
-            fmtParamNonNull("blend.func.dst.alpha"),
-        );
+    // TODO: DCE did not kick in here without help
+    if (IS_DEBUG_BUILD) {
+        assert.nonNull(blend.func, fmtParamNonNull("blend.func"));
+        assert.nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+        assert.nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+        if (typeof blend.func.src === "object") {
+            assert.nonNull(
+                blend.func.src.rgb,
+                fmtParamNonNull("blend.func.src.rgb"),
+            );
+            assert.nonNull(
+                blend.func.src.alpha,
+                fmtParamNonNull("blend.func.src.alpha"),
+            );
+        }
+        if (typeof blend.func.dst === "object") {
+            assert.nonNull(
+                blend.func.dst.rgb,
+                fmtParamNonNull("blend.func.dst.rgb"),
+            );
+            assert.nonNull(
+                blend.func.dst.alpha,
+                fmtParamNonNull("blend.func.dst.alpha"),
+            );
+        }
     }
     return new BlendDescriptor(
         typeof blend.func.src === "object"

@@ -1,11 +1,11 @@
-import { process } from "./process-shim";
+import { IS_DEBUG_BUILD } from "./env";
 
 export function isTrue(
     got: unknown,
     fmt?: (got: unknown) => string,
 ): got is true {
     const valueIsTrue = got === true;
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         if (!valueIsTrue) {
             const msg = fmt
                 ? fmt(got)
@@ -21,7 +21,7 @@ export function isFalse(
     (got: unknown) => string,
 ): got is false {
     const valueIsFalse = got === false;
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         if (!valueIsFalse) {
             const msg = fmt
                 ? fmt(got)
@@ -37,7 +37,7 @@ export function isArray(
     fmt?: (got: unknown) => string,
 ): got is unknown[] {
     const valueIsArray = Array.isArray(got);
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         if (!valueIsArray) {
             const msg = fmt
                 ? fmt(got)
@@ -52,9 +52,9 @@ export function nonNull(
     got: unknown,
     fmt?: (got: unknown) => string,
 ): boolean {
-    const valueIsNonNull = typeof got === "undefined"
-        || typeof got === "object" && !got;
-    if (process.env.NODE_ENV !== "production") {
+    const valueIsNonNull = typeof got !== "undefined"
+        && (typeof got !== "object" || !!got);
+    if (IS_DEBUG_BUILD) {
         if (!valueIsNonNull) {
             const msg = fmt
                 ? fmt(got)
@@ -70,7 +70,7 @@ export function nonEmpty<T>(
     fmt?: (got: string | T[]) => string,
 ): boolean {
     const valueIsNonEmpty = !!got.length;
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         if (!valueIsNonEmpty) {
             const msg = fmt
                 ? fmt(got)
@@ -87,7 +87,7 @@ export function equal<T>(
     fmt?: (got: T, expected: T) => string,
 ): boolean {
     const valuesAreEqual = got === expected;
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         if (!valuesAreEqual) {
             const msg = fmt
                 ? fmt(got, expected)
@@ -104,7 +104,7 @@ export function oneOf<T>(
     fmt?: (got: T, expected: T[]) => string,
 ): boolean {
     const valueIsOneOf = expected.includes(got);
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         if (!valueIsOneOf) {
             const msg = fmt
                 ? fmt(got, expected)
@@ -121,7 +121,7 @@ export function gt(
     fmt?: (got: number, low: number) => string,
 ): boolean {
     const valueIsGt = got > low;
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         if (!valueIsGt) {
             const msg = fmt
                 ? fmt(got, low)
@@ -138,7 +138,7 @@ export function gte(
     fmt?: (got: number, low: number) => string,
 ): boolean {
     const valueIsGte = got >= low;
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         if (!valueIsGte) {
             const msg = fmt
                 ? fmt(got, low)
@@ -156,7 +156,7 @@ export function rangeInclusive(
     fmt?: (got: number, low: number, high: number) => string,
 ): boolean {
     const valueIsInRangeInclusive = got >= low && got <= high;
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         if (!valueIsInRangeInclusive) {
             const msg = fmt
                 ? fmt(got, low, high)
@@ -168,8 +168,8 @@ export function rangeInclusive(
 }
 
 export function unreachable(got: never, fmt?: (p: unknown) => string): never {
-    // "never" can not be eliminated, as its "return value" is actually captured
-    // at the callsites for control-flow.
+    // "unreachable" can not be eliminated, as its "return value" is
+    // captured by the type system at the callsite for control-flow analysis.
     const msg = fmt
         ? fmt(got)
         : `Assertion failed: this branch should be unreachable`;

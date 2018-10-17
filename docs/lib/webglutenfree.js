@@ -1,100 +1,118 @@
-// Rollup has gotten smarter and realizes that
-// `{ env: { NODE_ENV: "development" } }` is a constant. It therefore inlines
-// it, getting rid of our shim, and leaves no option to replace it for our
-// users. Rollup cannot see through the __OPAQUE_TRUE__ however, so it can't
-// inline the `process.env.NODE_ENV` shim.
+// This file contains facilities for determining whether we are currently in a
+// debug build. Production builds completely dead-code-eliminate its contents
+// and all blocks guarded by `IS_DEBUG_BUILD` throughout the project.
+// For nonproduction builds `IS_DEBUG_BUILD` is not eliminated and always
+// evaluates to `true`, however, consumers can always perform the
+// same dead code elimination further down the road by replacing (or envifying)
+// `process.env.NODE_ENV` with "production".
 const __OPAQUE_TRUE__ = Math.random() > -1;
 const __OPAQUE_ENV__ = __OPAQUE_TRUE__ ? "development" : "production";
-/**
- * Shim NODE_ENV in node's `process.env`. Our production build replaces
- * all usages making the shim eligible for DCE. Downstream source users can use
- * replacers or envifiers achieve the same.
- */
 const process = { env: { NODE_ENV: __OPAQUE_ENV__ } };
+/**
+ * Are we in a debug build?
+ */
+const IS_DEBUG_BUILD = process.env.NODE_ENV !== "production";
 
-function isTrue(got, fmt) {
-    if (process.env.NODE_ENV !== "production") {
-        if (got !== true) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value ${got} not true`;
-            throw new Error(msg);
-        }
-    }
-}
 function isFalse(got, fmt) {
-    if (process.env.NODE_ENV !== "production") {
-        if (got !== false) {
+    const valueIsFalse = got === false;
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsFalse) {
             const msg = fmt
                 ? fmt(got)
                 : `Assertion failed: value ${got} not false`;
             throw new Error(msg);
         }
     }
+    return valueIsFalse;
+}
+function isArray(got, fmt) {
+    const valueIsArray = Array.isArray(got);
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsArray) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value ${got} not an array`;
+            throw new Error(msg);
+        }
+    }
+    return valueIsArray;
 }
 function nonNull(got, fmt) {
-    if (process.env.NODE_ENV !== "production") {
-        if (typeof got === "undefined" || typeof got === "object" && !got) {
+    const valueIsNonNull = typeof got !== "undefined"
+        && (typeof got !== "object" || !!got);
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsNonNull) {
             const msg = fmt
                 ? fmt(got)
                 : `Assertion failed: value undefined or null`;
             throw new Error(msg);
         }
     }
+    return valueIsNonNull;
 }
 function nonEmpty(got, fmt) {
-    if (process.env.NODE_ENV !== "production") {
-        if (!got.length) {
+    const valueIsNonEmpty = !!got.length;
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsNonEmpty) {
             const msg = fmt
                 ? fmt(got)
                 : `Assertion failed: string or array value empty`;
             throw new Error(msg);
         }
     }
+    return valueIsNonEmpty;
 }
 function equal(got, expected, fmt) {
-    if (process.env.NODE_ENV !== "production") {
-        if (got !== expected) {
+    const valuesAreEqual = got === expected;
+    if (IS_DEBUG_BUILD) {
+        if (!valuesAreEqual) {
             const msg = fmt
                 ? fmt(got, expected)
                 : `Assertion failed: value ${got} not equal to ${expected}`;
             throw new Error(msg);
         }
     }
+    return valuesAreEqual;
 }
 function oneOf(got, expected, fmt) {
-    if (process.env.NODE_ENV !== "production") {
-        if (!expected.includes(got)) {
+    const valueIsOneOf = expected.includes(got);
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsOneOf) {
             const msg = fmt
                 ? fmt(got, expected)
                 : `Assertion failed: value ${got} not in ${expected}`;
             throw new Error(msg);
         }
     }
+    return valueIsOneOf;
 }
 function gt(got, low, fmt) {
-    if (process.env.NODE_ENV !== "production") {
-        if (got <= low) {
+    const valueIsGt = got > low;
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsGt) {
             const msg = fmt
                 ? fmt(got, low)
                 : `Assertion failed: value ${got} not GT than expected ${low}`;
             throw new Error(msg);
         }
     }
+    return valueIsGt;
 }
 function rangeInclusive(got, low, high, fmt) {
-    if (process.env.NODE_ENV !== "production") {
-        if (got < low || got > high) {
+    const valueIsInRangeInclusive = got >= low && got <= high;
+    if (IS_DEBUG_BUILD) {
+        if (!valueIsInRangeInclusive) {
             const msg = fmt
                 ? fmt(got, low, high)
                 : `Assertion failed: value ${got} not in range [${low},${high}]`;
             throw new Error(msg);
         }
     }
+    return valueIsInRangeInclusive;
 }
 function unreachable(got, fmt) {
-    // "never" can not be eliminated, as its "return value" is actually captured
-    // at the callsites for control-flow.
+    // "unreachable" can not be eliminated, as its "return value" is
+    // captured by the type system at the callsite for control-flow analysis.
     const msg = fmt
         ? fmt(got)
         : `Assertion failed: this branch should be unreachable`;
@@ -1050,7 +1068,7 @@ class Command {
         gl.deleteShader(vs);
         gl.deleteShader(fs);
         // Validation time! (only for nonproduction envs)
-        if (process.env.NODE_ENV !== "production") {
+        if (IS_DEBUG_BUILD) {
             if (!prog) {
                 // ctx loss or not, we can panic all we want in nonprod env!
                 throw new Error("Program was not compiled, possible reason: context loss");
@@ -1412,15 +1430,21 @@ function parseDepth(depth) {
     if (!depth) {
         return undefined;
     }
-    nonNull(depth.func, fmtParamNonNull("depth.func"));
+    // TODO: DCE did not kick in here without help
+    if (IS_DEBUG_BUILD) {
+        nonNull(depth.func, fmtParamNonNull("depth.func"));
+    }
     return new DepthTestDescriptor(depth.func || DepthFunc.LESS, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
 }
 function parseStencil(stencil) {
     if (!stencil) {
         return undefined;
     }
-    nonNull(stencil.func, fmtParamNonNull("stencil.func"));
-    // TODO: complete stencil validation... validation framework?
+    // TODO: DCE did not kick in here without help
+    if (IS_DEBUG_BUILD) {
+        nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+    }
+    // TODO: complete stencil validation
     return new StencilTestDescriptor(typeof stencil.func.func === "object"
         ? stencil.func.func.front
         : stencil.func.func, typeof stencil.func.func === "object"
@@ -1479,16 +1503,19 @@ function parseBlend(blend) {
     if (!blend) {
         return undefined;
     }
-    nonNull(blend.func, fmtParamNonNull("blend.func"));
-    nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
-    nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
-    if (typeof blend.func.src === "object") {
-        nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
-        nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
-    }
-    if (typeof blend.func.dst === "object") {
-        nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
-        nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
+    // TODO: DCE did not kick in here without help
+    if (IS_DEBUG_BUILD) {
+        nonNull(blend.func, fmtParamNonNull("blend.func"));
+        nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
+        nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+        if (typeof blend.func.src === "object") {
+            nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
+            nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
+        }
+        if (typeof blend.func.dst === "object") {
+            nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
+            nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
+        }
     }
     return new BlendDescriptor(typeof blend.func.src === "object"
         ? blend.func.src.rgb
@@ -1599,16 +1626,15 @@ function is2(array) {
         return false;
     }
     const length2 = Array.isArray(array[0]) ? array[0].length : -1;
-    // Do some asserts if not production
-    if (process.env.NODE_ENV !== "production") {
+    if (IS_DEBUG_BUILD) {
         array.forEach((sub) => {
-            const isSubArray = Array.isArray(sub);
             if (length2 !== -1) {
-                isTrue(isSubArray);
-                equal(sub.length, length2);
+                if (isArray(sub)) {
+                    equal(sub.length, length2);
+                }
             }
             else {
-                isFalse(isSubArray);
+                isFalse(Array.isArray(sub));
             }
         });
     }
@@ -1965,24 +1991,26 @@ class Texture {
 
 function _createFramebuffer(state, width, height, color, depthStencil) {
     const colors = Array.isArray(color) ? color : [color];
-    nonEmpty(colors, () => {
-        return "Framebuffer color attachments must not be empty";
-    });
-    colors.forEach((buffer) => {
-        equal(width, buffer.width, (got, expected) => {
-            return `Expected attachment width ${expected}, got ${got}`;
+    if (IS_DEBUG_BUILD) {
+        nonEmpty(colors, () => {
+            return "Framebuffer color attachments must not be empty";
         });
-        equal(height, buffer.height, (got, expected) => {
-            return `Expected attachment height ${expected}, got ${got}`;
+        colors.forEach((buffer) => {
+            equal(width, buffer.width, (got, expected) => {
+                return `Expected attachment width ${expected}, got ${got}`;
+            });
+            equal(height, buffer.height, (got, expected) => {
+                return `Expected attachment height ${expected}, got ${got}`;
+            });
         });
-    });
-    if (depthStencil) {
-        equal(width, depthStencil.width, (got, expected) => {
-            return `Expected attachment width ${expected}, got ${got}`;
-        });
-        equal(height, depthStencil.height, (got, expected) => {
-            return `Expected attachment height ${expected}, got ${got}`;
-        });
+        if (depthStencil) {
+            equal(width, depthStencil.width, (got, expected) => {
+                return `Expected attachment width ${expected}, got ${got}`;
+            });
+            equal(height, depthStencil.height, (got, expected) => {
+                return `Expected attachment height ${expected}, got ${got}`;
+            });
+        }
     }
     return new Framebuffer(state, width, height, colors, depthStencil);
 }
