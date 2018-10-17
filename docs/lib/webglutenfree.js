@@ -1,3 +1,38 @@
+var BufferUsage;
+(function (BufferUsage) {
+    BufferUsage[BufferUsage["STATIC_DRAW"] = 35044] = "STATIC_DRAW";
+    BufferUsage[BufferUsage["DYNAMIC_DRAW"] = 35048] = "DYNAMIC_DRAW";
+    BufferUsage[BufferUsage["STREAM_DRAW"] = 35040] = "STREAM_DRAW";
+    BufferUsage[BufferUsage["STATIC_READ"] = 35045] = "STATIC_READ";
+    BufferUsage[BufferUsage["DYNAMIC_READ"] = 35049] = "DYNAMIC_READ";
+    BufferUsage[BufferUsage["STREAM_READ"] = 35041] = "STREAM_READ";
+    BufferUsage[BufferUsage["STATIC_COPY"] = 35046] = "STATIC_COPY";
+    BufferUsage[BufferUsage["DYNAMIC_COPY"] = 35050] = "DYNAMIC_COPY";
+    BufferUsage[BufferUsage["STREAM_COPY"] = 35042] = "STREAM_COPY";
+})(BufferUsage || (BufferUsage = {}));
+var UniformType;
+(function (UniformType) {
+    UniformType[UniformType["FLOAT"] = 5126] = "FLOAT";
+    UniformType[UniformType["FLOAT_VEC2"] = 35664] = "FLOAT_VEC2";
+    UniformType[UniformType["FLOAT_VEC3"] = 35665] = "FLOAT_VEC3";
+    UniformType[UniformType["FLOAT_VEC4"] = 35666] = "FLOAT_VEC4";
+    UniformType[UniformType["INT"] = 5124] = "INT";
+    UniformType[UniformType["INT_VEC2"] = 35667] = "INT_VEC2";
+    UniformType[UniformType["INT_VEC3"] = 35668] = "INT_VEC3";
+    UniformType[UniformType["INT_VEC4"] = 35669] = "INT_VEC4";
+    UniformType[UniformType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
+    UniformType[UniformType["UNSIGNED_INT_VEC2"] = 36294] = "UNSIGNED_INT_VEC2";
+    UniformType[UniformType["UNSIGNED_INT_VEC3"] = 36295] = "UNSIGNED_INT_VEC3";
+    UniformType[UniformType["UNSIGNED_INT_VEC4"] = 36296] = "UNSIGNED_INT_VEC4";
+    UniformType[UniformType["FLOAT_MAT2"] = 35674] = "FLOAT_MAT2";
+    UniformType[UniformType["FLOAT_MAT3"] = 35675] = "FLOAT_MAT3";
+    UniformType[UniformType["FLOAT_MAT4"] = 35676] = "FLOAT_MAT4";
+    UniformType[UniformType["SAMPLER_2D"] = 35678] = "SAMPLER_2D";
+    UniformType[UniformType["SAMPLER_CUBE"] = 35680] = "SAMPLER_CUBE";
+    // TODO: support exotic types
+    // BOOL
+})(UniformType || (UniformType = {}));
+
 class DepthTestDescriptor {
     constructor(func, mask, rangeStart, rangeEnd) {
         this.func = func;
@@ -447,6 +482,21 @@ function unreachable(got, fmt) {
     throw new Error(msg);
 }
 
+var TargetBufferBitmask;
+(function (TargetBufferBitmask) {
+    TargetBufferBitmask[TargetBufferBitmask["COLOR"] = 16384] = "COLOR";
+    TargetBufferBitmask[TargetBufferBitmask["DEPTH"] = 256] = "DEPTH";
+    TargetBufferBitmask[TargetBufferBitmask["STENCIL"] = 1024] = "STENCIL";
+    TargetBufferBitmask[TargetBufferBitmask["COLOR_DEPTH"] = 16640] = "COLOR_DEPTH";
+    TargetBufferBitmask[TargetBufferBitmask["COLOR_STENCIL"] = 17408] = "COLOR_STENCIL";
+    TargetBufferBitmask[TargetBufferBitmask["DEPTH_STENCIL"] = 1280] = "DEPTH_STENCIL";
+    TargetBufferBitmask[TargetBufferBitmask["COLOR_DEPTH_STENCIL"] = 17664] = "COLOR_DEPTH_STENCIL";
+})(TargetBufferBitmask || (TargetBufferBitmask = {}));
+var TargetBlitFilter;
+(function (TargetBlitFilter) {
+    TargetBlitFilter[TargetBlitFilter["NEAREST"] = 9728] = "NEAREST";
+    TargetBlitFilter[TargetBlitFilter["LINEAR"] = 9729] = "LINEAR";
+})(TargetBlitFilter || (TargetBlitFilter = {}));
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
@@ -750,6 +800,64 @@ function access(props, index, value) {
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
+var DepthFunc;
+(function (DepthFunc) {
+    DepthFunc[DepthFunc["ALWAYS"] = 519] = "ALWAYS";
+    DepthFunc[DepthFunc["NEVER"] = 512] = "NEVER";
+    DepthFunc[DepthFunc["EQUAL"] = 514] = "EQUAL";
+    DepthFunc[DepthFunc["NOTEQUAL"] = 517] = "NOTEQUAL";
+    DepthFunc[DepthFunc["LESS"] = 513] = "LESS";
+    DepthFunc[DepthFunc["LEQUAL"] = 515] = "LEQUAL";
+    DepthFunc[DepthFunc["GREATER"] = 516] = "GREATER";
+    DepthFunc[DepthFunc["GEQUAL"] = 518] = "GEQUAL";
+})(DepthFunc || (DepthFunc = {}));
+var StencilFunc;
+(function (StencilFunc) {
+    StencilFunc[StencilFunc["ALWAYS"] = 519] = "ALWAYS";
+    StencilFunc[StencilFunc["NEVER"] = 512] = "NEVER";
+    StencilFunc[StencilFunc["EQUAL"] = 514] = "EQUAL";
+    StencilFunc[StencilFunc["NOTEQUAL"] = 517] = "NOTEQUAL";
+    StencilFunc[StencilFunc["LESS"] = 513] = "LESS";
+    StencilFunc[StencilFunc["LEQUAL"] = 515] = "LEQUAL";
+    StencilFunc[StencilFunc["GREATER"] = 516] = "GREATER";
+    StencilFunc[StencilFunc["GEQUAL"] = 518] = "GEQUAL";
+})(StencilFunc || (StencilFunc = {}));
+var StencilOp;
+(function (StencilOp) {
+    StencilOp[StencilOp["KEEP"] = 7680] = "KEEP";
+    StencilOp[StencilOp["ZERO"] = 0] = "ZERO";
+    StencilOp[StencilOp["REPLACE"] = 7681] = "REPLACE";
+    StencilOp[StencilOp["INCR"] = 7682] = "INCR";
+    StencilOp[StencilOp["INCR_WRAP"] = 34055] = "INCR_WRAP";
+    StencilOp[StencilOp["DECR"] = 7683] = "DECR";
+    StencilOp[StencilOp["DECR_WRAP"] = 34056] = "DECR_WRAP";
+    StencilOp[StencilOp["INVERT"] = 5386] = "INVERT";
+})(StencilOp || (StencilOp = {}));
+var BlendFunc;
+(function (BlendFunc) {
+    BlendFunc[BlendFunc["ZERO"] = 0] = "ZERO";
+    BlendFunc[BlendFunc["ONE"] = 1] = "ONE";
+    BlendFunc[BlendFunc["SRC_COLOR"] = 768] = "SRC_COLOR";
+    BlendFunc[BlendFunc["SRC_ALPHA"] = 770] = "SRC_ALPHA";
+    BlendFunc[BlendFunc["ONE_MINUS_SRC_COLOR"] = 769] = "ONE_MINUS_SRC_COLOR";
+    BlendFunc[BlendFunc["ONE_MINUS_SRC_ALPHA"] = 771] = "ONE_MINUS_SRC_ALPHA";
+    BlendFunc[BlendFunc["DST_COLOR"] = 774] = "DST_COLOR";
+    BlendFunc[BlendFunc["DST_ALPHA"] = 772] = "DST_ALPHA";
+    BlendFunc[BlendFunc["ONE_MINUS_DST_COLOR"] = 775] = "ONE_MINUS_DST_COLOR";
+    BlendFunc[BlendFunc["ONE_MINUS_DST_ALPHA"] = 773] = "ONE_MINUS_DST_ALPHA";
+    BlendFunc[BlendFunc["CONSTANT_COLOR"] = 32769] = "CONSTANT_COLOR";
+    BlendFunc[BlendFunc["CONSTANT_ALPHA"] = 32771] = "CONSTANT_ALPHA";
+    BlendFunc[BlendFunc["ONE_MINUS_CONSTANT_COLOR"] = 32770] = "ONE_MINUS_CONSTANT_COLOR";
+    BlendFunc[BlendFunc["ONE_MINUS_CONSTANT_ALPHA"] = 32772] = "ONE_MINUS_CONSTANT_ALPHA";
+})(BlendFunc || (BlendFunc = {}));
+var BlendEquation;
+(function (BlendEquation) {
+    BlendEquation[BlendEquation["FUNC_ADD"] = 32774] = "FUNC_ADD";
+    BlendEquation[BlendEquation["FUNC_SUBTRACT"] = 32778] = "FUNC_SUBTRACT";
+    BlendEquation[BlendEquation["FUNC_REVERSE_SUBTRACT"] = 32779] = "FUNC_REVERSE_SUBTRACT";
+    BlendEquation[BlendEquation["MIN"] = 32775] = "MIN";
+    BlendEquation[BlendEquation["MAX"] = 32776] = "MAX";
+})(BlendEquation || (BlendEquation = {}));
 function _createCommand(state, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
     nonNull(vert, fmtParamNonNull("vert"));
     nonNull(frag, fmtParamNonNull("frag"));
@@ -1284,6 +1392,19 @@ function fmtTyMismatch(name) {
     return () => `Type mismatch for uniform field ${name}`;
 }
 
+var VertexBufferIntegerDataType;
+(function (VertexBufferIntegerDataType) {
+    VertexBufferIntegerDataType[VertexBufferIntegerDataType["BYTE"] = 5120] = "BYTE";
+    VertexBufferIntegerDataType[VertexBufferIntegerDataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
+    VertexBufferIntegerDataType[VertexBufferIntegerDataType["SHORT"] = 5122] = "SHORT";
+    VertexBufferIntegerDataType[VertexBufferIntegerDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
+    VertexBufferIntegerDataType[VertexBufferIntegerDataType["INT"] = 5124] = "INT";
+    VertexBufferIntegerDataType[VertexBufferIntegerDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
+})(VertexBufferIntegerDataType || (VertexBufferIntegerDataType = {}));
+var VertexBufferFloatDataType;
+(function (VertexBufferFloatDataType) {
+    VertexBufferFloatDataType[VertexBufferFloatDataType["FLOAT"] = 5126] = "FLOAT";
+})(VertexBufferFloatDataType || (VertexBufferFloatDataType = {}));
 function _createVertexBuffer(gl, type, size, { usage = 35048 /* DYNAMIC_DRAW */ } = {}) {
     return new VertexBuffer(gl, type, size, size * sizeOf(type), usage);
 }
@@ -1409,6 +1530,22 @@ function ravel2(unraveled, shape) {
     return raveled;
 }
 
+var ElementPrimitive;
+(function (ElementPrimitive) {
+    ElementPrimitive[ElementPrimitive["POINT_LIST"] = 0] = "POINT_LIST";
+    ElementPrimitive[ElementPrimitive["LINE_LIST"] = 1] = "LINE_LIST";
+    ElementPrimitive[ElementPrimitive["LINE_LOOP"] = 2] = "LINE_LOOP";
+    ElementPrimitive[ElementPrimitive["LINE_STRIP"] = 3] = "LINE_STRIP";
+    ElementPrimitive[ElementPrimitive["TRIANGLE_LIST"] = 4] = "TRIANGLE_LIST";
+    ElementPrimitive[ElementPrimitive["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
+    ElementPrimitive[ElementPrimitive["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
+})(ElementPrimitive || (ElementPrimitive = {}));
+var ElementBufferDataType;
+(function (ElementBufferDataType) {
+    ElementBufferDataType[ElementBufferDataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
+    ElementBufferDataType[ElementBufferDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
+    ElementBufferDataType[ElementBufferDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
+})(ElementBufferDataType || (ElementBufferDataType = {}));
 function _createElementBuffer(gl, type, primitive, size, { usage = 35048 /* DYNAMIC_DRAW */ } = {}) {
     return new ElementBuffer(gl, type, primitive, size, size * sizeOf$1(type), usage);
 }
@@ -1492,6 +1629,16 @@ function sizeOf$1(type) {
 }
 
 const INT_PATTERN$1 = /^0|[1-9]\d*$/;
+/**
+ * Attribute type for reading vertex buffers. POINTER provides normalization
+ * options for converting integer values to floats. IPOINTER always retains
+ * integers types.
+ */
+var AttributeType;
+(function (AttributeType) {
+    AttributeType["POINTER"] = "pointer";
+    AttributeType["IPOINTER"] = "ipointer";
+})(AttributeType || (AttributeType = {}));
 function _createAttributes(state, elements, attributes, { countLimit } = {}) {
     if (typeof countLimit === "number") {
         gt(countLimit, 0, (p) => {
@@ -1637,6 +1784,126 @@ class AttributeDescriptor {
     }
 }
 
+var TextureColorStorageFormat;
+(function (TextureColorStorageFormat) {
+    // RED
+    TextureColorStorageFormat[TextureColorStorageFormat["R8"] = 33321] = "R8";
+    TextureColorStorageFormat[TextureColorStorageFormat["R8_SNORM"] = 36756] = "R8_SNORM";
+    TextureColorStorageFormat[TextureColorStorageFormat["R8UI"] = 33330] = "R8UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["R8I"] = 33329] = "R8I";
+    TextureColorStorageFormat[TextureColorStorageFormat["R16UI"] = 33332] = "R16UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["R16I"] = 33331] = "R16I";
+    TextureColorStorageFormat[TextureColorStorageFormat["R32UI"] = 33334] = "R32UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["R32I"] = 33333] = "R32I";
+    TextureColorStorageFormat[TextureColorStorageFormat["R16F"] = 33325] = "R16F";
+    TextureColorStorageFormat[TextureColorStorageFormat["R32F"] = 33326] = "R32F";
+    // RG
+    TextureColorStorageFormat[TextureColorStorageFormat["RG8"] = 33323] = "RG8";
+    TextureColorStorageFormat[TextureColorStorageFormat["RG8_SNORM"] = 36757] = "RG8_SNORM";
+    TextureColorStorageFormat[TextureColorStorageFormat["RG8UI"] = 33336] = "RG8UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["RG8I"] = 33335] = "RG8I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RG16UI"] = 33338] = "RG16UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["RG16I"] = 33337] = "RG16I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RG32UI"] = 33340] = "RG32UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["RG32I"] = 33339] = "RG32I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RG16F"] = 33327] = "RG16F";
+    TextureColorStorageFormat[TextureColorStorageFormat["RG32F"] = 33328] = "RG32F";
+    // RGB
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB8"] = 32849] = "RGB8";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB8_SNORM"] = 36758] = "RGB8_SNORM";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB8UI"] = 36221] = "RGB8UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB8I"] = 36239] = "RGB8I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB16UI"] = 36215] = "RGB16UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB16I"] = 36233] = "RGB16I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB32UI"] = 36209] = "RGB32UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB32I"] = 36227] = "RGB32I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB16F"] = 34843] = "RGB16F";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB32F"] = 34837] = "RGB32F";
+    // RGBA
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA8"] = 32856] = "RGBA8";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA8_SNORM"] = 36759] = "RGBA8_SNORM";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA8UI"] = 36220] = "RGBA8UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA8I"] = 36238] = "RGBA8I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA16UI"] = 36214] = "RGBA16UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA16I"] = 36232] = "RGBA16I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA32UI"] = 36208] = "RGBA32UI";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA32I"] = 36226] = "RGBA32I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA16F"] = 34842] = "RGBA16F";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA32F"] = 34836] = "RGBA32F";
+    // TODO: support exotic formats
+    // ~LUMINANCE ALPHA
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+})(TextureColorStorageFormat || (TextureColorStorageFormat = {}));
+var TextureDepthStorageFormat;
+(function (TextureDepthStorageFormat) {
+    TextureDepthStorageFormat[TextureDepthStorageFormat["DEPTH_COMPONENT16"] = 33189] = "DEPTH_COMPONENT16";
+    TextureDepthStorageFormat[TextureDepthStorageFormat["DEPTH_COMPONENT24"] = 33190] = "DEPTH_COMPONENT24";
+    TextureDepthStorageFormat[TextureDepthStorageFormat["DEPTH_COMPONENT32F"] = 36012] = "DEPTH_COMPONENT32F";
+})(TextureDepthStorageFormat || (TextureDepthStorageFormat = {}));
+var TextureDepthStencilStorageFormat;
+(function (TextureDepthStencilStorageFormat) {
+    TextureDepthStencilStorageFormat[TextureDepthStencilStorageFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
+    TextureDepthStencilStorageFormat[TextureDepthStencilStorageFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
+})(TextureDepthStencilStorageFormat || (TextureDepthStencilStorageFormat = {}));
+var TextureFormat;
+(function (TextureFormat) {
+    TextureFormat[TextureFormat["RED"] = 6403] = "RED";
+    TextureFormat[TextureFormat["RG"] = 33319] = "RG";
+    TextureFormat[TextureFormat["RGB"] = 6407] = "RGB";
+    TextureFormat[TextureFormat["RGBA"] = 6408] = "RGBA";
+    TextureFormat[TextureFormat["RED_INTEGER"] = 36244] = "RED_INTEGER";
+    TextureFormat[TextureFormat["RG_INTEGER"] = 33320] = "RG_INTEGER";
+    TextureFormat[TextureFormat["RGB_INTEGER"] = 36248] = "RGB_INTEGER";
+    TextureFormat[TextureFormat["RGBA_INTEGER"] = 36249] = "RGBA_INTEGER";
+    // TODO: support exotic formats
+    TextureFormat[TextureFormat["DEPTH_COMPONENT"] = 6402] = "DEPTH_COMPONENT";
+    TextureFormat[TextureFormat["DEPTH_STENCIL"] = 34041] = "DEPTH_STENCIL";
+    // LUMINANCE_ALPHA
+    // LUMINANCE
+    // ALPHA
+})(TextureFormat || (TextureFormat = {}));
+var TextureDataType;
+(function (TextureDataType) {
+    TextureDataType[TextureDataType["BYTE"] = 5120] = "BYTE";
+    TextureDataType[TextureDataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
+    TextureDataType[TextureDataType["SHORT"] = 5122] = "SHORT";
+    TextureDataType[TextureDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
+    TextureDataType[TextureDataType["INT"] = 5124] = "INT";
+    TextureDataType[TextureDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
+    TextureDataType[TextureDataType["FLOAT"] = 5126] = "FLOAT";
+    TextureDataType[TextureDataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
+    // TODO: support exotic formats
+    // UNSIGNED_SHORT_4_4_4_4
+    // UNSIGNED_SHORT_5_5_5_1
+    // UNSIGNED_SHORT_5_6_5
+    TextureDataType[TextureDataType["UNSIGNED_INT_24_8"] = 34042] = "UNSIGNED_INT_24_8";
+    // UNSIGNED_INT_5_9_9_9_REV
+    // UNSIGNED_INT_2_10_10_10_REV
+    // UNSIGNED_INT_10F_11F_11F_REV
+    TextureDataType[TextureDataType["FLOAT_32_UNSIGNED_INT_24_8_REV"] = 36269] = "FLOAT_32_UNSIGNED_INT_24_8_REV";
+})(TextureDataType || (TextureDataType = {}));
+var TextureWrap;
+(function (TextureWrap) {
+    TextureWrap[TextureWrap["CLAMP_TO_EDGE"] = 33071] = "CLAMP_TO_EDGE";
+    TextureWrap[TextureWrap["REPEAT"] = 10497] = "REPEAT";
+    TextureWrap[TextureWrap["MIRRORED_REPEAT"] = 33648] = "MIRRORED_REPEAT";
+})(TextureWrap || (TextureWrap = {}));
+var TextureMinFilter;
+(function (TextureMinFilter) {
+    TextureMinFilter[TextureMinFilter["NEAREST"] = 9728] = "NEAREST";
+    TextureMinFilter[TextureMinFilter["LINEAR"] = 9729] = "LINEAR";
+    TextureMinFilter[TextureMinFilter["NEAREST_MIPMAP_NEAREST"] = 9984] = "NEAREST_MIPMAP_NEAREST";
+    TextureMinFilter[TextureMinFilter["LINEAR_MIPMAP_NEAREST"] = 9985] = "LINEAR_MIPMAP_NEAREST";
+    TextureMinFilter[TextureMinFilter["NEAREST_MIPMAP_LINEAR"] = 9986] = "NEAREST_MIPMAP_LINEAR";
+    TextureMinFilter[TextureMinFilter["LINEAR_MIPMAP_LINEAR"] = 9987] = "LINEAR_MIPMAP_LINEAR";
+})(TextureMinFilter || (TextureMinFilter = {}));
+var TextureMagFilter;
+(function (TextureMagFilter) {
+    TextureMagFilter[TextureMagFilter["NEAREST"] = 9728] = "NEAREST";
+    TextureMagFilter[TextureMagFilter["LINEAR"] = 9729] = "LINEAR";
+})(TextureMagFilter || (TextureMagFilter = {}));
 function _createTexture(gl, width, height, storageFormat, { min = 9728 /* NEAREST */, mag = 9728 /* NEAREST */, wrapS = 33071 /* CLAMP_TO_EDGE */, wrapT = 33071 /* CLAMP_TO_EDGE */, } = {}) {
     return new Texture(gl, width, height, storageFormat, wrapS, wrapT, min, mag);
 }
@@ -1836,6 +2103,14 @@ class Framebuffer {
     }
 }
 
+/**
+ * Available extensions.
+ */
+var Extension;
+(function (Extension) {
+    Extension["EXTColorBufferFloat"] = "EXT_color_buffer_float";
+    Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
+})(Extension || (Extension = {}));
 class Device {
     /**
      * Create a new canvas and device (containing a gl context). Mount it on
@@ -2103,5 +2378,5 @@ function createDebugFunc(gl, key) {
     };
 }
 
-export { Device, Target, Command, VertexBuffer, ElementBuffer, Attributes, Texture, Framebuffer };
+export { BufferUsage, Device, Extension, Target, TargetBufferBitmask, TargetBlitFilter, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferIntegerDataType, VertexBufferFloatDataType, ElementBuffer, ElementBufferDataType, ElementPrimitive, Attributes, AttributeType, Texture, TextureMinFilter, TextureMagFilter, TextureWrap, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, TextureFormat, TextureDataType, Framebuffer };
 //# sourceMappingURL=webglutenfree.js.map

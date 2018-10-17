@@ -8,6 +8,8 @@
             "es2017"
         ],
 
+        "preserveConstEnums": true,
+
         "sourceMap": true,
         "declaration": true,
         "declarationMap": true,
@@ -19,6 +21,5 @@
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true
     },
-    "include": ["src/**/*"],
-    "exclude": ["src/**/*.spec.*"]
+    "include": ["src/**/*"]
 }
