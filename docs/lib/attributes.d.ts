@@ -7,7 +7,7 @@ import { ElementBuffer, ElementArray, ElementBufferDataType, ElementPrimitive } 
  * options for converting integer values to floats. IPOINTER always retains
  * integers types.
  */
-export declare enum AttributeType {
+export declare const enum AttributeType {
     POINTER = "pointer",
     IPOINTER = "ipointer"
 }

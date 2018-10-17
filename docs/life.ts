@@ -41,7 +41,7 @@ const pongTex = dev.createTexture(
     lifeWidth,
     lifeHeight,
     TextureColorStorageFormat.R8,
-    { wrapS: TextureWrap.REPEAT, wrapT: TextureWrap.REPEAT},
+    { wrapS: TextureWrap.REPEAT, wrapT: TextureWrap.REPEAT },
 );
 
 const data = Array(lifeWidth * lifeHeight);

@@ -1,38 +1,3 @@
-var BufferUsage;
-(function (BufferUsage) {
-    BufferUsage[BufferUsage["STATIC_DRAW"] = 35044] = "STATIC_DRAW";
-    BufferUsage[BufferUsage["DYNAMIC_DRAW"] = 35048] = "DYNAMIC_DRAW";
-    BufferUsage[BufferUsage["STREAM_DRAW"] = 35040] = "STREAM_DRAW";
-    BufferUsage[BufferUsage["STATIC_READ"] = 35045] = "STATIC_READ";
-    BufferUsage[BufferUsage["DYNAMIC_READ"] = 35049] = "DYNAMIC_READ";
-    BufferUsage[BufferUsage["STREAM_READ"] = 35041] = "STREAM_READ";
-    BufferUsage[BufferUsage["STATIC_COPY"] = 35046] = "STATIC_COPY";
-    BufferUsage[BufferUsage["DYNAMIC_COPY"] = 35050] = "DYNAMIC_COPY";
-    BufferUsage[BufferUsage["STREAM_COPY"] = 35042] = "STREAM_COPY";
-})(BufferUsage || (BufferUsage = {}));
-var UniformType;
-(function (UniformType) {
-    UniformType[UniformType["FLOAT"] = 5126] = "FLOAT";
-    UniformType[UniformType["FLOAT_VEC2"] = 35664] = "FLOAT_VEC2";
-    UniformType[UniformType["FLOAT_VEC3"] = 35665] = "FLOAT_VEC3";
-    UniformType[UniformType["FLOAT_VEC4"] = 35666] = "FLOAT_VEC4";
-    UniformType[UniformType["INT"] = 5124] = "INT";
-    UniformType[UniformType["INT_VEC2"] = 35667] = "INT_VEC2";
-    UniformType[UniformType["INT_VEC3"] = 35668] = "INT_VEC3";
-    UniformType[UniformType["INT_VEC4"] = 35669] = "INT_VEC4";
-    UniformType[UniformType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
-    UniformType[UniformType["UNSIGNED_INT_VEC2"] = 36294] = "UNSIGNED_INT_VEC2";
-    UniformType[UniformType["UNSIGNED_INT_VEC3"] = 36295] = "UNSIGNED_INT_VEC3";
-    UniformType[UniformType["UNSIGNED_INT_VEC4"] = 36296] = "UNSIGNED_INT_VEC4";
-    UniformType[UniformType["FLOAT_MAT2"] = 35674] = "FLOAT_MAT2";
-    UniformType[UniformType["FLOAT_MAT3"] = 35675] = "FLOAT_MAT3";
-    UniformType[UniformType["FLOAT_MAT4"] = 35676] = "FLOAT_MAT4";
-    UniformType[UniformType["SAMPLER_2D"] = 35678] = "SAMPLER_2D";
-    UniformType[UniformType["SAMPLER_CUBE"] = 35680] = "SAMPLER_CUBE";
-    // TODO: support exotic types
-    // BOOL
-})(UniformType || (UniformType = {}));
-
 class DepthTestDescriptor {
     constructor(func, mask, rangeStart, rangeEnd) {
         this.func = func;
@@ -482,16 +447,6 @@ function unreachable(got, fmt) {
     throw new Error(msg);
 }
 
-var TargetBufferBitmask;
-(function (TargetBufferBitmask) {
-    TargetBufferBitmask[TargetBufferBitmask["COLOR"] = 16384] = "COLOR";
-    TargetBufferBitmask[TargetBufferBitmask["DEPTH"] = 256] = "DEPTH";
-    TargetBufferBitmask[TargetBufferBitmask["STENCIL"] = 1024] = "STENCIL";
-    TargetBufferBitmask[TargetBufferBitmask["COLOR_DEPTH"] = 16640] = "COLOR_DEPTH";
-    TargetBufferBitmask[TargetBufferBitmask["COLOR_STENCIL"] = 17408] = "COLOR_STENCIL";
-    TargetBufferBitmask[TargetBufferBitmask["DEPTH_STENCIL"] = 1280] = "DEPTH_STENCIL";
-    TargetBufferBitmask[TargetBufferBitmask["COLOR_DEPTH_STENCIL"] = 17664] = "COLOR_DEPTH_STENCIL";
-})(TargetBufferBitmask || (TargetBufferBitmask = {}));
 /**
  * Target represents a drawable surface. Get hold of targets with
  * `device.target()` or `framebuffer.target()`.
@@ -529,13 +484,13 @@ class Target {
         const { state, state: { gl } } = this;
         state.assertTargetBound(this, "clear");
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
-        if (bits & TargetBufferBitmask.COLOR) {
+        if (bits & 16384 /* COLOR */) {
             gl.clearColor(r, g, b, a);
         }
-        if (bits & TargetBufferBitmask.DEPTH) {
+        if (bits & 256 /* DEPTH */) {
             gl.clearDepth(depth);
         }
-        if (bits & TargetBufferBitmask.STENCIL) {
+        if (bits & 1024 /* STENCIL */) {
             gl.clearStencil(stencil);
         }
         gl.clear(bits);
@@ -795,64 +750,6 @@ function access(props, index, value) {
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
-var DepthFunc;
-(function (DepthFunc) {
-    DepthFunc[DepthFunc["ALWAYS"] = 519] = "ALWAYS";
-    DepthFunc[DepthFunc["NEVER"] = 512] = "NEVER";
-    DepthFunc[DepthFunc["EQUAL"] = 514] = "EQUAL";
-    DepthFunc[DepthFunc["NOTEQUAL"] = 517] = "NOTEQUAL";
-    DepthFunc[DepthFunc["LESS"] = 513] = "LESS";
-    DepthFunc[DepthFunc["LEQUAL"] = 515] = "LEQUAL";
-    DepthFunc[DepthFunc["GREATER"] = 516] = "GREATER";
-    DepthFunc[DepthFunc["GEQUAL"] = 518] = "GEQUAL";
-})(DepthFunc || (DepthFunc = {}));
-var StencilFunc;
-(function (StencilFunc) {
-    StencilFunc[StencilFunc["ALWAYS"] = 519] = "ALWAYS";
-    StencilFunc[StencilFunc["NEVER"] = 512] = "NEVER";
-    StencilFunc[StencilFunc["EQUAL"] = 514] = "EQUAL";
-    StencilFunc[StencilFunc["NOTEQUAL"] = 517] = "NOTEQUAL";
-    StencilFunc[StencilFunc["LESS"] = 513] = "LESS";
-    StencilFunc[StencilFunc["LEQUAL"] = 515] = "LEQUAL";
-    StencilFunc[StencilFunc["GREATER"] = 516] = "GREATER";
-    StencilFunc[StencilFunc["GEQUAL"] = 518] = "GEQUAL";
-})(StencilFunc || (StencilFunc = {}));
-var StencilOp;
-(function (StencilOp) {
-    StencilOp[StencilOp["KEEP"] = 7680] = "KEEP";
-    StencilOp[StencilOp["ZERO"] = 0] = "ZERO";
-    StencilOp[StencilOp["REPLACE"] = 7681] = "REPLACE";
-    StencilOp[StencilOp["INCR"] = 7682] = "INCR";
-    StencilOp[StencilOp["INCR_WRAP"] = 34055] = "INCR_WRAP";
-    StencilOp[StencilOp["DECR"] = 7683] = "DECR";
-    StencilOp[StencilOp["DECR_WRAP"] = 34056] = "DECR_WRAP";
-    StencilOp[StencilOp["INVERT"] = 5386] = "INVERT";
-})(StencilOp || (StencilOp = {}));
-var BlendFunc;
-(function (BlendFunc) {
-    BlendFunc[BlendFunc["ZERO"] = 0] = "ZERO";
-    BlendFunc[BlendFunc["ONE"] = 1] = "ONE";
-    BlendFunc[BlendFunc["SRC_COLOR"] = 768] = "SRC_COLOR";
-    BlendFunc[BlendFunc["SRC_ALPHA"] = 770] = "SRC_ALPHA";
-    BlendFunc[BlendFunc["ONE_MINUS_SRC_COLOR"] = 769] = "ONE_MINUS_SRC_COLOR";
-    BlendFunc[BlendFunc["ONE_MINUS_SRC_ALPHA"] = 771] = "ONE_MINUS_SRC_ALPHA";
-    BlendFunc[BlendFunc["DST_COLOR"] = 774] = "DST_COLOR";
-    BlendFunc[BlendFunc["DST_ALPHA"] = 772] = "DST_ALPHA";
-    BlendFunc[BlendFunc["ONE_MINUS_DST_COLOR"] = 775] = "ONE_MINUS_DST_COLOR";
-    BlendFunc[BlendFunc["ONE_MINUS_DST_ALPHA"] = 773] = "ONE_MINUS_DST_ALPHA";
-    BlendFunc[BlendFunc["CONSTANT_COLOR"] = 32769] = "CONSTANT_COLOR";
-    BlendFunc[BlendFunc["CONSTANT_ALPHA"] = 32771] = "CONSTANT_ALPHA";
-    BlendFunc[BlendFunc["ONE_MINUS_CONSTANT_COLOR"] = 32770] = "ONE_MINUS_CONSTANT_COLOR";
-    BlendFunc[BlendFunc["ONE_MINUS_CONSTANT_ALPHA"] = 32772] = "ONE_MINUS_CONSTANT_ALPHA";
-})(BlendFunc || (BlendFunc = {}));
-var BlendEquation;
-(function (BlendEquation) {
-    BlendEquation[BlendEquation["FUNC_ADD"] = 32774] = "FUNC_ADD";
-    BlendEquation[BlendEquation["FUNC_SUBTRACT"] = 32778] = "FUNC_SUBTRACT";
-    BlendEquation[BlendEquation["FUNC_REVERSE_SUBTRACT"] = 32779] = "FUNC_REVERSE_SUBTRACT";
-    BlendEquation[BlendEquation["MIN"] = 32775] = "MIN";
-    BlendEquation[BlendEquation["MAX"] = 32776] = "MAX";
-})(BlendEquation || (BlendEquation = {}));
 function _createCommand(state, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
     nonNull(vert, fmtParamNonNull("vert"));
     nonNull(frag, fmtParamNonNull("frag"));
@@ -1279,7 +1176,7 @@ function parseDepth(depth) {
     if (IS_DEBUG_BUILD) {
         nonNull(depth.func, fmtParamNonNull("depth.func"));
     }
-    return new DepthTestDescriptor(depth.func || DepthFunc.LESS, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
+    return new DepthTestDescriptor(depth.func || 513 /* LESS */, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
 }
 function parseStencil(stencil) {
     if (!stencil) {
@@ -1322,27 +1219,27 @@ function parseStencil(stencil) {
         ? typeof stencil.op.fail === "object"
             ? stencil.op.fail.front
             : stencil.op.fail
-        : StencilOp.KEEP, stencil.op
+        : 7680 /* KEEP */, stencil.op
         ? typeof stencil.op.fail === "object"
             ? stencil.op.fail.back
             : stencil.op.fail
-        : StencilOp.KEEP, stencil.op
+        : 7680 /* KEEP */, stencil.op
         ? typeof stencil.op.zfail === "object"
             ? stencil.op.zfail.front
             : stencil.op.zfail
-        : StencilOp.KEEP, stencil.op
+        : 7680 /* KEEP */, stencil.op
         ? typeof stencil.op.zfail === "object"
             ? stencil.op.zfail.back
             : stencil.op.zfail
-        : StencilOp.KEEP, stencil.op
+        : 7680 /* KEEP */, stencil.op
         ? typeof stencil.op.zpass === "object"
             ? stencil.op.zpass.front
             : stencil.op.zpass
-        : StencilOp.KEEP, stencil.op
+        : 7680 /* KEEP */, stencil.op
         ? typeof stencil.op.zpass === "object"
             ? stencil.op.zpass.back
             : stencil.op.zpass
-        : StencilOp.KEEP);
+        : 7680 /* KEEP */);
 }
 function parseBlend(blend) {
     if (!blend) {
@@ -1374,11 +1271,11 @@ function parseBlend(blend) {
         ? typeof blend.equation === "object"
             ? blend.equation.rgb
             : blend.equation
-        : BlendEquation.FUNC_ADD, blend.equation
+        : 32774 /* FUNC_ADD */, blend.equation
         ? typeof blend.equation === "object"
             ? blend.equation.alpha
             : blend.equation
-        : BlendEquation.FUNC_ADD, blend.color);
+        : 32774 /* FUNC_ADD */, blend.color);
 }
 function fmtParamNonNull(name) {
     return () => `Missing parameter ${name}`;
@@ -1387,10 +1284,10 @@ function fmtTyMismatch(name) {
     return () => `Type mismatch for uniform field ${name}`;
 }
 
-function _createVertexBuffer(gl, type, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
+function _createVertexBuffer(gl, type, size, { usage = 35048 /* DYNAMIC_DRAW */ } = {}) {
     return new VertexBuffer(gl, type, size, size * sizeOf(type), usage);
 }
-function _createVertexBufferWithTypedArray(gl, type, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
+function _createVertexBufferWithTypedArray(gl, type, data, { usage = 35044 /* STATIC_DRAW */ } = {}) {
     return new VertexBuffer(gl, type, data.length, data.byteLength, usage).store(data);
 }
 /**
@@ -1512,17 +1409,7 @@ function ravel2(unraveled, shape) {
     return raveled;
 }
 
-var ElementPrimitive;
-(function (ElementPrimitive) {
-    ElementPrimitive[ElementPrimitive["POINT_LIST"] = 0] = "POINT_LIST";
-    ElementPrimitive[ElementPrimitive["LINE_LIST"] = 1] = "LINE_LIST";
-    ElementPrimitive[ElementPrimitive["LINE_LOOP"] = 2] = "LINE_LOOP";
-    ElementPrimitive[ElementPrimitive["LINE_STRIP"] = 3] = "LINE_STRIP";
-    ElementPrimitive[ElementPrimitive["TRIANGLE_LIST"] = 4] = "TRIANGLE_LIST";
-    ElementPrimitive[ElementPrimitive["TRIANGLE_STRIP"] = 5] = "TRIANGLE_STRIP";
-    ElementPrimitive[ElementPrimitive["TRIANGLE_FAN"] = 6] = "TRIANGLE_FAN";
-})(ElementPrimitive || (ElementPrimitive = {}));
-function _createElementBuffer(gl, type, primitive, size, { usage = BufferUsage.DYNAMIC_DRAW } = {}) {
+function _createElementBuffer(gl, type, primitive, size, { usage = 35048 /* DYNAMIC_DRAW */ } = {}) {
     return new ElementBuffer(gl, type, primitive, size, size * sizeOf$1(type), usage);
 }
 function _createElementBufferWithArray(gl, data, options) {
@@ -1533,13 +1420,13 @@ function _createElementBufferWithArray(gl, data, options) {
         });
         const ravel = ravel2(data, shape);
         const primitive = shape[1] === 3
-            ? ElementPrimitive.TRIANGLE_LIST
-            : ElementPrimitive.LINE_LIST;
+            ? 4 /* TRIANGLE_LIST */
+            : 1 /* LINE_LIST */;
         return _createElementBufferWithTypedArray(gl, 5125 /* UNSIGNED_INT */, primitive, new Uint32Array(ravel), options);
     }
-    return _createElementBufferWithTypedArray(gl, 5125 /* UNSIGNED_INT */, ElementPrimitive.POINT_LIST, new Uint32Array(data), options);
+    return _createElementBufferWithTypedArray(gl, 5125 /* UNSIGNED_INT */, 0 /* POINT_LIST */, new Uint32Array(data), options);
 }
-function _createElementBufferWithTypedArray(gl, type, primitive, data, { usage = BufferUsage.STATIC_DRAW } = {}) {
+function _createElementBufferWithTypedArray(gl, type, primitive, data, { usage = 35044 /* STATIC_DRAW */ } = {}) {
     return new ElementBuffer(gl, type, primitive, data.length, data.length * sizeOf$1(type), usage).store(data);
 }
 /**
@@ -1605,16 +1492,6 @@ function sizeOf$1(type) {
 }
 
 const INT_PATTERN$1 = /^0|[1-9]\d*$/;
-/**
- * Attribute type for reading vertex buffers. POINTER provides normalization
- * options for converting integer values to floats. IPOINTER always retains
- * integers types.
- */
-var AttributeType;
-(function (AttributeType) {
-    AttributeType["POINTER"] = "pointer";
-    AttributeType["IPOINTER"] = "ipointer";
-})(AttributeType || (AttributeType = {}));
 function _createAttributes(state, elements, attributes, { countLimit } = {}) {
     if (typeof countLimit === "number") {
         gt(countLimit, 0, (p) => {
@@ -1631,11 +1508,11 @@ function _createAttributes(state, elements, attributes, { countLimit } = {}) {
             if (is2(definition)) {
                 const s = shape2(definition);
                 const r = ravel2(definition, s);
-                return new AttributeDescriptor(location, AttributeType.POINTER, _createVertexBufferWithTypedArray(state.gl, 5126 /* FLOAT */, new Float32Array(r)), s[0], s[1], false, 0);
+                return new AttributeDescriptor(location, "pointer" /* POINTER */, _createVertexBufferWithTypedArray(state.gl, 5126 /* FLOAT */, new Float32Array(r)), s[0], s[1], false, 0);
             }
-            return new AttributeDescriptor(location, AttributeType.POINTER, _createVertexBufferWithTypedArray(state.gl, 5126 /* FLOAT */, new Float32Array(definition)), definition.length, 1, false, 0);
+            return new AttributeDescriptor(location, "pointer" /* POINTER */, _createVertexBufferWithTypedArray(state.gl, 5126 /* FLOAT */, new Float32Array(definition)), definition.length, 1, false, 0);
         }
-        return new AttributeDescriptor(location, definition.type, definition.buffer, definition.count, definition.size, definition.type === AttributeType.POINTER
+        return new AttributeDescriptor(location, definition.type, definition.buffer, definition.count, definition.size, definition.type === "pointer" /* POINTER */
             ? (definition.normalized || false)
             : false, definition.divisor || 0);
     });
@@ -1720,10 +1597,10 @@ class Attributes {
             // Send buffer
             gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
             switch (type) {
-                case AttributeType.POINTER:
+                case "pointer" /* POINTER */:
                     gl.vertexAttribPointer(location, size, glBufferType, normalized, 0, 0);
                     break;
-                case AttributeType.IPOINTER:
+                case "ipointer" /* IPOINTER */:
                     gl.vertexAttribIPointer(location, size, glBufferType, 0, 0);
                     break;
                 default: unreachable(type);
@@ -1959,14 +1836,6 @@ class Framebuffer {
     }
 }
 
-/**
- * Available extensions.
- */
-var Extension;
-(function (Extension) {
-    Extension["EXTColorBufferFloat"] = "EXT_color_buffer_float";
-    Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
-})(Extension || (Extension = {}));
 class Device {
     /**
      * Create a new canvas and device (containing a gl context). Mount it on
@@ -2234,5 +2103,5 @@ function createDebugFunc(gl, key) {
     };
 }
 
-export { BufferUsage, Device, Extension, Target, TargetBufferBitmask, Command, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, ElementBuffer, ElementPrimitive, Attributes, AttributeType, Texture, Framebuffer };
+export { Device, Target, Command, VertexBuffer, ElementBuffer, Attributes, Texture, Framebuffer };
 //# sourceMappingURL=webglutenfree.js.map

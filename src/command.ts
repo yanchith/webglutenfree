@@ -199,7 +199,7 @@ export interface UniformMatrix4fv<P> {
     value: Accessor<P, Float32Array | number[]>;
 }
 
-export enum DepthFunc {
+export const enum DepthFunc {
     ALWAYS = 0x0207,
     NEVER = 0x0200,
     EQUAL = 0x0202,
@@ -210,7 +210,7 @@ export enum DepthFunc {
     GEQUAL = 0x0206,
 }
 
-export enum StencilFunc {
+export const enum StencilFunc {
     ALWAYS = 0x0207,
     NEVER = 0x0200,
     EQUAL = 0x0202,
@@ -221,7 +221,7 @@ export enum StencilFunc {
     GEQUAL = 0x0206,
 }
 
-export enum StencilOp {
+export const enum StencilOp {
     KEEP = 0x1E00,
     ZERO = 0,
     REPLACE = 0x1E01,
@@ -232,7 +232,7 @@ export enum StencilOp {
     INVERT = 0x150A,
 }
 
-export enum BlendFunc {
+export const enum BlendFunc {
     ZERO = 0,
     ONE = 1,
     SRC_COLOR = 0x0300,
@@ -249,7 +249,7 @@ export enum BlendFunc {
     ONE_MINUS_CONSTANT_ALPHA = 0x8004,
 }
 
-export enum BlendEquation {
+export const enum BlendEquation {
     FUNC_ADD = 0x8006,
     FUNC_SUBTRACT = 0x800A,
     FUNC_REVERSE_SUBTRACT = 0x800B,

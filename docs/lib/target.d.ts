@@ -2,7 +2,7 @@ import { State } from "./state";
 import { Command } from "./command";
 import { Attributes } from "./attributes";
 import { Framebuffer } from "./framebuffer";
-export declare enum TargetBufferBitmask {
+export declare const enum TargetBufferBitmask {
     COLOR = 16384,
     DEPTH = 256,
     STENCIL = 1024,

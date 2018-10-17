@@ -6,7 +6,7 @@ import { Attributes } from "./attributes";
 import { Texture, TextureStorageFormat } from "./texture";
 import { Framebuffer } from "./framebuffer";
 
-export enum TargetBufferBitmask {
+export const enum TargetBufferBitmask {
     COLOR = 0x00004000,
     DEPTH = 0x00000100,
     STENCIL = 0x00000400,

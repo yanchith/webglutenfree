@@ -1,7 +1,7 @@
 /// <reference types="webgl2" />
 import { BufferUsage } from "./types";
 export declare type ElementArray = number[] | [number, number][] | [number, number, number][] | number[][];
-export declare enum ElementPrimitive {
+export declare const enum ElementPrimitive {
     POINT_LIST = 0,
     LINE_LIST = 1,
     LINE_LOOP = 2,
