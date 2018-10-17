@@ -12,8 +12,8 @@ import {
 import {
     VertexBuffer,
     VertexBufferCreateOptions,
-    VertexBufferType,
-    VertexBufferTypeToTypedArray,
+    VertexBufferDataType,
+    VertexBufferDataTypeToTypedArray,
     _createVertexBuffer,
     _createVertexBufferWithTypedArray,
 } from "./vertex-buffer";
@@ -319,7 +319,7 @@ export class Device {
     /**
      * Create a new vertex buffer with given type and of given size.
      */
-    createVertexBuffer<T extends VertexBufferType>(
+    createVertexBuffer<T extends VertexBufferDataType>(
         type: T,
         size: number,
         options?: VertexBufferCreateOptions,
@@ -331,9 +331,9 @@ export class Device {
      * Create a new vertex buffer of given type with provided data. Does not
      * take ownership of data.
      */
-    createVertexBufferWithTypedArray<T extends VertexBufferType>(
+    createVertexBufferWithTypedArray<T extends VertexBufferDataType>(
         type: T,
-        data: VertexBufferTypeToTypedArray[T] | number[],
+        data: VertexBufferDataTypeToTypedArray[T],
         options?: VertexBufferCreateOptions,
     ): VertexBuffer<T> {
         return _createVertexBufferWithTypedArray(

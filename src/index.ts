@@ -68,7 +68,9 @@ export {
     VertexBuffer,
     VertexBufferCreateOptions,
     VertexBufferStoreOptions,
-    VertexBufferType,
+    VertexBufferDataType,
+    VertexBufferIntegerDataType,
+    VertexBufferFloatDataType,
 } from "./vertex-buffer";
 
 export {

@@ -41,9 +41,6 @@ export enum Primitive {
     TRIANGLE_FAN = 0x0006,
 }
 
-/**
- * Possible data types.
- */
 export enum DataType {
     BYTE = 0x1400,
     UNSIGNED_BYTE = 0x1401,

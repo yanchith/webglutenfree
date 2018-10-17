@@ -1,10 +1,12 @@
 import * as assert from "./util/assert";
 import * as array from "./util/array";
-import { Primitive, DataType } from "./types";
+import { Primitive } from "./types";
 import { State } from "./state";
 import {
     VertexBuffer,
-    VertexBufferType,
+    VertexBufferDataType,
+    VertexBufferIntegerDataType,
+    VertexBufferFloatDataType,
     _createVertexBufferWithTypedArray,
 } from "./vertex-buffer";
 import {
@@ -57,18 +59,9 @@ export type AttributeObjectConfig =
     | AttributeIPointerConfig
     ;
 
-export type VertexBufferIntegerType =
-    | DataType.BYTE
-    | DataType.SHORT
-    | DataType.INT
-    | DataType.UNSIGNED_BYTE
-    | DataType.UNSIGNED_SHORT
-    | DataType.UNSIGNED_INT
-    ;
-
 export interface AttributePointerConfig {
     type: AttributeType.POINTER;
-    buffer: VertexBuffer<VertexBufferType> | number[];
+    buffer: VertexBuffer<VertexBufferFloatDataType>;
     count: number;
     size: number;
     normalized?: boolean;
@@ -77,7 +70,7 @@ export interface AttributePointerConfig {
 
 export interface AttributeIPointerConfig {
     type: AttributeType.IPOINTER;
-    buffer: VertexBuffer<VertexBufferIntegerType>;
+    buffer: VertexBuffer<VertexBufferIntegerDataType>;
     count: number;
     size: number;
     divisor?: number;
@@ -114,8 +107,8 @@ export function _createAttributes(
                         AttributeType.POINTER,
                         _createVertexBufferWithTypedArray(
                             state.gl,
-                            DataType.FLOAT,
-                            r,
+                            VertexBufferFloatDataType.FLOAT,
+                            new Float32Array(r),
                         ),
                         s[0],
                         s[1],
@@ -128,8 +121,8 @@ export function _createAttributes(
                     AttributeType.POINTER,
                     _createVertexBufferWithTypedArray(
                         state.gl,
-                        DataType.FLOAT,
-                        definition,
+                        VertexBufferFloatDataType.FLOAT,
+                        new Float32Array(definition),
                     ),
                     definition.length,
                     1,
@@ -141,13 +134,7 @@ export function _createAttributes(
             return new AttributeDescriptor(
                 location,
                 definition.type,
-                Array.isArray(definition.buffer)
-                    ? _createVertexBufferWithTypedArray(
-                        state.gl,
-                        DataType.FLOAT,
-                        definition.buffer,
-                    )
-                    : definition.buffer,
+                definition.buffer,
                 definition.count,
                 definition.size,
                 definition.type === AttributeType.POINTER
@@ -330,7 +317,7 @@ class AttributeDescriptor {
     constructor(
         readonly location: number,
         readonly type: AttributeType,
-        readonly buffer: VertexBuffer<VertexBufferType>,
+        readonly buffer: VertexBuffer<VertexBufferDataType>,
         readonly count: number,
         readonly size: number,
         readonly normalized: boolean,

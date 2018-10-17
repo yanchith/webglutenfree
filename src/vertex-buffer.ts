@@ -1,40 +1,32 @@
 import * as assert from "./util/assert";
-import { BufferUsage, DataType, sizeOf } from "./types";
+import { BufferUsage } from "./types";
 
-/**
- * Possible data types of vertex buffers.
- */
-export type VertexBufferType =
-    | DataType.UNSIGNED_BYTE
-    | DataType.BYTE
-    | DataType.UNSIGNED_SHORT
-    | DataType.SHORT
-    | DataType.UNSIGNED_INT
-    | DataType.INT
-    | DataType.FLOAT
+export const enum VertexBufferIntegerDataType {
+    BYTE = 0x1400,
+    UNSIGNED_BYTE = 0x1401,
+    SHORT = 0x1402,
+    UNSIGNED_SHORT = 0x1403,
+    INT = 0x1404,
+    UNSIGNED_INT = 0x1405,
+}
+
+export const enum VertexBufferFloatDataType {
+    FLOAT = 0x1406,
+}
+
+export type VertexBufferDataType =
+    | VertexBufferIntegerDataType
+    | VertexBufferFloatDataType
     ;
 
-export type VertexBufferTypedArray =
-    | Uint8Array
-    | Uint8ClampedArray
-    | Uint16Array
-    | Uint32Array
-    | Int8Array
-    | Int16Array
-    | Int32Array
-    | Float32Array
-    ;
-
-export interface VertexBufferTypeToTypedArray {
-    [DataType.UNSIGNED_BYTE]: Uint8Array | Uint8ClampedArray;
-    [DataType.BYTE]: Int8Array;
-    [DataType.UNSIGNED_SHORT]: Uint16Array;
-    [DataType.SHORT]: Int16Array;
-    [DataType.UNSIGNED_INT]: Uint32Array;
-    [DataType.INT]: Int32Array;
-    [DataType.FLOAT]: Float32Array;
-
-    [p: number]: VertexBufferTypedArray;
+export interface VertexBufferDataTypeToTypedArray {
+    [VertexBufferIntegerDataType.UNSIGNED_BYTE]: Uint8Array | Uint8ClampedArray;
+    [VertexBufferIntegerDataType.BYTE]: Int8Array;
+    [VertexBufferIntegerDataType.UNSIGNED_SHORT]: Uint16Array;
+    [VertexBufferIntegerDataType.SHORT]: Int16Array;
+    [VertexBufferIntegerDataType.UNSIGNED_INT]: Uint32Array;
+    [VertexBufferIntegerDataType.INT]: Int32Array;
+    [VertexBufferFloatDataType.FLOAT]: Float32Array;
 }
 
 export interface VertexBufferCreateOptions {
@@ -45,7 +37,7 @@ export interface VertexBufferStoreOptions {
     offset?: number;
 }
 
-export function _createVertexBuffer<T extends VertexBufferType>(
+export function _createVertexBuffer<T extends VertexBufferDataType>(
     gl: WebGL2RenderingContext,
     type: T,
     size: number,
@@ -60,17 +52,17 @@ export function _createVertexBuffer<T extends VertexBufferType>(
     );
 }
 
-export function _createVertexBufferWithTypedArray<T extends VertexBufferType>(
+export function _createVertexBufferWithTypedArray<T extends VertexBufferDataType>(
     gl: WebGL2RenderingContext,
     type: T,
-    data: VertexBufferTypeToTypedArray[T] | number[],
+    data: VertexBufferDataTypeToTypedArray[T],
     { usage = BufferUsage.STATIC_DRAW }: VertexBufferCreateOptions = {},
 ): VertexBuffer<T> {
     return new VertexBuffer(
         gl,
         type,
         data.length,
-        data.length * sizeOf(type),
+        data.byteLength,
         usage,
     ).store(data);
 }
@@ -79,7 +71,7 @@ export function _createVertexBufferWithTypedArray<T extends VertexBufferType>(
  * Vertex buffers contain GPU accessible data. Accessing them is usually done
  * via setting up an attribute that reads the buffer.
  */
-export class VertexBuffer<T extends VertexBufferType> {
+export class VertexBuffer<T extends VertexBufferDataType> {
 
     readonly type: T;
     readonly length: number;
@@ -119,19 +111,17 @@ export class VertexBuffer<T extends VertexBufferType> {
      * Upload new data to buffer. Does not take ownership of data.
      */
     store(
-        data: VertexBufferTypeToTypedArray[T] | number[],
+        data: VertexBufferDataTypeToTypedArray[T],
         { offset = 0 }: VertexBufferStoreOptions = {},
     ): this {
-        const { type, gl, glBuffer } = this;
-        const buffer = Array.isArray(data)
-            ? createBuffer(type, data)
-            // WebGL bug causes Uint8ClampedArray to be read incorrectly
-            // https://github.com/KhronosGroup/WebGL/issues/1533
-            : data instanceof Uint8ClampedArray
-                // Both buffers are u8 -> do not copy, just change lens
-                ? new Uint8Array(data.buffer)
-                // Other buffer types are fine
-                : data;
+        const { gl, glBuffer } = this;
+        // WebGL bug causes Uint8ClampedArray to be read incorrectly
+        // https://github.com/KhronosGroup/WebGL/issues/1533
+        const buffer = data instanceof Uint8ClampedArray
+            // Both buffers are u8 -> do not copy, just change lens
+            ? new Uint8Array(data.buffer)
+            // Other buffer types are fine
+            : data;
         const byteOffset = buffer.BYTES_PER_ELEMENT * offset;
         gl.bindBuffer(gl.ARRAY_BUFFER, glBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, byteOffset, buffer);
@@ -150,20 +140,18 @@ export class VertexBuffer<T extends VertexBufferType> {
     }
 }
 
-function createBuffer(
-    type: VertexBufferType,
-    arr: number[],
-): VertexBufferTypedArray {
+export function sizeOf(type: VertexBufferDataType): number {
     switch (type) {
-        case DataType.BYTE: return new Int8Array(arr);
-        case DataType.SHORT: return new Int16Array(arr);
-        case DataType.INT: return new Int32Array(arr);
-        case DataType.UNSIGNED_BYTE: return new Uint8Array(arr);
-        case DataType.UNSIGNED_SHORT: return new Uint16Array(arr);
-        case DataType.UNSIGNED_INT: return new Uint32Array(arr);
-        case DataType.FLOAT: return new Float32Array(arr);
-        default: return assert.unreachable(type, (p) => {
-            return `Invalid buffer type: ${p}`;
-        });
+        case VertexBufferIntegerDataType.BYTE:
+        case VertexBufferIntegerDataType.UNSIGNED_BYTE:
+            return 1;
+        case VertexBufferIntegerDataType.SHORT:
+        case VertexBufferIntegerDataType.UNSIGNED_SHORT:
+            return 2;
+        case VertexBufferIntegerDataType.INT:
+        case VertexBufferIntegerDataType.UNSIGNED_INT:
+        case VertexBufferFloatDataType.FLOAT:
+            return 4;
+        default: return assert.unreachable(type);
     }
 }
