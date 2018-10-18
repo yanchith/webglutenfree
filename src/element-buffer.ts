@@ -68,7 +68,7 @@ export function _createElementBufferWithArray(
 ): ElementBuffer<ElementBufferDataType.UNSIGNED_INT> {
     if (array.is2(data)) {
         const shape = array.shape2(data);
-        assert.rangeInclusive(shape[1], 2, 3, (p) => {
+        assert.isInRangeInclusive(shape[1], 2, 3, (p) => {
             return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;
         });
         const ravel = array.ravel2(data, shape);

@@ -22,23 +22,23 @@ export function _createFramebuffer(
 ): Framebuffer {
     const colors = Array.isArray(color) ? color : [color];
     if (IS_DEBUG_BUILD) {
-        assert.nonEmpty(colors, () => {
+        assert.isNotEmpty(colors, () => {
             return "Framebuffer color attachments must not be empty";
         });
         colors.forEach((buffer) => {
-            assert.equal(width, buffer.width, (got, expected) => {
+            assert.is(width, buffer.width, (got, expected) => {
                 return `Expected attachment width ${expected}, got ${got}`;
             });
-            assert.equal(height, buffer.height, (got, expected) => {
+            assert.is(height, buffer.height, (got, expected) => {
                 return `Expected attachment height ${expected}, got ${got}`;
             });
         });
 
         if (depthStencil) {
-            assert.equal(width, depthStencil.width, (got, expected) => {
+            assert.is(width, depthStencil.width, (got, expected) => {
                 return `Expected attachment width ${expected}, got ${got}`;
             });
-            assert.equal(height, depthStencil.height, (got, expected) => {
+            assert.is(height, depthStencil.height, (got, expected) => {
                 return `Expected attachment height ${expected}, got ${got}`;
             });
         }

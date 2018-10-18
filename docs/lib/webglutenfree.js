@@ -376,102 +376,113 @@ const process = { env: { NODE_ENV: __OPAQUE_ENV__ } };
  */
 const IS_DEBUG_BUILD = process.env.NODE_ENV !== "production";
 
-function isFalse(got, fmt) {
-    const valueIsFalse = got === false;
+function is(got, expected, fmt) {
+    const valuesEqual = got === expected;
     if (IS_DEBUG_BUILD) {
-        if (!valueIsFalse) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value ${got} not false`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsFalse;
-}
-function isArray(got, fmt) {
-    const valueIsArray = Array.isArray(got);
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsArray) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value ${got} not an array`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsArray;
-}
-function nonNull(got, fmt) {
-    const valueIsNonNull = typeof got !== "undefined"
-        && (typeof got !== "object" || !!got);
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsNonNull) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value undefined or null`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsNonNull;
-}
-function nonEmpty(got, fmt) {
-    const valueIsNonEmpty = !!got.length;
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsNonEmpty) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: string or array value empty`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsNonEmpty;
-}
-function equal(got, expected, fmt) {
-    const valuesAreEqual = got === expected;
-    if (IS_DEBUG_BUILD) {
-        if (!valuesAreEqual) {
+        if (!valuesEqual) {
             const msg = fmt
                 ? fmt(got, expected)
                 : `Assertion failed: value ${got} not equal to ${expected}`;
             throw new Error(msg);
         }
     }
-    return valuesAreEqual;
+    return valuesEqual;
 }
-function oneOf(got, expected, fmt) {
-    const valueIsOneOf = expected.includes(got);
+function isIn(got, expected, fmt) {
+    const valueOneOf = expected.includes(got);
     if (IS_DEBUG_BUILD) {
-        if (!valueIsOneOf) {
+        if (!valueOneOf) {
             const msg = fmt
                 ? fmt(got, expected)
                 : `Assertion failed: value ${got} not in ${expected}`;
             throw new Error(msg);
         }
     }
-    return valueIsOneOf;
+    return valueOneOf;
 }
-function gt(got, low, fmt) {
-    const valueIsGt = got > low;
+function isNumber(got, fmt) {
+    const valueNumber = typeof got === "number";
     if (IS_DEBUG_BUILD) {
-        if (!valueIsGt) {
+        if (!valueNumber) {
             const msg = fmt
-                ? fmt(got, low)
-                : `Assertion failed: value ${got} not GT than expected ${low}`;
+                ? fmt(got)
+                : `Assertion failed: value ${got} not a number`;
             throw new Error(msg);
         }
     }
-    return valueIsGt;
+    return valueNumber;
 }
-function rangeInclusive(got, low, high, fmt) {
-    const valueIsInRangeInclusive = got >= low && got <= high;
+function isArray(got, fmt) {
+    const valueArray = Array.isArray(got);
     if (IS_DEBUG_BUILD) {
-        if (!valueIsInRangeInclusive) {
+        if (!valueArray) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value ${got} not an array`;
+            throw new Error(msg);
+        }
+    }
+    return valueArray;
+}
+function isString(got, fmt) {
+    const valueString = typeof got === "string";
+    if (IS_DEBUG_BUILD) {
+        if (!valueString) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value ${got} not a string`;
+            throw new Error(msg);
+        }
+    }
+    return valueString;
+}
+function isNotNullOrUndefined(got, fmt) {
+    const valueNotNullOrUndefined = typeof got !== "undefined" && got !== null;
+    if (IS_DEBUG_BUILD) {
+        if (!valueNotNullOrUndefined) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value undefined or null`;
+            throw new Error(msg);
+        }
+    }
+    return valueNotNullOrUndefined;
+}
+function isNotEmpty(got, fmt) {
+    const valueNotEmpty = !!got.length;
+    if (IS_DEBUG_BUILD) {
+        if (!valueNotEmpty) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: string or array value empty`;
+            throw new Error(msg);
+        }
+    }
+    return valueNotEmpty;
+}
+function isGreater(got, low, fmt) {
+    const valueGreater = got > low;
+    if (IS_DEBUG_BUILD) {
+        if (!valueGreater) {
+            const msg = fmt
+                ? fmt(got, low)
+                : `Assertion failed: value ${got} not greater than expected ${low}`;
+            throw new Error(msg);
+        }
+    }
+    return valueGreater;
+}
+function isInRangeInclusive(got, low, high, fmt) {
+    const valueInRangeInclusive = got >= low && got <= high;
+    if (IS_DEBUG_BUILD) {
+        if (!valueInRangeInclusive) {
             const msg = fmt
                 ? fmt(got, low, high)
                 : `Assertion failed: value ${got} not in range [${low},${high}]`;
             throw new Error(msg);
         }
     }
-    return valueIsInRangeInclusive;
+    return valueInRangeInclusive;
 }
 function unreachable(got, fmt) {
     // "unreachable" can not be eliminated, as its "return value" is
@@ -859,8 +870,8 @@ var BlendEquation;
     BlendEquation[BlendEquation["MAX"] = 32776] = "MAX";
 })(BlendEquation || (BlendEquation = {}));
 function _createCommand(state, vert, frag, { textures = {}, uniforms = {}, depth, stencil, blend, } = {}) {
-    nonNull(vert, fmtParamNonNull("vert"));
-    nonNull(frag, fmtParamNonNull("frag"));
+    isString(vert, fmtParamNonNull("vert"));
+    isString(frag, fmtParamNonNull("frag"));
     const depthDescr = parseDepth(depth);
     const stencilDescr = parseStencil(stencil);
     const blendDescr = parseBlend(blend);
@@ -1175,103 +1186,103 @@ function validateUniformDeclarations(gl, prog, uniforms, textures) {
 function validateUniformDeclaration(gl, info, type) {
     switch (type) {
         case "1f":
-            equal(info.type, gl.FLOAT, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.FLOAT, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "1fv":
-            equal(info.type, gl.FLOAT, fmtTyMismatch(info.name));
+            is(info.type, gl.FLOAT, fmtTyMismatch(info.name));
             break;
         case "1i":
-            oneOf(info.type, [
+            isIn(info.type, [
                 gl.INT,
                 gl.SAMPLER_2D,
             ], fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.size, 1);
             break;
         case "1iv":
-            equal(info.type, gl.INT, fmtTyMismatch(info.name));
+            is(info.type, gl.INT, fmtTyMismatch(info.name));
             break;
         case "1ui":
-            equal(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "1uiv":
-            equal(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
+            is(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
             break;
         case "2f":
-            equal(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "2fv":
-            equal(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
+            is(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
             break;
         case "2i":
-            equal(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "2iv":
-            equal(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
+            is(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
             break;
         case "2ui":
-            equal(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "2uiv":
-            equal(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
+            is(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
             break;
         case "3f":
-            equal(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "3fv":
-            equal(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
+            is(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
             break;
         case "3i":
-            equal(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "3iv":
-            equal(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
+            is(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
             break;
         case "3ui":
-            equal(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "3uiv":
-            equal(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
+            is(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
             break;
         case "4f":
-            equal(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "4fv":
-            equal(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
+            is(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
             break;
         case "4i":
-            equal(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "4iv":
-            equal(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
+            is(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
             break;
         case "4ui":
-            equal(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "4uiv":
-            equal(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
+            is(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
             break;
         case "matrix2fv":
-            equal(info.type, gl.FLOAT_MAT2, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.FLOAT_MAT2, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "matrix3fv":
-            equal(info.type, gl.FLOAT_MAT3, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.FLOAT_MAT3, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         case "matrix4fv":
-            equal(info.type, gl.FLOAT_MAT4, fmtTyMismatch(info.name));
-            equal(info.size, 1);
+            is(info.type, gl.FLOAT_MAT4, fmtTyMismatch(info.name));
+            is(info.size, 1);
             break;
         default: unreachable(type);
     }
@@ -1282,7 +1293,7 @@ function parseDepth(depth) {
     }
     // TODO: DCE did not kick in here without help
     if (IS_DEBUG_BUILD) {
-        nonNull(depth.func, fmtParamNonNull("depth.func"));
+        isNumber(depth.func, fmtParamNonNull("depth.func"));
     }
     return new DepthTestDescriptor(depth.func || DepthFunc.LESS, typeof depth.mask === "boolean" ? depth.mask : true, depth.range ? depth.range[0] : 0, depth.range ? depth.range[1] : 1);
 }
@@ -1292,7 +1303,7 @@ function parseStencil(stencil) {
     }
     // TODO: DCE did not kick in here without help
     if (IS_DEBUG_BUILD) {
-        nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+        isNotNullOrUndefined(stencil.func, fmtParamNonNull("stencil.func"));
     }
     // TODO: complete stencil validation
     return new StencilTestDescriptor(typeof stencil.func.func === "object"
@@ -1355,16 +1366,16 @@ function parseBlend(blend) {
     }
     // TODO: DCE did not kick in here without help
     if (IS_DEBUG_BUILD) {
-        nonNull(blend.func, fmtParamNonNull("blend.func"));
-        nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
-        nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+        isNotNullOrUndefined(blend.func, fmtParamNonNull("blend.func"));
+        isNotNullOrUndefined(blend.func.src, fmtParamNonNull("blend.func.src"));
+        isNotNullOrUndefined(blend.func.dst, fmtParamNonNull("blend.func.dst"));
         if (typeof blend.func.src === "object") {
-            nonNull(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
-            nonNull(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
+            isNotNullOrUndefined(blend.func.src.rgb, fmtParamNonNull("blend.func.src.rgb"));
+            isNotNullOrUndefined(blend.func.src.alpha, fmtParamNonNull("blend.func.src.alpha"));
         }
         if (typeof blend.func.dst === "object") {
-            nonNull(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
-            nonNull(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
+            isNotNullOrUndefined(blend.func.dst.rgb, fmtParamNonNull("blend.func.dst.rgb"));
+            isNotNullOrUndefined(blend.func.dst.alpha, fmtParamNonNull("blend.func.dst.alpha"));
         }
     }
     return new BlendDescriptor(typeof blend.func.src === "object"
@@ -1492,11 +1503,11 @@ function is2(array) {
         array.forEach((sub) => {
             if (length2 !== -1) {
                 if (isArray(sub)) {
-                    equal(sub.length, length2);
+                    is(sub.length, length2);
                 }
             }
             else {
-                isFalse(Array.isArray(sub));
+                is(Array.isArray(sub), false);
             }
         });
     }
@@ -1552,7 +1563,7 @@ function _createElementBuffer(gl, type, primitive, size, { usage = BufferUsage.D
 function _createElementBufferWithArray(gl, data, options) {
     if (is2(data)) {
         const shape = shape2(data);
-        rangeInclusive(shape[1], 2, 3, (p) => {
+        isInRangeInclusive(shape[1], 2, 3, (p) => {
             return `Elements must be 2-tuples or 3-tuples, got ${p}-tuple`;
         });
         const ravel = ravel2(data, shape);
@@ -1641,7 +1652,7 @@ var AttributeType;
 })(AttributeType || (AttributeType = {}));
 function _createAttributes(state, elements, attributes, { countLimit } = {}) {
     if (typeof countLimit === "number") {
-        gt(countLimit, 0, (p) => {
+        isGreater(countLimit, 0, (p) => {
             return `Count limit must be greater than 0, got: ${p}`;
         });
     }
@@ -1987,22 +1998,22 @@ class Texture {
 function _createFramebuffer(state, width, height, color, depthStencil) {
     const colors = Array.isArray(color) ? color : [color];
     if (IS_DEBUG_BUILD) {
-        nonEmpty(colors, () => {
+        isNotEmpty(colors, () => {
             return "Framebuffer color attachments must not be empty";
         });
         colors.forEach((buffer) => {
-            equal(width, buffer.width, (got, expected) => {
+            is(width, buffer.width, (got, expected) => {
                 return `Expected attachment width ${expected}, got ${got}`;
             });
-            equal(height, buffer.height, (got, expected) => {
+            is(height, buffer.height, (got, expected) => {
                 return `Expected attachment height ${expected}, got ${got}`;
             });
         });
         if (depthStencil) {
-            equal(width, depthStencil.width, (got, expected) => {
+            is(width, depthStencil.width, (got, expected) => {
                 return `Expected attachment width ${expected}, got ${got}`;
             });
-            equal(height, depthStencil.height, (got, expected) => {
+            is(height, depthStencil.height, (got, expected) => {
                 return `Expected attachment height ${expected}, got ${got}`;
             });
         }

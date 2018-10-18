@@ -1,170 +1,187 @@
 import { IS_DEBUG_BUILD } from "./env";
 
-export function isTrue(
-    got: unknown,
-    fmt?: (got: unknown) => string,
-): got is true {
-    const valueIsTrue = got === true;
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsTrue) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value ${got} not true`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsTrue;
-}
+export type Primitive = string | number | boolean | null | undefined;
 
-export function isFalse(
-    got: unknown, fmt?:
-    (got: unknown) => string,
-): got is false {
-    const valueIsFalse = got === false;
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsFalse) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value ${got} not false`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsFalse;
-}
-
-export function isArray(
-    got: unknown,
-    fmt?: (got: unknown) => string,
-): got is unknown[] {
-    const valueIsArray = Array.isArray(got);
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsArray) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value ${got} not an array`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsArray;
-}
-
-export function nonNull(
-    got: unknown,
-    fmt?: (got: unknown) => string,
-): boolean {
-    const valueIsNonNull = typeof got !== "undefined"
-        && (typeof got !== "object" || !!got);
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsNonNull) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value undefined or null`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsNonNull;
-}
-
-export function nonEmpty<T>(
-    got: string | T[],
-    fmt?: (got: string | T[]) => string,
-): boolean {
-    const valueIsNonEmpty = !!got.length;
-    if (IS_DEBUG_BUILD) {
-        if (!valueIsNonEmpty) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: string or array value empty`;
-            throw new Error(msg);
-        }
-    }
-    return valueIsNonEmpty;
-}
-
-export function equal<T>(
-    got: T,
+export function is<T extends Primitive>(
+    got: Primitive,
     expected: T,
-    fmt?: (got: T, expected: T) => string,
-): boolean {
-    const valuesAreEqual = got === expected;
+    fmt?: (got: unknown, expected: T) => string,
+): got is T {
+    const valuesEqual = got === expected;
     if (IS_DEBUG_BUILD) {
-        if (!valuesAreEqual) {
+        if (!valuesEqual) {
             const msg = fmt
                 ? fmt(got, expected)
                 : `Assertion failed: value ${got} not equal to ${expected}`;
             throw new Error(msg);
         }
     }
-    return valuesAreEqual;
+    return valuesEqual;
 }
 
-export function oneOf<T>(
-    got: T,
-    expected: T[],
-    fmt?: (got: T, expected: T[]) => string,
-): boolean {
-    const valueIsOneOf = expected.includes(got);
+export function isIn(
+    got: Primitive,
+    expected: Primitive[],
+    fmt?: (got: Primitive, expected: Primitive[]) => string,
+): got is Primitive {
+    const valueOneOf = expected.includes(got);
     if (IS_DEBUG_BUILD) {
-        if (!valueIsOneOf) {
+        if (!valueOneOf) {
             const msg = fmt
                 ? fmt(got, expected)
                 : `Assertion failed: value ${got} not in ${expected}`;
             throw new Error(msg);
         }
     }
-    return valueIsOneOf;
+    return valueOneOf;
 }
 
-export function gt(
+export function isBoolean(
+    got: unknown,
+    fmt?: (got: unknown) => string,
+): got is boolean {
+    const valueBoolean = typeof got === "boolean";
+    if (IS_DEBUG_BUILD) {
+        if (!valueBoolean) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value ${got} not a boolean`;
+            throw new Error(msg);
+        }
+    }
+    return valueBoolean;
+}
+
+export function isNumber(
+    got: unknown,
+    fmt?: (got: unknown) => string,
+): got is number {
+    const valueNumber = typeof got === "number";
+    if (IS_DEBUG_BUILD) {
+        if (!valueNumber) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value ${got} not a number`;
+            throw new Error(msg);
+        }
+    }
+    return valueNumber;
+}
+
+export function isArray(
+    got: unknown,
+    fmt?: (got: unknown) => string,
+): got is unknown[] {
+    const valueArray = Array.isArray(got);
+    if (IS_DEBUG_BUILD) {
+        if (!valueArray) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value ${got} not an array`;
+            throw new Error(msg);
+        }
+    }
+    return valueArray;
+}
+
+export function isString(
+    got: unknown,
+    fmt?: (got: unknown) => string,
+): got is string {
+    const valueString = typeof got === "string";
+    if (IS_DEBUG_BUILD) {
+        if (!valueString) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value ${got} not a string`;
+            throw new Error(msg);
+        }
+    }
+    return valueString;
+}
+
+export function isNotNullOrUndefined<T>(
+    got: T | null | undefined,
+    fmt?: (got: unknown) => string,
+): got is T {
+    const valueNotNullOrUndefined = typeof got !== "undefined" && got !== null;
+    if (IS_DEBUG_BUILD) {
+        if (!valueNotNullOrUndefined) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: value undefined or null`;
+            throw new Error(msg);
+        }
+    }
+    return valueNotNullOrUndefined;
+}
+
+export function isNotEmpty<T>(
+    got: string | T[],
+    fmt?: (got: string | T[]) => string,
+): boolean {
+    const valueNotEmpty = !!got.length;
+    if (IS_DEBUG_BUILD) {
+        if (!valueNotEmpty) {
+            const msg = fmt
+                ? fmt(got)
+                : `Assertion failed: string or array value empty`;
+            throw new Error(msg);
+        }
+    }
+    return valueNotEmpty;
+}
+
+export function isGreater(
     got: number,
     low: number,
     fmt?: (got: number, low: number) => string,
 ): boolean {
-    const valueIsGt = got > low;
+    const valueGreater = got > low;
     if (IS_DEBUG_BUILD) {
-        if (!valueIsGt) {
+        if (!valueGreater) {
             const msg = fmt
                 ? fmt(got, low)
-                : `Assertion failed: value ${got} not GT than expected ${low}`;
+                : `Assertion failed: value ${got} not greater than expected ${low}`;
             throw new Error(msg);
         }
     }
-    return valueIsGt;
+    return valueGreater;
 }
 
-export function gte(
+export function isGreaterEqual(
     got: number,
     low: number,
     fmt?: (got: number, low: number) => string,
 ): boolean {
-    const valueIsGte = got >= low;
+    const valueGreaterEqual = got >= low;
     if (IS_DEBUG_BUILD) {
-        if (!valueIsGte) {
+        if (!valueGreaterEqual) {
             const msg = fmt
                 ? fmt(got, low)
-                : `Assertion failed: value ${got} not GTE than expected ${low}`;
+                : `Assertion failed: value ${got} not greater-equal than expected ${low}`;
             throw new Error(msg);
         }
     }
-    return valueIsGte;
+    return valueGreaterEqual;
 }
 
-export function rangeInclusive(
+export function isInRangeInclusive(
     got: number,
     low: number,
     high: number,
     fmt?: (got: number, low: number, high: number) => string,
 ): boolean {
-    const valueIsInRangeInclusive = got >= low && got <= high;
+    const valueInRangeInclusive = got >= low && got <= high;
     if (IS_DEBUG_BUILD) {
-        if (!valueIsInRangeInclusive) {
+        if (!valueInRangeInclusive) {
             const msg = fmt
                 ? fmt(got, low, high)
                 : `Assertion failed: value ${got} not in range [${low},${high}]`;
             throw new Error(msg);
         }
     }
-    return valueIsInRangeInclusive;
+    return valueInRangeInclusive;
 }
 
 export function unreachable(got: never, fmt?: (p: unknown) => string): never {

@@ -90,7 +90,7 @@ export function _createAttributes(
     { countLimit }: AttributesCreateOptions = {},
 ): Attributes {
     if (typeof countLimit === "number") {
-        assert.gt(countLimit, 0, (p) => {
+        assert.isGreater(countLimit, 0, (p) => {
             return `Count limit must be greater than 0, got: ${p}`;
         });
     }

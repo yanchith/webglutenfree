@@ -15,10 +15,10 @@ export function is2<T>(array: T[] | T[][]): array is T[][] {
         (array as unknown[]).forEach((sub) => {
             if (length2 !== -1) {
                 if (assert.isArray(sub)) {
-                    assert.equal(sub.length, length2);
+                    assert.is(sub.length, length2);
                 }
             } else {
-                assert.isFalse(Array.isArray(sub));
+                assert.is(Array.isArray(sub), false);
             }
         });
     }

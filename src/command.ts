@@ -269,8 +269,8 @@ export function _createCommand<P = void>(
         blend,
     }: CommandCreateOptions<P> = {},
 ): Command<P> {
-    assert.nonNull(vert, fmtParamNonNull("vert"));
-    assert.nonNull(frag, fmtParamNonNull("frag"));
+    assert.isString(vert, fmtParamNonNull("vert"));
+    assert.isString(frag, fmtParamNonNull("frag"));
 
     const depthDescr = parseDepth(depth);
     const stencilDescr = parseStencil(stencil);
@@ -693,104 +693,104 @@ function validateUniformDeclaration(
 ): void {
     switch (type) {
         case "1f":
-            assert.equal(info.type, gl.FLOAT, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.FLOAT, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "1fv":
-            assert.equal(info.type, gl.FLOAT, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.FLOAT, fmtTyMismatch(info.name));
             break;
         case "1i":
-            assert.oneOf(info.type, [
+            assert.isIn(info.type, [
                 gl.INT,
                 gl.SAMPLER_2D,
                 // gl.SAMPLER_CUBE,
             ], fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.size, 1);
             break;
         case "1iv":
-            assert.equal(info.type, gl.INT, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.INT, fmtTyMismatch(info.name));
             break;
         case "1ui":
-            assert.equal(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "1uiv":
-            assert.equal(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
             break;
         case "2f":
-            assert.equal(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "2fv":
-            assert.equal(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
             break;
         case "2i":
-            assert.equal(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "2iv":
-            assert.equal(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
             break;
         case "2ui":
-            assert.equal(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "2uiv":
-            assert.equal(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
             break;
         case "3f":
-            assert.equal(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "3fv":
-            assert.equal(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
             break;
         case "3i":
-            assert.equal(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "3iv":
-            assert.equal(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
             break;
         case "3ui":
-            assert.equal(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "3uiv":
-            assert.equal(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
             break;
         case "4f":
-            assert.equal(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "4fv":
-            assert.equal(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
             break;
         case "4i":
-            assert.equal(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "4iv":
-            assert.equal(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
             break;
         case "4ui":
-            assert.equal(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "4uiv":
-            assert.equal(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
+            assert.is(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
             break;
         case "matrix2fv":
-            assert.equal(info.type, gl.FLOAT_MAT2, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.FLOAT_MAT2, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "matrix3fv":
-            assert.equal(info.type, gl.FLOAT_MAT3, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.FLOAT_MAT3, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         case "matrix4fv":
-            assert.equal(info.type, gl.FLOAT_MAT4, fmtTyMismatch(info.name));
-            assert.equal(info.size, 1);
+            assert.is(info.type, gl.FLOAT_MAT4, fmtTyMismatch(info.name));
+            assert.is(info.size, 1);
             break;
         default: assert.unreachable(type);
     }
@@ -802,7 +802,7 @@ function parseDepth(
     if (!depth) { return undefined; }
     // TODO: DCE did not kick in here without help
     if (IS_DEBUG_BUILD) {
-        assert.nonNull(depth.func, fmtParamNonNull("depth.func"));
+        assert.isNumber(depth.func, fmtParamNonNull("depth.func"));
     }
     return new DepthTestDescriptor(
         depth.func || DepthFunc.LESS,
@@ -818,7 +818,7 @@ function parseStencil(
     if (!stencil) { return undefined; }
     // TODO: DCE did not kick in here without help
     if (IS_DEBUG_BUILD) {
-        assert.nonNull(stencil.func, fmtParamNonNull("stencil.func"));
+        assert.isNotNullOrUndefined(stencil.func, fmtParamNonNull("stencil.func"));
     }
     // TODO: complete stencil validation
     return new StencilTestDescriptor(
@@ -897,25 +897,34 @@ function parseBlend(
     if (!blend) { return undefined; }
     // TODO: DCE did not kick in here without help
     if (IS_DEBUG_BUILD) {
-        assert.nonNull(blend.func, fmtParamNonNull("blend.func"));
-        assert.nonNull(blend.func.src, fmtParamNonNull("blend.func.src"));
-        assert.nonNull(blend.func.dst, fmtParamNonNull("blend.func.dst"));
+        assert.isNotNullOrUndefined(
+            blend.func,
+            fmtParamNonNull("blend.func"),
+        );
+        assert.isNotNullOrUndefined(
+            blend.func.src,
+            fmtParamNonNull("blend.func.src"),
+        );
+        assert.isNotNullOrUndefined(
+            blend.func.dst,
+            fmtParamNonNull("blend.func.dst"),
+        );
         if (typeof blend.func.src === "object") {
-            assert.nonNull(
+            assert.isNotNullOrUndefined(
                 blend.func.src.rgb,
                 fmtParamNonNull("blend.func.src.rgb"),
             );
-            assert.nonNull(
+            assert.isNotNullOrUndefined(
                 blend.func.src.alpha,
                 fmtParamNonNull("blend.func.src.alpha"),
             );
         }
         if (typeof blend.func.dst === "object") {
-            assert.nonNull(
+            assert.isNotNullOrUndefined(
                 blend.func.dst.rgb,
                 fmtParamNonNull("blend.func.dst.rgb"),
             );
-            assert.nonNull(
+            assert.isNotNullOrUndefined(
                 blend.func.dst.alpha,
                 fmtParamNonNull("blend.func.dst.alpha"),
             );
