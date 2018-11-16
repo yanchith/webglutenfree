@@ -1,3 +1,4 @@
+import * as assert from "./util/assert";
 import { State } from "./state";
 import { Target } from "./target";
 import {
@@ -31,9 +32,11 @@ import {
     _createAttributes,
 } from "./attributes";
 import {
-    Texture,
-    TextureCreateOptions,
-    TextureStoreOptions,
+    Texture2D,
+    Texture2DCreateOptions,
+    Texture2DStoreOptions,
+    TextureCubeMapCreateOptions,
+    TextureCubeMapStoreOptions,
     TextureStorageFormat,
     TextureColorStorageFormat,
     TextureDepthStorageFormat,
@@ -43,8 +46,11 @@ import {
     StorageFormatToTypedArray,
     StorageFormatToFormat,
     StorageFormatToDataType,
-    _createTexture,
-    _createTextureWithTypedArray,
+    _createTexture2D,
+    _createTexture2DWithTypedArray,
+    _createTextureCubeMap,
+    _createTextureCubeMapWithTypedArray,
+    TextureCubeMap,
 } from "./texture";
 import { Framebuffer, _createFramebuffer } from "./framebuffer";
 
@@ -425,16 +431,16 @@ export class Device {
     }
 
     /**
-     * Create a new texture with given width, height, and internal format.
-     * The internal format determines, what kind of data is possible to store.
+     * Create a new 2D texture with given width, height, and storage format.
+     * The storage format determines what kind of data is possible to store.
      */
-    createTexture<S extends TextureStorageFormat>(
+    createTexture2D<S extends TextureStorageFormat>(
         width: number,
         height: number,
         storageFormat: S,
-        options?: TextureCreateOptions,
-    ): Texture<S> {
-        return _createTexture(
+        options?: Texture2DCreateOptions,
+    ): Texture2D<S> {
+        return _createTexture2D(
             this._gl,
             width,
             height,
@@ -444,14 +450,16 @@ export class Device {
     }
 
     /**
-     * Create a new texture with width and height equal to the given image, and
-     * store the image in the texture.
+     * Create a new 2D texture with width and height equal to that of the given
+     * image and store the image in the texture.
+     * The storage format determines what kind of data is possible to store and
+     * is preset as RGBA8.
      */
-    createTextureWithImage(
+    createTexture2DWithImage(
         image: ImageData,
-        options?: TextureCreateOptions & TextureStoreOptions,
-    ): Texture<TextureColorStorageFormat.RGBA8> {
-        return _createTextureWithTypedArray(
+        options?: Texture2DCreateOptions & Texture2DStoreOptions,
+    ): Texture2D<TextureColorStorageFormat.RGBA8> {
+        return _createTexture2DWithTypedArray(
             this._gl,
             image.width,
             image.height,
@@ -464,26 +472,131 @@ export class Device {
     }
 
     /**
-     * Create a new texture with given width, height, and internal format.
-     * The internal format determines, what kind of data is possible to store.
-     * Store data of given format and type contained in a typed array to the
-     * texture.
+     * Create a new 2D texture with given width, height, and storage format and
+     * store data of given format and type contained in the provided typed array
+     * to the texture.
+     * The storage format determines what kind of data is possible to store.
      */
-    createTextureWithTypedArray<S extends TextureStorageFormat>(
+    createTexture2DWithTypedArray<S extends TextureStorageFormat>(
         width: number,
         height: number,
-        internalFormat: S,
+        storageFormat: S,
         data: StorageFormatToTypedArray[S],
         dataFormat: StorageFormatToFormat[S],
         dataType: StorageFormatToDataType[S],
-        options?: TextureCreateOptions & TextureStoreOptions,
-    ): Texture<S> {
-        return _createTextureWithTypedArray(
+        options?: Texture2DCreateOptions & Texture2DStoreOptions,
+    ): Texture2D<S> {
+        return _createTexture2DWithTypedArray(
             this._gl,
             width,
             height,
-            internalFormat,
+            storageFormat,
             data,
+            dataFormat,
+            dataType,
+            options,
+        );
+    }
+
+    /**
+     * Create a new cubemap texture where each face has a given width, height,
+     * and storage format.
+     * The storage format determines what kind of data is possible to store.
+     */
+    createTextureCubeMap<S extends TextureStorageFormat>(
+        width: number,
+        height: number,
+        storageFormat: S,
+        options?: TextureCubeMapCreateOptions,
+    ): TextureCubeMap<S> {
+        return _createTextureCubeMap(
+            this._gl,
+            width,
+            height,
+            storageFormat,
+            options,
+        );
+    }
+
+    /**
+     * Create a new cubemap texture where each face has a width and height equal
+     * to that of the given images and store the provided images in the cubemap
+     * as faces.
+     * The storage format determines what kind of data is possible to store and
+     * is preset as RGBA8.
+     * Each image must have the same dimensions.
+     */
+    createTextureCubeMapWithImage(
+        imagePositiveX: ImageData,
+        imageNegativeX: ImageData,
+        imagePositiveY: ImageData,
+        imageNegativeY: ImageData,
+        imagePositiveZ: ImageData,
+        imageNegativeZ: ImageData,
+        options?: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions,
+    ): TextureCubeMap<TextureColorStorageFormat.RGBA8> {
+        // Assert all images have same sizes
+        assert.is(imageNegativeX.width, imagePositiveX.width);
+        assert.is(imagePositiveY.width, imagePositiveX.width);
+        assert.is(imageNegativeY.width, imagePositiveX.width);
+        assert.is(imagePositiveZ.width, imagePositiveX.width);
+        assert.is(imageNegativeZ.width, imagePositiveX.width);
+
+        assert.is(imageNegativeX.height, imagePositiveX.height);
+        assert.is(imagePositiveY.height, imagePositiveX.height);
+        assert.is(imageNegativeY.height, imagePositiveX.height);
+        assert.is(imagePositiveZ.height, imagePositiveX.height);
+        assert.is(imageNegativeZ.height, imagePositiveX.height);
+
+        return _createTextureCubeMapWithTypedArray(
+            this._gl,
+            imagePositiveX.width,
+            imagePositiveY.height,
+            TextureColorStorageFormat.RGBA8,
+            imagePositiveX.data,
+            imageNegativeX.data,
+            imagePositiveY.data,
+            imageNegativeY.data,
+            imagePositiveZ.data,
+            imageNegativeZ.data,
+            TextureFormat.RGBA,
+            TextureDataType.UNSIGNED_BYTE,
+            options,
+        );
+    }
+
+    /**
+     * Create a new cubemap texture where each face has a given width, height,
+     * and storage format and data of given format and type contained in the
+     * provided typed arrays to the cubemap as faces.
+     * The storage format determines what kind of data is possible to store.
+     * Each typed array must have the same length.
+     */
+    createTextureCubeMapWithTypedArray<S extends TextureStorageFormat>(
+        width: number,
+        height: number,
+        storageFormat: S,
+        dataPositiveX: StorageFormatToTypedArray[S],
+        dataNegativeX: StorageFormatToTypedArray[S],
+        dataPositiveY: StorageFormatToTypedArray[S],
+        dataNegativeY: StorageFormatToTypedArray[S],
+        dataPositiveZ: StorageFormatToTypedArray[S],
+        dataNegativeZ: StorageFormatToTypedArray[S],
+        dataFormat: StorageFormatToFormat[S],
+        dataType: StorageFormatToDataType[S],
+        options?: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions,
+    ): TextureCubeMap<S> {
+        return _createTextureCubeMapWithTypedArray(
+            this._gl,
+            width,
+            height,
+            storageFormat,
+            dataPositiveX,
+            dataNegativeX,
+            dataPositiveY,
+            dataNegativeY,
+            dataPositiveZ,
+            dataNegativeZ,
             dataFormat,
             dataType,
             options,
@@ -502,11 +615,11 @@ export class Device {
         width: number,
         height: number,
         color:
-            | Texture<TextureColorStorageFormat>
-            | Texture<TextureColorStorageFormat>[],
+            | Texture2D<TextureColorStorageFormat>
+            | Texture2D<TextureColorStorageFormat>[],
         depthStencil?:
-            | Texture<TextureDepthStorageFormat>
-            | Texture<TextureDepthStencilStorageFormat>,
+            | Texture2D<TextureDepthStorageFormat>
+            | Texture2D<TextureDepthStencilStorageFormat>,
     ): Framebuffer {
         return _createFramebuffer(
             this.state,

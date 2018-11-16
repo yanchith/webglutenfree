@@ -9,23 +9,4 @@ export declare enum BufferUsage {
     DYNAMIC_COPY = 35050,
     STREAM_COPY = 35042
 }
-export declare enum UniformType {
-    FLOAT = 5126,
-    FLOAT_VEC2 = 35664,
-    FLOAT_VEC3 = 35665,
-    FLOAT_VEC4 = 35666,
-    INT = 5124,
-    INT_VEC2 = 35667,
-    INT_VEC3 = 35668,
-    INT_VEC4 = 35669,
-    UNSIGNED_INT = 5125,
-    UNSIGNED_INT_VEC2 = 36294,
-    UNSIGNED_INT_VEC3 = 36295,
-    UNSIGNED_INT_VEC4 = 36296,
-    FLOAT_MAT2 = 35674,
-    FLOAT_MAT3 = 35675,
-    FLOAT_MAT4 = 35676,
-    SAMPLER_2D = 35678,
-    SAMPLER_CUBE = 35680
-}
 //# sourceMappingURL=types.d.ts.map

@@ -3,7 +3,7 @@ import { IS_DEBUG_BUILD } from "./util/env";
 import { State } from "./state";
 import { Target } from "./target";
 import {
-    Texture,
+    Texture2D,
     TextureColorStorageFormat,
     TextureDepthStorageFormat,
     TextureDepthStencilStorageFormat,
@@ -14,11 +14,11 @@ export function _createFramebuffer(
     width: number,
     height: number,
     color:
-        | Texture<TextureColorStorageFormat>
-        | Texture<TextureColorStorageFormat>[],
+        | Texture2D<TextureColorStorageFormat>
+        | Texture2D<TextureColorStorageFormat>[],
     depthStencil?:
-        | Texture<TextureDepthStorageFormat>
-        | Texture<TextureDepthStencilStorageFormat>,
+        | Texture2D<TextureDepthStorageFormat>
+        | Texture2D<TextureDepthStencilStorageFormat>,
 ): Framebuffer {
     const colors = Array.isArray(color) ? color : [color];
     if (IS_DEBUG_BUILD) {
@@ -47,6 +47,8 @@ export function _createFramebuffer(
     return new Framebuffer(state, width, height, colors, depthStencil);
 }
 
+// TODO: _createFramebuffersWithCubeMap
+
 /**
  * Framebuffers store the list of attachments to write to during a draw
  * operation. They can be a draw target via `framebuffer.target()`
@@ -63,19 +65,19 @@ export class Framebuffer {
 
     private framebufferTarget: Target | null;
 
-    private colors: Texture<TextureColorStorageFormat>[];
+    private colors: Texture2D<TextureColorStorageFormat>[];
     private depthStencil?:
-        | Texture<TextureDepthStorageFormat>
-        | Texture<TextureDepthStencilStorageFormat>;
+        | Texture2D<TextureDepthStorageFormat>
+        | Texture2D<TextureDepthStencilStorageFormat>;
 
     constructor(
         state: State,
         width: number,
         height: number,
-        colors: Texture<TextureColorStorageFormat>[],
+        colors: Texture2D<TextureColorStorageFormat>[],
         depthStencil?:
-            | Texture<TextureDepthStorageFormat>
-            | Texture<TextureDepthStencilStorageFormat>,
+            | Texture2D<TextureDepthStorageFormat>
+            | Texture2D<TextureDepthStencilStorageFormat>,
     ) {
         this.state = state;
         this.width = width;

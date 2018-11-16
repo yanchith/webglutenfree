@@ -19,23 +19,6 @@ export function is<T extends Primitive>(
     return valuesEqual;
 }
 
-export function isIn(
-    got: Primitive,
-    expected: Primitive[],
-    fmt?: (got: Primitive, expected: Primitive[]) => string,
-): got is Primitive {
-    const valueOneOf = expected.includes(got);
-    if (IS_DEBUG_BUILD) {
-        if (!valueOneOf) {
-            const msg = fmt
-                ? fmt(got, expected)
-                : `Assertion failed: value ${got} not in ${expected}`;
-            throw new Error(msg);
-        }
-    }
-    return valueOneOf;
-}
-
 export function isBoolean(
     got: unknown,
     fmt?: (got: unknown) => string,

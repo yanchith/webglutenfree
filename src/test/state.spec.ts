@@ -6,7 +6,7 @@ import {
     TargetBufferBitmask,
     Command,
     Attributes,
-    Texture,
+    Texture2D,
     TextureColorStorageFormat,
     Framebuffer,
     ElementPrimitive,
@@ -33,7 +33,7 @@ test("Normal fbo usage does not error", (t) => {
         const dev = createDevice();
         const cmd = createCommand(dev);
         const attrs = createAttributes(dev);
-        const tex = createTexture(dev);
+        const tex = createTexture2D(dev);
         const fbo = createFramebuffer(dev, tex);
         fbo.target((rt) => {
             rt.clear(TargetBufferBitmask.COLOR);
@@ -117,7 +117,7 @@ test("Nested bound Target (device only) should error", (t) => {
 
 test("Nested bound Target (device + fbo) should error", (t) => {
     const dev = createDevice();
-    const tex = createTexture(dev);
+    const tex = createTexture2D(dev);
     const fbo = createFramebuffer(dev, tex);
     dev.target(() => {
         t.throws(() => fbo.target(() => void 0));
@@ -162,7 +162,7 @@ test("Unbound Target#clear should error", (t) => {
 
 test("Unbound Target#blit should error", (t) => {
     const dev = createDevice();
-    const tex = createTexture(dev);
+    const tex = createTexture2D(dev);
     const fbo = createFramebuffer(dev, tex);
     let sneakyRt: Target | null = null;
     dev.target((rt) => {
@@ -192,7 +192,7 @@ test("Rebinding targets does not work around assertions", (t) => {
     const dev = createDevice();
     const cmd = createCommand(dev);
     const attrs = createAttributes(dev);
-    const tex = createTexture(dev);
+    const tex = createTexture2D(dev);
     const fbo = createFramebuffer(dev, tex);
     let sneakyDraw: ((attrs: Attributes, props: void) => void) | null = null;
     dev.target((rt) => {
@@ -239,7 +239,7 @@ test("Creating commands while a command is bound is asserted against", (t) => {
 
 test("Creating framebuffers while a target is bound is asserted against", (t) => {
     const dev = createDevice();
-    const tex = createTexture(dev);
+    const tex = createTexture2D(dev);
     dev.target(() => {
         t.throws(() => createFramebuffer(dev, tex));
     });
@@ -303,13 +303,13 @@ function createAttributes(dev: Device): Attributes {
     });
 }
 
-function createTexture(dev: Device): Texture<TextureColorStorageFormat.RGBA8> {
-    return dev.createTexture(WIDTH, HEIGHT, TextureColorStorageFormat.RGBA8);
+function createTexture2D(dev: Device): Texture2D<TextureColorStorageFormat.RGBA8> {
+    return dev.createTexture2D(WIDTH, HEIGHT, TextureColorStorageFormat.RGBA8);
 }
 
 function createFramebuffer(
     dev: Device,
-    tex: Texture<TextureColorStorageFormat.RGBA8>,
+    tex: Texture2D<TextureColorStorageFormat.RGBA8>,
 ): Framebuffer {
     return dev.createFramebuffer(WIDTH, HEIGHT, tex);
 }

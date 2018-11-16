@@ -1,3 +1,5 @@
+import * as assert from "./util/assert";
+
 export enum TextureColorStorageFormat {
     // RED
     R8 = 0x8229,
@@ -226,7 +228,7 @@ export interface StorageFormatToDataType {
     [TextureColorStorageFormat.RG32UI]: TextureDataType.UNSIGNED_INT;
     [TextureColorStorageFormat.RG32I]: TextureDataType.INT;
     [TextureColorStorageFormat.RG16F]:
-        TextureDataType.HALF_FLOAT
+        | TextureDataType.HALF_FLOAT
         | TextureDataType.FLOAT
         ;
     [TextureColorStorageFormat.RG32F]: TextureDataType.FLOAT;
@@ -336,14 +338,14 @@ export interface StorageFormatToTypedArray {
     [TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8]: never; // yay!
 }
 
-export interface TextureCreateOptions {
+export interface Texture2DCreateOptions {
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
     wrapS?: TextureWrap;
     wrapT?: TextureWrap;
 }
 
-export interface TextureStoreOptions {
+export interface Texture2DStoreOptions {
     mipmap?: boolean;
     xOffset?: number;
     yOffset?: number;
@@ -351,7 +353,23 @@ export interface TextureStoreOptions {
     height?: number;
 }
 
-export function _createTexture<S extends TextureStorageFormat>(
+export interface TextureCubeMapCreateOptions {
+    min?: TextureMinFilter;
+    mag?: TextureMagFilter;
+    wrapS?: TextureWrap;
+    wrapT?: TextureWrap;
+    wrapR?: TextureWrap;
+}
+
+export interface TextureCubeMapStoreOptions {
+    mipmap?: boolean;
+    xOffset?: number;
+    yOffset?: number;
+    width?: number;
+    height?: number;
+}
+
+export function _createTexture2D<S extends TextureStorageFormat>(
     gl: WebGL2RenderingContext,
     width: number,
     height: number,
@@ -361,9 +379,9 @@ export function _createTexture<S extends TextureStorageFormat>(
         mag = TextureMagFilter.NEAREST,
         wrapS = TextureWrap.CLAMP_TO_EDGE,
         wrapT = TextureWrap.CLAMP_TO_EDGE,
-    }: TextureCreateOptions = {},
-): Texture<S> {
-    return new Texture(
+    }: Texture2DCreateOptions = {},
+): Texture2D<S> {
+    return new Texture2D(
         gl,
         width, height,
         storageFormat,
@@ -372,7 +390,7 @@ export function _createTexture<S extends TextureStorageFormat>(
     );
 }
 
-export function _createTextureWithTypedArray<S extends TextureStorageFormat>(
+export function _createTexture2DWithTypedArray<S extends TextureStorageFormat>(
     gl: WebGL2RenderingContext,
     width: number,
     height: number,
@@ -380,15 +398,15 @@ export function _createTextureWithTypedArray<S extends TextureStorageFormat>(
     data: StorageFormatToTypedArray[S],
     dataFormat: StorageFormatToFormat[S],
     dataType: StorageFormatToDataType[S],
-    options: TextureCreateOptions & TextureStoreOptions = {},
-): Texture<S> {
+    options: Texture2DCreateOptions & Texture2DStoreOptions = {},
+): Texture2D<S> {
     const {
         min = TextureMinFilter.NEAREST,
         mag = TextureMagFilter.NEAREST,
         wrapS = TextureWrap.CLAMP_TO_EDGE,
         wrapT = TextureWrap.CLAMP_TO_EDGE,
     } = options;
-    return new Texture(
+    return new Texture2D(
         gl,
         width, height,
         storageFormat,
@@ -397,11 +415,74 @@ export function _createTextureWithTypedArray<S extends TextureStorageFormat>(
     ).store(data, dataFormat, dataType, options);
 }
 
+export function _createTextureCubeMap<S extends TextureStorageFormat>(
+    gl: WebGL2RenderingContext,
+    width: number,
+    height: number,
+    storageFormat: S,
+    {
+        min = TextureMinFilter.NEAREST,
+        mag = TextureMagFilter.NEAREST,
+        wrapS = TextureWrap.CLAMP_TO_EDGE,
+        wrapT = TextureWrap.CLAMP_TO_EDGE,
+        wrapR = TextureWrap.CLAMP_TO_EDGE,
+    }: TextureCubeMapCreateOptions = {},
+): TextureCubeMap<S> {
+    return new TextureCubeMap(
+        gl,
+        width, height,
+        storageFormat,
+        wrapS, wrapT, wrapR,
+        min, mag,
+    );
+}
+
+export function _createTextureCubeMapWithTypedArray<S extends TextureStorageFormat>(
+    gl: WebGL2RenderingContext,
+    width: number,
+    height: number,
+    storageFormat: S,
+    dataPositiveX: StorageFormatToTypedArray[S],
+    dataNegativeX: StorageFormatToTypedArray[S],
+    dataPositiveY: StorageFormatToTypedArray[S],
+    dataNegativeY: StorageFormatToTypedArray[S],
+    dataPositiveZ: StorageFormatToTypedArray[S],
+    dataNegativeZ: StorageFormatToTypedArray[S],
+    dataFormat: StorageFormatToFormat[S],
+    dataType: StorageFormatToDataType[S],
+    options: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions = {},
+): TextureCubeMap<S> {
+    const {
+        min = TextureMinFilter.NEAREST,
+        mag = TextureMagFilter.NEAREST,
+        wrapS = TextureWrap.CLAMP_TO_EDGE,
+        wrapT = TextureWrap.CLAMP_TO_EDGE,
+        wrapR = TextureWrap.CLAMP_TO_EDGE,
+    } = options;
+    return new TextureCubeMap(
+        gl,
+        width, height,
+        storageFormat,
+        wrapS, wrapT, wrapR,
+        min, mag,
+    ).store(
+        dataPositiveX,
+        dataNegativeX,
+        dataPositiveY,
+        dataNegativeY,
+        dataPositiveZ,
+        dataNegativeZ,
+        dataFormat,
+        dataType,
+        options,
+    );
+}
+
 /**
  * Textures are images of 2D data, where each texel can contain multiple
  * information channels of a certain type.
  */
-export class Texture<S extends TextureStorageFormat> {
+export class Texture2D<S extends TextureStorageFormat> {
 
     readonly width: number;
     readonly height: number;
@@ -459,7 +540,7 @@ export class Texture<S extends TextureStorageFormat> {
             width = this.width,
             height = this.height,
             mipmap = false,
-        }: TextureStoreOptions = {},
+        }: Texture2DStoreOptions = {},
     ): this {
         const { gl, glTexture } = this;
 
@@ -485,7 +566,11 @@ export class Texture<S extends TextureStorageFormat> {
                 // Other buffer types are fine
                 : data,
         );
-        if (mipmap) { gl.generateMipmap(gl.TEXTURE_2D); }
+
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_2D);
+        }
+
         gl.bindTexture(gl.TEXTURE_2D, null);
 
         return this;
@@ -526,5 +611,496 @@ export class Texture<S extends TextureStorageFormat> {
         gl.bindTexture(gl.TEXTURE_2D, null);
 
         (this as any).glTexture = texture;
+    }
+}
+
+/**
+ * Cubemaps consist of 6 different textures conceptually layed out as faces of a
+ * cube around origin [0, 0, 0]. Each of the 6 textures in a cubemap has the
+ * same dimensions and storage format.
+ * In shaders, cubemaps can be sampled using a vec3 interpretted as a direction
+ * from origin. This makes cubemaps ideal to implement skyboxes and environment
+ * mapping.
+ */
+export class TextureCubeMap<S extends TextureStorageFormat> {
+
+    readonly width: number;
+    readonly height: number;
+    readonly storageFormat: S;
+    readonly wrapS: TextureWrap;
+    readonly wrapT: TextureWrap;
+    readonly wrapR: TextureWrap;
+    readonly minFilter: TextureMinFilter;
+    readonly magFilter: TextureMagFilter;
+
+    readonly glTexture: WebGLTexture | null;
+
+    private gl: WebGL2RenderingContext;
+
+    constructor(
+        gl: WebGL2RenderingContext,
+        width: number,
+        height: number,
+        storageFormat: S,
+        wrapS: TextureWrap,
+        wrapT: TextureWrap,
+        wrapR: TextureWrap,
+        minFilter: TextureMinFilter,
+        magFilter: TextureMagFilter,
+    ) {
+        this.gl = gl;
+        this.width = width;
+        this.height = height;
+        this.storageFormat = storageFormat;
+        this.wrapS = wrapS;
+        this.wrapT = wrapT;
+        this.wrapR = wrapR;
+        this.minFilter = minFilter;
+        this.magFilter = magFilter;
+        this.glTexture = null;
+
+        this.init();
+    }
+
+    /**
+     * Reinitialize invalid cubemap, eg. after context is lost.
+     */
+    restore(): void {
+        const { gl, glTexture } = this;
+        if (!gl.isTexture(glTexture)) { this.init(); }
+    }
+
+    /**
+     * Upload new data to cubemap. Does not take ownership of data.
+     * The 6 typed arrays must be of the same length.
+     */
+    store(
+        dataPositiveX: StorageFormatToTypedArray[S],
+        dataNegativeX: StorageFormatToTypedArray[S],
+        dataPositiveY: StorageFormatToTypedArray[S],
+        dataNegativeY: StorageFormatToTypedArray[S],
+        dataPositiveZ: StorageFormatToTypedArray[S],
+        dataNegativeZ: StorageFormatToTypedArray[S],
+        format: StorageFormatToFormat[S],
+        type: StorageFormatToDataType[S],
+        {
+            xOffset = 0,
+            yOffset = 0,
+            width = this.width,
+            height = this.height,
+            mipmap = false,
+        }: Texture2DStoreOptions = {},
+    ): this {
+        assert.is(dataNegativeX.length, dataPositiveX.length);
+        assert.is(dataPositiveY.length, dataPositiveX.length);
+        assert.is(dataNegativeY.length, dataPositiveX.length);
+        assert.is(dataPositiveZ.length, dataPositiveX.length);
+        assert.is(dataNegativeZ.length, dataPositiveX.length);
+
+        const { gl, glTexture } = this;
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, glTexture);
+
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+            dataPositiveX,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+            dataNegativeX,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+            dataPositiveY,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            dataNegativeY,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+            dataPositiveZ,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+            dataNegativeZ,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_POSITIVE_X);
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_X);
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_POSITIVE_Y);
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y);
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_POSITIVE_Z);
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
+        }
+
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        return this;
+    }
+
+    /**
+     * Upload new data to cubemap's positive X face.
+     * Does not take ownership of data.
+     */
+    storePositiveX(
+        data: StorageFormatToTypedArray[S],
+        format: StorageFormatToFormat[S],
+        type: StorageFormatToDataType[S],
+        {
+            xOffset = 0,
+            yOffset = 0,
+            width = this.width,
+            height = this.height,
+            mipmap = false,
+        }: Texture2DStoreOptions = {},
+    ): this {
+        const { gl, glTexture } = this;
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, glTexture);
+
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+            data,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_POSITIVE_X);
+        }
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+        return this;
+    }
+
+    /**
+     * Upload new data to cubemap's negative X face.
+     * Does not take ownership of data.
+     */
+    storeNegativeX(
+        data: StorageFormatToTypedArray[S],
+        format: StorageFormatToFormat[S],
+        type: StorageFormatToDataType[S],
+        {
+            xOffset = 0,
+            yOffset = 0,
+            width = this.width,
+            height = this.height,
+            mipmap = false,
+        }: Texture2DStoreOptions = {},
+    ): this {
+        const { gl, glTexture } = this;
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, glTexture);
+
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+            data,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_X);
+        }
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+        return this;
+    }
+
+    /**
+     * Upload new data to cubemap's positive Y face.
+     * Does not take ownership of data.
+     */
+    storePositiveY(
+        data: StorageFormatToTypedArray[S],
+        format: StorageFormatToFormat[S],
+        type: StorageFormatToDataType[S],
+        {
+            xOffset = 0,
+            yOffset = 0,
+            width = this.width,
+            height = this.height,
+            mipmap = false,
+        }: Texture2DStoreOptions = {},
+    ): this {
+        const { gl, glTexture } = this;
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, glTexture);
+
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+            data,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_POSITIVE_Y);
+        }
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+        return this;
+    }
+
+    /**
+     * Upload new data to cubemap's negative Y face.
+     * Does not take ownership of data.
+     */
+    storeNegativeY(
+        data: StorageFormatToTypedArray[S],
+        format: StorageFormatToFormat[S],
+        type: StorageFormatToDataType[S],
+        {
+            xOffset = 0,
+            yOffset = 0,
+            width = this.width,
+            height = this.height,
+            mipmap = false,
+        }: Texture2DStoreOptions = {},
+    ): this {
+        const { gl, glTexture } = this;
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, glTexture);
+
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            data,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y);
+        }
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+        return this;
+    }
+
+    /**
+     * Upload new data to cubemap's positive Z face.
+     * Does not take ownership of data.
+     */
+    storePositiveZ(
+        data: StorageFormatToTypedArray[S],
+        format: StorageFormatToFormat[S],
+        type: StorageFormatToDataType[S],
+        {
+            xOffset = 0,
+            yOffset = 0,
+            width = this.width,
+            height = this.height,
+            mipmap = false,
+        }: Texture2DStoreOptions = {},
+    ): this {
+        const { gl, glTexture } = this;
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, glTexture);
+
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+            data,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_POSITIVE_Z);
+        }
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+        return this;
+    }
+
+    /**
+     * Upload new data to cubemap's negative Z face.
+     * Does not take ownership of data.
+     */
+    storeNegativeZ(
+        data: StorageFormatToTypedArray[S],
+        format: StorageFormatToFormat[S],
+        type: StorageFormatToDataType[S],
+        {
+            xOffset = 0,
+            yOffset = 0,
+            width = this.width,
+            height = this.height,
+            mipmap = false,
+        }: Texture2DStoreOptions = {},
+    ): this {
+        const { gl, glTexture } = this;
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, glTexture);
+
+        this.storeFace(
+            gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+            data,
+            format,
+            type,
+            xOffset,
+            yOffset,
+            width,
+            height,
+        );
+
+        if (mipmap) {
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
+        }
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+        return this;
+    }
+
+    /**
+     * Generate mipmap levels for the current data.
+     */
+    mipmap(): this {
+        const { gl, glTexture } = this;
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, glTexture);
+
+        gl.generateMipmap(gl.TEXTURE_CUBE_MAP_POSITIVE_X);
+        gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_X);
+        gl.generateMipmap(gl.TEXTURE_CUBE_MAP_POSITIVE_Y);
+        gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y);
+        gl.generateMipmap(gl.TEXTURE_CUBE_MAP_POSITIVE_Z);
+        gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+        return this;
+    }
+
+    private init(): void {
+        const {
+            gl,
+            width,
+            height,
+            storageFormat,
+            wrapS,
+            wrapT,
+            wrapR,
+            minFilter,
+            magFilter,
+        } = this;
+        const texture = gl.createTexture();
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+
+        gl.texStorage2D(
+            gl.TEXTURE_CUBE_MAP,
+            1, // levels
+            storageFormat,
+            width,
+            height,
+        );
+
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, wrapS);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, wrapT);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, wrapR);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, minFilter);
+        gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, magFilter);
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+        (this as any).glTexture = texture;
+    }
+
+    private storeFace(
+        target: number,
+        data: StorageFormatToTypedArray[S],
+        format: StorageFormatToFormat[S],
+        type: StorageFormatToDataType[S],
+        xOffset: number,
+        yOffset: number,
+        width: number,
+        height: number,
+    ): void {
+        const gl = this.gl;
+        // This pixel row alignment is theoretically smaller than needed
+        // TODO: find greatest correct unpack alignment for pixel rows
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, data.BYTES_PER_ELEMENT);
+        gl.texSubImage2D(
+            target,
+            0, // level
+            xOffset,
+            yOffset,
+            width,
+            height,
+            format,
+            type,
+            // WebGL bug causes Uint8ClampedArray to be read incorrectly
+            // https://github.com/KhronosGroup/WebGL/issues/1533
+            data instanceof Uint8ClampedArray
+                // Both buffers are u8 -> do not copy, just change lens
+                ? new Uint8Array(data.buffer)
+                // Other buffer types are fine
+                : data,
+        );
     }
 }

@@ -233,26 +233,42 @@ export interface StorageFormatToTypedArray {
     [TextureDepthStencilStorageFormat.DEPTH24_STENCIL8]: Uint32Array;
     [TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8]: never;
 }
-export interface TextureCreateOptions {
+export interface Texture2DCreateOptions {
     min?: TextureMinFilter;
     mag?: TextureMagFilter;
     wrapS?: TextureWrap;
     wrapT?: TextureWrap;
 }
-export interface TextureStoreOptions {
+export interface Texture2DStoreOptions {
     mipmap?: boolean;
     xOffset?: number;
     yOffset?: number;
     width?: number;
     height?: number;
 }
-export declare function _createTexture<S extends TextureStorageFormat>(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, { min, mag, wrapS, wrapT, }?: TextureCreateOptions): Texture<S>;
-export declare function _createTextureWithTypedArray<S extends TextureStorageFormat>(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, data: StorageFormatToTypedArray[S], dataFormat: StorageFormatToFormat[S], dataType: StorageFormatToDataType[S], options?: TextureCreateOptions & TextureStoreOptions): Texture<S>;
+export interface TextureCubeMapCreateOptions {
+    min?: TextureMinFilter;
+    mag?: TextureMagFilter;
+    wrapS?: TextureWrap;
+    wrapT?: TextureWrap;
+    wrapR?: TextureWrap;
+}
+export interface TextureCubeMapStoreOptions {
+    mipmap?: boolean;
+    xOffset?: number;
+    yOffset?: number;
+    width?: number;
+    height?: number;
+}
+export declare function _createTexture2D<S extends TextureStorageFormat>(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, { min, mag, wrapS, wrapT, }?: Texture2DCreateOptions): Texture2D<S>;
+export declare function _createTexture2DWithTypedArray<S extends TextureStorageFormat>(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, data: StorageFormatToTypedArray[S], dataFormat: StorageFormatToFormat[S], dataType: StorageFormatToDataType[S], options?: Texture2DCreateOptions & Texture2DStoreOptions): Texture2D<S>;
+export declare function _createTextureCubeMap<S extends TextureStorageFormat>(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, { min, mag, wrapS, wrapT, wrapR, }?: TextureCubeMapCreateOptions): TextureCubeMap<S>;
+export declare function _createTextureCubeMapWithTypedArray<S extends TextureStorageFormat>(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, dataPositiveX: StorageFormatToTypedArray[S], dataNegativeX: StorageFormatToTypedArray[S], dataPositiveY: StorageFormatToTypedArray[S], dataNegativeY: StorageFormatToTypedArray[S], dataPositiveZ: StorageFormatToTypedArray[S], dataNegativeZ: StorageFormatToTypedArray[S], dataFormat: StorageFormatToFormat[S], dataType: StorageFormatToDataType[S], options?: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions): TextureCubeMap<S>;
 /**
  * Textures are images of 2D data, where each texel can contain multiple
  * information channels of a certain type.
  */
-export declare class Texture<S extends TextureStorageFormat> {
+export declare class Texture2D<S extends TextureStorageFormat> {
     readonly width: number;
     readonly height: number;
     readonly storageFormat: S;
@@ -270,11 +286,77 @@ export declare class Texture<S extends TextureStorageFormat> {
     /**
      * Upload new data to texture. Does not take ownership of data.
      */
-    store(data: StorageFormatToTypedArray[S], format: StorageFormatToFormat[S], type: StorageFormatToDataType[S], { xOffset, yOffset, width, height, mipmap, }?: TextureStoreOptions): this;
+    store(data: StorageFormatToTypedArray[S], format: StorageFormatToFormat[S], type: StorageFormatToDataType[S], { xOffset, yOffset, width, height, mipmap, }?: Texture2DStoreOptions): this;
     /**
      * Generate mipmap levels for the current data.
      */
     mipmap(): void;
     private init;
+}
+/**
+ * Cubemaps consist of 6 different textures conceptually layed out as faces of a
+ * cube around origin [0, 0, 0]. Each of the 6 textures in a cubemap has the
+ * same dimensions and storage format.
+ * In shaders, cubemaps can be sampled using a vec3 interpretted as a direction
+ * from origin. This makes cubemaps ideal to implement skyboxes and environment
+ * mapping.
+ */
+export declare class TextureCubeMap<S extends TextureStorageFormat> {
+    readonly width: number;
+    readonly height: number;
+    readonly storageFormat: S;
+    readonly wrapS: TextureWrap;
+    readonly wrapT: TextureWrap;
+    readonly wrapR: TextureWrap;
+    readonly minFilter: TextureMinFilter;
+    readonly magFilter: TextureMagFilter;
+    readonly glTexture: WebGLTexture | null;
+    private gl;
+    constructor(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, wrapS: TextureWrap, wrapT: TextureWrap, wrapR: TextureWrap, minFilter: TextureMinFilter, magFilter: TextureMagFilter);
+    /**
+     * Reinitialize invalid cubemap, eg. after context is lost.
+     */
+    restore(): void;
+    /**
+     * Upload new data to cubemap. Does not take ownership of data.
+     * The 6 typed arrays must be of the same length.
+     */
+    store(dataPositiveX: StorageFormatToTypedArray[S], dataNegativeX: StorageFormatToTypedArray[S], dataPositiveY: StorageFormatToTypedArray[S], dataNegativeY: StorageFormatToTypedArray[S], dataPositiveZ: StorageFormatToTypedArray[S], dataNegativeZ: StorageFormatToTypedArray[S], format: StorageFormatToFormat[S], type: StorageFormatToDataType[S], { xOffset, yOffset, width, height, mipmap, }?: Texture2DStoreOptions): this;
+    /**
+     * Upload new data to cubemap's positive X face.
+     * Does not take ownership of data.
+     */
+    storePositiveX(data: StorageFormatToTypedArray[S], format: StorageFormatToFormat[S], type: StorageFormatToDataType[S], { xOffset, yOffset, width, height, mipmap, }?: Texture2DStoreOptions): this;
+    /**
+     * Upload new data to cubemap's negative X face.
+     * Does not take ownership of data.
+     */
+    storeNegativeX(data: StorageFormatToTypedArray[S], format: StorageFormatToFormat[S], type: StorageFormatToDataType[S], { xOffset, yOffset, width, height, mipmap, }?: Texture2DStoreOptions): this;
+    /**
+     * Upload new data to cubemap's positive Y face.
+     * Does not take ownership of data.
+     */
+    storePositiveY(data: StorageFormatToTypedArray[S], format: StorageFormatToFormat[S], type: StorageFormatToDataType[S], { xOffset, yOffset, width, height, mipmap, }?: Texture2DStoreOptions): this;
+    /**
+     * Upload new data to cubemap's negative Y face.
+     * Does not take ownership of data.
+     */
+    storeNegativeY(data: StorageFormatToTypedArray[S], format: StorageFormatToFormat[S], type: StorageFormatToDataType[S], { xOffset, yOffset, width, height, mipmap, }?: Texture2DStoreOptions): this;
+    /**
+     * Upload new data to cubemap's positive Z face.
+     * Does not take ownership of data.
+     */
+    storePositiveZ(data: StorageFormatToTypedArray[S], format: StorageFormatToFormat[S], type: StorageFormatToDataType[S], { xOffset, yOffset, width, height, mipmap, }?: Texture2DStoreOptions): this;
+    /**
+     * Upload new data to cubemap's negative Z face.
+     * Does not take ownership of data.
+     */
+    storeNegativeZ(data: StorageFormatToTypedArray[S], format: StorageFormatToFormat[S], type: StorageFormatToDataType[S], { xOffset, yOffset, width, height, mipmap, }?: Texture2DStoreOptions): this;
+    /**
+     * Generate mipmap levels for the current data.
+     */
+    mipmap(): this;
+    private init;
+    private storeFace;
 }
 //# sourceMappingURL=texture.d.ts.map

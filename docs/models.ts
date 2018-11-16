@@ -5,6 +5,7 @@
 
 import {
     Device,
+    UniformType,
     DepthFunc,
     TargetBufferBitmask,
 } from "./lib/webglutenfree.js";
@@ -60,7 +61,7 @@ const cmd = dev.createCommand<CmdProps>(
     {
         uniforms: {
             u_proj: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: mat4.perspective(
                     mat4.create(),
                     Math.PI / 4,
@@ -70,7 +71,7 @@ const cmd = dev.createCommand<CmdProps>(
                 ),
             },
             u_view: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ time }) => mat4.lookAt(
                     viewMatrix,
                     [
@@ -83,11 +84,11 @@ const cmd = dev.createCommand<CmdProps>(
                 ),
             },
             u_model: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ modelMatrix }) => modelMatrix,
             },
             u_light: {
-                type: "3f",
+                type: UniformType.FLOAT_VEC3,
                 value: [1, 0, 0],
             },
         },

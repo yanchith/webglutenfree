@@ -7,7 +7,8 @@
 
 import {
     Device,
-    Texture,
+    Texture2D,
+    UniformType,
     DepthFunc,
     TargetBufferBitmask,
     ElementPrimitive,
@@ -23,14 +24,14 @@ const PERSISTENCE_FACTOR = 0.8;
 const dev = Device.create({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const newFrameTex = dev.createTexture(width, height, TextureColorStorageFormat.RGBA8);
-const depthTex = dev.createTexture(width, height, TextureDepthStorageFormat.DEPTH_COMPONENT24);
+const newFrameTex = dev.createTexture2D(width, height, TextureColorStorageFormat.RGBA8);
+const depthTex = dev.createTexture2D(width, height, TextureDepthStorageFormat.DEPTH_COMPONENT24);
 const newFrameFbo = dev.createFramebuffer(width, height, newFrameTex, depthTex);
 
-const pingTex = dev.createTexture(width, height, TextureColorStorageFormat.RGBA8);
+const pingTex = dev.createTexture2D(width, height, TextureColorStorageFormat.RGBA8);
 const pingFbo = dev.createFramebuffer(width, height, pingTex);
 
-const pongTex = dev.createTexture(width, height, TextureColorStorageFormat.RGBA8);
+const pongTex = dev.createTexture2D(width, height, TextureColorStorageFormat.RGBA8);
 const pongFbo = dev.createFramebuffer(width, height, pongTex);
 
 const viewMatrix = mat4.create();
@@ -75,7 +76,7 @@ const cmdDraw = dev.createCommand<CmdDrawProps>(
     {
         uniforms: {
             u_proj: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: mat4.perspective(
                     mat4.create(),
                     Math.PI / 4,
@@ -85,7 +86,7 @@ const cmdDraw = dev.createCommand<CmdDrawProps>(
                 ),
             },
             u_view: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ time }) => mat4.lookAt(
                     viewMatrix,
                     [
@@ -98,7 +99,7 @@ const cmdDraw = dev.createCommand<CmdDrawProps>(
                 ),
             },
             u_light: {
-                type: "3f",
+                type: UniformType.FLOAT_VEC3,
                 value: [1, 1, 0],
             },
         },
@@ -107,29 +108,29 @@ const cmdDraw = dev.createCommand<CmdDrawProps>(
 );
 
 interface CmdBlendProps {
-    newFrame: Texture<TextureColorStorageFormat>;
-    prevFrame: Texture<TextureColorStorageFormat>;
+    newFrame: Texture2D<TextureColorStorageFormat>;
+    prevFrame: Texture2D<TextureColorStorageFormat>;
 }
 
 const cmdBlend = dev.createCommand<CmdBlendProps>(
     `#version 300 es
     precision mediump float;
 
-    out vec2 v_uv;
+    out vec2 v_tex_coord;
 
     void main() {
         switch (gl_VertexID % 3) {
             case 0:
                 gl_Position = vec4(-1, 3, 0, 1);
-                v_uv = vec2(0, 2);
+                v_tex_coord = vec2(0, 2);
                 break;
             case 1:
                 gl_Position = vec4(-1, -1, 0, 1);
-                v_uv = vec2(0, 0);
+                v_tex_coord = vec2(0, 0);
                 break;
             case 2:
                 gl_Position = vec4(3, -1, 0, 1);
-                v_uv = vec2(2, 0);
+                v_tex_coord = vec2(2, 0);
                 break;
         }
     }
@@ -140,7 +141,7 @@ const cmdBlend = dev.createCommand<CmdBlendProps>(
     uniform sampler2D u_new_frame, u_prev_frame;
     uniform float u_blend_factor;
 
-    in vec2 v_uv;
+    in vec2 v_tex_coord;
 
     out vec4 f_color;
 
@@ -149,20 +150,24 @@ const cmdBlend = dev.createCommand<CmdBlendProps>(
     }
 
     void main() {
-        vec4 c1 = texture(u_new_frame, v_uv);
-        vec4 c2 = texture(u_prev_frame, v_uv);
+        vec4 c1 = texture(u_new_frame, v_tex_coord);
+        vec4 c2 = texture(u_prev_frame, v_tex_coord);
         f_color = blend_alpha(c2, c1, u_blend_factor);
     }
     `,
     {
-        textures: {
-            u_new_frame: ({ newFrame }) => newFrame,
-            u_prev_frame: ({ prevFrame }) => prevFrame,
-        },
         uniforms: {
             u_blend_factor: {
-                type: "1f",
+                type: UniformType.FLOAT,
                 value: PERSISTENCE_FACTOR,
+            },
+            u_new_frame: {
+                type: UniformType.SAMPLER_2D,
+                value: ({ newFrame }) => newFrame,
+            },
+            u_prev_frame: {
+                type: UniformType.SAMPLER_2D,
+                value: ({ prevFrame }) => prevFrame,
             },
         },
     },

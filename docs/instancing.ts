@@ -13,7 +13,7 @@
 import {
     Device,
     AttributeType,
-    VertexBuffer,
+    UniformType,
     TargetBufferBitmask,
     VertexBufferIntegerDataType,
     VertexBufferFloatDataType,
@@ -63,7 +63,7 @@ const cmd = dev.createCommand(
     {
         uniforms: {
             u_proj: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: mat4.ortho(
                     mat4.create(),
                     -width / 2,
@@ -75,11 +75,11 @@ const cmd = dev.createCommand(
                 ),
             },
             u_model: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: mat4.fromScaling(mat4.create(), [50, 50, 100]),
             },
             u_view: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: () => mat4.rotateZ(viewMatrix, viewMatrix, 0.01),
             },
         },

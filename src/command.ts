@@ -7,22 +7,45 @@ import {
     BlendDescriptor,
 } from "./state";
 import { AttributesConfig } from "./attributes";
-import { Texture, TextureStorageFormat } from "./texture";
+import { Texture2D, TextureCubeMap, TextureStorageFormat } from "./texture";
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
 const UNKNOWN_ATTRIB_LOCATION = -1;
 
-export type Accessor<P, R> = R | ((props: P, index: number) => R);
-export type TextureAccessor<P> = Accessor<P, Texture<TextureStorageFormat>>;
+export enum UniformType {
+    FLOAT = 0x1406,
+    FLOAT_VEC2 = 0x8B50,
+    FLOAT_VEC3 = 0x8B51,
+    FLOAT_VEC4 = 0x8B52,
 
-export interface Textures<P> { [name: string]: TextureAccessor<P>; }
+    INT = 0x1404,
+    INT_VEC2 = 0x8B53,
+    INT_VEC3 = 0x8B54,
+    INT_VEC4 = 0x8B55,
+
+    UNSIGNED_INT = 0x1405,
+    UNSIGNED_INT_VEC2 = 0x8DC6,
+    UNSIGNED_INT_VEC3 = 0x8DC7,
+    UNSIGNED_INT_VEC4 = 0x8DC8,
+
+    FLOAT_MAT2 = 0x8B5A,
+    FLOAT_MAT3 = 0x8B5B,
+    FLOAT_MAT4 = 0x8B5C,
+
+    SAMPLER_2D = 0x8B5E,
+    SAMPLER_CUBE = 0x8B60,
+
+    // TODO: support all uniform types
+    // BOOL
+}
+
+export type Accessor<P, R> = R | ((props: P, index: number) => R);
 export interface Uniforms<P> { [name: string]: Uniform<P>; }
 
 export type SingleOrSeparateFrontBack<T> = T | { front: T, back: T };
 export type SingleOrSeparateRgbAlpha<T> = T | { rgb: T, alpha: T };
 
 export interface CommandCreateOptions<P> {
-    textures?: Textures<P>;
     uniforms?: Uniforms<P>;
     depth?: {
         func: DepthFunc;
@@ -52,151 +75,207 @@ export interface CommandCreateOptions<P> {
     };
 }
 
-export type Uniform<P> =
-    | Uniform1f<P> | Uniform1fv<P>
-    | Uniform1i<P> | Uniform1iv<P> | Uniform1ui<P> | Uniform1uiv<P>
-    | Uniform2f<P> | Uniform2fv<P>
-    | Uniform2i<P> | Uniform2iv<P> | Uniform2ui<P> | Uniform2uiv<P>
-    | Uniform3f<P> | Uniform3fv<P>
-    | Uniform3i<P> | Uniform3iv<P> | Uniform3ui<P> | Uniform3uiv<P>
-    | Uniform4f<P> | Uniform4fv<P>
-    | Uniform4i<P> | Uniform4iv<P> | Uniform4ui<P> | Uniform4uiv<P>
-    | UniformMatrix2fv<P> | UniformMatrix3fv<P> | UniformMatrix4fv<P>
+export type Uniform<P> = UniformValue<P> | UniformTextureValue<P>;
+
+export type UniformValue<P> =
+    | UniformFloat<P>
+    | UniformInt<P>
+    | UniformUnsignedInt<P>
+    | UniformFloatVec2<P>
+    | UniformIntVec2<P>
+    | UniformUnsignedIntVec2<P>
+    | UniformFloatVec3<P>
+    | UniformIntVec3<P>
+    | UniformUnsignedIntVec3<P>
+    | UniformFloatVec4<P>
+    | UniformIntVec4<P>
+    | UniformUnsignedIntVec4<P>
+    | UniformFloatMat2<P>
+    | UniformFloatMat3<P>
+    | UniformFloatMat4<P>
     ;
 
-export interface Uniform1f<P> {
-    type: "1f";
-    value: Accessor<P, number>;
+export type UniformTextureValue<P> =
+    | UniformTexture2D<P>
+    | UniformTextureCubeMap<P>
+    ;
+
+export interface UniformFloat<P> {
+    type: UniformType.FLOAT;
+    value: Accessor<P, number | number[] | Float32Array>;
 }
 
-export interface Uniform1fv<P> {
-    type: "1fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface UniformInt<P> {
+    type: UniformType.INT;
+    value: Accessor<P, number | number[] | Int32Array>;
 }
 
-export interface Uniform1i<P> {
-    type: "1i";
-    value: Accessor<P, number>;
+export interface UniformUnsignedInt<P> {
+    type: UniformType.UNSIGNED_INT;
+    value: Accessor<P, number | number[] | Uint32Array>;
 }
 
-export interface Uniform1iv<P> {
-    type: "1iv";
-    value: Accessor<P, Int32Array | number[]>;
+export interface UniformFloatVec2<P> {
+    type: UniformType.FLOAT_VEC2;
+    value: Accessor<P, number[] | Float32Array>;
 }
 
-export interface Uniform1ui<P> {
-    type: "1ui";
-    value: Accessor<P, number>;
+export interface UniformIntVec2<P> {
+    type: UniformType.INT_VEC2;
+    value: Accessor<P, number[] | Int32Array>;
 }
 
-export interface Uniform1uiv<P> {
-    type: "1uiv";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface UniformUnsignedIntVec2<P> {
+    type: UniformType.UNSIGNED_INT_VEC2;
+    value: Accessor<P, number[] | Uint32Array>;
 }
 
-export interface Uniform2f<P> {
-    type: "2f";
-    value: Accessor<P, Float32Array | number[]>;
+export interface UniformFloatVec3<P> {
+    type: UniformType.FLOAT_VEC3;
+    value: Accessor<P, number[] | Float32Array>;
 }
 
-export interface Uniform2fv<P> {
-    type: "2fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface UniformIntVec3<P> {
+    type: UniformType.INT_VEC3;
+    value: Accessor<P, number[] | Int32Array>;
 }
 
-export interface Uniform2i<P> {
-    type: "2i";
-    value: Accessor<P, Int32Array | number[]>;
+export interface UniformUnsignedIntVec3<P> {
+    type: UniformType.UNSIGNED_INT_VEC3;
+    value: Accessor<P, number[] | Uint32Array>;
 }
 
-export interface Uniform2iv<P> {
-    type: "2iv";
-    value: Accessor<P, Int32Array | number[]>;
+export interface UniformFloatVec4<P> {
+    type: UniformType.FLOAT_VEC4;
+    value: Accessor<P, number[] | Float32Array>;
 }
 
-export interface Uniform2ui<P> {
-    type: "2ui";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface UniformIntVec4<P> {
+    type: UniformType.INT_VEC4;
+    value: Accessor<P, number[] | Int32Array>;
 }
 
-export interface Uniform2uiv<P> {
-    type: "2uiv";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface UniformUnsignedIntVec4<P> {
+    type: UniformType.UNSIGNED_INT_VEC4;
+    value: Accessor<P, number[] | Uint32Array>;
 }
 
-export interface Uniform3f<P> {
-    type: "3f";
-    value: Accessor<P, Float32Array | number[]>;
+export interface UniformFloatMat2<P> {
+    type: UniformType.FLOAT_MAT2;
+    value: Accessor<P, number[] | Float32Array>;
 }
 
-export interface Uniform3fv<P> {
-    type: "3fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface UniformFloatMat3<P> {
+    type: UniformType.FLOAT_MAT3;
+    value: Accessor<P, number[] | Float32Array>;
 }
 
-export interface Uniform3i<P> {
-    type: "3i";
-    value: Accessor<P, Int32Array | number[]>;
+export interface UniformFloatMat4<P> {
+    type: UniformType.FLOAT_MAT4;
+    value: Accessor<P, number[] | Float32Array>;
 }
 
-export interface Uniform3iv<P> {
-    type: "3iv";
-    value: Accessor<P, Int32Array | number[]>;
+export interface UniformTexture2D<P> {
+    type: UniformType.SAMPLER_2D;
+    value: Accessor<P, Texture2D<TextureStorageFormat>>;
 }
 
-export interface Uniform3ui<P> {
-    type: "3ui";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface UniformTextureCubeMap<P> {
+    type: UniformType.SAMPLER_CUBE;
+    value: Accessor<P, TextureCubeMap<TextureStorageFormat>>;
 }
 
-export interface Uniform3uiv<P> {
-    type: "3uiv";
-    value: Accessor<P, Uint32Array | number[]>;
+export type DynamicUniformValue<P> =
+    | DynamicUniformFloat<P>
+    | DynamicUniformInt<P>
+    | DynamicUniformUnsignedInt<P>
+    | DynamicUniformFloatVec2<P>
+    | DynamicUniformIntVec2<P>
+    | DynamicUniformUnsignedIntVec2<P>
+    | DynamicUniformFloatVec3<P>
+    | DynamicUniformIntVec3<P>
+    | DynamicUniformUnsignedIntVec3<P>
+    | DynamicUniformFloatVec4<P>
+    | DynamicUniformIntVec4<P>
+    | DynamicUniformUnsignedIntVec4<P>
+    | DynamicUniformFloatMat2<P>
+    | DynamicUniformFloatMat3<P>
+    | DynamicUniformFloatMat4<P>
+    ;
+
+export interface DynamicUniformFloat<P> {
+    type: UniformType.FLOAT;
+    value: (props: P, index: number) => number | number[] | Float32Array;
 }
 
-export interface Uniform4f<P> {
-    type: "4f";
-    value: Accessor<P, Float32Array | number[]>;
+export interface DynamicUniformInt<P> {
+    type: UniformType.INT;
+    value: (props: P, index: number) => number | number[] | Int32Array;
 }
 
-export interface Uniform4fv<P> {
-    type: "4fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface DynamicUniformUnsignedInt<P> {
+    type: UniformType.UNSIGNED_INT;
+    value: (props: P, index: number) => number | number[] | Uint32Array;
 }
 
-export interface Uniform4i<P> {
-    type: "4i";
-    value: Accessor<P, Int32Array | number[]>;
+export interface DynamicUniformFloatVec2<P> {
+    type: UniformType.FLOAT_VEC2;
+    value: (props: P, index: number) => number[] | Float32Array;
 }
 
-export interface Uniform4iv<P> {
-    type: "4iv";
-    value: Accessor<P, Int32Array | number[]>;
+export interface DynamicUniformIntVec2<P> {
+    type: UniformType.INT_VEC2;
+    value: (props: P, index: number) => number[] | Int32Array;
 }
 
-export interface Uniform4ui<P> {
-    type: "4ui";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface DynamicUniformUnsignedIntVec2<P> {
+    type: UniformType.UNSIGNED_INT_VEC2;
+    value: (props: P, index: number) => number[] | Uint32Array;
 }
 
-export interface Uniform4uiv<P> {
-    type: "4uiv";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface DynamicUniformFloatVec3<P> {
+    type: UniformType.FLOAT_VEC3;
+    value: (props: P, index: number) => number[] | Float32Array;
 }
 
-export interface UniformMatrix2fv<P> {
-    type: "matrix2fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface DynamicUniformIntVec3<P> {
+    type: UniformType.INT_VEC3;
+    value: (props: P, index: number) => number[] | Int32Array;
 }
 
-export interface UniformMatrix3fv<P> {
-    type: "matrix3fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface DynamicUniformUnsignedIntVec3<P> {
+    type: UniformType.UNSIGNED_INT_VEC3;
+    value: (props: P, index: number) => number[] | Uint32Array;
 }
 
-export interface UniformMatrix4fv<P> {
-    type: "matrix4fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface DynamicUniformFloatVec4<P> {
+    type: UniformType.FLOAT_VEC4;
+    value: (props: P, index: number) => number[] | Float32Array;
+}
+
+export interface DynamicUniformIntVec4<P> {
+    type: UniformType.INT_VEC4;
+    value: (props: P, index: number) => number[] | Int32Array;
+}
+
+export interface DynamicUniformUnsignedIntVec4<P> {
+    type: UniformType.UNSIGNED_INT_VEC4;
+    value: (props: P, index: number) => number[] | Uint32Array;
+}
+
+export interface DynamicUniformFloatMat2<P> {
+    type: UniformType.FLOAT_MAT2;
+    value: (props: P, index: number) => number[] | Float32Array;
+}
+
+export interface DynamicUniformFloatMat3<P> {
+    type: UniformType.FLOAT_MAT3;
+    value: (props: P, index: number) => number[] | Float32Array;
+}
+
+export interface DynamicUniformFloatMat4<P> {
+    type: UniformType.FLOAT_MAT4;
+    value: (props: P, index: number) => number[] | Float32Array;
 }
 
 export enum DepthFunc {
@@ -262,7 +341,6 @@ export function _createCommand<P = void>(
     vert: string,
     frag: string,
     {
-        textures = {},
         uniforms = {},
         depth,
         stencil,
@@ -280,7 +358,6 @@ export function _createCommand<P = void>(
         state,
         vert,
         frag,
-        textures,
         uniforms,
         depthDescr,
         stencilDescr,
@@ -296,20 +373,18 @@ export class Command<P> {
     readonly stencilTestDescr: StencilTestDescriptor | null;
     readonly blendDescr: BlendDescriptor | null;
 
-    readonly textureAccessors!: TextureAccessor<P>[]; // Assigned in init()
     readonly uniformDescrs!: UniformDescriptor<P>[]; // Assigned in init()
+    readonly textureDescrs!: TextureDescriptor<P>[]; // Assigned in init()
 
     private state: State;
     private vsSource: string;
     private fsSource: string;
-    private textures: Textures<P>;
     private uniforms: Uniforms<P>;
 
     constructor(
         state: State,
         vsSource: string,
         fsSource: string,
-        textures: Textures<P>,
         uniforms: Uniforms<P>,
         depthDescr?: DepthTestDescriptor,
         stencilDescr?: StencilTestDescriptor,
@@ -318,7 +393,6 @@ export class Command<P> {
         this.state = state;
         this.vsSource = vsSource;
         this.fsSource = fsSource;
-        this.textures = textures;
         this.uniforms = uniforms;
         this.depthTestDescr = depthDescr || null;
         this.stencilTestDescr = stencilDescr || null;
@@ -365,7 +439,6 @@ export class Command<P> {
             state: { gl },
             vsSource,
             fsSource,
-            textures,
             uniforms,
         } = this;
 
@@ -386,167 +459,125 @@ export class Command<P> {
                 // ctx loss or not, we can panic all we want in nonprod env!
                 throw new Error("Program was not compiled, possible reason: context loss");
             }
-            validateUniformDeclarations(gl, prog, uniforms, textures);
+            validateUniformDeclarations(gl, prog, uniforms);
         }
 
         gl.useProgram(prog);
 
-        // Texture declarations are evaluated in two phases:
-        // 1) Sampler location offsets are sent to the shader eagerly. This is
-        //    ok because even if the textures themselves can change (function
-        //    accessors), their offsets stay the same
-        // 2) Textures provided by the accessor are activated and bound to their
-        //    locations at draw time
-        // Note: Object.entries() provides values in a nondeterministic order,
-        // but we store the descriptors in an array, remembering the order.
-
-        const textureAccessors: TextureAccessor<P>[] = [];
-        Object.entries(textures).forEach(([ident, t], i) => {
-            const loc = gl.getUniformLocation(prog, ident);
-            if (!loc) {
-                throw new Error(`No location for sampler: ${ident}`);
-            }
-            gl.uniform1i(loc, i);
-            textureAccessors.push(t);
-        });
-
         // Some uniform declarations can be evaluated right away, so do it at
         // init-time. Create a descriptor for the rest that is evaluated at
         // render-time.
+        //
+        // Texture declarations are evaluated in two phases:
+        // 1) Texture location offsets are sent to the shader in init time.
+        //    This is ok because even if the textures themselves can change (via
+        //    function accessors), their offsets stay the same.
+        // 2) Textures provided by the accessor are activated and bound to their
+        //    locations at draw time.
+        // Note: Object.entries() provides values in a nondeterministic order,
+        // but we store the descriptors in an array, remembering the order.
 
         const uniformDescrs: UniformDescriptor<P>[] = [];
+        const textureDescrs: TextureDescriptor<P>[] = [];
+
         Object.entries(uniforms).forEach(([ident, u]) => {
             const loc = gl.getUniformLocation(prog, ident);
             if (!loc) {
                 throw new Error(`No location for uniform: ${ident}`);
             }
+
+            // Handle textures first...
+
+            switch (u.type) {
+                case UniformType.SAMPLER_2D:
+                case UniformType.SAMPLER_CUBE:
+                    // The old lenght is the new index to access the texture
+                    // under with gl.activeTexture()
+                    gl.uniform1i(loc, textureDescrs.length);
+                    textureDescrs.push(new TextureDescriptor(ident, u));
+
+                    return;
+            }
+
+            // ... and then handle the rest of the uniforms
+
             if (typeof u.value !== "function") {
                 // Eagerly send everything we can process now to GPU
                 switch (u.type) {
-                    case "1f":
-                        gl.uniform1f(loc, u.value);
+                    case UniformType.FLOAT:
+                        if (typeof u.value === "number") {
+                            gl.uniform1f(loc, u.value);
+                        } else {
+                            gl.uniform1fv(loc, u.value);
+                        }
                         break;
-                    case "1fv":
-                        gl.uniform1fv(loc, u.value);
+                    case UniformType.INT:
+                        if (typeof u.value === "number") {
+                            gl.uniform1i(loc, u.value);
+                        } else {
+                            gl.uniform1iv(loc, u.value);
+                        }
                         break;
-                    case "1i":
-                        gl.uniform1i(loc, u.value);
+                    case UniformType.UNSIGNED_INT:
+                        if (typeof u.value === "number") {
+                            gl.uniform1ui(loc, u.value);
+                        } else {
+                            gl.uniform1uiv(loc, u.value);
+                        }
                         break;
-                    case "1iv":
-                        gl.uniform1iv(loc, u.value);
-                        break;
-                    case "1ui":
-                        gl.uniform1ui(loc, u.value);
-                        break;
-                    case "1uiv":
-                        gl.uniform1uiv(loc, u.value);
-                        break;
-                    case "2f": {
-                        const [x, y] = u.value;
-                        gl.uniform2f(loc, x, y);
-                        break;
-                    }
-                    case "2fv":
+                    case UniformType.FLOAT_VEC2:
                         gl.uniform2fv(loc, u.value);
                         break;
-                    case "2i": {
-                        const [x, y] = u.value;
-                        gl.uniform2i(loc, x, y);
-                        break;
-                    }
-                    case "2iv":
+                    case UniformType.INT_VEC2:
                         gl.uniform2iv(loc, u.value);
                         break;
-                    case "2ui": {
-                        const [x, y] = u.value;
-                        gl.uniform2ui(loc, x, y);
-                        break;
-                    }
-                    case "2uiv":
+                    case UniformType.UNSIGNED_INT_VEC2:
                         gl.uniform2uiv(loc, u.value);
                         break;
-                    case "3f": {
-                        const [x, y, z] = u.value;
-                        gl.uniform3f(loc, x, y, z);
-                        break;
-                    }
-                    case "3fv":
+                    case UniformType.FLOAT_VEC3:
                         gl.uniform3fv(loc, u.value);
                         break;
-                    case "3i": {
-                        const [x, y, z] = u.value;
-                        gl.uniform3i(loc, x, y, z);
-                        break;
-                    }
-                    case "3iv":
+                    case UniformType.INT_VEC3:
                         gl.uniform3iv(loc, u.value);
                         break;
-                    case "3ui": {
-                        const [x, y, z] = u.value;
-                        gl.uniform3ui(loc, x, y, z);
-                        break;
-                    }
-                    case "3uiv":
+                    case UniformType.UNSIGNED_INT_VEC3:
                         gl.uniform3uiv(loc, u.value);
                         break;
-                    case "4f": {
-                        const [x, y, z, w] = u.value;
-                        gl.uniform4f(loc, x, y, z, w);
-                        break;
-                    }
-                    case "4fv":
+                    case UniformType.FLOAT_VEC4:
                         gl.uniform4fv(loc, u.value);
                         break;
-                    case "4i": {
-                        const [x, y, z, w] = u.value;
-                        gl.uniform4i(loc, x, y, z, w);
-                        break;
-                    }
-                    case "4iv":
+                    case UniformType.INT_VEC4:
                         gl.uniform4iv(loc, u.value);
                         break;
-                    case "4ui": {
-                        const [x, y, z, w] = u.value;
-                        gl.uniform4ui(loc, x, y, z, w);
-                        break;
-                    }
-                    case "4uiv":
+                    case UniformType.UNSIGNED_INT_VEC4:
                         gl.uniform4uiv(loc, u.value);
                         break;
-                    case "matrix2fv":
-                        gl.uniformMatrix2fv(
-                            loc,
-                            false,
-                            u.value,
-                        );
+                    case UniformType.FLOAT_MAT2:
+                        gl.uniformMatrix2fv(loc, false, u.value);
                         break;
-                    case "matrix3fv":
-                        gl.uniformMatrix3fv(
-                            loc,
-                            false,
-                            u.value,
-                        );
+                    case UniformType.FLOAT_MAT3:
+                        gl.uniformMatrix3fv(loc, false, u.value);
                         break;
-                    case "matrix4fv":
-                        gl.uniformMatrix4fv(
-                            loc,
-                            false,
-                            u.value,
-                        );
+                    case UniformType.FLOAT_MAT4:
+                        gl.uniformMatrix4fv(loc, false, u.value);
                         break;
                     default: assert.unreachable(u);
                 }
             } else {
                 // Store a descriptor for lazy values for later use
-                uniformDescrs.push(new UniformDescriptor(ident, loc, u));
+                uniformDescrs.push(new UniformDescriptor(
+                    ident,
+                    loc,
+                    u as DynamicUniformValue<P>, // TODO: remove cast
+                ));
             }
         });
 
         gl.useProgram(null);
 
         (this as any).glProgram = prog;
-        (this as any).textureAccessors = textureAccessors;
         (this as any).uniformDescrs = uniformDescrs;
+        (this as any).textureDescrs = textureDescrs;
     }
 }
 
@@ -554,10 +585,16 @@ export class UniformDescriptor<P> {
     constructor(
         readonly identifier: string,
         readonly location: WebGLUniformLocation,
-        readonly definition: Uniform<P>,
+        readonly definition: DynamicUniformValue<P>,
     ) { }
 }
 
+export class TextureDescriptor<P> {
+    constructor(
+        readonly identifier: string,
+        readonly definition: UniformTextureValue<P>,
+    ) { }
+}
 
 function createProgram(
     gl: WebGL2RenderingContext,
@@ -611,9 +648,6 @@ type UniformTypeDeclaration = Uniform<unknown>["type"];
 interface UniformTypeDeclarations {
     [name: string]: { type: UniformTypeDeclaration };
 }
-interface TextureDeclarations {
-    [name: string]: unknown;
-}
 
 /**
  * Check whether the uniforms declared in shaders and command strictly match.
@@ -624,7 +658,6 @@ function validateUniformDeclarations(
     gl: WebGL2RenderingContext,
     prog: WebGLProgram,
     uniforms: UniformTypeDeclarations,
-    textures: TextureDeclarations,
 ): void {
     const nUniforms = gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS);
     const progUniforms = new Map<string, WebGLActiveInfo>();
@@ -632,7 +665,7 @@ function validateUniformDeclarations(
     // Note: gl.getUniformLocation accepts a shorthand for uniform names of
     // basic type arrays (trailing "[0]" can be omitted). Because
     // gl.getActiveUniforms always gives us the full name, we need to widen
-    // our mathing to accept the shorthands and pair them with the introspected
+    // our matching to accept the shorthands and pair them with the introspected
     // WebGLActiveInfos
     // https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getUniformLocation
     const shorthands = new Map<string, string>();
@@ -649,8 +682,6 @@ function validateUniformDeclarations(
     const toCheck = new Set(progUniforms.keys());
 
     Object.entries(uniforms).map(([name, tyObj]) => {
-        const type = tyObj.type;
-        // TODO: should we assert array uniforms if we discover it in their names?
         const shorthand = shorthands.has(name) && shorthands.get(name);
         const progUniform = progUniforms.has(name)
             ? progUniforms.get(name)!
@@ -658,9 +689,14 @@ function validateUniformDeclarations(
                 ? progUniforms.get(shorthands.get(name)!)
                 : null;
         if (progUniform) {
-            validateUniformDeclaration(gl, progUniform, type);
+            // TODO: validate array lengths?
+            assert.is(
+                progUniform.type,
+                tyObj.type,
+                fmtTyMismatch(progUniform.name),
+            );
         } else {
-            throw new Error(`Redundant uniform [name = ${name}, type = ${type}]`);
+            throw new Error(`Redundant uniform: ${name}`);
         }
         if (shorthand) {
             toCheck.delete(shorthand);
@@ -669,130 +705,9 @@ function validateUniformDeclarations(
         }
     });
 
-    Object.keys(textures).map((name) => {
-        if (progUniforms.has(name)) {
-            const progUniform = progUniforms.get(name)!;
-            validateUniformDeclaration(gl, progUniform, "1i");
-        } else {
-            throw new Error(`Redundant texture [name = ${name}]`);
-        }
-        toCheck.delete(name);
-    });
-
     if (toCheck.size) {
         const names = [...toCheck].join(", ");
         throw new Error(`Missing uniforms: ${names}`);
-    }
-}
-
-
-function validateUniformDeclaration(
-    gl: WebGL2RenderingContext,
-    info: WebGLActiveInfo,
-    type: UniformTypeDeclaration,
-): void {
-    switch (type) {
-        case "1f":
-            assert.is(info.type, gl.FLOAT, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "1fv":
-            assert.is(info.type, gl.FLOAT, fmtTyMismatch(info.name));
-            break;
-        case "1i":
-            assert.isIn(info.type, [
-                gl.INT,
-                gl.SAMPLER_2D,
-                // gl.SAMPLER_CUBE,
-            ], fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "1iv":
-            assert.is(info.type, gl.INT, fmtTyMismatch(info.name));
-            break;
-        case "1ui":
-            assert.is(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "1uiv":
-            assert.is(info.type, gl.UNSIGNED_INT, fmtTyMismatch(info.name));
-            break;
-        case "2f":
-            assert.is(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "2fv":
-            assert.is(info.type, gl.FLOAT_VEC2, fmtTyMismatch(info.name));
-            break;
-        case "2i":
-            assert.is(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "2iv":
-            assert.is(info.type, gl.INT_VEC2, fmtTyMismatch(info.name));
-            break;
-        case "2ui":
-            assert.is(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "2uiv":
-            assert.is(info.type, gl.UNSIGNED_INT_VEC2, fmtTyMismatch(info.name));
-            break;
-        case "3f":
-            assert.is(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "3fv":
-            assert.is(info.type, gl.FLOAT_VEC3, fmtTyMismatch(info.name));
-            break;
-        case "3i":
-            assert.is(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "3iv":
-            assert.is(info.type, gl.INT_VEC3, fmtTyMismatch(info.name));
-            break;
-        case "3ui":
-            assert.is(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "3uiv":
-            assert.is(info.type, gl.UNSIGNED_INT_VEC3, fmtTyMismatch(info.name));
-            break;
-        case "4f":
-            assert.is(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "4fv":
-            assert.is(info.type, gl.FLOAT_VEC4, fmtTyMismatch(info.name));
-            break;
-        case "4i":
-            assert.is(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "4iv":
-            assert.is(info.type, gl.INT_VEC4, fmtTyMismatch(info.name));
-            break;
-        case "4ui":
-            assert.is(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "4uiv":
-            assert.is(info.type, gl.UNSIGNED_INT_VEC4, fmtTyMismatch(info.name));
-            break;
-        case "matrix2fv":
-            assert.is(info.type, gl.FLOAT_MAT2, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "matrix3fv":
-            assert.is(info.type, gl.FLOAT_MAT3, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        case "matrix4fv":
-            assert.is(info.type, gl.FLOAT_MAT4, fmtTyMismatch(info.name));
-            assert.is(info.size, 1);
-            break;
-        default: assert.unreachable(type);
     }
 }
 

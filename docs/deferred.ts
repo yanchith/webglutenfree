@@ -14,9 +14,10 @@ import {
     Extension,
     TargetBufferBitmask,
     Uniforms,
+    UniformType,
     DepthFunc,
     ElementPrimitive,
-    Texture,
+    Texture2D,
     TextureColorStorageFormat,
     TextureDepthStorageFormat,
 } from "./lib/webglutenfree.js";
@@ -42,22 +43,22 @@ const PROJ_FOV = Math.PI / 2;
 const dev = Device.create({ extensions: [Extension.EXTColorBufferFloat] });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const gAlbedoSpecular = dev.createTexture(
+const gAlbedoSpecular = dev. createTexture2D(
     width,
     height,
     TextureColorStorageFormat.RGBA8,
 );
-const gPosition = dev.createTexture(
+const gPosition = dev.createTexture2D(
     width,
     height,
     TextureColorStorageFormat.RGBA32F,
 );
-const gNormal = dev.createTexture(
+const gNormal = dev.createTexture2D(
     width,
     height,
     TextureColorStorageFormat.RGBA32F,
 );
-const gDepth = dev.createTexture(
+const gDepth = dev.createTexture2D(
     width,
     height,
     TextureDepthStorageFormat.DEPTH_COMPONENT24,
@@ -208,23 +209,23 @@ const cmdDrawGeometry = dev.createCommand<CmdDrawGeometryProps>(
     {
         uniforms: {
             u_proj: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: (props) => props.projMatrix,
             },
             u_view: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: (props) => props.viewMatrix,
             },
             u_model: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: (props) => props.modelMatrix,
             },
             "u_material.diffuse": {
-                type: "3f",
+                type: UniformType.FLOAT_VEC3,
                 value: (props) => props.material.diffuse,
             },
             "u_material.specular": {
-                type: "1f",
+                type: UniformType.FLOAT,
                 value: (props) => props.material.specular,
             },
         },
@@ -240,10 +241,13 @@ interface CmdDrawLightingProps {
 // Dynamically create uniform options, as the number of lights is not known
 // beforehand.
 const createUniformOptions = (nLights: number): Uniforms<CmdDrawLightingProps> => {
+    // TODO: consider SoA instead of AoS to get rid of this madness...
+    // ... or uniform buffers
+
     // Add statically known uniforms
     const uniforms: Uniforms<CmdDrawLightingProps> = {
         u_camera_position: {
-            type: "3f",
+            type: UniformType.FLOAT_VEC3,
             value: (props) => props.cameraPosition,
         },
     };
@@ -251,31 +255,31 @@ const createUniformOptions = (nLights: number): Uniforms<CmdDrawLightingProps> =
     // Add uniforms for each light
     for (let i = 0; i < nLights; ++i) {
         uniforms[`u_lights[${i}].position`] = {
-            type: "3f",
+            type: UniformType.FLOAT_VEC3,
             value: (props) => props.lights[i].position,
         };
         uniforms[`u_lights[${i}].ambient`] = {
-            type: "3f",
+            type: UniformType.FLOAT_VEC3,
             value: (props) => props.lights[i].ambient,
         };
         uniforms[`u_lights[${i}].diffuse`] = {
-            type: "3f",
+            type: UniformType.FLOAT_VEC3,
             value: (props) => props.lights[i].diffuse,
         };
         uniforms[`u_lights[${i}].specular`] = {
-            type: "3f",
+            type: UniformType.FLOAT_VEC3,
             value: (props) => props.lights[i].specular,
         };
         uniforms[`u_lights[${i}].constant`] = {
-            type: "1f",
+            type: UniformType.FLOAT,
             value: (props) => props.lights[i].constant,
         };
         uniforms[`u_lights[${i}].linear`] = {
-            type: "1f",
+            type: UniformType.FLOAT,
             value: (props) => props.lights[i].linear,
         };
         uniforms[`u_lights[${i}].quadratic`] = {
-            type: "1f",
+            type: UniformType.FLOAT,
             value: (props) => props.lights[i].quadratic,
         };
     }
@@ -362,11 +366,20 @@ const cmdDrawLighting = dev.createCommand<CmdDrawLightingProps>(
     }
     `,
     {
-        uniforms: createUniformOptions(N_LIGHTS),
-        textures: {
-            u_g_albedo_specular: gAlbedoSpecular,
-            u_g_position: gPosition,
-            u_g_normal: gNormal,
+        uniforms: {
+            ...createUniformOptions(N_LIGHTS),
+            u_g_albedo_specular: {
+                type: UniformType.SAMPLER_2D,
+                value: gAlbedoSpecular,
+            },
+            u_g_position: {
+                type: UniformType.SAMPLER_2D,
+                value: gPosition,
+            },
+            u_g_normal: {
+                type: UniformType.SAMPLER_2D,
+                value: gNormal,
+            },
         },
     },
 );
@@ -409,23 +422,23 @@ const cmdDrawLight = dev.createCommand<CmdDrawLightProps>(
     {
         uniforms: {
             u_proj: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ proj }) => proj,
             },
             u_view: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ view }) => view,
             },
             u_model: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ model }) => model,
             },
             u_position: {
-                type: "3f",
+                type: UniformType.FLOAT_VEC3,
                 value: ({ light }) => light.position,
             },
             u_color: {
-                type: "3f",
+                type: UniformType.FLOAT_VEC3,
                 value: ({ light }) => light.diffuse,
             },
         },
