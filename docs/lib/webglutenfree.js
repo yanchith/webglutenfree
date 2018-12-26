@@ -640,12 +640,15 @@ class Command {
             // ... and then handle the rest of the uniforms
             if (typeof u.value !== "function") {
                 // Eagerly send everything we can process now to GPU
+                // TODO: there are additional else if guards as ts inference
+                // broke in 3.1 or 3.2, but we are sure that
+                // typeof u.value !== "function"
                 switch (u.type) {
                     case UniformType.FLOAT:
                         if (typeof u.value === "number") {
                             gl.uniform1f(loc, u.value);
                         }
-                        else {
+                        else if (typeof u.value !== "function") {
                             gl.uniform1fv(loc, u.value);
                         }
                         break;
@@ -653,7 +656,7 @@ class Command {
                         if (typeof u.value === "number") {
                             gl.uniform1i(loc, u.value);
                         }
-                        else {
+                        else if (typeof u.value !== "function") {
                             gl.uniform1iv(loc, u.value);
                         }
                         break;
@@ -661,45 +664,69 @@ class Command {
                         if (typeof u.value === "number") {
                             gl.uniform1ui(loc, u.value);
                         }
-                        else {
+                        else if (typeof u.value !== "function") {
                             gl.uniform1uiv(loc, u.value);
                         }
                         break;
                     case UniformType.FLOAT_VEC2:
-                        gl.uniform2fv(loc, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniform2fv(loc, u.value);
+                        }
                         break;
                     case UniformType.INT_VEC2:
-                        gl.uniform2iv(loc, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniform2iv(loc, u.value);
+                        }
                         break;
                     case UniformType.UNSIGNED_INT_VEC2:
-                        gl.uniform2uiv(loc, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniform2uiv(loc, u.value);
+                        }
                         break;
                     case UniformType.FLOAT_VEC3:
-                        gl.uniform3fv(loc, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniform3fv(loc, u.value);
+                        }
                         break;
                     case UniformType.INT_VEC3:
-                        gl.uniform3iv(loc, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniform3iv(loc, u.value);
+                        }
                         break;
                     case UniformType.UNSIGNED_INT_VEC3:
-                        gl.uniform3uiv(loc, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniform3uiv(loc, u.value);
+                        }
                         break;
                     case UniformType.FLOAT_VEC4:
-                        gl.uniform4fv(loc, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniform4fv(loc, u.value);
+                        }
                         break;
                     case UniformType.INT_VEC4:
-                        gl.uniform4iv(loc, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniform4iv(loc, u.value);
+                        }
                         break;
                     case UniformType.UNSIGNED_INT_VEC4:
-                        gl.uniform4uiv(loc, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniform4uiv(loc, u.value);
+                        }
                         break;
                     case UniformType.FLOAT_MAT2:
-                        gl.uniformMatrix2fv(loc, false, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniformMatrix2fv(loc, false, u.value);
+                        }
                         break;
                     case UniformType.FLOAT_MAT3:
-                        gl.uniformMatrix3fv(loc, false, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniformMatrix3fv(loc, false, u.value);
+                        }
                         break;
                     case UniformType.FLOAT_MAT4:
-                        gl.uniformMatrix4fv(loc, false, u.value);
+                        if (typeof u.value !== "function") {
+                            gl.uniformMatrix4fv(loc, false, u.value);
+                        }
                         break;
                     default: unreachable(u);
                 }
@@ -2262,16 +2289,7 @@ class Device {
             });
         }
         if (debug) {
-            const wrapper = {};
-            for (const key in gl) {
-                if (typeof gl[key] === "function") {
-                    wrapper[key] = createDebugFunc(gl, key);
-                }
-                else {
-                    wrapper[key] = gl[key];
-                }
-            }
-            gl = wrapper;
+            gl = Object.entries(gl).reduce((accum, [k, v]) => (Object.assign({}, accum, { [k]: v === "function" ? createDebugFunc(gl, k) : v })), gl);
         }
         return new Device(gl, pixelRatio, viewportWidth, viewportHeight);
     }
