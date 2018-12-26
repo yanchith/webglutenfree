@@ -5,6 +5,6 @@ export { Command, CommandCreateOptions, UniformType, DepthFunc, StencilFunc, Ste
 export { VertexBuffer, VertexBufferCreateOptions, VertexBufferStoreOptions, VertexBufferDataType, VertexBufferIntegerDataType, VertexBufferFloatDataType, } from "./vertex-buffer";
 export { ElementBuffer, ElementBufferCreateOptions, ElementBufferStoreOptions, ElementBufferDataType, ElementPrimitive, } from "./element-buffer";
 export { Attributes, AttributesCreateOptions, AttributeType, } from "./attributes";
-export { Texture2D, TextureCubeMap, Texture2DCreateOptions, Texture2DStoreOptions, TextureMinFilter, TextureMagFilter, TextureWrap, TextureStorageFormat, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, TextureFormat, TextureDataType, } from "./texture";
+export { Texture2D, TextureCubeMap, Texture2DCreateOptions, Texture2DStoreOptions, TextureCubeMapCreateOptions, TextureCubeMapStoreOptions, TextureMinFilter, TextureMagFilter, TextureWrap, TextureStorageFormat, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, TextureFormat, TextureDataType, } from "./texture";
 export { Framebuffer } from "./framebuffer";
 //# sourceMappingURL=index.d.ts.map

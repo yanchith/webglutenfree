@@ -201,8 +201,8 @@ export declare class Device {
     createTextureCubeMap<S extends TextureStorageFormat>(width: number, height: number, storageFormat: S, options?: TextureCubeMapCreateOptions): TextureCubeMap<S>;
     /**
      * Create a new cubemap texture where each face has a width and height equal
-     * to that of the given images and store the provided images in the cubemap
-     * as faces.
+     * to that of the given images and store the provided images in the
+     * cubemap's faces.
      * The storage format determines what kind of data is possible to store and
      * is preset as RGBA8.
      * Each image must have the same dimensions.
@@ -210,8 +210,8 @@ export declare class Device {
     createTextureCubeMapWithImage(imagePositiveX: ImageData, imageNegativeX: ImageData, imagePositiveY: ImageData, imageNegativeY: ImageData, imagePositiveZ: ImageData, imageNegativeZ: ImageData, options?: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions): TextureCubeMap<TextureColorStorageFormat.RGBA8>;
     /**
      * Create a new cubemap texture where each face has a given width, height,
-     * and storage format and data of given format and type contained in the
-     * provided typed arrays to the cubemap as faces.
+     * and storage format and store data contained in the provided typed arrays
+     * in the cubemap's faces.
      * The storage format determines what kind of data is possible to store.
      * Each typed array must have the same length.
      */

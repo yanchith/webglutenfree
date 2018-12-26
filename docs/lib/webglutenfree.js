@@ -615,7 +615,7 @@ class Command {
         // Texture declarations are evaluated in two phases:
         // 1) Texture location offsets are sent to the shader in init time.
         //    This is ok because even if the textures themselves can change (via
-        //    function accessors), their offsets stay the same.
+        //    function accessors), their offsets stay the same,
         // 2) Textures provided by the accessor are activated and bound to their
         //    locations at draw time.
         // Note: Object.entries() provides values in a nondeterministic order,
@@ -1621,9 +1621,9 @@ var TextureColorStorageFormat;
     TextureColorStorageFormat[TextureColorStorageFormat["R8I"] = 33329] = "R8I";
     TextureColorStorageFormat[TextureColorStorageFormat["R16UI"] = 33332] = "R16UI";
     TextureColorStorageFormat[TextureColorStorageFormat["R16I"] = 33331] = "R16I";
+    TextureColorStorageFormat[TextureColorStorageFormat["R16F"] = 33325] = "R16F";
     TextureColorStorageFormat[TextureColorStorageFormat["R32UI"] = 33334] = "R32UI";
     TextureColorStorageFormat[TextureColorStorageFormat["R32I"] = 33333] = "R32I";
-    TextureColorStorageFormat[TextureColorStorageFormat["R16F"] = 33325] = "R16F";
     TextureColorStorageFormat[TextureColorStorageFormat["R32F"] = 33326] = "R32F";
     // RG
     TextureColorStorageFormat[TextureColorStorageFormat["RG8"] = 33323] = "RG8";
@@ -1632,9 +1632,9 @@ var TextureColorStorageFormat;
     TextureColorStorageFormat[TextureColorStorageFormat["RG8I"] = 33335] = "RG8I";
     TextureColorStorageFormat[TextureColorStorageFormat["RG16UI"] = 33338] = "RG16UI";
     TextureColorStorageFormat[TextureColorStorageFormat["RG16I"] = 33337] = "RG16I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RG16F"] = 33327] = "RG16F";
     TextureColorStorageFormat[TextureColorStorageFormat["RG32UI"] = 33340] = "RG32UI";
     TextureColorStorageFormat[TextureColorStorageFormat["RG32I"] = 33339] = "RG32I";
-    TextureColorStorageFormat[TextureColorStorageFormat["RG16F"] = 33327] = "RG16F";
     TextureColorStorageFormat[TextureColorStorageFormat["RG32F"] = 33328] = "RG32F";
     // RGB
     TextureColorStorageFormat[TextureColorStorageFormat["RGB8"] = 32849] = "RGB8";
@@ -1643,9 +1643,9 @@ var TextureColorStorageFormat;
     TextureColorStorageFormat[TextureColorStorageFormat["RGB8I"] = 36239] = "RGB8I";
     TextureColorStorageFormat[TextureColorStorageFormat["RGB16UI"] = 36215] = "RGB16UI";
     TextureColorStorageFormat[TextureColorStorageFormat["RGB16I"] = 36233] = "RGB16I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGB16F"] = 34843] = "RGB16F";
     TextureColorStorageFormat[TextureColorStorageFormat["RGB32UI"] = 36209] = "RGB32UI";
     TextureColorStorageFormat[TextureColorStorageFormat["RGB32I"] = 36227] = "RGB32I";
-    TextureColorStorageFormat[TextureColorStorageFormat["RGB16F"] = 34843] = "RGB16F";
     TextureColorStorageFormat[TextureColorStorageFormat["RGB32F"] = 34837] = "RGB32F";
     // RGBA
     TextureColorStorageFormat[TextureColorStorageFormat["RGBA8"] = 32856] = "RGBA8";
@@ -1654,9 +1654,9 @@ var TextureColorStorageFormat;
     TextureColorStorageFormat[TextureColorStorageFormat["RGBA8I"] = 36238] = "RGBA8I";
     TextureColorStorageFormat[TextureColorStorageFormat["RGBA16UI"] = 36214] = "RGBA16UI";
     TextureColorStorageFormat[TextureColorStorageFormat["RGBA16I"] = 36232] = "RGBA16I";
+    TextureColorStorageFormat[TextureColorStorageFormat["RGBA16F"] = 34842] = "RGBA16F";
     TextureColorStorageFormat[TextureColorStorageFormat["RGBA32UI"] = 36208] = "RGBA32UI";
     TextureColorStorageFormat[TextureColorStorageFormat["RGBA32I"] = 36226] = "RGBA32I";
-    TextureColorStorageFormat[TextureColorStorageFormat["RGBA16F"] = 34842] = "RGBA16F";
     TextureColorStorageFormat[TextureColorStorageFormat["RGBA32F"] = 34836] = "RGBA32F";
     // TODO: support exotic formats
     // ~LUMINANCE ALPHA
@@ -1698,10 +1698,10 @@ var TextureDataType;
     TextureDataType[TextureDataType["UNSIGNED_BYTE"] = 5121] = "UNSIGNED_BYTE";
     TextureDataType[TextureDataType["SHORT"] = 5122] = "SHORT";
     TextureDataType[TextureDataType["UNSIGNED_SHORT"] = 5123] = "UNSIGNED_SHORT";
+    TextureDataType[TextureDataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
     TextureDataType[TextureDataType["INT"] = 5124] = "INT";
     TextureDataType[TextureDataType["UNSIGNED_INT"] = 5125] = "UNSIGNED_INT";
     TextureDataType[TextureDataType["FLOAT"] = 5126] = "FLOAT";
-    TextureDataType[TextureDataType["HALF_FLOAT"] = 5131] = "HALF_FLOAT";
     // TODO: support exotic formats
     // UNSIGNED_SHORT_4_4_4_4
     // UNSIGNED_SHORT_5_5_5_1
@@ -1778,9 +1778,7 @@ class Texture2D {
     store(data, format, type, { xOffset = 0, yOffset = 0, width = this.width, height = this.height, mipmap = false, } = {}) {
         const { gl, glTexture } = this;
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
-        // This pixel row alignment is theoretically smaller than needed
-        // TODO: find greatest correct unpack alignment for pixel rows
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, data.BYTES_PER_ELEMENT);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, rowAlignment(this.storageFormat));
         gl.texSubImage2D(gl.TEXTURE_2D, 0, // level
         xOffset, yOffset, width, height, format, type, 
         // WebGL bug causes Uint8ClampedArray to be read incorrectly
@@ -1822,7 +1820,7 @@ class Texture2D {
  * Cubemaps consist of 6 different textures conceptually layed out as faces of a
  * cube around origin [0, 0, 0]. Each of the 6 textures in a cubemap has the
  * same dimensions and storage format.
- * In shaders, cubemaps can be sampled using a vec3 interpretted as a direction
+ * In shaders, cubemaps can be sampled using a vec3 interpreted as a direction
  * from origin. This makes cubemaps ideal to implement skyboxes and environment
  * mapping.
  */
@@ -1993,9 +1991,7 @@ class TextureCubeMap {
     }
     storeFace(target, data, format, type, xOffset, yOffset, width, height) {
         const gl = this.gl;
-        // This pixel row alignment is theoretically smaller than needed
-        // TODO: find greatest correct unpack alignment for pixel rows
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, data.BYTES_PER_ELEMENT);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, rowAlignment(this.storageFormat));
         gl.texSubImage2D(target, 0, // level
         xOffset, yOffset, width, height, format, type, 
         // WebGL bug causes Uint8ClampedArray to be read incorrectly
@@ -2005,6 +2001,89 @@ class TextureCubeMap {
             ? new Uint8Array(data.buffer)
             // Other buffer types are fine
             : data);
+    }
+}
+/**
+ * OpenGL supports row alignments of 1, 2, 4, or 8. Each storage format consists
+ * of a data type and number of channels, e.g. RGB16F has data type size of 2
+ * byte and 3 channels.
+ * This function finds the greatest possible safe alignment to fit the product
+ * of the storage format's data type size and number of channels, e.g. for
+ * RGB16F (2 bytes * 3 channels), the greatest safe row alignment is 2.
+ */
+function rowAlignment(storageFormat) {
+    switch (storageFormat) {
+        // RED
+        case TextureColorStorageFormat.R8:
+        case TextureColorStorageFormat.R8_SNORM:
+        case TextureColorStorageFormat.R8UI:
+        case TextureColorStorageFormat.R8I:
+            return 1;
+        case TextureColorStorageFormat.R16UI:
+        case TextureColorStorageFormat.R16I:
+        case TextureColorStorageFormat.R16F:
+            return 2;
+        case TextureColorStorageFormat.R32UI:
+        case TextureColorStorageFormat.R32I:
+        case TextureColorStorageFormat.R32F:
+            return 4;
+        // RG
+        case TextureColorStorageFormat.RG8:
+        case TextureColorStorageFormat.RG8_SNORM:
+        case TextureColorStorageFormat.RG8UI:
+        case TextureColorStorageFormat.RG8I:
+            return 2;
+        case TextureColorStorageFormat.RG16UI:
+        case TextureColorStorageFormat.RG16I:
+        case TextureColorStorageFormat.RG16F:
+            return 4;
+        case TextureColorStorageFormat.RG32UI:
+        case TextureColorStorageFormat.RG32I:
+        case TextureColorStorageFormat.RG32F:
+            return 8;
+        // RGB
+        case TextureColorStorageFormat.RGB8:
+        case TextureColorStorageFormat.RGB8_SNORM:
+        case TextureColorStorageFormat.RGB8UI:
+        case TextureColorStorageFormat.RGB8I:
+            return 1;
+        case TextureColorStorageFormat.RGB16UI:
+        case TextureColorStorageFormat.RGB16I:
+        case TextureColorStorageFormat.RGB16F:
+            return 2;
+        case TextureColorStorageFormat.RGB32UI:
+        case TextureColorStorageFormat.RGB32I:
+        case TextureColorStorageFormat.RGB32F:
+            return 4;
+        // RGBA
+        case TextureColorStorageFormat.RGBA8:
+        case TextureColorStorageFormat.RGBA8_SNORM:
+        case TextureColorStorageFormat.RGBA8UI:
+        case TextureColorStorageFormat.RGBA8I:
+            return 4;
+        case TextureColorStorageFormat.RGBA16UI:
+        case TextureColorStorageFormat.RGBA16I:
+        case TextureColorStorageFormat.RGBA16F:
+            return 8;
+        case TextureColorStorageFormat.RGBA32UI:
+        case TextureColorStorageFormat.RGBA32I:
+        case TextureColorStorageFormat.RGBA32F:
+            return 8;
+        // DEPTH
+        case TextureDepthStorageFormat.DEPTH_COMPONENT16:
+            return 2;
+        case TextureDepthStorageFormat.DEPTH_COMPONENT24:
+            return 1;
+        case TextureDepthStorageFormat.DEPTH_COMPONENT32F:
+            return 4;
+        // DEPTH STEPNCIL
+        case TextureDepthStencilStorageFormat.DEPTH24_STENCIL8:
+            return 4;
+        case TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8:
+            // TODO: how is DEPTH32F_STENCUL8 represented in memory?
+            return 1;
+        default:
+            return unreachable(storageFormat);
     }
 }
 
@@ -2033,7 +2112,7 @@ function _createFramebuffer(state, width, height, color, depthStencil) {
     }
     return new Framebuffer(state, width, height, colors, depthStencil);
 }
-// TODO: _createFramebuffersWithCubeMap
+// TODO: _createFramebufferWithCubeMapFace
 /**
  * Framebuffers store the list of attachments to write to during a draw
  * operation. They can be a draw target via `framebuffer.target()`
@@ -2396,30 +2475,32 @@ class Device {
     }
     /**
      * Create a new cubemap texture where each face has a width and height equal
-     * to that of the given images and store the provided images in the cubemap
-     * as faces.
+     * to that of the given images and store the provided images in the
+     * cubemap's faces.
      * The storage format determines what kind of data is possible to store and
      * is preset as RGBA8.
      * Each image must have the same dimensions.
      */
     createTextureCubeMapWithImage(imagePositiveX, imageNegativeX, imagePositiveY, imageNegativeY, imagePositiveZ, imageNegativeZ, options) {
+        const width = imagePositiveX.width;
+        const height = imagePositiveX.height;
         // Assert all images have same sizes
-        is(imageNegativeX.width, imagePositiveX.width);
-        is(imagePositiveY.width, imagePositiveX.width);
-        is(imageNegativeY.width, imagePositiveX.width);
-        is(imagePositiveZ.width, imagePositiveX.width);
-        is(imageNegativeZ.width, imagePositiveX.width);
-        is(imageNegativeX.height, imagePositiveX.height);
-        is(imagePositiveY.height, imagePositiveX.height);
-        is(imageNegativeY.height, imagePositiveX.height);
-        is(imagePositiveZ.height, imagePositiveX.height);
-        is(imageNegativeZ.height, imagePositiveX.height);
+        is(imageNegativeX.width, width, fmtImageDimsMismatch);
+        is(imagePositiveY.width, width, fmtImageDimsMismatch);
+        is(imageNegativeY.width, width, fmtImageDimsMismatch);
+        is(imagePositiveZ.width, width, fmtImageDimsMismatch);
+        is(imageNegativeZ.width, width, fmtImageDimsMismatch);
+        is(imageNegativeX.height, height, fmtImageDimsMismatch);
+        is(imagePositiveY.height, height, fmtImageDimsMismatch);
+        is(imageNegativeY.height, height, fmtImageDimsMismatch);
+        is(imagePositiveZ.height, height, fmtImageDimsMismatch);
+        is(imageNegativeZ.height, height, fmtImageDimsMismatch);
         return _createTextureCubeMapWithTypedArray(this._gl, imagePositiveX.width, imagePositiveY.height, TextureColorStorageFormat.RGBA8, imagePositiveX.data, imageNegativeX.data, imagePositiveY.data, imageNegativeY.data, imagePositiveZ.data, imageNegativeZ.data, TextureFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
     }
     /**
      * Create a new cubemap texture where each face has a given width, height,
-     * and storage format and data of given format and type contained in the
-     * provided typed arrays to the cubemap as faces.
+     * and storage format and store data contained in the provided typed arrays
+     * in the cubemap's faces.
      * The storage format determines what kind of data is possible to store.
      * Each typed array must have the same length.
      */
@@ -2443,6 +2524,9 @@ function createDebugFunc(gl, key) {
         console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
         return gl[key].apply(gl, arguments);
     };
+}
+function fmtImageDimsMismatch() {
+    return "All provided images must have the same dimensions";
 }
 
 export { BufferUsage, Device, Extension, Target, TargetBufferBitmask, TargetBlitFilter, Command, UniformType, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferIntegerDataType, VertexBufferFloatDataType, ElementBuffer, ElementBufferDataType, ElementPrimitive, Attributes, AttributeType, Texture2D, TextureCubeMap, TextureMinFilter, TextureMagFilter, TextureWrap, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, TextureFormat, TextureDataType, Framebuffer };
