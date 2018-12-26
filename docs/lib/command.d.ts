@@ -1,11 +1,26 @@
 import { State, DepthTestDescriptor, StencilTestDescriptor, BlendDescriptor } from "./state";
 import { AttributesConfig } from "./attributes";
-import { Texture, TextureStorageFormat } from "./texture";
-export declare type Accessor<P, R> = R | ((props: P, index: number) => R);
-export declare type TextureAccessor<P> = Accessor<P, Texture<TextureStorageFormat>>;
-export interface Textures<P> {
-    [name: string]: TextureAccessor<P>;
+import { Texture2D, TextureCubeMap, TextureStorageFormat } from "./texture";
+export declare enum UniformType {
+    FLOAT = 5126,
+    FLOAT_VEC2 = 35664,
+    FLOAT_VEC3 = 35665,
+    FLOAT_VEC4 = 35666,
+    INT = 5124,
+    INT_VEC2 = 35667,
+    INT_VEC3 = 35668,
+    INT_VEC4 = 35669,
+    UNSIGNED_INT = 5125,
+    UNSIGNED_INT_VEC2 = 36294,
+    UNSIGNED_INT_VEC3 = 36295,
+    UNSIGNED_INT_VEC4 = 36296,
+    FLOAT_MAT2 = 35674,
+    FLOAT_MAT3 = 35675,
+    FLOAT_MAT4 = 35676,
+    SAMPLER_2D = 35678,
+    SAMPLER_CUBE = 35680
 }
+export declare type Accessor<P, R> = R | ((props: P, index: number) => R);
 export interface Uniforms<P> {
     [name: string]: Uniform<P>;
 }
@@ -18,7 +33,6 @@ export declare type SingleOrSeparateRgbAlpha<T> = T | {
     alpha: T;
 };
 export interface CommandCreateOptions<P> {
-    textures?: Textures<P>;
     uniforms?: Uniforms<P>;
     depth?: {
         func: DepthFunc;
@@ -47,114 +61,137 @@ export interface CommandCreateOptions<P> {
         color?: [number, number, number, number];
     };
 }
-export declare type Uniform<P> = Uniform1f<P> | Uniform1fv<P> | Uniform1i<P> | Uniform1iv<P> | Uniform1ui<P> | Uniform1uiv<P> | Uniform2f<P> | Uniform2fv<P> | Uniform2i<P> | Uniform2iv<P> | Uniform2ui<P> | Uniform2uiv<P> | Uniform3f<P> | Uniform3fv<P> | Uniform3i<P> | Uniform3iv<P> | Uniform3ui<P> | Uniform3uiv<P> | Uniform4f<P> | Uniform4fv<P> | Uniform4i<P> | Uniform4iv<P> | Uniform4ui<P> | Uniform4uiv<P> | UniformMatrix2fv<P> | UniformMatrix3fv<P> | UniformMatrix4fv<P>;
-export interface Uniform1f<P> {
-    type: "1f";
-    value: Accessor<P, number>;
+export declare type Uniform<P> = UniformValue<P> | UniformTextureValue<P>;
+export declare type UniformValue<P> = UniformFloat<P> | UniformInt<P> | UniformUnsignedInt<P> | UniformFloatVec2<P> | UniformIntVec2<P> | UniformUnsignedIntVec2<P> | UniformFloatVec3<P> | UniformIntVec3<P> | UniformUnsignedIntVec3<P> | UniformFloatVec4<P> | UniformIntVec4<P> | UniformUnsignedIntVec4<P> | UniformFloatMat2<P> | UniformFloatMat3<P> | UniformFloatMat4<P>;
+export declare type UniformTextureValue<P> = UniformTexture2D<P> | UniformTextureCubeMap<P>;
+export interface UniformFloat<P> {
+    type: UniformType.FLOAT;
+    value: Accessor<P, number | number[] | Float32Array>;
 }
-export interface Uniform1fv<P> {
-    type: "1fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface UniformInt<P> {
+    type: UniformType.INT;
+    value: Accessor<P, number | number[] | Int32Array>;
 }
-export interface Uniform1i<P> {
-    type: "1i";
-    value: Accessor<P, number>;
+export interface UniformUnsignedInt<P> {
+    type: UniformType.UNSIGNED_INT;
+    value: Accessor<P, number | number[] | Uint32Array>;
 }
-export interface Uniform1iv<P> {
-    type: "1iv";
-    value: Accessor<P, Int32Array | number[]>;
+export interface UniformFloatVec2<P> {
+    type: UniformType.FLOAT_VEC2;
+    value: Accessor<P, number[] | Float32Array>;
 }
-export interface Uniform1ui<P> {
-    type: "1ui";
-    value: Accessor<P, number>;
+export interface UniformIntVec2<P> {
+    type: UniformType.INT_VEC2;
+    value: Accessor<P, number[] | Int32Array>;
 }
-export interface Uniform1uiv<P> {
-    type: "1uiv";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface UniformUnsignedIntVec2<P> {
+    type: UniformType.UNSIGNED_INT_VEC2;
+    value: Accessor<P, number[] | Uint32Array>;
 }
-export interface Uniform2f<P> {
-    type: "2f";
-    value: Accessor<P, Float32Array | number[]>;
+export interface UniformFloatVec3<P> {
+    type: UniformType.FLOAT_VEC3;
+    value: Accessor<P, number[] | Float32Array>;
 }
-export interface Uniform2fv<P> {
-    type: "2fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface UniformIntVec3<P> {
+    type: UniformType.INT_VEC3;
+    value: Accessor<P, number[] | Int32Array>;
 }
-export interface Uniform2i<P> {
-    type: "2i";
-    value: Accessor<P, Int32Array | number[]>;
+export interface UniformUnsignedIntVec3<P> {
+    type: UniformType.UNSIGNED_INT_VEC3;
+    value: Accessor<P, number[] | Uint32Array>;
 }
-export interface Uniform2iv<P> {
-    type: "2iv";
-    value: Accessor<P, Int32Array | number[]>;
+export interface UniformFloatVec4<P> {
+    type: UniformType.FLOAT_VEC4;
+    value: Accessor<P, number[] | Float32Array>;
 }
-export interface Uniform2ui<P> {
-    type: "2ui";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface UniformIntVec4<P> {
+    type: UniformType.INT_VEC4;
+    value: Accessor<P, number[] | Int32Array>;
 }
-export interface Uniform2uiv<P> {
-    type: "2uiv";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface UniformUnsignedIntVec4<P> {
+    type: UniformType.UNSIGNED_INT_VEC4;
+    value: Accessor<P, number[] | Uint32Array>;
 }
-export interface Uniform3f<P> {
-    type: "3f";
-    value: Accessor<P, Float32Array | number[]>;
+export interface UniformFloatMat2<P> {
+    type: UniformType.FLOAT_MAT2;
+    value: Accessor<P, number[] | Float32Array>;
 }
-export interface Uniform3fv<P> {
-    type: "3fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface UniformFloatMat3<P> {
+    type: UniformType.FLOAT_MAT3;
+    value: Accessor<P, number[] | Float32Array>;
 }
-export interface Uniform3i<P> {
-    type: "3i";
-    value: Accessor<P, Int32Array | number[]>;
+export interface UniformFloatMat4<P> {
+    type: UniformType.FLOAT_MAT4;
+    value: Accessor<P, number[] | Float32Array>;
 }
-export interface Uniform3iv<P> {
-    type: "3iv";
-    value: Accessor<P, Int32Array | number[]>;
+export interface UniformTexture2D<P> {
+    type: UniformType.SAMPLER_2D;
+    value: Accessor<P, Texture2D<TextureStorageFormat>>;
 }
-export interface Uniform3ui<P> {
-    type: "3ui";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface UniformTextureCubeMap<P> {
+    type: UniformType.SAMPLER_CUBE;
+    value: Accessor<P, TextureCubeMap<TextureStorageFormat>>;
 }
-export interface Uniform3uiv<P> {
-    type: "3uiv";
-    value: Accessor<P, Uint32Array | number[]>;
+export declare type DynamicUniformValue<P> = DynamicUniformFloat<P> | DynamicUniformInt<P> | DynamicUniformUnsignedInt<P> | DynamicUniformFloatVec2<P> | DynamicUniformIntVec2<P> | DynamicUniformUnsignedIntVec2<P> | DynamicUniformFloatVec3<P> | DynamicUniformIntVec3<P> | DynamicUniformUnsignedIntVec3<P> | DynamicUniformFloatVec4<P> | DynamicUniformIntVec4<P> | DynamicUniformUnsignedIntVec4<P> | DynamicUniformFloatMat2<P> | DynamicUniformFloatMat3<P> | DynamicUniformFloatMat4<P>;
+export interface DynamicUniformFloat<P> {
+    type: UniformType.FLOAT;
+    value: (props: P, index: number) => number | number[] | Float32Array;
 }
-export interface Uniform4f<P> {
-    type: "4f";
-    value: Accessor<P, Float32Array | number[]>;
+export interface DynamicUniformInt<P> {
+    type: UniformType.INT;
+    value: (props: P, index: number) => number | number[] | Int32Array;
 }
-export interface Uniform4fv<P> {
-    type: "4fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface DynamicUniformUnsignedInt<P> {
+    type: UniformType.UNSIGNED_INT;
+    value: (props: P, index: number) => number | number[] | Uint32Array;
 }
-export interface Uniform4i<P> {
-    type: "4i";
-    value: Accessor<P, Int32Array | number[]>;
+export interface DynamicUniformFloatVec2<P> {
+    type: UniformType.FLOAT_VEC2;
+    value: (props: P, index: number) => number[] | Float32Array;
 }
-export interface Uniform4iv<P> {
-    type: "4iv";
-    value: Accessor<P, Int32Array | number[]>;
+export interface DynamicUniformIntVec2<P> {
+    type: UniformType.INT_VEC2;
+    value: (props: P, index: number) => number[] | Int32Array;
 }
-export interface Uniform4ui<P> {
-    type: "4ui";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface DynamicUniformUnsignedIntVec2<P> {
+    type: UniformType.UNSIGNED_INT_VEC2;
+    value: (props: P, index: number) => number[] | Uint32Array;
 }
-export interface Uniform4uiv<P> {
-    type: "4uiv";
-    value: Accessor<P, Uint32Array | number[]>;
+export interface DynamicUniformFloatVec3<P> {
+    type: UniformType.FLOAT_VEC3;
+    value: (props: P, index: number) => number[] | Float32Array;
 }
-export interface UniformMatrix2fv<P> {
-    type: "matrix2fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface DynamicUniformIntVec3<P> {
+    type: UniformType.INT_VEC3;
+    value: (props: P, index: number) => number[] | Int32Array;
 }
-export interface UniformMatrix3fv<P> {
-    type: "matrix3fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface DynamicUniformUnsignedIntVec3<P> {
+    type: UniformType.UNSIGNED_INT_VEC3;
+    value: (props: P, index: number) => number[] | Uint32Array;
 }
-export interface UniformMatrix4fv<P> {
-    type: "matrix4fv";
-    value: Accessor<P, Float32Array | number[]>;
+export interface DynamicUniformFloatVec4<P> {
+    type: UniformType.FLOAT_VEC4;
+    value: (props: P, index: number) => number[] | Float32Array;
+}
+export interface DynamicUniformIntVec4<P> {
+    type: UniformType.INT_VEC4;
+    value: (props: P, index: number) => number[] | Int32Array;
+}
+export interface DynamicUniformUnsignedIntVec4<P> {
+    type: UniformType.UNSIGNED_INT_VEC4;
+    value: (props: P, index: number) => number[] | Uint32Array;
+}
+export interface DynamicUniformFloatMat2<P> {
+    type: UniformType.FLOAT_MAT2;
+    value: (props: P, index: number) => number[] | Float32Array;
+}
+export interface DynamicUniformFloatMat3<P> {
+    type: UniformType.FLOAT_MAT3;
+    value: (props: P, index: number) => number[] | Float32Array;
+}
+export interface DynamicUniformFloatMat4<P> {
+    type: UniformType.FLOAT_MAT4;
+    value: (props: P, index: number) => number[] | Float32Array;
 }
 export declare enum DepthFunc {
     ALWAYS = 519,
@@ -209,20 +246,19 @@ export declare enum BlendEquation {
     MIN = 32775,
     MAX = 32776
 }
-export declare function _createCommand<P = void>(state: State, vert: string, frag: string, { textures, uniforms, depth, stencil, blend, }?: CommandCreateOptions<P>): Command<P>;
+export declare function _createCommand<P = void>(state: State, vert: string, frag: string, { uniforms, depth, stencil, blend, }?: CommandCreateOptions<P>): Command<P>;
 export declare class Command<P> {
     readonly glProgram: WebGLProgram;
     readonly depthTestDescr: DepthTestDescriptor | null;
     readonly stencilTestDescr: StencilTestDescriptor | null;
     readonly blendDescr: BlendDescriptor | null;
-    readonly textureAccessors: TextureAccessor<P>[];
     readonly uniformDescrs: UniformDescriptor<P>[];
+    readonly textureDescrs: TextureDescriptor<P>[];
     private state;
     private vsSource;
     private fsSource;
-    private textures;
     private uniforms;
-    constructor(state: State, vsSource: string, fsSource: string, textures: Textures<P>, uniforms: Uniforms<P>, depthDescr?: DepthTestDescriptor, stencilDescr?: StencilTestDescriptor, blendDescr?: BlendDescriptor);
+    constructor(state: State, vsSource: string, fsSource: string, uniforms: Uniforms<P>, depthDescr?: DepthTestDescriptor, stencilDescr?: StencilTestDescriptor, blendDescr?: BlendDescriptor);
     /**
      * Reinitialize invalid buffer, eg. after context is lost.
      */
@@ -237,7 +273,12 @@ export declare class Command<P> {
 export declare class UniformDescriptor<P> {
     readonly identifier: string;
     readonly location: WebGLUniformLocation;
-    readonly definition: Uniform<P>;
-    constructor(identifier: string, location: WebGLUniformLocation, definition: Uniform<P>);
+    readonly definition: DynamicUniformValue<P>;
+    constructor(identifier: string, location: WebGLUniformLocation, definition: DynamicUniformValue<P>);
+}
+export declare class TextureDescriptor<P> {
+    readonly identifier: string;
+    readonly definition: UniformTextureValue<P>;
+    constructor(identifier: string, definition: UniformTextureValue<P>);
 }
 //# sourceMappingURL=command.d.ts.map

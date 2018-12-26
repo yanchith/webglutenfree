@@ -4,7 +4,7 @@ import { Command, CommandCreateOptions } from "./command";
 import { VertexBuffer, VertexBufferCreateOptions, VertexBufferDataType, VertexBufferDataTypeToTypedArray } from "./vertex-buffer";
 import { ElementBuffer, ElementBufferCreateOptions, ElementArray, ElementBufferDataType, ElementBufferDataTypeToTypedArray, ElementPrimitive } from "./element-buffer";
 import { Attributes, AttributesConfig, AttributesCreateOptions } from "./attributes";
-import { Texture, TextureCreateOptions, TextureStoreOptions, TextureStorageFormat, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, StorageFormatToTypedArray, StorageFormatToFormat, StorageFormatToDataType } from "./texture";
+import { Texture2D, Texture2DCreateOptions, Texture2DStoreOptions, TextureCubeMapCreateOptions, TextureCubeMapStoreOptions, TextureStorageFormat, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, StorageFormatToTypedArray, StorageFormatToFormat, StorageFormatToDataType, TextureCubeMap } from "./texture";
 import { Framebuffer } from "./framebuffer";
 /**
  * Available extensions.
@@ -175,22 +175,47 @@ export declare class Device {
      */
     createEmptyAttributes(primitive: ElementPrimitive, count: number): Attributes;
     /**
-     * Create a new texture with given width, height, and internal format.
-     * The internal format determines, what kind of data is possible to store.
+     * Create a new 2D texture with given width, height, and storage format.
+     * The storage format determines what kind of data is possible to store.
      */
-    createTexture<S extends TextureStorageFormat>(width: number, height: number, storageFormat: S, options?: TextureCreateOptions): Texture<S>;
+    createTexture2D<S extends TextureStorageFormat>(width: number, height: number, storageFormat: S, options?: Texture2DCreateOptions): Texture2D<S>;
     /**
-     * Create a new texture with width and height equal to the given image, and
-     * store the image in the texture.
+     * Create a new 2D texture with width and height equal to that of the given
+     * image and store the image in the texture.
+     * The storage format determines what kind of data is possible to store and
+     * is preset as RGBA8.
      */
-    createTextureWithImage(image: ImageData, options?: TextureCreateOptions & TextureStoreOptions): Texture<TextureColorStorageFormat.RGBA8>;
+    createTexture2DWithImage(image: ImageData, options?: Texture2DCreateOptions & Texture2DStoreOptions): Texture2D<TextureColorStorageFormat.RGBA8>;
     /**
-     * Create a new texture with given width, height, and internal format.
-     * The internal format determines, what kind of data is possible to store.
-     * Store data of given format and type contained in a typed array to the
-     * texture.
+     * Create a new 2D texture with given width, height, and storage format and
+     * store data of given format and type contained in the provided typed array
+     * to the texture.
+     * The storage format determines what kind of data is possible to store.
      */
-    createTextureWithTypedArray<S extends TextureStorageFormat>(width: number, height: number, internalFormat: S, data: StorageFormatToTypedArray[S], dataFormat: StorageFormatToFormat[S], dataType: StorageFormatToDataType[S], options?: TextureCreateOptions & TextureStoreOptions): Texture<S>;
+    createTexture2DWithTypedArray<S extends TextureStorageFormat>(width: number, height: number, storageFormat: S, data: StorageFormatToTypedArray[S], dataFormat: StorageFormatToFormat[S], dataType: StorageFormatToDataType[S], options?: Texture2DCreateOptions & Texture2DStoreOptions): Texture2D<S>;
+    /**
+     * Create a new cubemap texture where each face has a given width, height,
+     * and storage format.
+     * The storage format determines what kind of data is possible to store.
+     */
+    createTextureCubeMap<S extends TextureStorageFormat>(width: number, height: number, storageFormat: S, options?: TextureCubeMapCreateOptions): TextureCubeMap<S>;
+    /**
+     * Create a new cubemap texture where each face has a width and height equal
+     * to that of the given images and store the provided images in the
+     * cubemap's faces.
+     * The storage format determines what kind of data is possible to store and
+     * is preset as RGBA8.
+     * Each image must have the same dimensions.
+     */
+    createTextureCubeMapWithImage(imagePositiveX: ImageData, imageNegativeX: ImageData, imagePositiveY: ImageData, imageNegativeY: ImageData, imagePositiveZ: ImageData, imageNegativeZ: ImageData, options?: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions): TextureCubeMap<TextureColorStorageFormat.RGBA8>;
+    /**
+     * Create a new cubemap texture where each face has a given width, height,
+     * and storage format and store data contained in the provided typed arrays
+     * in the cubemap's faces.
+     * The storage format determines what kind of data is possible to store.
+     * Each typed array must have the same length.
+     */
+    createTextureCubeMapWithTypedArray<S extends TextureStorageFormat>(width: number, height: number, storageFormat: S, dataPositiveX: StorageFormatToTypedArray[S], dataNegativeX: StorageFormatToTypedArray[S], dataPositiveY: StorageFormatToTypedArray[S], dataNegativeY: StorageFormatToTypedArray[S], dataPositiveZ: StorageFormatToTypedArray[S], dataNegativeZ: StorageFormatToTypedArray[S], dataFormat: StorageFormatToFormat[S], dataType: StorageFormatToDataType[S], options?: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions): TextureCubeMap<S>;
     /**
      * Create a framebuffer containg one or more color buffers and a
      * depth or depth-stencil buffer with given width and height.
@@ -199,6 +224,6 @@ export declare class Device {
      * WebGL will synchronize their usage so they can either be written to via
      * the framebuffer, or written to or read via their own methods.
      */
-    createFramebuffer(width: number, height: number, color: Texture<TextureColorStorageFormat> | Texture<TextureColorStorageFormat>[], depthStencil?: Texture<TextureDepthStorageFormat> | Texture<TextureDepthStencilStorageFormat>): Framebuffer;
+    createFramebuffer(width: number, height: number, color: Texture2D<TextureColorStorageFormat> | Texture2D<TextureColorStorageFormat>[], depthStencil?: Texture2D<TextureDepthStorageFormat> | Texture2D<TextureDepthStencilStorageFormat>): Framebuffer;
 }
 //# sourceMappingURL=device.d.ts.map

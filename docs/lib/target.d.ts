@@ -100,7 +100,7 @@ export declare class Target {
     batch<P>(cmd: Command<P>, cb: (draw: (attrs: Attributes, props: P) => void) => void, { viewportX, viewportY, viewportWidth, viewportHeight, scissorX, scissorY, scissorWidth, scissorHeight, }?: TargetDrawOptions): void;
     private drawArrays;
     private drawElements;
-    private textures;
     private uniforms;
+    private textures;
 }
 //# sourceMappingURL=target.d.ts.map

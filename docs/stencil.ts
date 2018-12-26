@@ -6,6 +6,7 @@
 
 import {
     Device,
+    UniformType,
     DepthFunc,
     StencilFunc,
     StencilOp,
@@ -70,11 +71,11 @@ const cmdDraw = dev.createCommand<CmdDrawProps>(
     {
         uniforms: {
             u_proj: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: projMatrix,
             },
             u_view: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ time }) => mat4.lookAt(
                     viewMatrix,
                     [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
@@ -83,7 +84,7 @@ const cmdDraw = dev.createCommand<CmdDrawProps>(
                 ),
             },
             u_model: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ modelMatrix }) => modelMatrix,
             },
         },
@@ -138,11 +139,11 @@ const cmdDrawOutlines = dev.createCommand<CmdDrawOutlinesProps>(
     {
         uniforms: {
             u_proj: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: projMatrix,
             },
             u_view: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ time }) => mat4.lookAt(
                     viewMatrix,
                     [Math.sin(time / 1000) * 10, 5, Math.cos(time / 1000) * 10],
@@ -151,7 +152,7 @@ const cmdDrawOutlines = dev.createCommand<CmdDrawOutlinesProps>(
                 ),
             },
             u_model: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ modelMatrix }) => modelMatrix,
             },
         },

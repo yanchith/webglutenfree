@@ -1,9 +1,13 @@
 import * as assert from "./util/assert";
 import { State } from "./state";
-import { Command, UniformDescriptor, TextureAccessor } from "./command";
+import {
+    Command,
+    UniformType,
+    UniformDescriptor,
+    TextureDescriptor,
+} from "./command";
 import { ElementPrimitive } from "./element-buffer";
 import { Attributes } from "./attributes";
-import { Texture, TextureStorageFormat } from "./texture";
 import { Framebuffer } from "./framebuffer";
 
 export enum TargetBufferBitmask {
@@ -223,7 +227,7 @@ export class Target {
             depthTestDescr,
             stencilTestDescr,
             blendDescr,
-            textureAccessors,
+            textureDescrs,
             uniformDescrs,
         } = cmd;
 
@@ -234,7 +238,7 @@ export class Target {
         state.setStencilTest(stencilTestDescr);
         state.setBlend(blendDescr);
 
-        this.textures(textureAccessors, props, 0);
+        this.textures(textureDescrs, props, 0);
         this.uniforms(uniformDescrs, props, 0);
 
         // Only bind the VAO if it is not null - we always assume we cleaned
@@ -303,8 +307,8 @@ export class Target {
             depthTestDescr,
             stencilTestDescr,
             blendDescr,
-            textureAccessors,
             uniformDescrs,
+            textureDescrs,
         } = cmd;
 
         // The price for gl.useProgram, enabling depth/stencil tests and
@@ -325,8 +329,8 @@ export class Target {
             state.assertCommandBound(cmd, "batch-draw");
             i++;
 
-            this.textures(textureAccessors, props, i);
             this.uniforms(uniformDescrs, props, i);
+            this.textures(textureDescrs, props, i);
 
             // Only bind the VAO if it is not null - we always assume we
             // cleaned up after ourselves so it SHOULD be unbound prior to
@@ -409,19 +413,6 @@ export class Target {
         }
     }
 
-    private textures<P>(
-        textureAccessors: TextureAccessor<P>[],
-        props: P,
-        index: number,
-    ): void {
-        const gl = this.state.gl;
-        textureAccessors.forEach((accessor, i) => {
-            const tex = access(props, index, accessor);
-            gl.activeTexture(gl.TEXTURE0 + i);
-            gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
-        });
-    }
-
     private uniforms<P>(
         uniformDescrs: UniformDescriptor<P>[],
         props: P,
@@ -434,116 +425,68 @@ export class Target {
             definition: def,
         }) => {
             switch (def.type) {
-                case "1f":
-                    gl.uniform1f(loc, access(props, index, def.value));
-                    break;
-                case "1fv":
-                    gl.uniform1fv(loc, access(props, index, def.value));
-                    break;
-                case "1i":
-                    gl.uniform1i(loc, access(props, index, def.value));
-                    break;
-                case "1iv":
-                    gl.uniform1iv(loc, access(props, index, def.value));
-                    break;
-                case "1ui":
-                    gl.uniform1ui(loc, access(props, index, def.value));
-                    break;
-                case "1uiv":
-                    gl.uniform1uiv(loc, access(props, index, def.value));
-                    break;
-                case "2f": {
-                    const [x, y] = access(props, index, def.value);
-                    gl.uniform2f(loc, x, y);
+                case UniformType.FLOAT: {
+                    const value = def.value(props, index);
+                    if (typeof value === "number") {
+                        gl.uniform1f(loc, value);
+                    } else {
+                        gl.uniform1fv(loc, value);
+                    }
                     break;
                 }
-                case "2fv":
-                    gl.uniform2fv(loc, access(props, index, def.value));
-                    break;
-                case "2i": {
-                    const [x, y] = access(props, index, def.value);
-                    gl.uniform2i(loc, x, y);
-                    break;
-                }
-                case "2iv":
-                    gl.uniform2iv(loc, access(props, index, def.value));
-                    break;
-                case "2ui": {
-                    const [x, y] = access(props, index, def.value);
-                    gl.uniform2ui(loc, x, y);
+                case UniformType.INT: {
+                    const value = def.value(props, index);
+                    if (typeof value === "number") {
+                        gl.uniform1i(loc, value);
+                    } else {
+                        gl.uniform1iv(loc, value);
+                    }
                     break;
                 }
-                case "2uiv":
-                    gl.uniform2uiv(loc, access(props, index, def.value));
-                    break;
-                case "3f": {
-                    const [x, y, z] = access(props, index, def.value);
-                    gl.uniform3f(loc, x, y, z);
-                    break;
-                }
-                case "3fv":
-                    gl.uniform3fv(loc, access(props, index, def.value));
-                    break;
-                case "3i": {
-                    const [x, y, z] = access(props, index, def.value);
-                    gl.uniform3i(loc, x, y, z);
+                case UniformType.UNSIGNED_INT: {
+                    const value = def.value(props, index);
+                    if (typeof value === "number") {
+                        gl.uniform1ui(loc, value);
+                    } else {
+                        gl.uniform1uiv(loc, value);
+                    }
                     break;
                 }
-                case "3iv":
-                    gl.uniform3iv(loc, access(props, index, def.value));
+                case UniformType.FLOAT_VEC2:
+                    gl.uniform2fv(loc, def.value(props, index));
                     break;
-                case "3ui": {
-                    const [x, y, z] = access(props, index, def.value);
-                    gl.uniform3ui(loc, x, y, z);
+                case UniformType.INT_VEC2:
+                    gl.uniform2iv(loc, def.value(props, index));
                     break;
-                }
-                case "3uiv":
-                    gl.uniform3uiv(loc, access(props, index, def.value));
+                case UniformType.UNSIGNED_INT_VEC2:
+                    gl.uniform2uiv(loc, def.value(props, index));
                     break;
-                case "4f": {
-                    const [x, y, z, w] = access(props, index, def.value);
-                    gl.uniform4f(loc, x, y, z, w);
+                case UniformType.FLOAT_VEC3:
+                    gl.uniform3fv(loc, def.value(props, index));
                     break;
-                }
-                case "4fv":
-                    gl.uniform4fv(loc, access(props, index, def.value));
+                case UniformType.INT_VEC3:
+                    gl.uniform3iv(loc, def.value(props, index));
                     break;
-                case "4i": {
-                    const [x, y, z, w] = access(props, index, def.value);
-                    gl.uniform4i(loc, x, y, z, w);
+                case UniformType.UNSIGNED_INT_VEC3:
+                    gl.uniform3uiv(loc, def.value(props, index));
                     break;
-                }
-                case "4iv":
-                    gl.uniform4iv(loc, access(props, index, def.value));
+                case UniformType.FLOAT_VEC4:
+                    gl.uniform4fv(loc, def.value(props, index));
                     break;
-                case "4ui": {
-                    const [x, y, z, w] = access(props, index, def.value);
-                    gl.uniform4ui(loc, x, y, z, w);
+                case UniformType.INT_VEC4:
+                    gl.uniform4iv(loc, def.value(props, index));
                     break;
-                }
-                case "4uiv":
-                    gl.uniform4uiv(loc, access(props, index, def.value));
+                case UniformType.UNSIGNED_INT_VEC4:
+                    gl.uniform4uiv(loc, def.value(props, index));
                     break;
-                case "matrix2fv":
-                    gl.uniformMatrix2fv(
-                        loc,
-                        false,
-                        access(props, index, def.value),
-                    );
+                case UniformType.FLOAT_MAT2:
+                    gl.uniformMatrix2fv(loc, false, def.value(props, index));
                     break;
-                case "matrix3fv":
-                    gl.uniformMatrix3fv(
-                        loc,
-                        false,
-                        access(props, index, def.value),
-                    );
+                case UniformType.FLOAT_MAT3:
+                    gl.uniformMatrix3fv(loc, false, def.value(props, index));
                     break;
-                case "matrix4fv":
-                    gl.uniformMatrix4fv(
-                        loc,
-                        false,
-                        access(props, index, def.value),
-                    );
+                case UniformType.FLOAT_MAT4:
+                    gl.uniformMatrix4fv(loc, false, def.value(props, index));
                     break;
                 default:
                     assert.unreachable(def, () => `Unknown uniform: ${ident}`);
@@ -551,23 +494,33 @@ export class Target {
             }
         });
     }
-}
 
-type AccessedValue =
-    | number
-    | number[]
-    | Float32Array
-    | Int32Array
-    | Uint32Array
-    | Texture<TextureStorageFormat>
-    ;
+    private textures<P>(
+        textureDescrs: TextureDescriptor<P>[],
+        props: P,
+        index: number,
+    ): void {
+        const gl = this.state.gl;
+        textureDescrs.forEach(({ identifier: ident, definition: def }, i) => {
+            const tex = typeof def.value === "function"
+                ? def.value(props, index)
+                : def.value;
 
-function access<P, R extends AccessedValue>(
-    props: P,
-    index: number,
-    value: ((props: P, index: number) => R) | R,
-): R {
-    return typeof value === "function"
-        ? value(props, index)
-        : value;
+            gl.activeTexture(gl.TEXTURE0 + i);
+            switch (def.type) {
+                case UniformType.SAMPLER_2D:
+                    gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
+                    break;
+                case UniformType.SAMPLER_CUBE:
+                    gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex.glTexture);
+                    break;
+                default:
+                    assert.unreachable(
+                        def,
+                        () => `Unknown texture uniform: ${ident}`,
+                    );
+                    break;
+            }
+        });
+    }
 }

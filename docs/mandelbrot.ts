@@ -6,7 +6,8 @@
 import {
     Device,
     Extension,
-    Texture,
+    Texture2D,
+    UniformType,
     ElementPrimitive,
     TextureColorStorageFormat,
 } from "./lib/webglutenfree.js";
@@ -22,12 +23,12 @@ const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
 // Note: Even with extensions, RGB32F is not renderable (might be a bug),
 // so we use RGBA32F even when we only use 3 channels
-const pingTex = dev.createTexture(
+const pingTex = dev.createTexture2D(
     width,
     height,
     TextureColorStorageFormat.RGBA32F,
 );
-const pongTex = dev.createTexture(
+const pongTex = dev.createTexture2D(
     width,
     height,
     TextureColorStorageFormat.RGBA32F,
@@ -62,8 +63,8 @@ void main() {
 // paint to the screen in the next command.
 
 interface CmdComputeProps {
-    tex: Texture<TextureColorStorageFormat>;
-    tick: number;
+    tex: Texture2D<TextureColorStorageFormat>;
+    step: number;
 }
 
 const cmdCompute = dev.createCommand<CmdComputeProps>(
@@ -71,7 +72,7 @@ const cmdCompute = dev.createCommand<CmdComputeProps>(
     `#version 300 es
     precision mediump float;
 
-    uniform uint u_tick;
+    uniform uint u_step;
     uniform float u_escape_threshold;
     uniform vec2 u_re_domain, u_im_domain;
     uniform sampler2D u_prev;
@@ -125,30 +126,33 @@ const cmdCompute = dev.createCommand<CmdComputeProps>(
             vec2 val = escape(c, prev_val);
             uint esc = 0u;
             if (length(val) > u_escape_threshold) {
-                esc = u_tick;
+                esc = u_step;
             }
             f_val = vec3(val, esc);
         }
     }
     `,
     {
-        textures: { u_prev: ({ tex }) => tex },
         uniforms: {
-            u_tick: {
-                type: "1ui",
-                value: ({ tick }) => tick,
+            u_step: {
+                type: UniformType.UNSIGNED_INT,
+                value: ({ step }) => step,
             },
             u_re_domain: {
-                type: "2f",
+                type: UniformType.FLOAT_VEC2,
                 value: DOMAIN_REAL,
             },
             u_im_domain: {
-                type: "2f",
+                type: UniformType.FLOAT_VEC2,
                 value: DOMAIN_IMAG,
             },
             u_escape_threshold: {
-                type: "1f",
+                type: UniformType.FLOAT,
                 value: ESCAPE_THRESHOLD,
+            },
+            u_prev: {
+                type: UniformType.SAMPLER_2D,
+                value: ({ tex }) => tex,
             },
         },
     },
@@ -160,7 +164,7 @@ const cmdCompute = dev.createCommand<CmdComputeProps>(
 // to diverge.
 
 interface CmdDrawProps {
-    tex: Texture<TextureColorStorageFormat>;
+    tex: Texture2D<TextureColorStorageFormat>;
 }
 
 const cmdDraw = dev.createCommand<CmdDrawProps>(
@@ -185,11 +189,14 @@ const cmdDraw = dev.createCommand<CmdDrawProps>(
     }
     `,
     {
-        textures: { u_val: ({ tex }) => tex },
         uniforms: {
             u_max_iters: {
-                type: "1f",
+                type: UniformType.FLOAT,
                 value: MAX_ITERS,
+            },
+            u_val: {
+                type: UniformType.SAMPLER_2D,
+                value: ({ tex }) => tex,
             },
         },
     },
@@ -207,7 +214,7 @@ const loop = (): void => {
 
     // Compute using previous values in ping, store to pong
     pong.fbo.target((rt) => {
-        rt.draw(cmdCompute, attrs, { tick: t, tex: ping.tex });
+        rt.draw(cmdCompute, attrs, { step: t, tex: ping.tex });
     });
 
     // Update canvas based on pong

@@ -31,7 +31,9 @@
     "copy-dts": "cpx \"build/{*.d.ts,*d.ts.map}\" dist && mv dist/index.d.ts dist/webglutenfree.d.ts",
     "update-lib": "rimraf docs/lib && cpx \"dist/{webglutenfree.js,webglutenfree.js.map,**/*.d.ts}\" docs/lib",
     "test": "cross-env TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' ava src/**/*.spec.ts",
-    "lint": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts\"",
+    "lint": "yarn lint-src && yarn lint-examples",
+    "lint-src": "tslint --config tslint.json --project tsconfig.json \"src/**/*.ts\"",
+    "lint-examples": "tslint --config tslint.json \"docs/*.ts\"",
     "clean": "rimraf build && rimraf dist"
   },
   "dependencies": {

@@ -5,6 +5,7 @@
 
 import {
     Device,
+    UniformType,
     BlendFunc,
     DepthFunc,
     AttributeType,
@@ -28,7 +29,7 @@ const viewMatrix = mat4.create();
 
 interface CmdProps {
     time: number;
-    tick: number;
+    step: number;
 }
 
 const cmd = dev.createCommand<CmdProps>(
@@ -73,7 +74,7 @@ const cmd = dev.createCommand<CmdProps>(
     {
         uniforms: {
             u_proj: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: mat4.perspective(
                     mat4.create(),
                     Math.PI / 4,
@@ -83,7 +84,7 @@ const cmd = dev.createCommand<CmdProps>(
                 ),
             },
             u_view: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: ({ time }) => mat4.lookAt(
                     viewMatrix,
                     [
@@ -96,11 +97,11 @@ const cmd = dev.createCommand<CmdProps>(
                 ),
             },
             u_model: {
-                type: "matrix4fv",
+                type: UniformType.FLOAT_MAT4,
                 value: mat4.fromScaling(mat4.create(), [SCALE, SCALE, SCALE]),
             },
             u_model_local: {
-                type: "matrix3fv",
+                type: UniformType.FLOAT_MAT3,
                 value: mat3.fromScaling(mat3.create(), [
                     PARTICLE_SCALE,
                     PARTICLE_SCALE,
@@ -108,8 +109,8 @@ const cmd = dev.createCommand<CmdProps>(
                 ]),
             },
             u_flip: {
-                type: "1f",
-                value: ({ tick }) => tick % 2,
+                type: UniformType.FLOAT,
+                value: ({ step }) => step % 2,
             },
         },
         blend: {
@@ -168,7 +169,7 @@ const loop = (time: number): void => {
 
     dev.target((rt) => {
         rt.clear(TargetBufferBitmask.COLOR_DEPTH);
-        rt.draw(cmd, attrs, { time, tick: t });
+        rt.draw(cmd, attrs, { time, step: t });
     });
 
     t++;

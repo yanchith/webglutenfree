@@ -13,7 +13,8 @@
 
 import {
     Device,
-    Texture,
+    Texture2D,
+    UniformType,
     TargetBufferBitmask,
     ElementPrimitive,
     TextureDataType,
@@ -31,13 +32,13 @@ const [lifeWidth, lifeHeight] = [
 
 // Use textures with only one channel. By using REPEAT in both directions, we
 // create a cyclic universe
-const pingTex = dev.createTexture(
+const pingTex = dev.createTexture2D(
     lifeWidth,
     lifeHeight,
     TextureColorStorageFormat.R8,
     { wrapS: TextureWrap.REPEAT, wrapT: TextureWrap.REPEAT },
 );
-const pongTex = dev.createTexture(
+const pongTex = dev.createTexture2D(
     lifeWidth,
     lifeHeight,
     TextureColorStorageFormat.R8,
@@ -61,28 +62,28 @@ const pongFbo = dev.createFramebuffer(lifeWidth, lifeHeight, pongTex);
 // universe from one texture and writing the result to another.
 
 interface CmdProps {
-    tex: Texture<TextureColorStorageFormat>;
+    tex: Texture2D<TextureColorStorageFormat>;
 }
 
 const cmd = dev.createCommand<CmdProps>(
     `#version 300 es
     precision mediump float;
 
-    out vec2 v_uv;
+    out vec2 v_tex_coord;
 
     void main() {
         switch (gl_VertexID % 3) {
             case 0:
                 gl_Position = vec4(-1, 3, 0, 1);
-                v_uv = vec2(0, 2);
+                v_tex_coord = vec2(0, 2);
                 break;
             case 1:
                 gl_Position = vec4(-1, -1, 0, 1);
-                v_uv = vec2(0, 0);
+                v_tex_coord = vec2(0, 0);
                 break;
             case 2:
                 gl_Position = vec4(3, -1, 0, 1);
-                v_uv = vec2(2, 0);
+                v_tex_coord = vec2(2, 0);
                 break;
         }
     }
@@ -92,24 +93,24 @@ const cmd = dev.createCommand<CmdProps>(
 
     uniform sampler2D u_universe;
 
-    in vec2 v_uv;
+    in vec2 v_tex_coord;
 
     layout (location = 0) out float f_next_universe;
 
     void main() {
         vec2 px = vec2(1) / vec2(textureSize(u_universe, 0));
 
-        float current = texture(u_universe, v_uv).r;
+        float current = texture(u_universe, v_tex_coord).r;
         float neighbors = 0.0;
 
-        neighbors += texture(u_universe, px * vec2( 1,  1) + v_uv).r;
-        neighbors += texture(u_universe, px * vec2( 0,  1) + v_uv).r;
-        neighbors += texture(u_universe, px * vec2(-1,  1) + v_uv).r;
-        neighbors += texture(u_universe, px * vec2(-1,  0) + v_uv).r;
-        neighbors += texture(u_universe, px * vec2(-1, -1) + v_uv).r;
-        neighbors += texture(u_universe, px * vec2( 0, -1) + v_uv).r;
-        neighbors += texture(u_universe, px * vec2( 1, -1) + v_uv).r;
-        neighbors += texture(u_universe, px * vec2( 1,  0) + v_uv).r;
+        neighbors += texture(u_universe, px * vec2( 1,  1) + v_tex_coord).r;
+        neighbors += texture(u_universe, px * vec2( 0,  1) + v_tex_coord).r;
+        neighbors += texture(u_universe, px * vec2(-1,  1) + v_tex_coord).r;
+        neighbors += texture(u_universe, px * vec2(-1,  0) + v_tex_coord).r;
+        neighbors += texture(u_universe, px * vec2(-1, -1) + v_tex_coord).r;
+        neighbors += texture(u_universe, px * vec2( 0, -1) + v_tex_coord).r;
+        neighbors += texture(u_universe, px * vec2( 1, -1) + v_tex_coord).r;
+        neighbors += texture(u_universe, px * vec2( 1,  0) + v_tex_coord).r;
 
         if (current == 0.0) {
             f_next_universe = neighbors == 3.0 ? 1.0 : 0.0;
@@ -124,7 +125,14 @@ const cmd = dev.createCommand<CmdProps>(
         }
     }
     `,
-    { textures: { u_universe: ({ tex }) => tex } },
+    {
+        uniforms: {
+            u_universe: {
+                type: UniformType.SAMPLER_2D,
+                value: ({ tex }) => tex,
+            },
+        },
+    },
 );
 
 const attrs = dev.createEmptyAttributes(ElementPrimitive.TRIANGLE_LIST, 3);

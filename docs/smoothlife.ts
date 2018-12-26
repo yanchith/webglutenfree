@@ -14,7 +14,8 @@
 
 import {
     Device,
-    Texture,
+    Texture2D,
+    UniformType,
     TargetBufferBitmask,
     ElementPrimitive,
     TextureDataType,
@@ -37,13 +38,13 @@ const ALPHA_M = 0.147;
 const dev = Device.create({ antialias: false });
 
 // By using REPEAT in both directions, we create a cyclic universe
-const pingTex = dev.createTexture(
+const pingTex = dev.createTexture2D(
     WIDTH,
     HEIGHT,
     TextureColorStorageFormat.RGBA8,
     { wrapS: TextureWrap.REPEAT, wrapT: TextureWrap.REPEAT },
 );
-const pongTex = dev.createTexture(
+const pongTex = dev.createTexture2D(
     WIDTH,
     HEIGHT,
     TextureColorStorageFormat.RGBA8,
@@ -65,28 +66,28 @@ const pongFbo = dev.createFramebuffer(WIDTH, HEIGHT, pongTex);
 // is read, but all RED, GREEN and BLUE channels are written for aesthetics.
 
 interface CmdProps {
-    tex: Texture<TextureColorStorageFormat>;
+    tex: Texture2D<TextureColorStorageFormat>;
 }
 
 const cmd = dev.createCommand<CmdProps>(
     `#version 300 es
     precision mediump float;
 
-    out vec2 v_uv;
+    out vec2 v_tex_coord;
 
     void main() {
         switch (gl_VertexID % 3) {
             case 0:
                 gl_Position = vec4(-1, 3, 0, 1);
-                v_uv = vec2(0, 2);
+                v_tex_coord = vec2(0, 2);
                 break;
             case 1:
                 gl_Position = vec4(-1, -1, 0, 1);
-                v_uv = vec2(0, 0);
+                v_tex_coord = vec2(0, 0);
                 break;
             case 2:
                 gl_Position = vec4(3, -1, 0, 1);
-                v_uv = vec2(2, 0);
+                v_tex_coord = vec2(2, 0);
                 break;
         }
     }
@@ -108,12 +109,12 @@ const cmd = dev.createCommand<CmdProps>(
 
     uniform sampler2D u_universe;
 
-    in vec2 v_uv;
+    in vec2 v_tex_coord;
 
     layout (location = 0) out vec4 f_next_universe;
 
     float f(vec2 c) {
-        return texture(u_universe, v_uv + (c / vec2(WIDTH, HEIGHT))).r;
+        return texture(u_universe, v_tex_coord + (c / vec2(WIDTH, HEIGHT))).r;
     }
 
     float sigma_1(float x, float a, float alpha) {
@@ -167,7 +168,14 @@ const cmd = dev.createCommand<CmdProps>(
         f_next_universe = vec4(S(n, m), m, n, 1);
     }
     `,
-    { textures: { u_universe: ({ tex }) => tex } },
+    {
+        uniforms: {
+            u_universe: {
+                type: UniformType.SAMPLER_2D,
+                value: ({ tex }) => tex,
+            },
+        },
+    },
 );
 
 const attrs = dev.createEmptyAttributes(ElementPrimitive.TRIANGLE_LIST, 3);

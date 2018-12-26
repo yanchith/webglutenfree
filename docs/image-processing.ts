@@ -6,7 +6,7 @@
  * https://webgl2fundamentals.org/webgl/lessons/webgl-image-processing.html
  */
 
-import { Device } from "./lib/webglutenfree.js";
+import { Device, UniformType } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 import { loadImage } from "./libx/load-image.js";
 
@@ -47,7 +47,7 @@ const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
 
 async function run(): Promise<void> {
     const imageData = await loadImage("img/lenna.png", true);
-    const imageTexture = dev.createTextureWithImage(imageData);
+    const imageTexture = dev.createTexture2DWithImage(imageData);
 
     const cmd = dev.createCommand(
         `#version 300 es
@@ -56,12 +56,12 @@ async function run(): Promise<void> {
         uniform mat4 u_proj, u_model;
 
         layout (location = 0) in vec2 a_position;
-        layout (location = 1) in vec2 a_uv;
+        layout (location = 1) in vec2 a_tex_coord;
 
-        out vec2 v_uv;
+        out vec2 v_tex_coord;
 
         void main() {
-            v_uv = a_uv;
+            v_tex_coord = a_tex_coord;
             gl_Position = u_proj
                 * u_model
                 * vec4(a_position, 0.0, 1.0);
@@ -74,7 +74,7 @@ async function run(): Promise<void> {
         uniform float[9] u_kernel;
         uniform float u_kernel_weight;
 
-        in vec2 v_uv;
+        in vec2 v_tex_coord;
 
         out vec4 f_color;
 
@@ -82,27 +82,26 @@ async function run(): Promise<void> {
             vec2 px = vec2(1) / vec2(textureSize(u_image, 0));
             float[9] k = u_kernel;
             vec4 color_sum =
-                texture(u_image, px * vec2(-1, -1) + v_uv) * k[0] +
-                texture(u_image, px * vec2( 0, -1) + v_uv) * k[1] +
-                texture(u_image, px * vec2( 1, -1) + v_uv) * k[2] +
-                texture(u_image, px * vec2(-1,  0) + v_uv) * k[3] +
-                texture(u_image, px * vec2( 0,  0) + v_uv) * k[4] +
-                texture(u_image, px * vec2( 1,  0) + v_uv) * k[5] +
-                texture(u_image, px * vec2(-1,  1) + v_uv) * k[6] +
-                texture(u_image, px * vec2( 0,  1) + v_uv) * k[7] +
-                texture(u_image, px * vec2( 1,  1) + v_uv) * k[8] ;
+                texture(u_image, px * vec2(-1, -1) + v_tex_coord) * k[0] +
+                texture(u_image, px * vec2( 0, -1) + v_tex_coord) * k[1] +
+                texture(u_image, px * vec2( 1, -1) + v_tex_coord) * k[2] +
+                texture(u_image, px * vec2(-1,  0) + v_tex_coord) * k[3] +
+                texture(u_image, px * vec2( 0,  0) + v_tex_coord) * k[4] +
+                texture(u_image, px * vec2( 1,  0) + v_tex_coord) * k[5] +
+                texture(u_image, px * vec2(-1,  1) + v_tex_coord) * k[6] +
+                texture(u_image, px * vec2( 0,  1) + v_tex_coord) * k[7] +
+                texture(u_image, px * vec2( 1,  1) + v_tex_coord) * k[8] ;
             f_color = vec4((color_sum / u_kernel_weight).rgb, 1.0);
         }
         `,
         {
-            textures: { u_image: imageTexture },
             uniforms: {
                 u_model: {
-                    type: "matrix4fv",
+                    type: UniformType.FLOAT_MAT4,
                     value: mat4.fromScaling(mat4.create(), [400, 400, 1]),
                 },
                 u_proj: {
-                    type: "matrix4fv",
+                    type: UniformType.FLOAT_MAT4,
                     value: mat4.ortho(
                         mat4.create(),
                         -width / 2,
@@ -114,12 +113,16 @@ async function run(): Promise<void> {
                     ),
                 },
                 u_kernel: {
-                    type: "1fv",
+                    type: UniformType.FLOAT,
                     value: KERNEL,
                 },
                 u_kernel_weight: {
-                    type: "1f",
+                    type: UniformType.FLOAT,
                     value: computeKernelWeight(KERNEL),
+                },
+                u_image: {
+                    type: UniformType.SAMPLER_2D,
+                    value: imageTexture,
                 },
             },
         },
@@ -127,7 +130,7 @@ async function run(): Promise<void> {
 
     const attrs = dev.createAttributes(square.elements, cmd.locate({
         a_position: square.positions,
-        a_uv: square.uvs,
+        a_tex_coord: square.uvs,
     }));
 
     dev.target((rt) => {
