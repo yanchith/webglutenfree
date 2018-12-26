@@ -83,6 +83,8 @@ export {
     TextureCubeMap,
     Texture2DCreateOptions,
     Texture2DStoreOptions,
+    TextureCubeMapCreateOptions,
+    TextureCubeMapStoreOptions,
     TextureMinFilter,
     TextureMagFilter,
     TextureWrap,

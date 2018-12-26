@@ -47,7 +47,7 @@ export function _createFramebuffer(
     return new Framebuffer(state, width, height, colors, depthStencil);
 }
 
-// TODO: _createFramebuffersWithCubeMap
+// TODO: _createFramebufferWithCubeMapFace
 
 /**
  * Framebuffers store the list of attachments to write to during a draw

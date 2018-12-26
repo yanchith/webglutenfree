@@ -8,9 +8,9 @@ export enum TextureColorStorageFormat {
     R8I = 0x8231,
     R16UI = 0x8234,
     R16I = 0x8233,
+    R16F = 0x822D,
     R32UI = 0x8236,
     R32I = 0x8235,
-    R16F = 0x822D,
     R32F = 0x822E,
 
     // RG
@@ -20,9 +20,9 @@ export enum TextureColorStorageFormat {
     RG8I = 0x8237,
     RG16UI = 0x823A,
     RG16I = 0x8239,
+    RG16F = 0x822F,
     RG32UI = 0x823C,
     RG32I = 0x823B,
-    RG16F = 0x822F,
     RG32F = 0x8230,
 
     // RGB
@@ -32,9 +32,9 @@ export enum TextureColorStorageFormat {
     RGB8I = 0x8D8F,
     RGB16UI = 0x8D77,
     RGB16I = 0x8D89,
+    RGB16F = 0x881B,
     RGB32UI = 0x8D71,
     RGB32I = 0x8D83,
-    RGB16F = 0x881B,
     RGB32F = 0x8815,
 
     // RGBA
@@ -44,9 +44,9 @@ export enum TextureColorStorageFormat {
     RGBA8I = 0x8D8E,
     RGBA16UI = 0x8D76,
     RGBA16I = 0x8D88,
+    RGBA16F = 0x881A,
     RGBA32UI = 0x8D70,
     RGBA32I = 0x8D82,
-    RGBA16F = 0x881A,
     RGBA32F = 0x8814,
 
     // TODO: support exotic formats
@@ -96,12 +96,14 @@ export enum TextureFormat {
 export enum TextureDataType {
     BYTE = 0x1400,
     UNSIGNED_BYTE = 0x1401,
+
     SHORT = 0x1402,
     UNSIGNED_SHORT = 0x1403,
+    HALF_FLOAT = 0x140B,
+
     INT = 0x1404,
     UNSIGNED_INT = 0x1405,
     FLOAT = 0x1406,
-    HALF_FLOAT = 0x140B,
 
     // TODO: support exotic formats
     // UNSIGNED_SHORT_4_4_4_4
@@ -145,9 +147,9 @@ export interface StorageFormatToFormat {
     [TextureColorStorageFormat.R8I]: TextureFormat.RED_INTEGER;
     [TextureColorStorageFormat.R16UI]: TextureFormat.RED_INTEGER;
     [TextureColorStorageFormat.R16I]: TextureFormat.RED_INTEGER;
+    [TextureColorStorageFormat.R16F]: TextureFormat.RED;
     [TextureColorStorageFormat.R32UI]: TextureFormat.RED_INTEGER;
     [TextureColorStorageFormat.R32I]: TextureFormat.RED_INTEGER;
-    [TextureColorStorageFormat.R16F]: TextureFormat.RED;
     [TextureColorStorageFormat.R32F]: TextureFormat.RED;
 
     // RG
@@ -157,9 +159,9 @@ export interface StorageFormatToFormat {
     [TextureColorStorageFormat.RG8I]: TextureFormat.RG_INTEGER;
     [TextureColorStorageFormat.RG16UI]: TextureFormat.RG_INTEGER;
     [TextureColorStorageFormat.RG16I]: TextureFormat.RG_INTEGER;
+    [TextureColorStorageFormat.RG16F]: TextureFormat.RG;
     [TextureColorStorageFormat.RG32UI]: TextureFormat.RG_INTEGER;
     [TextureColorStorageFormat.RG32I]: TextureFormat.RG_INTEGER;
-    [TextureColorStorageFormat.RG16F]: TextureFormat.RG;
     [TextureColorStorageFormat.RG32F]: TextureFormat.RG;
 
     // RGB
@@ -169,9 +171,9 @@ export interface StorageFormatToFormat {
     [TextureColorStorageFormat.RGB8I]: TextureFormat.RGB_INTEGER;
     [TextureColorStorageFormat.RGB16UI]: TextureFormat.RGB_INTEGER;
     [TextureColorStorageFormat.RGB16I]: TextureFormat.RGB_INTEGER;
+    [TextureColorStorageFormat.RGB16F]: TextureFormat.RGB;
     [TextureColorStorageFormat.RGB32UI]: TextureFormat.RGB_INTEGER;
     [TextureColorStorageFormat.RGB32I]: TextureFormat.RGB_INTEGER;
-    [TextureColorStorageFormat.RGB16F]: TextureFormat.RGB;
     [TextureColorStorageFormat.RGB32F]: TextureFormat.RGB;
 
     // RGBA
@@ -181,9 +183,9 @@ export interface StorageFormatToFormat {
     [TextureColorStorageFormat.RGBA8I]: TextureFormat.RGBA_INTEGER;
     [TextureColorStorageFormat.RGBA16UI]: TextureFormat.RGBA_INTEGER;
     [TextureColorStorageFormat.RGBA16I]: TextureFormat.RGBA_INTEGER;
+    [TextureColorStorageFormat.RGBA16F]: TextureFormat.RGBA;
     [TextureColorStorageFormat.RGBA32UI]: TextureFormat.RGBA_INTEGER;
     [TextureColorStorageFormat.RGBA32I]: TextureFormat.RGBA_INTEGER;
-    [TextureColorStorageFormat.RGBA16F]: TextureFormat.RGBA;
     [TextureColorStorageFormat.RGBA32F]: TextureFormat.RGBA;
 
     // DEPTH
@@ -210,12 +212,12 @@ export interface StorageFormatToDataType {
     [TextureColorStorageFormat.R8I]: TextureDataType.BYTE;
     [TextureColorStorageFormat.R16UI]: TextureDataType.UNSIGNED_SHORT;
     [TextureColorStorageFormat.R16I]: TextureDataType.SHORT;
-    [TextureColorStorageFormat.R32UI]: TextureDataType.UNSIGNED_INT;
-    [TextureColorStorageFormat.R32I]: TextureDataType.INT;
     [TextureColorStorageFormat.R16F]:
         | TextureDataType.HALF_FLOAT
         | TextureDataType.FLOAT
         ;
+    [TextureColorStorageFormat.R32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureColorStorageFormat.R32I]: TextureDataType.INT;
     [TextureColorStorageFormat.R32F]: TextureDataType.FLOAT;
 
     // RG
@@ -225,12 +227,12 @@ export interface StorageFormatToDataType {
     [TextureColorStorageFormat.RG8I]: TextureDataType.BYTE;
     [TextureColorStorageFormat.RG16UI]: TextureDataType.UNSIGNED_SHORT;
     [TextureColorStorageFormat.RG16I]: TextureDataType.SHORT;
-    [TextureColorStorageFormat.RG32UI]: TextureDataType.UNSIGNED_INT;
-    [TextureColorStorageFormat.RG32I]: TextureDataType.INT;
     [TextureColorStorageFormat.RG16F]:
         | TextureDataType.HALF_FLOAT
         | TextureDataType.FLOAT
         ;
+    [TextureColorStorageFormat.RG32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureColorStorageFormat.RG32I]: TextureDataType.INT;
     [TextureColorStorageFormat.RG32F]: TextureDataType.FLOAT;
 
     // RGB
@@ -240,12 +242,12 @@ export interface StorageFormatToDataType {
     [TextureColorStorageFormat.RGB8I]: TextureDataType.BYTE;
     [TextureColorStorageFormat.RGB16UI]: TextureDataType.UNSIGNED_SHORT;
     [TextureColorStorageFormat.RGB16I]: TextureDataType.SHORT;
-    [TextureColorStorageFormat.RGB32UI]: TextureDataType.UNSIGNED_INT;
-    [TextureColorStorageFormat.RGB32I]: TextureDataType.INT;
     [TextureColorStorageFormat.RGB16F]:
         | TextureDataType.HALF_FLOAT
         | TextureDataType.FLOAT
         ;
+    [TextureColorStorageFormat.RGB32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureColorStorageFormat.RGB32I]: TextureDataType.INT;
     [TextureColorStorageFormat.RGB32F]: TextureDataType.FLOAT;
 
     // RGBA
@@ -255,12 +257,12 @@ export interface StorageFormatToDataType {
     [TextureColorStorageFormat.RGBA8I]: TextureDataType.BYTE;
     [TextureColorStorageFormat.RGBA16UI]: TextureDataType.UNSIGNED_SHORT;
     [TextureColorStorageFormat.RGBA16I]: TextureDataType.SHORT;
-    [TextureColorStorageFormat.RGBA32UI]: TextureDataType.UNSIGNED_INT;
-    [TextureColorStorageFormat.RGBA32I]: TextureDataType.INT;
     [TextureColorStorageFormat.RGBA16F]:
         | TextureDataType.HALF_FLOAT
         | TextureDataType.FLOAT
         ;
+    [TextureColorStorageFormat.RGBA32UI]: TextureDataType.UNSIGNED_INT;
+    [TextureColorStorageFormat.RGBA32I]: TextureDataType.INT;
     [TextureColorStorageFormat.RGBA32F]: TextureDataType.FLOAT;
 
     // DEPTH
@@ -287,9 +289,9 @@ export interface StorageFormatToTypedArray {
     [TextureColorStorageFormat.R8I]: Int8Array;
     [TextureColorStorageFormat.R16UI]: Uint16Array;
     [TextureColorStorageFormat.R16I]: Int16Array;
+    [TextureColorStorageFormat.R16F]: Float32Array; // | Float16Array
     [TextureColorStorageFormat.R32UI]: Uint32Array;
     [TextureColorStorageFormat.R32I]: Int32Array;
-    [TextureColorStorageFormat.R16F]: Float32Array; // Float16Array
     [TextureColorStorageFormat.R32F]: Float32Array;
 
     // RG
@@ -299,9 +301,9 @@ export interface StorageFormatToTypedArray {
     [TextureColorStorageFormat.RG8I]: Int8Array;
     [TextureColorStorageFormat.RG16UI]: Uint16Array;
     [TextureColorStorageFormat.RG16I]: Int16Array;
+    [TextureColorStorageFormat.RG16F]: Float32Array; // | Float16Array
     [TextureColorStorageFormat.RG32UI]: Uint32Array;
     [TextureColorStorageFormat.RG32I]: Int32Array;
-    [TextureColorStorageFormat.RG16F]: Float32Array; // Float16Array
     [TextureColorStorageFormat.RG32F]: Float32Array;
 
     // RGB
@@ -311,9 +313,9 @@ export interface StorageFormatToTypedArray {
     [TextureColorStorageFormat.RGB8I]: Int8Array;
     [TextureColorStorageFormat.RGB16UI]: Uint16Array;
     [TextureColorStorageFormat.RGB16I]: Int16Array;
+    [TextureColorStorageFormat.RGB16F]: Float32Array; // | Float16Array
     [TextureColorStorageFormat.RGB32UI]: Uint32Array;
     [TextureColorStorageFormat.RGB32I]: Int32Array;
-    [TextureColorStorageFormat.RGB16F]: Float32Array; // Float16Array
     [TextureColorStorageFormat.RGB32F]: Float32Array;
 
     // RGBA
@@ -323,9 +325,9 @@ export interface StorageFormatToTypedArray {
     [TextureColorStorageFormat.RGBA8I]: Int8Array;
     [TextureColorStorageFormat.RGBA16UI]: Uint16Array;
     [TextureColorStorageFormat.RGBA16I]: Int16Array;
+    [TextureColorStorageFormat.RGBA16F]: Float32Array; // | Float16Array
     [TextureColorStorageFormat.RGBA32UI]: Uint32Array;
     [TextureColorStorageFormat.RGBA32I]: Int32Array;
-    [TextureColorStorageFormat.RGBA16F]: Float32Array; // Float16Array
     [TextureColorStorageFormat.RGBA32F]: Float32Array;
 
     // DEPTH
@@ -335,7 +337,7 @@ export interface StorageFormatToTypedArray {
 
     // DEPTH STENCIL
     [TextureDepthStencilStorageFormat.DEPTH24_STENCIL8]: Uint32Array;
-    [TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8]: never; // yay!
+    [TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8]: never;
 }
 
 export interface Texture2DCreateOptions {
@@ -546,9 +548,7 @@ export class Texture2D<S extends TextureStorageFormat> {
 
         gl.bindTexture(gl.TEXTURE_2D, glTexture);
 
-        // This pixel row alignment is theoretically smaller than needed
-        // TODO: find greatest correct unpack alignment for pixel rows
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, data.BYTES_PER_ELEMENT);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, rowAlignment(this.storageFormat));
         gl.texSubImage2D(
             gl.TEXTURE_2D,
             0, // level
@@ -618,7 +618,7 @@ export class Texture2D<S extends TextureStorageFormat> {
  * Cubemaps consist of 6 different textures conceptually layed out as faces of a
  * cube around origin [0, 0, 0]. Each of the 6 textures in a cubemap has the
  * same dimensions and storage format.
- * In shaders, cubemaps can be sampled using a vec3 interpretted as a direction
+ * In shaders, cubemaps can be sampled using a vec3 interpreted as a direction
  * from origin. This makes cubemaps ideal to implement skyboxes and environment
  * mapping.
  */
@@ -1082,9 +1082,7 @@ export class TextureCubeMap<S extends TextureStorageFormat> {
         height: number,
     ): void {
         const gl = this.gl;
-        // This pixel row alignment is theoretically smaller than needed
-        // TODO: find greatest correct unpack alignment for pixel rows
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, data.BYTES_PER_ELEMENT);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, rowAlignment(this.storageFormat));
         gl.texSubImage2D(
             target,
             0, // level
@@ -1102,5 +1100,97 @@ export class TextureCubeMap<S extends TextureStorageFormat> {
                 // Other buffer types are fine
                 : data,
         );
+    }
+}
+
+type RowAlignment = 1 | 2 | 4 | 8;
+
+/**
+ * OpenGL supports row alignments of 1, 2, 4, or 8. Each storage format consists
+ * of a data type and number of channels, e.g. RGB16F has data type size of 2
+ * byte and 3 channels.
+ * This function finds the greatest possible safe alignment to fit the product
+ * of the storage format's data type size and number of channels, e.g. for
+ * RGB16F (2 bytes * 3 channels), the greatest safe row alignment is 2.
+ */
+function rowAlignment(storageFormat: TextureStorageFormat): RowAlignment {
+    switch (storageFormat) {
+        // RED
+        case TextureColorStorageFormat.R8:
+        case TextureColorStorageFormat.R8_SNORM:
+        case TextureColorStorageFormat.R8UI:
+        case TextureColorStorageFormat.R8I:
+            return 1;
+        case TextureColorStorageFormat.R16UI:
+        case TextureColorStorageFormat.R16I:
+        case TextureColorStorageFormat.R16F:
+            return 2;
+        case TextureColorStorageFormat.R32UI:
+        case TextureColorStorageFormat.R32I:
+        case TextureColorStorageFormat.R32F:
+            return 4;
+
+        // RG
+        case TextureColorStorageFormat.RG8:
+        case TextureColorStorageFormat.RG8_SNORM:
+        case TextureColorStorageFormat.RG8UI:
+        case TextureColorStorageFormat.RG8I:
+            return 2;
+        case TextureColorStorageFormat.RG16UI:
+        case TextureColorStorageFormat.RG16I:
+        case TextureColorStorageFormat.RG16F:
+            return 4;
+        case TextureColorStorageFormat.RG32UI:
+        case TextureColorStorageFormat.RG32I:
+        case TextureColorStorageFormat.RG32F:
+            return 8;
+
+        // RGB
+        case TextureColorStorageFormat.RGB8:
+        case TextureColorStorageFormat.RGB8_SNORM:
+        case TextureColorStorageFormat.RGB8UI:
+        case TextureColorStorageFormat.RGB8I:
+            return 1;
+        case TextureColorStorageFormat.RGB16UI:
+        case TextureColorStorageFormat.RGB16I:
+        case TextureColorStorageFormat.RGB16F:
+            return 2;
+        case TextureColorStorageFormat.RGB32UI:
+        case TextureColorStorageFormat.RGB32I:
+        case TextureColorStorageFormat.RGB32F:
+            return 4;
+
+        // RGBA
+        case TextureColorStorageFormat.RGBA8:
+        case TextureColorStorageFormat.RGBA8_SNORM:
+        case TextureColorStorageFormat.RGBA8UI:
+        case TextureColorStorageFormat.RGBA8I:
+            return 4;
+        case TextureColorStorageFormat.RGBA16UI:
+        case TextureColorStorageFormat.RGBA16I:
+        case TextureColorStorageFormat.RGBA16F:
+            return 8;
+        case TextureColorStorageFormat.RGBA32UI:
+        case TextureColorStorageFormat.RGBA32I:
+        case TextureColorStorageFormat.RGBA32F:
+            return 8;
+
+        // DEPTH
+        case TextureDepthStorageFormat.DEPTH_COMPONENT16:
+            return 2;
+        case TextureDepthStorageFormat.DEPTH_COMPONENT24:
+            return 1;
+        case TextureDepthStorageFormat.DEPTH_COMPONENT32F:
+            return 4;
+
+        // DEPTH STEPNCIL
+        case TextureDepthStencilStorageFormat.DEPTH24_STENCIL8:
+            return 4;
+        case TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8:
+            // TODO: how is DEPTH32F_STENCUL8 represented in memory?
+            return 1;
+
+        default:
+            return assert.unreachable(storageFormat);
     }
 }

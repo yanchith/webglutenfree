@@ -471,7 +471,7 @@ export class Command<P> {
         // Texture declarations are evaluated in two phases:
         // 1) Texture location offsets are sent to the shader in init time.
         //    This is ok because even if the textures themselves can change (via
-        //    function accessors), their offsets stay the same.
+        //    function accessors), their offsets stay the same,
         // 2) Textures provided by the accessor are activated and bound to their
         //    locations at draw time.
         // Note: Object.entries() provides values in a nondeterministic order,

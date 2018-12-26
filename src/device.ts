@@ -520,8 +520,8 @@ export class Device {
 
     /**
      * Create a new cubemap texture where each face has a width and height equal
-     * to that of the given images and store the provided images in the cubemap
-     * as faces.
+     * to that of the given images and store the provided images in the
+     * cubemap's faces.
      * The storage format determines what kind of data is possible to store and
      * is preset as RGBA8.
      * Each image must have the same dimensions.
@@ -535,18 +535,22 @@ export class Device {
         imageNegativeZ: ImageData,
         options?: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions,
     ): TextureCubeMap<TextureColorStorageFormat.RGBA8> {
-        // Assert all images have same sizes
-        assert.is(imageNegativeX.width, imagePositiveX.width);
-        assert.is(imagePositiveY.width, imagePositiveX.width);
-        assert.is(imageNegativeY.width, imagePositiveX.width);
-        assert.is(imagePositiveZ.width, imagePositiveX.width);
-        assert.is(imageNegativeZ.width, imagePositiveX.width);
 
-        assert.is(imageNegativeX.height, imagePositiveX.height);
-        assert.is(imagePositiveY.height, imagePositiveX.height);
-        assert.is(imageNegativeY.height, imagePositiveX.height);
-        assert.is(imagePositiveZ.height, imagePositiveX.height);
-        assert.is(imageNegativeZ.height, imagePositiveX.height);
+        const width = imagePositiveX.width;
+        const height = imagePositiveX.height;
+
+        // Assert all images have same sizes
+        assert.is(imageNegativeX.width, width, fmtImageDimsMismatch);
+        assert.is(imagePositiveY.width, width, fmtImageDimsMismatch);
+        assert.is(imageNegativeY.width, width, fmtImageDimsMismatch);
+        assert.is(imagePositiveZ.width, width, fmtImageDimsMismatch);
+        assert.is(imageNegativeZ.width, width, fmtImageDimsMismatch);
+
+        assert.is(imageNegativeX.height, height, fmtImageDimsMismatch);
+        assert.is(imagePositiveY.height, height, fmtImageDimsMismatch);
+        assert.is(imageNegativeY.height, height, fmtImageDimsMismatch);
+        assert.is(imagePositiveZ.height, height, fmtImageDimsMismatch);
+        assert.is(imageNegativeZ.height, height, fmtImageDimsMismatch);
 
         return _createTextureCubeMapWithTypedArray(
             this._gl,
@@ -567,8 +571,8 @@ export class Device {
 
     /**
      * Create a new cubemap texture where each face has a given width, height,
-     * and storage format and data of given format and type contained in the
-     * provided typed arrays to the cubemap as faces.
+     * and storage format and store data contained in the provided typed arrays
+     * in the cubemap's faces.
      * The storage format determines what kind of data is possible to store.
      * Each typed array must have the same length.
      */
@@ -639,4 +643,8 @@ function createDebugFunc(
         console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
         return gl[key].apply(gl, arguments);
     };
+}
+
+function fmtImageDimsMismatch() {
+    return "All provided images must have the same dimensions";
 }
