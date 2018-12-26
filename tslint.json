@@ -1,7 +1,7 @@
 {
     "defaultSeverity": "error",
     "extends": [
-        "tslint:recommended"
+        "tslint:latest"
     ],
     "jsRules": {},
     "rules": {
@@ -13,6 +13,11 @@
         "no-consecutive-blank-lines": [true, 2],
         "no-console": [true, "log", "warn", "error"],
         "no-default-export": true,
+        "no-implicit-dependencies": [
+            true,
+            ["ava"] // "ava" is a test runner, and therefore not in "dependencies"
+        ],
+        "no-this-assignment": [true, { "allow-destructuring": true }],
         "object-literal-key-quotes": [true, "as-needed"],
         "object-literal-sort-keys": false,
         "ordered-imports": false,

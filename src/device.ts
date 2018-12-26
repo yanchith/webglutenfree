@@ -166,16 +166,10 @@ export class Device {
         }
 
         if (debug) {
-            interface AnyIndexable { [key: string]: any; }
-            const wrapper = {} as AnyIndexable;
-            for (const key in gl) {
-                if (typeof (gl as AnyIndexable)[key] === "function") {
-                    wrapper[key] = createDebugFunc(gl, key);
-                } else {
-                    wrapper[key] = (gl as AnyIndexable)[key];
-                }
-            }
-            gl = wrapper as WebGL2RenderingContext;
+            gl = Object.entries(gl).reduce((accum, [k, v]) => ({
+                ...accum,
+                [k]: v === "function" ? createDebugFunc(gl, k) : v,
+            }), gl);
         }
 
         return new Device(gl, pixelRatio, viewportWidth, viewportHeight);
