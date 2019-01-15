@@ -5,11 +5,13 @@
 ### Enahancments
 
 - Add `TextureCubeMap`
+- Add `Renderbuffer`
 - Make all gl enums explicit and typechecked
+- Compute more optimal row unpack alignment for storing texture data
 
 ### Fixes
 
-- Compute more correct and optimal row unpack alignment for storing texture data
+(None yet)
 
 ## v0.0.9 (17/10/2018)
 
