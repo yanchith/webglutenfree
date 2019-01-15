@@ -1,6 +1,16 @@
 # Changelog
 
-## v0.0.10 (unreleased)
+## v0.0.11 (unreleased)
+
+### Enahancments
+
+(None yet)
+
+### Fixes
+
+(None yet)
+
+## v0.0.10 (15/01/2019)
 
 ### Enahancments
 
@@ -11,7 +21,7 @@
 
 ### Fixes
 
-(None yet)
+(None)
 
 ## v0.0.9 (17/10/2018)
 
