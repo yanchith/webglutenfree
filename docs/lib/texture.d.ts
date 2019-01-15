@@ -266,7 +266,10 @@ export declare function _createTextureCubeMap<S extends TextureStorageFormat>(gl
 export declare function _createTextureCubeMapWithTypedArray<S extends TextureStorageFormat>(gl: WebGL2RenderingContext, width: number, height: number, storageFormat: S, dataPositiveX: StorageFormatToTypedArray[S], dataNegativeX: StorageFormatToTypedArray[S], dataPositiveY: StorageFormatToTypedArray[S], dataNegativeY: StorageFormatToTypedArray[S], dataPositiveZ: StorageFormatToTypedArray[S], dataNegativeZ: StorageFormatToTypedArray[S], dataFormat: StorageFormatToFormat[S], dataType: StorageFormatToDataType[S], options?: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions): TextureCubeMap<S>;
 /**
  * Textures are images of 2D data, where each texel can contain multiple
- * information channels of a certain type.
+ * information channels of a certain type. Data can be stored to textures either
+ * from the CPU, via the `Texture2D.store()`, or they can be rendered to as
+ * `Framebuffer` attachments. Data from textures can read in shaders via
+ * sampling.
  */
 export declare class Texture2D<S extends TextureStorageFormat> {
     readonly width: number;

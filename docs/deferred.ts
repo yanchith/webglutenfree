@@ -17,9 +17,8 @@ import {
     UniformType,
     DepthFunc,
     ElementPrimitive,
-    Texture2D,
     TextureColorStorageFormat,
-    TextureDepthStorageFormat,
+    RenderbufferDepthStorageFormat,
 } from "./lib/webglutenfree.js";
 import { mat4, vec3 } from "./libx/gl-matrix.js";
 
@@ -40,29 +39,36 @@ const PROJ_NEAR = 0.1;
 const PROJ_FAR = 500;
 const PROJ_FOV = Math.PI / 2;
 
-const dev = Device.create({ extensions: [Extension.EXTColorBufferFloat] });
+const dev = Device.create({
+    antialias: false,
+    extensions: [Extension.EXTColorBufferFloat],
+});
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const gAlbedoSpecular = dev. createTexture2D(
+const gAlbedoSpecular = dev.createTexture2D(
     width,
     height,
     TextureColorStorageFormat.RGBA8,
 );
+
 const gPosition = dev.createTexture2D(
     width,
     height,
     TextureColorStorageFormat.RGBA32F,
 );
+
 const gNormal = dev.createTexture2D(
     width,
     height,
     TextureColorStorageFormat.RGBA32F,
 );
-const gDepth = dev.createTexture2D(
+
+const gDepth = dev.createRenderbuffer(
     width,
     height,
-    TextureDepthStorageFormat.DEPTH_COMPONENT24,
+    RenderbufferDepthStorageFormat.DEPTH_COMPONENT24,
 );
+
 const gBuffer = dev.createFramebuffer(width, height, [
     gAlbedoSpecular,
     gPosition,
@@ -331,8 +337,9 @@ const cmdDrawLighting = dev.createCommand<CmdDrawLightingProps>(
     void main() {
         ivec2 coords = ivec2(gl_FragCoord.xy);
 
-        vec3 diffuse = texelFetch(u_g_albedo_specular, coords, 0).rgb;
-        float specular = texelFetch(u_g_albedo_specular, coords, 0).a;
+        vec4 diffuse_specular = texelFetch(u_g_albedo_specular, coords, 0);
+        vec3 diffuse = diffuse_specular.rgb;
+        float specular = diffuse_specular.a;
         vec3 position = texelFetch(u_g_position, coords, 0).xyz;
         vec3 normal = texelFetch(u_g_normal, coords, 0).xyz;
 

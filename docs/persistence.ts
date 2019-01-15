@@ -13,7 +13,7 @@ import {
     TargetBufferBitmask,
     ElementPrimitive,
     TextureColorStorageFormat,
-    TextureDepthStorageFormat,
+    RenderbufferDepthStorageFormat,
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 
@@ -24,9 +24,9 @@ const PERSISTENCE_FACTOR = 0.8;
 const dev = Device.create({ antialias: false });
 const [width, height] = [dev.bufferWidth, dev.bufferHeight];
 
-const newFrameTex = dev.createTexture2D(width, height, TextureColorStorageFormat.RGBA8);
-const depthTex = dev.createTexture2D(width, height, TextureDepthStorageFormat.DEPTH_COMPONENT24);
-const newFrameFbo = dev.createFramebuffer(width, height, newFrameTex, depthTex);
+const colorTex = dev.createTexture2D(width, height, TextureColorStorageFormat.RGBA8);
+const depthBuffer = dev.createRenderbuffer(width, height, RenderbufferDepthStorageFormat.DEPTH_COMPONENT24);
+const newFrameFbo = dev.createFramebuffer(width, height, colorTex, depthBuffer);
 
 const pingTex = dev.createTexture2D(width, height, TextureColorStorageFormat.RGBA8);
 const pingFbo = dev.createFramebuffer(width, height, pingTex);
@@ -208,7 +208,7 @@ const loop = (time: number): void => {
         rt.draw(
             cmdBlend,
             screenspaceAttrs,
-            { newFrame: newFrameTex, prevFrame: ping.tex },
+            { newFrame: colorTex, prevFrame: ping.tex },
         );
     });
 

@@ -1641,7 +1641,7 @@ class AttributeDescriptor {
 
 var TextureColorStorageFormat;
 (function (TextureColorStorageFormat) {
-    // RED
+    // R
     TextureColorStorageFormat[TextureColorStorageFormat["R8"] = 33321] = "R8";
     TextureColorStorageFormat[TextureColorStorageFormat["R8_SNORM"] = 36756] = "R8_SNORM";
     TextureColorStorageFormat[TextureColorStorageFormat["R8UI"] = 33330] = "R8UI";
@@ -1775,7 +1775,10 @@ function _createTextureCubeMapWithTypedArray(gl, width, height, storageFormat, d
 }
 /**
  * Textures are images of 2D data, where each texel can contain multiple
- * information channels of a certain type.
+ * information channels of a certain type. Data can be stored to textures either
+ * from the CPU, via the `Texture2D.store()`, or they can be rendered to as
+ * `Framebuffer` attachments. Data from textures can read in shaders via
+ * sampling.
  */
 class Texture2D {
     constructor(gl, width, height, storageFormat, wrapS, wrapT, minFilter, magFilter) {
@@ -2114,20 +2117,116 @@ function rowAlignment(storageFormat) {
     }
 }
 
+var RenderbufferColorStorageFormat;
+(function (RenderbufferColorStorageFormat) {
+    // R
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["R8"] = 33321] = "R8";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["R8_SNORM"] = 36756] = "R8_SNORM";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["R8UI"] = 33330] = "R8UI";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["R8I"] = 33329] = "R8I";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["R16UI"] = 33332] = "R16UI";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["R16I"] = 33331] = "R16I";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["R16F"] = 33325] = "R16F";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["R32UI"] = 33334] = "R32UI";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["R32I"] = 33333] = "R32I";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["R32F"] = 33326] = "R32F";
+    // RG
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RG8"] = 33323] = "RG8";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RG8_SNORM"] = 36757] = "RG8_SNORM";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RG8UI"] = 33336] = "RG8UI";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RG8I"] = 33335] = "RG8I";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RG16UI"] = 33338] = "RG16UI";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RG16I"] = 33337] = "RG16I";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RG16F"] = 33327] = "RG16F";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RG32UI"] = 33340] = "RG32UI";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RG32I"] = 33339] = "RG32I";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RG32F"] = 33328] = "RG32F";
+    // RGBA
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RGBA8"] = 32856] = "RGBA8";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RGBA8_SNORM"] = 36759] = "RGBA8_SNORM";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RGBA8UI"] = 36220] = "RGBA8UI";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RGBA8I"] = 36238] = "RGBA8I";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RGBA16UI"] = 36214] = "RGBA16UI";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RGBA16I"] = 36232] = "RGBA16I";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RGBA16F"] = 34842] = "RGBA16F";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RGBA32UI"] = 36208] = "RGBA32UI";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RGBA32I"] = 36226] = "RGBA32I";
+    RenderbufferColorStorageFormat[RenderbufferColorStorageFormat["RGBA32F"] = 34836] = "RGBA32F";
+})(RenderbufferColorStorageFormat || (RenderbufferColorStorageFormat = {}));
+var RenderbufferDepthStorageFormat;
+(function (RenderbufferDepthStorageFormat) {
+    RenderbufferDepthStorageFormat[RenderbufferDepthStorageFormat["DEPTH_COMPONENT16"] = 33189] = "DEPTH_COMPONENT16";
+    RenderbufferDepthStorageFormat[RenderbufferDepthStorageFormat["DEPTH_COMPONENT24"] = 33190] = "DEPTH_COMPONENT24";
+    RenderbufferDepthStorageFormat[RenderbufferDepthStorageFormat["DEPTH_COMPONENT32F"] = 36012] = "DEPTH_COMPONENT32F";
+})(RenderbufferDepthStorageFormat || (RenderbufferDepthStorageFormat = {}));
+var RenderbufferDepthStencilStorageFormat;
+(function (RenderbufferDepthStencilStorageFormat) {
+    RenderbufferDepthStencilStorageFormat[RenderbufferDepthStencilStorageFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
+    RenderbufferDepthStencilStorageFormat[RenderbufferDepthStencilStorageFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
+})(RenderbufferDepthStencilStorageFormat || (RenderbufferDepthStencilStorageFormat = {}));
+function _createRenderbuffer(gl, width, height, storageFormat, { samples = 0 } = {}) {
+    return new Renderbuffer(gl, width, height, storageFormat, samples);
+}
+/**
+ * Renderbuffers are images of 2D data, similar to `Texture2D`. In contrast to
+ * `Texture2D`, `Renderbuffer`s can only be written to on the GPU via rendering,
+ * and they can not be sampled in shaders. `Framebuffer`s containing
+ * `Renderbuffer` attachments can still be blit to other framebuffers.
+ *
+ * These limitations and the fact that their storage format is always optimized
+ * for rendering should result in a performance improvement when rendering to
+ * `Renderbuffer` attachments instead of `Texture2D`.
+ *
+ * One other difference compared to `Texture2D` is that `Renderbuffer`s can be
+ * multisampled. If you need to combine multisampling with post processing, you
+ * can first render the scene into a multisampled `Renderbuffer` attachment, and
+ * afterwards blit it to a `Framebuffer` containing `Texture2D` attachments.
+ */
+class Renderbuffer {
+    constructor(gl, width, height, storageFormat, samples) {
+        this.gl = gl;
+        this.width = width;
+        this.height = height;
+        this.storageFormat = storageFormat;
+        this.samples = samples;
+        this.glRenderbuffer = null;
+        this.init();
+    }
+    restore() {
+        const { gl, glRenderbuffer } = this;
+        if (!gl.isRenderbuffer(glRenderbuffer)) {
+            this.init();
+        }
+    }
+    init() {
+        const { gl, width, height, storageFormat, samples } = this;
+        const renderbuffer = gl.createRenderbuffer();
+        gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+        if (samples) {
+            gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, storageFormat, width, height);
+        }
+        else {
+            gl.renderbufferStorage(gl.RENDERBUFFER, storageFormat, width, height);
+        }
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+        this.glRenderbuffer = renderbuffer;
+    }
+}
+
 function _createFramebuffer(state, width, height, color, depthStencil) {
-    const colors = Array.isArray(color) ? color : [color];
+    const colors = (Array.isArray(color) ? color : [color]);
     if (IS_DEBUG_BUILD) {
         isNotEmpty(colors, () => {
             return "Framebuffer color attachments must not be empty";
         });
-        colors.forEach((buffer) => {
+        for (const buffer of colors) {
             is(width, buffer.width, (got, expected) => {
                 return `Expected attachment width ${expected}, got ${got}`;
             });
             is(height, buffer.height, (got, expected) => {
                 return `Expected attachment height ${expected}, got ${got}`;
             });
-        });
+        }
         if (depthStencil) {
             is(width, depthStencil.width, (got, expected) => {
                 return `Expected attachment width ${expected}, got ${got}`;
@@ -2151,8 +2250,10 @@ class Framebuffer {
         this.height = height;
         this.colors = colors;
         this.depthStencil = depthStencil;
-        this.glColorAttachments = colors
-            .map((_, i) => state.gl.COLOR_ATTACHMENT0 + i);
+        this.glColorAttachments = new Array(colors.length);
+        for (let i = 0; i < colors.length; ++i) {
+            this.glColorAttachments[i] = state.gl.COLOR_ATTACHMENT0 + i;
+        }
         this.glFramebuffer = null;
         this.framebufferTarget = null;
         this.init();
@@ -2162,7 +2263,9 @@ class Framebuffer {
      */
     restore() {
         const { state: { gl }, glFramebuffer, colors, depthStencil, } = this;
-        colors.forEach((buffer) => buffer.restore());
+        for (const buffer of colors) {
+            buffer.restore();
+        }
         if (depthStencil) {
             depthStencil.restore();
         }
@@ -2190,23 +2293,47 @@ class Framebuffer {
         state.assertTargetUnbound();
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
-        colors.forEach((buffer, i) => {
-            gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
-        });
+        for (let i = 0; i < colors.length; ++i) {
+            const buffer = colors[i];
+            if (buffer instanceof Renderbuffer) {
+                gl.framebufferRenderbuffer(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.RENDERBUFFER, buffer.glRenderbuffer);
+            }
+            else {
+                gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, buffer.glTexture, 0);
+            }
+        }
         if (depthStencil) {
-            switch (depthStencil.storageFormat) {
-                case TextureDepthStencilStorageFormat.DEPTH24_STENCIL8:
-                case TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8:
-                    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
-                    break;
-                case TextureDepthStorageFormat.DEPTH_COMPONENT16:
-                case TextureDepthStorageFormat.DEPTH_COMPONENT24:
-                case TextureDepthStorageFormat.DEPTH_COMPONENT32F:
-                    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
-                    break;
-                default: unreachable(depthStencil, (p) => {
-                    return `Unsupported attachment: ${p}`;
-                });
+            if (depthStencil instanceof Renderbuffer) {
+                switch (depthStencil.storageFormat) {
+                    case RenderbufferDepthStencilStorageFormat.DEPTH24_STENCIL8:
+                    case RenderbufferDepthStencilStorageFormat.DEPTH32F_STENCIL8:
+                        gl.framebufferRenderbuffer(gl.DRAW_FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, depthStencil.glRenderbuffer);
+                        break;
+                    case RenderbufferDepthStorageFormat.DEPTH_COMPONENT16:
+                    case RenderbufferDepthStorageFormat.DEPTH_COMPONENT24:
+                    case RenderbufferDepthStorageFormat.DEPTH_COMPONENT32F:
+                        gl.framebufferRenderbuffer(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthStencil.glRenderbuffer);
+                        break;
+                    default: unreachable(depthStencil, (p) => {
+                        return `Unsupported framebuffer renderbuffer attachment: ${p}`;
+                    });
+                }
+            }
+            else {
+                switch (depthStencil.storageFormat) {
+                    case TextureDepthStencilStorageFormat.DEPTH24_STENCIL8:
+                    case TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8:
+                        gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
+                        break;
+                    case TextureDepthStorageFormat.DEPTH_COMPONENT16:
+                    case TextureDepthStorageFormat.DEPTH_COMPONENT24:
+                    case TextureDepthStorageFormat.DEPTH_COMPONENT32F:
+                        gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthStencil.glTexture, 0);
+                        break;
+                    default: unreachable(depthStencil, (p) => {
+                        return `Unsupported framebuffer texture attachment: ${p}`;
+                    });
+                }
             }
         }
         const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
@@ -2526,6 +2653,13 @@ class Device {
         return _createTextureCubeMapWithTypedArray(this._gl, width, height, storageFormat, dataPositiveX, dataNegativeX, dataPositiveY, dataNegativeY, dataPositiveZ, dataNegativeZ, dataFormat, dataType, options);
     }
     /**
+     * Create a new renderbuffer with given width, height, and storage format.
+     * Pass in `options.samples` to configure multisampling.
+     */
+    createRenderbuffer(width, height, storageFormat, options) {
+        return _createRenderbuffer(this._gl, width, height, storageFormat, options);
+    }
+    /**
      * Create a framebuffer containg one or more color buffers and a
      * depth or depth-stencil buffer with given width and height.
      *
@@ -2547,5 +2681,5 @@ function fmtImageDimsMismatch() {
     return "All provided images must have the same dimensions";
 }
 
-export { BufferUsage, Device, Extension, Target, TargetBufferBitmask, TargetBlitFilter, Command, UniformType, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferIntegerDataType, VertexBufferFloatDataType, ElementBuffer, ElementBufferDataType, ElementPrimitive, Attributes, AttributeType, Texture2D, TextureCubeMap, TextureMinFilter, TextureMagFilter, TextureWrap, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, TextureFormat, TextureDataType, Framebuffer };
+export { BufferUsage, Device, Extension, Target, TargetBufferBitmask, TargetBlitFilter, Command, UniformType, DepthFunc, StencilFunc, StencilOp, BlendFunc, BlendEquation, VertexBuffer, VertexBufferIntegerDataType, VertexBufferFloatDataType, ElementBuffer, ElementBufferDataType, ElementPrimitive, Attributes, AttributeType, Texture2D, TextureCubeMap, TextureMinFilter, TextureMagFilter, TextureWrap, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, TextureFormat, TextureDataType, Renderbuffer, RenderbufferColorStorageFormat, RenderbufferDepthStorageFormat, RenderbufferDepthStencilStorageFormat, Framebuffer };
 //# sourceMappingURL=webglutenfree.js.map
