@@ -2,7 +2,7 @@
 
 ## v0.0.11 (unreleased)
 
-### Enahancments
+### Enhancements
 
 (None yet)
 
@@ -12,7 +12,7 @@
 
 ## v0.0.10 (15/01/2019)
 
-### Enahancments
+### Enhancements
 
 - Add `TextureCubeMap`
 - Add `Renderbuffer`
