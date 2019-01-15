@@ -14,9 +14,9 @@ import {
     UniformType,
     Texture2D,
     TextureColorStorageFormat,
-    TextureDepthStorageFormat,
     TextureMinFilter,
     TextureMagFilter,
+    RenderbufferDepthStorageFormat,
 } from "./lib/webglutenfree.js";
 import { vec2, mat4 } from "./libx/gl-matrix.js";
 
@@ -55,10 +55,11 @@ const colorTex = dev.createTexture2D(
     { min: TextureMinFilter.LINEAR, mag: TextureMagFilter.LINEAR },
 );
 
-const depthTex = dev.createTexture2D(
+const depthBuffer = dev.createRenderbuffer(
     width,
     height,
-    TextureDepthStorageFormat.DEPTH_COMPONENT24);
+    RenderbufferDepthStorageFormat.DEPTH_COMPONENT24,
+);
 
 const pingTex = dev.createTexture2D(
     blurWidth,
@@ -74,7 +75,7 @@ const pongTex = dev.createTexture2D(
     { min: TextureMinFilter.LINEAR, mag: TextureMagFilter.LINEAR },
 );
 
-const sceneFbo = dev.createFramebuffer(width, height, colorTex, depthTex);
+const sceneFbo = dev.createFramebuffer(width, height, colorTex, depthBuffer);
 const pingFbo = dev.createFramebuffer(blurWidth, blurHeight, pingTex);
 const pongFbo = dev.createFramebuffer(blurWidth, blurHeight, pongTex);
 
@@ -345,7 +346,7 @@ const loop = (time: number): void => {
         rt.draw(cmdDraw, modelAttrs, { time });
     });
 
-    // separate bright colors to ping texture
+    // Separate bright colors to ping texture
     pingFbo.target((rt) => rt.draw(cmdSep, screenspaceAttrs));
 
     // Repeat as many blur passes as wanted...
