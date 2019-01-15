@@ -99,9 +99,9 @@ export function isNotNullOrUndefined<T>(
     return valueNotNullOrUndefined;
 }
 
-export function isNotEmpty<T>(
-    got: string | T[],
-    fmt?: (got: string | T[]) => string,
+export function isNotEmpty(
+    got: string | unknown[],
+    fmt?: (got: string | unknown[]) => string,
 ): boolean {
     const valueNotEmpty = !!got.length;
     if (IS_DEBUG_BUILD) {

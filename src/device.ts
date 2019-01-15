@@ -52,6 +52,15 @@ import {
     _createTextureCubeMapWithTypedArray,
     TextureCubeMap,
 } from "./texture";
+import {
+    Renderbuffer,
+    RenderbufferCreateOptions,
+    RenderbufferStorageFormat,
+    RenderbufferColorStorageFormat,
+    RenderbufferDepthStorageFormat,
+    RenderbufferDepthStencilStorageFormat,
+    _createRenderbuffer,
+} from "./renderbuffer";
 import { Framebuffer, _createFramebuffer } from "./framebuffer";
 
 
@@ -602,6 +611,25 @@ export class Device {
     }
 
     /**
+     * Create a new renderbuffer with given width, height, and storage format.
+     * Pass in `options.samples` to configure multisampling.
+     */
+    createRenderbuffer<S extends RenderbufferStorageFormat>(
+        width: number,
+        height: number,
+        storageFormat: S,
+        options?: RenderbufferCreateOptions,
+    ): Renderbuffer<S> {
+        return _createRenderbuffer(
+            this._gl,
+            width,
+            height,
+            storageFormat,
+            options,
+        );
+    }
+
+    /**
      * Create a framebuffer containg one or more color buffers and a
      * depth or depth-stencil buffer with given width and height.
      *
@@ -614,10 +642,14 @@ export class Device {
         height: number,
         color:
             | Texture2D<TextureColorStorageFormat>
-            | Texture2D<TextureColorStorageFormat>[],
+            | Texture2D<TextureColorStorageFormat>[]
+            | Renderbuffer<RenderbufferColorStorageFormat>
+            | Renderbuffer<RenderbufferColorStorageFormat>[],
         depthStencil?:
             | Texture2D<TextureDepthStorageFormat>
-            | Texture2D<TextureDepthStencilStorageFormat>,
+            | Texture2D<TextureDepthStencilStorageFormat>
+            | Renderbuffer<RenderbufferDepthStorageFormat>
+            | Renderbuffer<RenderbufferDepthStencilStorageFormat>,
     ): Framebuffer {
         return _createFramebuffer(
             this.state,

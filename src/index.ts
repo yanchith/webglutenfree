@@ -96,4 +96,14 @@ export {
     TextureDataType,
 } from "./texture";
 
+export {
+    Renderbuffer,
+    RenderbufferCreateOptions,
+    RenderbufferStorageFormat,
+    RenderbufferColorStorageFormat,
+    RenderbufferDepthStorageFormat,
+    RenderbufferDepthStencilStorageFormat,
+    RenderbufferSamples,
+} from "./renderbuffer";
+
 export { Framebuffer } from "./framebuffer";

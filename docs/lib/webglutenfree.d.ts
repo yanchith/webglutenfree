@@ -6,5 +6,6 @@ export { VertexBuffer, VertexBufferCreateOptions, VertexBufferStoreOptions, Vert
 export { ElementBuffer, ElementBufferCreateOptions, ElementBufferStoreOptions, ElementBufferDataType, ElementPrimitive, } from "./element-buffer";
 export { Attributes, AttributesCreateOptions, AttributeType, } from "./attributes";
 export { Texture2D, TextureCubeMap, Texture2DCreateOptions, Texture2DStoreOptions, TextureCubeMapCreateOptions, TextureCubeMapStoreOptions, TextureMinFilter, TextureMagFilter, TextureWrap, TextureStorageFormat, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, TextureFormat, TextureDataType, } from "./texture";
+export { Renderbuffer, RenderbufferCreateOptions, RenderbufferStorageFormat, RenderbufferColorStorageFormat, RenderbufferDepthStorageFormat, RenderbufferDepthStencilStorageFormat, RenderbufferSamples, } from "./renderbuffer";
 export { Framebuffer } from "./framebuffer";
 //# sourceMappingURL=index.d.ts.map

@@ -1,7 +1,7 @@
 import * as assert from "./util/assert";
 
 export enum TextureColorStorageFormat {
-    // RED
+    // R
     R8 = 0x8229,
     R8_SNORM = 0x8F94,
     R8UI = 0x8232,
@@ -482,7 +482,10 @@ export function _createTextureCubeMapWithTypedArray<S extends TextureStorageForm
 
 /**
  * Textures are images of 2D data, where each texel can contain multiple
- * information channels of a certain type.
+ * information channels of a certain type. Data can be stored to textures either
+ * from the CPU, via the `Texture2D.store()`, or they can be rendered to as
+ * `Framebuffer` attachments. Data from textures can read in shaders via
+ * sampling.
  */
 export class Texture2D<S extends TextureStorageFormat> {
 

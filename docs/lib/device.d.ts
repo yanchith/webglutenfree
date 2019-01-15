@@ -5,6 +5,7 @@ import { VertexBuffer, VertexBufferCreateOptions, VertexBufferDataType, VertexBu
 import { ElementBuffer, ElementBufferCreateOptions, ElementArray, ElementBufferDataType, ElementBufferDataTypeToTypedArray, ElementPrimitive } from "./element-buffer";
 import { Attributes, AttributesConfig, AttributesCreateOptions } from "./attributes";
 import { Texture2D, Texture2DCreateOptions, Texture2DStoreOptions, TextureCubeMapCreateOptions, TextureCubeMapStoreOptions, TextureStorageFormat, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat, StorageFormatToTypedArray, StorageFormatToFormat, StorageFormatToDataType, TextureCubeMap } from "./texture";
+import { Renderbuffer, RenderbufferCreateOptions, RenderbufferStorageFormat, RenderbufferColorStorageFormat, RenderbufferDepthStorageFormat, RenderbufferDepthStencilStorageFormat } from "./renderbuffer";
 import { Framebuffer } from "./framebuffer";
 /**
  * Available extensions.
@@ -217,6 +218,11 @@ export declare class Device {
      */
     createTextureCubeMapWithTypedArray<S extends TextureStorageFormat>(width: number, height: number, storageFormat: S, dataPositiveX: StorageFormatToTypedArray[S], dataNegativeX: StorageFormatToTypedArray[S], dataPositiveY: StorageFormatToTypedArray[S], dataNegativeY: StorageFormatToTypedArray[S], dataPositiveZ: StorageFormatToTypedArray[S], dataNegativeZ: StorageFormatToTypedArray[S], dataFormat: StorageFormatToFormat[S], dataType: StorageFormatToDataType[S], options?: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions): TextureCubeMap<S>;
     /**
+     * Create a new renderbuffer with given width, height, and storage format.
+     * Pass in `options.samples` to configure multisampling.
+     */
+    createRenderbuffer<S extends RenderbufferStorageFormat>(width: number, height: number, storageFormat: S, options?: RenderbufferCreateOptions): Renderbuffer<S>;
+    /**
      * Create a framebuffer containg one or more color buffers and a
      * depth or depth-stencil buffer with given width and height.
      *
@@ -224,6 +230,6 @@ export declare class Device {
      * WebGL will synchronize their usage so they can either be written to via
      * the framebuffer, or written to or read via their own methods.
      */
-    createFramebuffer(width: number, height: number, color: Texture2D<TextureColorStorageFormat> | Texture2D<TextureColorStorageFormat>[], depthStencil?: Texture2D<TextureDepthStorageFormat> | Texture2D<TextureDepthStencilStorageFormat>): Framebuffer;
+    createFramebuffer(width: number, height: number, color: Texture2D<TextureColorStorageFormat> | Texture2D<TextureColorStorageFormat>[] | Renderbuffer<RenderbufferColorStorageFormat> | Renderbuffer<RenderbufferColorStorageFormat>[], depthStencil?: Texture2D<TextureDepthStorageFormat> | Texture2D<TextureDepthStencilStorageFormat> | Renderbuffer<RenderbufferDepthStorageFormat> | Renderbuffer<RenderbufferDepthStencilStorageFormat>): Framebuffer;
 }
 //# sourceMappingURL=device.d.ts.map

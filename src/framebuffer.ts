@@ -8,6 +8,12 @@ import {
     TextureDepthStorageFormat,
     TextureDepthStencilStorageFormat,
 } from "./texture";
+import {
+    Renderbuffer,
+    RenderbufferColorStorageFormat,
+    RenderbufferDepthStorageFormat,
+    RenderbufferDepthStencilStorageFormat,
+} from "./renderbuffer";
 
 export function _createFramebuffer(
     state: State,
@@ -15,24 +21,33 @@ export function _createFramebuffer(
     height: number,
     color:
         | Texture2D<TextureColorStorageFormat>
-        | Texture2D<TextureColorStorageFormat>[],
+        | Texture2D<TextureColorStorageFormat>[]
+        | Renderbuffer<RenderbufferColorStorageFormat>
+        | Renderbuffer<RenderbufferColorStorageFormat>[],
     depthStencil?:
         | Texture2D<TextureDepthStorageFormat>
-        | Texture2D<TextureDepthStencilStorageFormat>,
+        | Texture2D<TextureDepthStencilStorageFormat>
+        | Renderbuffer<RenderbufferDepthStorageFormat>
+        | Renderbuffer<RenderbufferDepthStencilStorageFormat>,
 ): Framebuffer {
-    const colors = Array.isArray(color) ? color : [color];
+    type Colors =
+        | Texture2D<TextureColorStorageFormat>[]
+        | Renderbuffer<RenderbufferColorStorageFormat>[]
+        ;
+    const colors = (Array.isArray(color) ? color : [color]) as Colors;
     if (IS_DEBUG_BUILD) {
         assert.isNotEmpty(colors, () => {
             return "Framebuffer color attachments must not be empty";
         });
-        colors.forEach((buffer) => {
+
+        for (const buffer of colors) {
             assert.is(width, buffer.width, (got, expected) => {
                 return `Expected attachment width ${expected}, got ${got}`;
             });
             assert.is(height, buffer.height, (got, expected) => {
                 return `Expected attachment height ${expected}, got ${got}`;
             });
-        });
+        }
 
         if (depthStencil) {
             assert.is(width, depthStencil.width, (got, expected) => {
@@ -65,27 +80,39 @@ export class Framebuffer {
 
     private framebufferTarget: Target | null;
 
-    private colors: Texture2D<TextureColorStorageFormat>[];
+    private colors:
+        | Texture2D<TextureColorStorageFormat>[]
+        | Renderbuffer<RenderbufferColorStorageFormat>[]
+        ;
     private depthStencil?:
         | Texture2D<TextureDepthStorageFormat>
-        | Texture2D<TextureDepthStencilStorageFormat>;
+        | Texture2D<TextureDepthStencilStorageFormat>
+        | Renderbuffer<RenderbufferDepthStorageFormat>
+        | Renderbuffer<RenderbufferDepthStencilStorageFormat>
+        ;
 
     constructor(
         state: State,
         width: number,
         height: number,
-        colors: Texture2D<TextureColorStorageFormat>[],
+        colors:
+            | Texture2D<TextureColorStorageFormat>[]
+            | Renderbuffer<RenderbufferColorStorageFormat>[],
         depthStencil?:
             | Texture2D<TextureDepthStorageFormat>
-            | Texture2D<TextureDepthStencilStorageFormat>,
+            | Texture2D<TextureDepthStencilStorageFormat>
+            | Renderbuffer<RenderbufferDepthStorageFormat>
+            | Renderbuffer<RenderbufferDepthStencilStorageFormat>,
     ) {
         this.state = state;
         this.width = width;
         this.height = height;
         this.colors = colors;
         this.depthStencil = depthStencil;
-        this.glColorAttachments = colors
-            .map((_, i) => state.gl.COLOR_ATTACHMENT0 + i);
+        this.glColorAttachments = new Array(colors.length);
+        for (let i = 0; i < colors.length; ++i) {
+            this.glColorAttachments[i] = state.gl.COLOR_ATTACHMENT0 + i;
+        }
         this.glFramebuffer = null;
         this.framebufferTarget = null;
 
@@ -102,7 +129,9 @@ export class Framebuffer {
             colors,
             depthStencil,
         } = this;
-        colors.forEach((buffer) => buffer.restore());
+        for (const buffer of colors) {
+            buffer.restore();
+        }
         if (depthStencil) { depthStencil.restore(); }
         if (!gl.isFramebuffer(glFramebuffer)) { this.init(); }
     }
@@ -137,42 +166,79 @@ export class Framebuffer {
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
 
-        colors.forEach((buffer, i) => {
-            gl.framebufferTexture2D(
-                gl.DRAW_FRAMEBUFFER,
-                gl.COLOR_ATTACHMENT0 + i,
-                gl.TEXTURE_2D,
-                buffer.glTexture,
-                0,
-            );
-        });
+        for (let i = 0; i < colors.length; ++i) {
+            const buffer = colors[i];
+            if (buffer instanceof Renderbuffer) {
+                gl.framebufferRenderbuffer(
+                    gl.DRAW_FRAMEBUFFER,
+                    gl.COLOR_ATTACHMENT0 + i,
+                    gl.RENDERBUFFER,
+                    buffer.glRenderbuffer,
+                );
+            } else {
+                gl.framebufferTexture2D(
+                    gl.DRAW_FRAMEBUFFER,
+                    gl.COLOR_ATTACHMENT0 + i,
+                    gl.TEXTURE_2D,
+                    buffer.glTexture,
+                    0,
+                );
+            }
+        }
 
         if (depthStencil) {
-            switch (depthStencil.storageFormat) {
-                case TextureDepthStencilStorageFormat.DEPTH24_STENCIL8:
-                case TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8:
-                    gl.framebufferTexture2D(
-                        gl.DRAW_FRAMEBUFFER,
-                        gl.DEPTH_STENCIL_ATTACHMENT,
-                        gl.TEXTURE_2D,
-                        depthStencil.glTexture,
-                        0,
-                    );
-                    break;
-                case TextureDepthStorageFormat.DEPTH_COMPONENT16:
-                case TextureDepthStorageFormat.DEPTH_COMPONENT24:
-                case TextureDepthStorageFormat.DEPTH_COMPONENT32F:
-                    gl.framebufferTexture2D(
-                        gl.DRAW_FRAMEBUFFER,
-                        gl.DEPTH_ATTACHMENT,
-                        gl.TEXTURE_2D,
-                        depthStencil.glTexture,
-                        0,
-                    );
-                    break;
-                default: assert.unreachable(depthStencil, (p) => {
-                    return `Unsupported attachment: ${p}`;
-                });
+            if (depthStencil instanceof Renderbuffer) {
+                switch (depthStencil.storageFormat) {
+                    case RenderbufferDepthStencilStorageFormat.DEPTH24_STENCIL8:
+                    case RenderbufferDepthStencilStorageFormat.DEPTH32F_STENCIL8:
+                        gl.framebufferRenderbuffer(
+                            gl.DRAW_FRAMEBUFFER,
+                            gl.DEPTH_STENCIL_ATTACHMENT,
+                            gl.RENDERBUFFER,
+                            depthStencil.glRenderbuffer,
+                        );
+                        break;
+                    case RenderbufferDepthStorageFormat.DEPTH_COMPONENT16:
+                    case RenderbufferDepthStorageFormat.DEPTH_COMPONENT24:
+                    case RenderbufferDepthStorageFormat.DEPTH_COMPONENT32F:
+                        gl.framebufferRenderbuffer(
+                            gl.DRAW_FRAMEBUFFER,
+                            gl.DEPTH_ATTACHMENT,
+                            gl.RENDERBUFFER,
+                            depthStencil.glRenderbuffer,
+                        );
+                        break;
+                    default: assert.unreachable(depthStencil, (p) => {
+                        return `Unsupported framebuffer renderbuffer attachment: ${p}`;
+                    });
+                }
+            } else {
+                switch (depthStencil.storageFormat) {
+                    case TextureDepthStencilStorageFormat.DEPTH24_STENCIL8:
+                    case TextureDepthStencilStorageFormat.DEPTH32F_STENCIL8:
+                        gl.framebufferTexture2D(
+                            gl.DRAW_FRAMEBUFFER,
+                            gl.DEPTH_STENCIL_ATTACHMENT,
+                            gl.TEXTURE_2D,
+                            depthStencil.glTexture,
+                            0,
+                        );
+                        break;
+                    case TextureDepthStorageFormat.DEPTH_COMPONENT16:
+                    case TextureDepthStorageFormat.DEPTH_COMPONENT24:
+                    case TextureDepthStorageFormat.DEPTH_COMPONENT32F:
+                        gl.framebufferTexture2D(
+                            gl.DRAW_FRAMEBUFFER,
+                            gl.DEPTH_ATTACHMENT,
+                            gl.TEXTURE_2D,
+                            depthStencil.glTexture,
+                            0,
+                        );
+                        break;
+                    default: assert.unreachable(depthStencil, (p) => {
+                        return `Unsupported framebuffer texture attachment: ${p}`;
+                    });
+                }
             }
         }
 

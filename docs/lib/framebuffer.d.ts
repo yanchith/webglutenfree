@@ -1,7 +1,8 @@
 import { State } from "./state";
 import { Target } from "./target";
 import { Texture2D, TextureColorStorageFormat, TextureDepthStorageFormat, TextureDepthStencilStorageFormat } from "./texture";
-export declare function _createFramebuffer(state: State, width: number, height: number, color: Texture2D<TextureColorStorageFormat> | Texture2D<TextureColorStorageFormat>[], depthStencil?: Texture2D<TextureDepthStorageFormat> | Texture2D<TextureDepthStencilStorageFormat>): Framebuffer;
+import { Renderbuffer, RenderbufferColorStorageFormat, RenderbufferDepthStorageFormat, RenderbufferDepthStencilStorageFormat } from "./renderbuffer";
+export declare function _createFramebuffer(state: State, width: number, height: number, color: Texture2D<TextureColorStorageFormat> | Texture2D<TextureColorStorageFormat>[] | Renderbuffer<RenderbufferColorStorageFormat> | Renderbuffer<RenderbufferColorStorageFormat>[], depthStencil?: Texture2D<TextureDepthStorageFormat> | Texture2D<TextureDepthStencilStorageFormat> | Renderbuffer<RenderbufferDepthStorageFormat> | Renderbuffer<RenderbufferDepthStencilStorageFormat>): Framebuffer;
 /**
  * Framebuffers store the list of attachments to write to during a draw
  * operation. They can be a draw target via `framebuffer.target()`
@@ -15,7 +16,7 @@ export declare class Framebuffer {
     private framebufferTarget;
     private colors;
     private depthStencil?;
-    constructor(state: State, width: number, height: number, colors: Texture2D<TextureColorStorageFormat>[], depthStencil?: Texture2D<TextureDepthStorageFormat> | Texture2D<TextureDepthStencilStorageFormat>);
+    constructor(state: State, width: number, height: number, colors: Texture2D<TextureColorStorageFormat>[] | Renderbuffer<RenderbufferColorStorageFormat>[], depthStencil?: Texture2D<TextureDepthStorageFormat> | Texture2D<TextureDepthStencilStorageFormat> | Renderbuffer<RenderbufferDepthStorageFormat> | Renderbuffer<RenderbufferDepthStencilStorageFormat>);
     /**
      * Reinitialize invalid framebuffer, eg. after context is lost.
      */
