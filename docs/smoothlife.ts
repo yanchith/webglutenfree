@@ -207,7 +207,7 @@ window.requestAnimationFrame(loop);
 // Create the initial data. Since the simulation is very sensitive to data,
 // We create the data in a lower resulution first, and then upscale it. Simplex
 // noise could be used instead.
-function createData() {
+function createData(): Float32Array {
     const [effectiveWidth, effectiveHeight] = [
         Math.ceil(WIDTH / INNER_RADIUS),
         Math.ceil(HEIGHT / INNER_RADIUS),

@@ -665,12 +665,12 @@ function createDebugFunc(
     gl: { [key: string]: any },
     key: string,
 ): (...args: unknown[]) => unknown {
-    return function debugWrapper() {
+    return () => {
         console.debug(`DEBUG ${key} ${Array.from(arguments)}`);
         return gl[key].apply(gl, arguments);
     };
 }
 
-function fmtImageDimsMismatch() {
+function fmtImageDimsMismatch(): string {
     return "All provided images must have the same dimensions";
 }
