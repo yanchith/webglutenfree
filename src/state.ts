@@ -2,7 +2,7 @@ export class DepthTestDescriptor {
     static equals(
         left: DepthTestDescriptor | null,
         right: DepthTestDescriptor | null,
-    ) {
+    ): boolean {
         if (left === right) { return true; }
         if (!left || !right) { return false; }
         if (left.func !== right.func) { return false; }
@@ -24,7 +24,7 @@ export class StencilTestDescriptor {
     static equals(
         left: StencilTestDescriptor | null,
         right: StencilTestDescriptor | null,
-    ) {
+    ): boolean {
         if (left === right) { return true; }
         if (!left || !right) { return false; }
         if (left.fFn !== right.fFn) { return false; }
@@ -63,7 +63,10 @@ export class StencilTestDescriptor {
 }
 
 export class BlendDescriptor {
-    static equals(left: BlendDescriptor | null, right: BlendDescriptor | null) {
+    static equals(
+        left: BlendDescriptor | null,
+        right: BlendDescriptor | null,
+    ): boolean {
         if (left === right) { return true; }
         if (!left || !right) { return false; }
         if (left.srcRGB !== right.srcRGB) { return false; }

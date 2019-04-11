@@ -140,7 +140,7 @@ async function run(): Promise<void> {
 
 run();
 
-function computeKernelWeight(kernel) {
+function computeKernelWeight(kernel: number[]): number {
     const weight = kernel.reduce((prev, curr) => prev + curr);
     return weight <= 0 ? 1 : weight;
 }

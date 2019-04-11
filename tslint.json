@@ -21,6 +21,23 @@
         "object-literal-key-quotes": [true, "as-needed"],
         "object-literal-sort-keys": false,
         "ordered-imports": false,
+        // Disabled "typedef" features here would be useful if the
+        // lint knew whether types can be inferred from context for
+        // the specific case or not, but since it doesn't it just
+        // creates a ton of pedantic false positives.
+        "typedef": [
+            true,
+            "call-signature",
+            // "arrow-call-signature",
+            "parameter",
+            // "arrow-parameter",
+            "property-declaration",
+            // "variable-declaration",
+            "member-variable-declaration"
+            // "object-destructuring",
+            // "array-destructuring"
+
+        ],
         "variable-name": [
             true,
             "ban-keywords",
