@@ -1800,17 +1800,6 @@ var TextureMagFilter;
 function _createTexture2D(gl, width, height, storageFormat, { min = TextureMinFilter.NEAREST, mag = TextureMagFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = {}) {
     return new Texture2D(gl, width, height, storageFormat, wrapS, wrapT, min, mag);
 }
-function _createTexture2DWithTypedArray(gl, width, height, storageFormat, data, dataFormat, dataType, options = {}) {
-    const { min = TextureMinFilter.NEAREST, mag = TextureMagFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, } = options;
-    return new Texture2D(gl, width, height, storageFormat, wrapS, wrapT, min, mag).store(data, dataFormat, dataType, options);
-}
-function _createTextureCubeMap(gl, width, height, storageFormat, { min = TextureMinFilter.NEAREST, mag = TextureMagFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, wrapR = TextureWrap.CLAMP_TO_EDGE, } = {}) {
-    return new TextureCubeMap(gl, width, height, storageFormat, wrapS, wrapT, wrapR, min, mag);
-}
-function _createTextureCubeMapWithTypedArray(gl, width, height, storageFormat, dataPositiveX, dataNegativeX, dataPositiveY, dataNegativeY, dataPositiveZ, dataNegativeZ, dataFormat, dataType, options = {}) {
-    const { min = TextureMinFilter.NEAREST, mag = TextureMagFilter.NEAREST, wrapS = TextureWrap.CLAMP_TO_EDGE, wrapT = TextureWrap.CLAMP_TO_EDGE, wrapR = TextureWrap.CLAMP_TO_EDGE, } = options;
-    return new TextureCubeMap(gl, width, height, storageFormat, wrapS, wrapT, wrapR, min, mag).store(dataPositiveX, dataNegativeX, dataPositiveY, dataNegativeY, dataPositiveZ, dataNegativeZ, dataFormat, dataType, options);
-}
 /**
  * Textures are images of 2D data, where each texel can contain multiple
  * information channels of a certain type. Data can be stored to textures either
@@ -2202,9 +2191,6 @@ var RenderbufferDepthStencilStorageFormat;
     RenderbufferDepthStencilStorageFormat[RenderbufferDepthStencilStorageFormat["DEPTH24_STENCIL8"] = 35056] = "DEPTH24_STENCIL8";
     RenderbufferDepthStencilStorageFormat[RenderbufferDepthStencilStorageFormat["DEPTH32F_STENCIL8"] = 36013] = "DEPTH32F_STENCIL8";
 })(RenderbufferDepthStencilStorageFormat || (RenderbufferDepthStencilStorageFormat = {}));
-function _createRenderbuffer(gl, width, height, storageFormat, { samples = 0 } = {}) {
-    return new Renderbuffer(gl, width, height, storageFormat, samples);
-}
 /**
  * Renderbuffers are images of 2D data, similar to `Texture2D`. In contrast to
  * `Texture2D`, `Renderbuffer`s can only be written to on the GPU via rendering,
@@ -2407,57 +2393,143 @@ var Extension;
     Extension["EXTColorBufferFloat"] = "EXT_color_buffer_float";
     Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
 })(Extension || (Extension = {}));
-class Device {
-    /**
-     * Create a new canvas and device (containing a gl context). Mount it on
-     * `element` parameter (default is `document.body`).
-     */
-    static create(options = {}) {
-        const { element = document.body } = options;
-        if (element instanceof HTMLCanvasElement) {
-            return Device.createWithCanvas(element, options);
-        }
-        const canvas = document.createElement("canvas");
-        element.appendChild(canvas);
-        return Device.createWithCanvas(canvas, options);
+/**
+ * Create a new canvas and device (containing a gl context). Mount it on
+ * `element` parameter (default is `document.body`).
+ */
+function createDevice(options = {}) {
+    const { element = document.body } = options;
+    if (element instanceof HTMLCanvasElement) {
+        return createDeviceWithCanvas(element, options);
     }
-    /**
-     * Create a new device from existing canvas. Does not take ownership of
-     * canvas.
-     */
-    static createWithCanvas(canvas, options = {}) {
-        const { alpha = true, antialias = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options;
-        const gl = canvas.getContext("webgl2", {
-            alpha,
-            antialias,
-            depth,
-            stencil,
-            preserveDrawingBuffer,
+    const canvas = document.createElement("canvas");
+    element.appendChild(canvas);
+    return createDeviceWithCanvas(canvas, options);
+}
+/**
+ * Create a new device from existing canvas. Does not take ownership of
+ * canvas.
+ */
+function createDeviceWithCanvas(canvas, options = {}) {
+    const { alpha = true, antialias = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options;
+    const gl = canvas.getContext("webgl2", {
+        alpha,
+        antialias,
+        depth,
+        stencil,
+        preserveDrawingBuffer,
+    });
+    if (!gl) {
+        throw new Error("Could not get webgl2 context");
+    }
+    return createDeviceWithContext(gl, options);
+}
+/**
+ * Create a new device from existing gl context. Does not take ownership of
+ * context, but concurrent usage of it voids the warranty. Only use
+ * concurrently when absolutely necessary.
+ */
+function createDeviceWithContext(gl, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, } = {}) {
+    if (extensions) {
+        extensions.forEach((ext) => {
+            // We currently do not have extensions with callable API
+            if (!gl.getExtension(ext)) {
+                throw new Error(`Could not get extension ${ext}`);
+            }
         });
-        if (!gl) {
-            throw new Error("Could not get webgl2 context");
-        }
-        return Device.createWithContext(gl, options);
     }
-    /**
-     * Create a new device from existing gl context. Does not take ownership of
-     * context, but concurrent usage of it voids the warranty. Only use
-     * concurrently when absolutely necessary.
-     */
-    static createWithContext(gl, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, } = {}) {
-        if (extensions) {
-            extensions.forEach((ext) => {
-                // We currently do not have extensions with callable API
-                if (!gl.getExtension(ext)) {
-                    throw new Error(`Could not get extension ${ext}`);
-                }
-            });
-        }
-        if (debug) {
-            gl = Object.entries(gl).reduce((accum, [k, v]) => (Object.assign({}, accum, { [k]: v === "function" ? createDebugFunc(gl, k) : v })), gl);
-        }
-        return new Device(gl, pixelRatio, viewportWidth, viewportHeight);
+    if (debug) {
+        gl = Object.entries(gl).reduce((accum, [k, v]) => (Object.assign({}, accum, { [k]: v === "function" ? createDebugFunc(gl, k) : v })), gl);
     }
+    return new DevicePrivateHack(gl, pixelRatio, viewportWidth, viewportHeight);
+}
+/**
+ * Create a new command with given vertex and fragment shader.
+ *
+ * Commands contain WebGL programs, but also WebGL configuration needed
+ * for drawing: blend, depth test and stencil test configurations, and
+ * uniform callbacks. Uniform callbacks transform recieved props into
+ * uniform values when the command is executed, but if constant, they
+ * will eagerly upload the uniform values to the shaders and not do
+ * at in execution time.
+ */
+function createCommand(dev, vert, frag, options) {
+    return _createCommand(dev._state, vert, frag, options);
+}
+/**
+ * Create a new vertex buffer with given type and of given size.
+ */
+function createVertexBuffer(dev, type, size, options) {
+    return _createVertexBuffer(dev._gl, type, size, options);
+}
+/**
+ * Create a new vertex buffer of given type with provided data. Does not
+ * take ownership of data.
+ */
+function createVertexBufferWithTypedArray(dev, type, data, options) {
+    return _createVertexBufferWithTypedArray(dev._gl, type, data, options);
+}
+/**
+ * Create a new element buffer with given type, primitive, and size.
+ */
+function createElementBuffer(dev, type, primitive, size, options) {
+    return _createElementBuffer(dev._gl, type, primitive, size, options);
+}
+/**
+ * Create a new element buffer from potentially nested array. Infers
+ * Primitive from the array's shape:
+ *   number[] -> POINTS
+ *   [number, number][] -> LINES
+ *   [number, number, number][] -> TRIANGLES
+ * Does not take ownership of data.
+ */
+function createElementBufferWithArray(dev, data, options) {
+    return _createElementBufferWithArray(dev._gl, data, options);
+}
+/**
+ * Create a new element buffer of given type with provided data. Does not
+ * take ownership of data.
+ */
+function createElementBufferWithTypedArray(dev, type, primitive, data, options) {
+    return _createElementBufferWithTypedArray(dev._gl, type, primitive, data, options);
+}
+/**
+ * Create new attributes with element and attribute definitions, and an
+ * optional count limit.
+ *
+ * Element definitions can either be a primitive definition, reference an
+ * existing element buffer, or have enough information to create an element
+ * buffer.
+ *
+ * Attribute definitions can either reference an existing vertex buffer,
+ * or have enough information to create a vertex buffer.
+ *
+ * Empty attribute definitions are valid. If no attributes nor elements
+ * given, there will be no underlying vertex array object created, only the
+ * count will be given to gl.drawArrays()
+ */
+function createAttributes(dev, elements, attributes, options) {
+    return _createAttributes(dev._state, elements, attributes, options);
+}
+/**
+ * Create a new 2D texture with given width, height, and storage format.
+ * The storage format determines what kind of data is possible to store.
+ */
+function createTexture2D(dev, width, height, storageFormat, options) {
+    return _createTexture2D(dev._gl, width, height, storageFormat, options);
+}
+/**
+ * Create a framebuffer containg one or more color buffers and a
+ * depth or depth-stencil buffer with given width and height.
+ *
+ * Does not take ownership of provided attachments, only references them.
+ * WebGL will synchronize their usage so they can either be written to via
+ * the framebuffer, or written to or read via their own methods.
+ */
+function createFramebuffer(dev, width, height, color, depthStencil) {
+    return _createFramebuffer(dev._state, width, height, color, depthStencil);
+}
+class Device {
     constructor(gl, explicitPixelRatio, explicitViewportWidth, explicitViewportHeight) {
         this._gl = gl;
         this._canvas = gl.canvas;
@@ -2465,8 +2537,8 @@ class Device {
         this.explicitViewportWidth = explicitViewportWidth;
         this.explicitViewportHeight = explicitViewportHeight;
         this.update();
-        this.state = new State(gl);
-        this.backbufferTarget = new Target(this.state, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        this._state = new State(gl);
+        this.backbufferTarget = new Target(this._state, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
         // Enable scissor test globally. Practically everywhere you would want
         // it disbled you can pass explicit scissor box instead. The impact on
         // perf is negligent
@@ -2548,165 +2620,10 @@ class Device {
     target(cb) {
         this.backbufferTarget.with(cb);
     }
-    /**
-     * Create a new command with given vertex and fragment shader.
-     *
-     * Commands contain WebGL programs, but also WebGL configuration needed
-     * for drawing: blend, depth test and stencil test configurations, and
-     * uniform callbacks. Uniform callbacks transform recieved props into
-     * uniform values when the command is executed, but if constant, they
-     * will eagerly upload the uniform values to the shaders and not do
-     * at in execution time.
-     */
-    createCommand(vert, frag, options) {
-        return _createCommand(this.state, vert, frag, options);
-    }
-    /**
-     * Create a new vertex buffer with given type and of given size.
-     */
-    createVertexBuffer(type, size, options) {
-        return _createVertexBuffer(this._gl, type, size, options);
-    }
-    /**
-     * Create a new vertex buffer of given type with provided data. Does not
-     * take ownership of data.
-     */
-    createVertexBufferWithTypedArray(type, data, options) {
-        return _createVertexBufferWithTypedArray(this._gl, type, data, options);
-    }
-    /**
-     * Create a new element buffer with given type, primitive, and size.
-     */
-    createElementBuffer(type, primitive, size, options) {
-        return _createElementBuffer(this._gl, type, primitive, size, options);
-    }
-    /**
-     * Create a new element buffer from potentially nested array. Infers
-     * Primitive from the array's shape:
-     *   number[] -> POINTS
-     *   [number, number][] -> LINES
-     *   [number, number, number][] -> TRIANGLES
-     * Does not take ownership of data.
-     */
-    createElementBufferWithArray(data, options) {
-        return _createElementBufferWithArray(this._gl, data, options);
-    }
-    /**
-     * Create a new element buffer of given type with provided data. Does not
-     * take ownership of data.
-     */
-    createElementBufferWithTypedArray(type, primitive, data, options) {
-        return _createElementBufferWithTypedArray(this._gl, type, primitive, data, options);
-    }
-    /**
-     * Create new attributes with element and attribute definitions, and an
-     * optional count limit.
-     *
-     * Element definitions can either be a primitive definition, reference an
-     * existing element buffer, or have enough information to create an element
-     * buffer.
-     *
-     * Attribute definitions can either reference an existing vertex buffer,
-     * or have enough information to create a vertex buffer.
-     *
-     * Empty attribute definitions are valid. If no attributes nor elements
-     * given, there will be no underlying vertex array object created, only the
-     * count will be given to gl.drawArrays()
-     */
-    createAttributes(elements, attributes, options) {
-        return _createAttributes(this.state, elements, attributes, options);
-    }
-    /**
-     * Create empty attributes of a given primitive. This actually performs no
-     * gl calls, only remembers the count for `gl.drawArrays()`
-     */
-    createEmptyAttributes(primitive, count) {
-        return new Attributes(this.state, primitive, [], count, 0);
-    }
-    /**
-     * Create a new 2D texture with given width, height, and storage format.
-     * The storage format determines what kind of data is possible to store.
-     */
-    createTexture2D(width, height, storageFormat, options) {
-        return _createTexture2D(this._gl, width, height, storageFormat, options);
-    }
-    /**
-     * Create a new 2D texture with width and height equal to that of the given
-     * image and store the image in the texture.
-     * The storage format determines what kind of data is possible to store and
-     * is preset as RGBA8.
-     */
-    createTexture2DWithImage(image, options) {
-        return _createTexture2DWithTypedArray(this._gl, image.width, image.height, TextureColorStorageFormat.RGBA8, image.data, TextureFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
-    }
-    /**
-     * Create a new 2D texture with given width, height, and storage format and
-     * store data of given format and type contained in the provided typed array
-     * to the texture.
-     * The storage format determines what kind of data is possible to store.
-     */
-    createTexture2DWithTypedArray(width, height, storageFormat, data, dataFormat, dataType, options) {
-        return _createTexture2DWithTypedArray(this._gl, width, height, storageFormat, data, dataFormat, dataType, options);
-    }
-    /**
-     * Create a new cubemap texture where each face has a given width, height,
-     * and storage format.
-     * The storage format determines what kind of data is possible to store.
-     */
-    createTextureCubeMap(width, height, storageFormat, options) {
-        return _createTextureCubeMap(this._gl, width, height, storageFormat, options);
-    }
-    /**
-     * Create a new cubemap texture where each face has a width and height equal
-     * to that of the given images and store the provided images in the
-     * cubemap's faces.
-     * The storage format determines what kind of data is possible to store and
-     * is preset as RGBA8.
-     * Each image must have the same dimensions.
-     */
-    createTextureCubeMapWithImage(imagePositiveX, imageNegativeX, imagePositiveY, imageNegativeY, imagePositiveZ, imageNegativeZ, options) {
-        const width = imagePositiveX.width;
-        const height = imagePositiveX.height;
-        // Assert all images have same sizes
-        is(imageNegativeX.width, width, fmtImageDimsMismatch);
-        is(imagePositiveY.width, width, fmtImageDimsMismatch);
-        is(imageNegativeY.width, width, fmtImageDimsMismatch);
-        is(imagePositiveZ.width, width, fmtImageDimsMismatch);
-        is(imageNegativeZ.width, width, fmtImageDimsMismatch);
-        is(imageNegativeX.height, height, fmtImageDimsMismatch);
-        is(imagePositiveY.height, height, fmtImageDimsMismatch);
-        is(imageNegativeY.height, height, fmtImageDimsMismatch);
-        is(imagePositiveZ.height, height, fmtImageDimsMismatch);
-        is(imageNegativeZ.height, height, fmtImageDimsMismatch);
-        return _createTextureCubeMapWithTypedArray(this._gl, imagePositiveX.width, imagePositiveY.height, TextureColorStorageFormat.RGBA8, imagePositiveX.data, imageNegativeX.data, imagePositiveY.data, imageNegativeY.data, imagePositiveZ.data, imageNegativeZ.data, TextureFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
-    }
-    /**
-     * Create a new cubemap texture where each face has a given width, height,
-     * and storage format and store data contained in the provided typed arrays
-     * in the cubemap's faces.
-     * The storage format determines what kind of data is possible to store.
-     * Each typed array must have the same length.
-     */
-    createTextureCubeMapWithTypedArray(width, height, storageFormat, dataPositiveX, dataNegativeX, dataPositiveY, dataNegativeY, dataPositiveZ, dataNegativeZ, dataFormat, dataType, options) {
-        return _createTextureCubeMapWithTypedArray(this._gl, width, height, storageFormat, dataPositiveX, dataNegativeX, dataPositiveY, dataNegativeY, dataPositiveZ, dataNegativeZ, dataFormat, dataType, options);
-    }
-    /**
-     * Create a new renderbuffer with given width, height, and storage format.
-     * Pass in `options.samples` to configure multisampling.
-     */
-    createRenderbuffer(width, height, storageFormat, options) {
-        return _createRenderbuffer(this._gl, width, height, storageFormat, options);
-    }
-    /**
-     * Create a framebuffer containg one or more color buffers and a
-     * depth or depth-stencil buffer with given width and height.
-     *
-     * Does not take ownership of provided attachments, only references them.
-     * WebGL will synchronize their usage so they can either be written to via
-     * the framebuffer, or written to or read via their own methods.
-     */
-    createFramebuffer(width, height, color, depthStencil) {
-        return _createFramebuffer(this.state, width, height, color, depthStencil);
+}
+class DevicePrivateHack extends Device {
+    constructor(gl, explicitPixelRatio, explicitViewportWidth, explicitViewportHeight) {
+        super(gl, explicitPixelRatio, explicitViewportWidth, explicitViewportHeight);
     }
 }
 function createDebugFunc(gl, key) {
@@ -2715,9 +2632,6 @@ function createDebugFunc(gl, key) {
         return gl[key].apply(gl, arguments);
     };
 }
-function fmtImageDimsMismatch() {
-    return "All provided images must have the same dimensions";
-}
 
-export { AttributeType, Attributes, BlendEquation, BlendFunc, BufferUsage, Command, DepthFunc, Device, ElementBuffer, ElementBufferDataType, ElementPrimitive, Extension, Framebuffer, Renderbuffer, RenderbufferColorStorageFormat, RenderbufferDepthStencilStorageFormat, RenderbufferDepthStorageFormat, StencilFunc, StencilOp, Target, TargetBlitFilter, TargetBufferBitmask, Texture2D, TextureColorStorageFormat, TextureCubeMap, TextureDataType, TextureDepthStencilStorageFormat, TextureDepthStorageFormat, TextureFormat, TextureMagFilter, TextureMinFilter, TextureWrap, UniformType, VertexBuffer, VertexBufferFloatDataType, VertexBufferIntegerDataType };
+export { AttributeType, Attributes, BlendEquation, BlendFunc, BufferUsage, Command, DepthFunc, Device, ElementBuffer, ElementBufferDataType, ElementPrimitive, Extension, Framebuffer, Renderbuffer, RenderbufferColorStorageFormat, RenderbufferDepthStencilStorageFormat, RenderbufferDepthStorageFormat, StencilFunc, StencilOp, Target, TargetBlitFilter, TargetBufferBitmask, Texture2D, TextureColorStorageFormat, TextureCubeMap, TextureDataType, TextureDepthStencilStorageFormat, TextureDepthStorageFormat, TextureFormat, TextureMagFilter, TextureMinFilter, TextureWrap, UniformType, VertexBuffer, VertexBufferFloatDataType, VertexBufferIntegerDataType, createAttributes, createCommand, createDevice, createDeviceWithCanvas, createDeviceWithContext, createElementBuffer, createElementBufferWithArray, createElementBufferWithTypedArray, createFramebuffer, createTexture2D, createVertexBuffer, createVertexBufferWithTypedArray };
 //# sourceMappingURL=webglutenfree.js.map

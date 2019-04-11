@@ -1,10 +1,22 @@
 export { BufferUsage } from "./types";
 
 export {
+    createDevice,
+    createDeviceWithCanvas,
+    createDeviceWithContext,
+    createCommand,
+    createVertexBuffer,
+    createVertexBufferWithTypedArray,
+    createElementBuffer,
+    createElementBufferWithArray,
+    createElementBufferWithTypedArray,
+    createAttributes,
+    createTexture2D,
+    createFramebuffer,
     Device,
-    DeviceCreateOptions,
-    DeviceCreateWithCanvasOptions,
-    DeviceCreateWithContextOptions,
+    CreateDeviceOptions,
+    CreateDeviceWithCanvasOptions,
+    CreateDeviceWithContextOptions,
     Extension,
 } from "./device";
 
@@ -19,7 +31,7 @@ export {
 
 export {
     Command,
-    CommandCreateOptions,
+    CreateCommandOptions,
     UniformType,
     DepthFunc,
     StencilFunc,

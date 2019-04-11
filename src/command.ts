@@ -45,7 +45,7 @@ export interface Uniforms<P> { [name: string]: Uniform<P>; }
 export type SingleOrSeparateFrontBack<T> = T | { front: T, back: T };
 export type SingleOrSeparateRgbAlpha<T> = T | { rgb: T, alpha: T };
 
-export interface CommandCreateOptions<P> {
+export interface CreateCommandOptions<P> {
     uniforms?: Uniforms<P>;
     depth?: {
         func: DepthFunc;
@@ -345,7 +345,7 @@ export function _createCommand<P = void>(
         depth,
         stencil,
         blend,
-    }: CommandCreateOptions<P> = {},
+    }: CreateCommandOptions<P> = {},
 ): Command<P> {
     assert.isString(vert, fmtParamNonNull("vert"));
     assert.isString(frag, fmtParamNonNull("frag"));
@@ -741,7 +741,7 @@ function validateUniformDeclarations(
 }
 
 function parseDepth(
-    depth: CommandCreateOptions<void>["depth"],
+    depth: CreateCommandOptions<void>["depth"],
 ): DepthTestDescriptor | undefined {
     if (!depth) { return undefined; }
     // TODO: DCE did not kick in here without help
@@ -757,7 +757,7 @@ function parseDepth(
 }
 
 function parseStencil(
-    stencil: CommandCreateOptions<void>["stencil"],
+    stencil: CreateCommandOptions<void>["stencil"],
 ): StencilTestDescriptor | undefined {
     if (!stencil) { return undefined; }
     // TODO: DCE did not kick in here without help
@@ -836,7 +836,7 @@ function parseStencil(
 }
 
 function parseBlend(
-    blend: CommandCreateOptions<void>["blend"],
+    blend: CreateCommandOptions<void>["blend"],
 ): BlendDescriptor | undefined {
     if (!blend) { return undefined; }
     // TODO: DCE did not kick in here without help

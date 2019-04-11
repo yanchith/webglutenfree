@@ -1,6 +1,11 @@
 import test from "ava";
 
 import {
+    createDeviceWithContext as gfCreateDeviceWithContext,
+    createCommand as gfCreateCommand,
+    createAttributes as gfCreateAttributes,
+    createTexture2D as gfCreateTexture2D,
+    createFramebuffer as gfCreateFramebuffer,
     Device,
     Target,
     TargetBufferBitmask,
@@ -256,11 +261,12 @@ function mockContext(): WebGL2RenderingContext {
 
 function createDevice(): Device {
     const gl = mockContext();
-    return Device.createWithContext(gl, { pixelRatio: 1 });
+    return gfCreateDeviceWithContext(gl, { pixelRatio: 1 });
 }
 
 function createCommand(dev: Device): Command<void> {
-    return dev.createCommand(
+    return gfCreateCommand(
+        dev,
         `#version 300 es
         precision mediump float;
 
@@ -289,7 +295,7 @@ function createCommand(dev: Device): Command<void> {
 }
 
 function createAttributes(dev: Device): Attributes {
-    return dev.createAttributes(ElementPrimitive.TRIANGLE_LIST, {
+    return gfCreateAttributes(dev, ElementPrimitive.TRIANGLE_LIST, {
         0: [
             [-0.3, -0.5],
             [0.3, -0.5],
@@ -304,12 +310,12 @@ function createAttributes(dev: Device): Attributes {
 }
 
 function createTexture2D(dev: Device): Texture2D<TextureColorStorageFormat.RGBA8> {
-    return dev.createTexture2D(WIDTH, HEIGHT, TextureColorStorageFormat.RGBA8);
+    return gfCreateTexture2D(dev, WIDTH, HEIGHT, TextureColorStorageFormat.RGBA8);
 }
 
 function createFramebuffer(
     dev: Device,
     tex: Texture2D<TextureColorStorageFormat.RGBA8>,
 ): Framebuffer {
-    return dev.createFramebuffer(WIDTH, HEIGHT, tex);
+    return gfCreateFramebuffer(dev, WIDTH, HEIGHT, tex);
 }

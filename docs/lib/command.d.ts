@@ -32,7 +32,7 @@ export declare type SingleOrSeparateRgbAlpha<T> = T | {
     rgb: T;
     alpha: T;
 };
-export interface CommandCreateOptions<P> {
+export interface CreateCommandOptions<P> {
     uniforms?: Uniforms<P>;
     depth?: {
         func: DepthFunc;
@@ -246,7 +246,7 @@ export declare enum BlendEquation {
     MIN = 32775,
     MAX = 32776
 }
-export declare function _createCommand<P = void>(state: State, vert: string, frag: string, { uniforms, depth, stencil, blend, }?: CommandCreateOptions<P>): Command<P>;
+export declare function _createCommand<P = void>(state: State, vert: string, frag: string, { uniforms, depth, stencil, blend, }?: CreateCommandOptions<P>): Command<P>;
 export declare class Command<P> {
     readonly glProgram: WebGLProgram;
     readonly depthTestDescr: DepthTestDescriptor | null;
