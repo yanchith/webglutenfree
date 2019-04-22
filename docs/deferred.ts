@@ -43,7 +43,7 @@ const dev = Device.create({
     antialias: false,
     extensions: [Extension.EXTColorBufferFloat],
 });
-const [width, height] = [dev.bufferWidth, dev.bufferHeight];
+const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 
 const gAlbedoSpecular = dev.createTexture2D(
     width,

@@ -36,7 +36,7 @@ const PROJ_FAR = 500;
 const PROJ_FOV = Math.PI / 2;
 
 const dev = Device.create();
-const [width, height] = [dev.bufferWidth, dev.bufferHeight];
+const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 
 const identity = mat4.identity(mat4.create());
 const zero = vec3.fromValues(0, 0, 0);

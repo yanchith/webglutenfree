@@ -24,7 +24,7 @@ import {
 } from "./lib/webglutenfree.js";
 
 const dev = Device.create({ antialias: false });
-const [width, height] = [dev.bufferWidth, dev.bufferHeight];
+const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 const [lifeWidth, lifeHeight] = [
     Math.round(width / 4),
     Math.round(height / 4),

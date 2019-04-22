@@ -40,7 +40,7 @@ const dev = Device.create({
         Extension.OESTextureFloatLinear,
     ],
 });
-const [width, height] = [dev.bufferWidth, dev.bufferHeight];
+const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 
 // We blur smaller textures for better performance
 const [blurWidth, blurHeight] = [

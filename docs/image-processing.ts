@@ -43,7 +43,7 @@ const kernels = {
 const KERNEL = kernels.edgeDetect;
 
 const dev = Device.create();
-const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
+const [width, height] = [dev.logicalWidth, dev.logicalHeight];
 
 async function run(): Promise<void> {
     const imageData = await loadImage("img/lenna.png", true);

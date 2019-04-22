@@ -2459,12 +2459,12 @@ class Device {
         return new Device(gl, pixelRatio, viewportWidth, viewportHeight);
     }
     constructor(gl, explicitPixelRatio, explicitViewportWidth, explicitViewportHeight) {
-        this._gl = gl;
-        this._canvas = gl.canvas;
+        this.gl = gl;
+        this.canvas = gl.canvas;
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewportWidth = explicitViewportWidth;
         this.explicitViewportHeight = explicitViewportHeight;
-        this.update();
+        this.resizeToFit();
         this.state = new State(gl);
         this.backbufferTarget = new Target(this.state, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
         // Enable scissor test globally. Practically everywhere you would want
@@ -2473,56 +2473,68 @@ class Device {
         gl.enable(gl.SCISSOR_TEST);
     }
     /**
-     * Return width of the gl drawing buffer.
+     * Return width of the WebGL drawing buffer in physical (device)
+     * pixels. This will usually be the same as
+     * `device.requestedPhysicalWidth`, but can be smaller if WebGL
+     * decides to allocate a smaller drawing buffer than requested,
+     * e.g. when the size is not supported by hardware.
      */
-    get bufferWidth() {
-        return this._gl.drawingBufferWidth;
+    get physicalWidth() {
+        return this.gl.drawingBufferWidth;
     }
     /**
-     * Return height of the gl drawing buffer.
+     * Return height of the WebGL drawing buffer in physical
+     * (device) pixels. This will usually be the same as
+     * `device.requestedPhysicalHeight`, but can be smaller if WebGL
+     * decides to allocate a smaller drawing buffer than requested,
+     * e.g. when the size is not supported by hardware.
      */
-    get bufferHeight() {
-        return this._gl.drawingBufferHeight;
+    get physicalHeight() {
+        return this.gl.drawingBufferHeight;
     }
     /**
-     * Return width of the canvas. This will usually be the same as:
-     *   device.bufferWidth
+     * Return width of the canvas in physical (device) pixels. This
+     * will usually be the same as `device.physicalWidth`.
      */
-    get canvasWidth() {
-        return this._canvas.width;
+    get requestedPhysicalWidth() {
+        return this.canvas.width;
     }
     /**
-     * Return height of the canvas. This will usually be the same as:
-     *   device.bufferHeight
+     * Return height of the canvas in physical (device) pixels. This
+     * will usually be the same as `device.physicalHeight`.
      */
-    get canvasHeight() {
-        return this._canvas.height;
+    get requestedPhysicalHeight() {
+        return this.canvas.height;
     }
     /**
-     * Return width of canvas in CSS pixels (before applying device pixel ratio)
+     * Return width of canvas in logical (CSS) pixels (before applying
+     * device pixel ratio). This is useful for e.g. computing the
+     * position of mouse events.
      */
-    get canvasCSSWidth() {
-        return this._canvas.clientWidth;
+    get logicalWidth() {
+        return this.canvas.clientWidth;
     }
     /**
-     * Return height of canvas in CSS pixels (before applying device pixel ratio)
+     * Return height of canvas in logical (CSS) pixels (before
+     * applying device pixel ratio). This is useful for e.g. computing
+     * the position of mouse events.
      */
-    get canvasCSSHeight() {
-        return this._canvas.clientHeight;
+    get logicalHeight() {
+        return this.canvas.clientHeight;
     }
     /**
-     * Return the device pixel ratio for this device
+     * Return the device pixel ratio for this device.
      */
     get pixelRatio() {
         return this.explicitPixelRatio || window.devicePixelRatio;
     }
     /**
-     * Notify the device to check whether updates are needed. This resizes the
-     * canvas, if the device pixel ratio or css canvas width/height changed.
+     * Resize the canvas if the device pixel ratio or canvas
+     * dimensions changed.
      */
-    update() {
+    resizeToFit() {
         const dpr = this.pixelRatio;
-        const canvas = this._canvas;
+        const canvas = this.canvas;
         const width = typeof this.explicitViewportWidth !== "undefined"
             ? this.explicitViewportWidth
             : canvas.clientWidth * dpr;
@@ -2565,20 +2577,20 @@ class Device {
      * Create a new vertex buffer with given type and of given size.
      */
     createVertexBuffer(type, size, options) {
-        return _createVertexBuffer(this._gl, type, size, options);
+        return _createVertexBuffer(this.gl, type, size, options);
     }
     /**
      * Create a new vertex buffer of given type with provided data. Does not
      * take ownership of data.
      */
     createVertexBufferWithTypedArray(type, data, options) {
-        return _createVertexBufferWithTypedArray(this._gl, type, data, options);
+        return _createVertexBufferWithTypedArray(this.gl, type, data, options);
     }
     /**
      * Create a new element buffer with given type, primitive, and size.
      */
     createElementBuffer(type, primitive, size, options) {
-        return _createElementBuffer(this._gl, type, primitive, size, options);
+        return _createElementBuffer(this.gl, type, primitive, size, options);
     }
     /**
      * Create a new element buffer from potentially nested array. Infers
@@ -2589,14 +2601,14 @@ class Device {
      * Does not take ownership of data.
      */
     createElementBufferWithArray(data, options) {
-        return _createElementBufferWithArray(this._gl, data, options);
+        return _createElementBufferWithArray(this.gl, data, options);
     }
     /**
      * Create a new element buffer of given type with provided data. Does not
      * take ownership of data.
      */
     createElementBufferWithTypedArray(type, primitive, data, options) {
-        return _createElementBufferWithTypedArray(this._gl, type, primitive, data, options);
+        return _createElementBufferWithTypedArray(this.gl, type, primitive, data, options);
     }
     /**
      * Create new attributes with element and attribute definitions, and an
@@ -2628,7 +2640,7 @@ class Device {
      * The storage format determines what kind of data is possible to store.
      */
     createTexture2D(width, height, storageFormat, options) {
-        return _createTexture2D(this._gl, width, height, storageFormat, options);
+        return _createTexture2D(this.gl, width, height, storageFormat, options);
     }
     /**
      * Create a new 2D texture with width and height equal to that of the given
@@ -2637,7 +2649,7 @@ class Device {
      * is preset as RGBA8.
      */
     createTexture2DWithImage(image, options) {
-        return _createTexture2DWithTypedArray(this._gl, image.width, image.height, TextureColorStorageFormat.RGBA8, image.data, TextureFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
+        return _createTexture2DWithTypedArray(this.gl, image.width, image.height, TextureColorStorageFormat.RGBA8, image.data, TextureFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
     }
     /**
      * Create a new 2D texture with given width, height, and storage format and
@@ -2646,7 +2658,7 @@ class Device {
      * The storage format determines what kind of data is possible to store.
      */
     createTexture2DWithTypedArray(width, height, storageFormat, data, dataFormat, dataType, options) {
-        return _createTexture2DWithTypedArray(this._gl, width, height, storageFormat, data, dataFormat, dataType, options);
+        return _createTexture2DWithTypedArray(this.gl, width, height, storageFormat, data, dataFormat, dataType, options);
     }
     /**
      * Create a new cubemap texture where each face has a given width, height,
@@ -2654,7 +2666,7 @@ class Device {
      * The storage format determines what kind of data is possible to store.
      */
     createTextureCubeMap(width, height, storageFormat, options) {
-        return _createTextureCubeMap(this._gl, width, height, storageFormat, options);
+        return _createTextureCubeMap(this.gl, width, height, storageFormat, options);
     }
     /**
      * Create a new cubemap texture where each face has a width and height equal
@@ -2678,7 +2690,7 @@ class Device {
         is(imageNegativeY.height, height, fmtImageDimsMismatch);
         is(imagePositiveZ.height, height, fmtImageDimsMismatch);
         is(imageNegativeZ.height, height, fmtImageDimsMismatch);
-        return _createTextureCubeMapWithTypedArray(this._gl, imagePositiveX.width, imagePositiveY.height, TextureColorStorageFormat.RGBA8, imagePositiveX.data, imageNegativeX.data, imagePositiveY.data, imageNegativeY.data, imagePositiveZ.data, imageNegativeZ.data, TextureFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
+        return _createTextureCubeMapWithTypedArray(this.gl, imagePositiveX.width, imagePositiveY.height, TextureColorStorageFormat.RGBA8, imagePositiveX.data, imageNegativeX.data, imagePositiveY.data, imageNegativeY.data, imagePositiveZ.data, imageNegativeZ.data, TextureFormat.RGBA, TextureDataType.UNSIGNED_BYTE, options);
     }
     /**
      * Create a new cubemap texture where each face has a given width, height,
@@ -2688,14 +2700,14 @@ class Device {
      * Each typed array must have the same length.
      */
     createTextureCubeMapWithTypedArray(width, height, storageFormat, dataPositiveX, dataNegativeX, dataPositiveY, dataNegativeY, dataPositiveZ, dataNegativeZ, dataFormat, dataType, options) {
-        return _createTextureCubeMapWithTypedArray(this._gl, width, height, storageFormat, dataPositiveX, dataNegativeX, dataPositiveY, dataNegativeY, dataPositiveZ, dataNegativeZ, dataFormat, dataType, options);
+        return _createTextureCubeMapWithTypedArray(this.gl, width, height, storageFormat, dataPositiveX, dataNegativeX, dataPositiveY, dataNegativeY, dataPositiveZ, dataNegativeZ, dataFormat, dataType, options);
     }
     /**
      * Create a new renderbuffer with given width, height, and storage format.
      * Pass in `options.samples` to configure multisampling.
      */
     createRenderbuffer(width, height, storageFormat, options) {
-        return _createRenderbuffer(this._gl, width, height, storageFormat, options);
+        return _createRenderbuffer(this.gl, width, height, storageFormat, options);
     }
     /**
      * Create a framebuffer containg one or more color buffers and a

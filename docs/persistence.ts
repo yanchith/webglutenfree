@@ -22,7 +22,7 @@ import * as bunny from "./libx/bunny.js";
 const PERSISTENCE_FACTOR = 0.8;
 
 const dev = Device.create({ antialias: false });
-const [width, height] = [dev.bufferWidth, dev.bufferHeight];
+const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 
 const colorTex = dev.createTexture2D(width, height, TextureColorStorageFormat.RGBA8);
 const depthBuffer = dev.createRenderbuffer(width, height, RenderbufferDepthStorageFormat.DEPTH_COMPONENT24);

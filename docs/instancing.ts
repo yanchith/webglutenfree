@@ -21,7 +21,7 @@ import {
 import { mat4 } from "./libx/gl-matrix.js";
 
 const dev = Device.create();
-const [width, height] = [dev.canvasCSSWidth, dev.canvasCSSHeight];
+const [width, height] = [dev.logicalWidth, dev.logicalHeight];
 
 const viewMatrix = mat4.identity(mat4.create());
 
