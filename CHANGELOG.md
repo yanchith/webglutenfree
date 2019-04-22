@@ -12,7 +12,7 @@
 
 ### Fixes
 
-(None yet)
+- Correctly unbind `TEXTURE_CUBE_MAP` instead of `TEXTURE_2D` in `cubemap.store()`
 
 ## v0.0.10 (15/01/2019)
 
