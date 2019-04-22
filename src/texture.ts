@@ -774,7 +774,7 @@ export class TextureCubeMap<S extends TextureStorageFormat> {
             gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
         }
 
-        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
 
         return this;
     }

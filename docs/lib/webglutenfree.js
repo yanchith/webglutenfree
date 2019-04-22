@@ -1941,7 +1941,7 @@ class TextureCubeMap {
             gl.generateMipmap(gl.TEXTURE_CUBE_MAP_POSITIVE_Z);
             gl.generateMipmap(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
         }
-        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
         return this;
     }
     /**
