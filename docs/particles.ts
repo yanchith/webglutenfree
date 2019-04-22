@@ -23,7 +23,7 @@ const PARTICLE_WANDER_FACTOR = 0.005;
 const PARTICLE_SCALE = 0.015;
 
 const dev = Device.create();
-const [width, height] = [dev.bufferWidth, dev.bufferHeight];
+const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 
 const viewMatrix = mat4.create();
 

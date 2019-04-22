@@ -184,8 +184,8 @@ export class Device {
         return new Device(gl, pixelRatio, viewportWidth, viewportHeight);
     }
 
-    readonly _gl: WebGL2RenderingContext;
-    readonly _canvas: HTMLCanvasElement;
+    private gl: WebGL2RenderingContext;
+    private canvas: HTMLCanvasElement;
 
     private explicitPixelRatio?: number;
     private explicitViewportWidth?: number;
@@ -200,13 +200,13 @@ export class Device {
         explicitViewportWidth?: number,
         explicitViewportHeight?: number,
     ) {
-        this._gl = gl;
-        this._canvas = gl.canvas;
+        this.gl = gl;
+        this.canvas = gl.canvas;
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewportWidth = explicitViewportWidth;
         this.explicitViewportHeight = explicitViewportHeight;
 
-        this.update();
+        this.resizeToFit();
 
         this.state = new State(gl);
         this.backbufferTarget = new Target(
@@ -224,63 +224,75 @@ export class Device {
     }
 
     /**
-     * Return width of the gl drawing buffer.
+     * Return width of the WebGL drawing buffer in physical (device)
+     * pixels. This will usually be the same as
+     * `device.requestedPhysicalWidth`, but can be smaller if WebGL
+     * decides to allocate a smaller drawing buffer than requested,
+     * e.g. when the size is not supported by hardware.
      */
-    get bufferWidth(): number {
-        return this._gl.drawingBufferWidth;
+    get physicalWidth(): number {
+        return this.gl.drawingBufferWidth;
     }
 
     /**
-     * Return height of the gl drawing buffer.
+     * Return height of the WebGL drawing buffer in physical
+     * (device) pixels. This will usually be the same as
+     * `device.requestedPhysicalHeight`, but can be smaller if WebGL
+     * decides to allocate a smaller drawing buffer than requested,
+     * e.g. when the size is not supported by hardware.
      */
-    get bufferHeight(): number {
-        return this._gl.drawingBufferHeight;
+    get physicalHeight(): number {
+        return this.gl.drawingBufferHeight;
     }
 
     /**
-     * Return width of the canvas. This will usually be the same as:
-     *   device.bufferWidth
+     * Return width of the canvas in physical (device) pixels. This
+     * will usually be the same as `device.physicalWidth`.
      */
-    get canvasWidth(): number {
-        return this._canvas.width;
+    get requestedPhysicalWidth(): number {
+        return this.canvas.width;
     }
 
     /**
-     * Return height of the canvas. This will usually be the same as:
-     *   device.bufferHeight
+     * Return height of the canvas in physical (device) pixels. This
+     * will usually be the same as `device.physicalHeight`.
      */
-    get canvasHeight(): number {
-        return this._canvas.height;
+    get requestedPhysicalHeight(): number {
+        return this.canvas.height;
     }
 
     /**
-     * Return width of canvas in CSS pixels (before applying device pixel ratio)
+     * Return width of canvas in logical (CSS) pixels (before applying
+     * device pixel ratio). This is useful for e.g. computing the
+     * position of mouse events.
      */
-    get canvasCSSWidth(): number {
-        return this._canvas.clientWidth;
+    get logicalWidth(): number {
+        return this.canvas.clientWidth;
     }
 
     /**
-     * Return height of canvas in CSS pixels (before applying device pixel ratio)
+     * Return height of canvas in logical (CSS) pixels (before
+     * applying device pixel ratio). This is useful for e.g. computing
+     * the position of mouse events.
      */
-    get canvasCSSHeight(): number {
-        return this._canvas.clientHeight;
+    get logicalHeight(): number {
+        return this.canvas.clientHeight;
     }
 
     /**
-     * Return the device pixel ratio for this device
+     * Return the device pixel ratio for this device.
      */
     get pixelRatio(): number {
         return this.explicitPixelRatio || window.devicePixelRatio;
     }
 
     /**
-     * Notify the device to check whether updates are needed. This resizes the
-     * canvas, if the device pixel ratio or css canvas width/height changed.
+     * Resize the canvas if the device pixel ratio or canvas
+     * dimensions changed.
      */
-    update(): void {
+    resizeToFit(): void {
         const dpr = this.pixelRatio;
-        const canvas = this._canvas;
+        const canvas = this.canvas;
         const width = typeof this.explicitViewportWidth !== "undefined"
             ? this.explicitViewportWidth
             : canvas.clientWidth * dpr;
@@ -330,7 +342,7 @@ export class Device {
         size: number,
         options?: VertexBufferCreateOptions,
     ): VertexBuffer<T> {
-        return _createVertexBuffer(this._gl, type, size, options);
+        return _createVertexBuffer(this.gl, type, size, options);
     }
 
     /**
@@ -343,7 +355,7 @@ export class Device {
         options?: VertexBufferCreateOptions,
     ): VertexBuffer<T> {
         return _createVertexBufferWithTypedArray(
-            this._gl,
+            this.gl,
             type,
             data,
             options,
@@ -359,7 +371,7 @@ export class Device {
         size: number,
         options?: ElementBufferCreateOptions,
     ): ElementBuffer<T> {
-        return _createElementBuffer(this._gl, type, primitive, size, options);
+        return _createElementBuffer(this.gl, type, primitive, size, options);
     }
 
     /**
@@ -374,7 +386,7 @@ export class Device {
         data: ElementArray,
         options?: ElementBufferCreateOptions,
     ): ElementBuffer<ElementBufferDataType.UNSIGNED_INT> {
-        return _createElementBufferWithArray(this._gl, data, options);
+        return _createElementBufferWithArray(this.gl, data, options);
     }
 
     /**
@@ -388,7 +400,7 @@ export class Device {
         options?: ElementBufferCreateOptions,
     ): ElementBuffer<T> {
         return _createElementBufferWithTypedArray(
-            this._gl,
+            this.gl,
             type,
             primitive,
             data,
@@ -444,7 +456,7 @@ export class Device {
         options?: Texture2DCreateOptions,
     ): Texture2D<S> {
         return _createTexture2D(
-            this._gl,
+            this.gl,
             width,
             height,
             storageFormat,
@@ -463,7 +475,7 @@ export class Device {
         options?: Texture2DCreateOptions & Texture2DStoreOptions,
     ): Texture2D<TextureColorStorageFormat.RGBA8> {
         return _createTexture2DWithTypedArray(
-            this._gl,
+            this.gl,
             image.width,
             image.height,
             TextureColorStorageFormat.RGBA8,
@@ -490,7 +502,7 @@ export class Device {
         options?: Texture2DCreateOptions & Texture2DStoreOptions,
     ): Texture2D<S> {
         return _createTexture2DWithTypedArray(
-            this._gl,
+            this.gl,
             width,
             height,
             storageFormat,
@@ -513,7 +525,7 @@ export class Device {
         options?: TextureCubeMapCreateOptions,
     ): TextureCubeMap<S> {
         return _createTextureCubeMap(
-            this._gl,
+            this.gl,
             width,
             height,
             storageFormat,
@@ -556,7 +568,7 @@ export class Device {
         assert.is(imageNegativeZ.height, height, fmtImageDimsMismatch);
 
         return _createTextureCubeMapWithTypedArray(
-            this._gl,
+            this.gl,
             imagePositiveX.width,
             imagePositiveY.height,
             TextureColorStorageFormat.RGBA8,
@@ -594,7 +606,7 @@ export class Device {
         options?: TextureCubeMapCreateOptions & TextureCubeMapStoreOptions,
     ): TextureCubeMap<S> {
         return _createTextureCubeMapWithTypedArray(
-            this._gl,
+            this.gl,
             width,
             height,
             storageFormat,
@@ -621,7 +633,7 @@ export class Device {
         options?: RenderbufferCreateOptions,
     ): Renderbuffer<S> {
         return _createRenderbuffer(
-            this._gl,
+            this.gl,
             width,
             height,
             storageFormat,

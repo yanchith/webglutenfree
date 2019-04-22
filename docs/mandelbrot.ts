@@ -19,7 +19,7 @@ const DOMAIN_IMAG = [0.20, 0.35];
 
 // Use extensions so we can render to 32 bit float textures for values
 const dev = Device.create({ extensions: [Extension.EXTColorBufferFloat] });
-const [width, height] = [dev.bufferWidth, dev.bufferHeight];
+const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 
 // Note: Even with extensions, RGB32F is not renderable (might be a bug),
 // so we use RGBA32F even when we only use 3 channels

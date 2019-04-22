@@ -63,8 +63,8 @@ export declare class Device {
      * concurrently when absolutely necessary.
      */
     static createWithContext(gl: WebGL2RenderingContext, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, }?: DeviceCreateWithContextOptions): Device;
-    readonly _gl: WebGL2RenderingContext;
-    readonly _canvas: HTMLCanvasElement;
+    private gl;
+    private canvas;
     private explicitPixelRatio?;
     private explicitViewportWidth?;
     private explicitViewportHeight?;
@@ -72,40 +72,52 @@ export declare class Device {
     private backbufferTarget;
     private constructor();
     /**
-     * Return width of the gl drawing buffer.
+     * Return width of the WebGL drawing buffer in physical (device)
+     * pixels. This will usually be the same as
+     * `device.requestedPhysicalWidth`, but can be smaller if WebGL
+     * decides to allocate a smaller drawing buffer than requested,
+     * e.g. when the size is not supported by hardware.
      */
-    readonly bufferWidth: number;
+    readonly physicalWidth: number;
     /**
-     * Return height of the gl drawing buffer.
+     * Return height of the WebGL drawing buffer in physical
+     * (device) pixels. This will usually be the same as
+     * `device.requestedPhysicalHeight`, but can be smaller if WebGL
+     * decides to allocate a smaller drawing buffer than requested,
+     * e.g. when the size is not supported by hardware.
      */
-    readonly bufferHeight: number;
+    readonly physicalHeight: number;
     /**
-     * Return width of the canvas. This will usually be the same as:
-     *   device.bufferWidth
+     * Return width of the canvas in physical (device) pixels. This
+     * will usually be the same as `device.physicalWidth`.
      */
-    readonly canvasWidth: number;
+    readonly requestedPhysicalWidth: number;
     /**
-     * Return height of the canvas. This will usually be the same as:
-     *   device.bufferHeight
+     * Return height of the canvas in physical (device) pixels. This
+     * will usually be the same as `device.physicalHeight`.
      */
-    readonly canvasHeight: number;
+    readonly requestedPhysicalHeight: number;
     /**
-     * Return width of canvas in CSS pixels (before applying device pixel ratio)
+     * Return width of canvas in logical (CSS) pixels (before applying
+     * device pixel ratio). This is useful for e.g. computing the
+     * position of mouse events.
      */
-    readonly canvasCSSWidth: number;
+    readonly logicalWidth: number;
     /**
-     * Return height of canvas in CSS pixels (before applying device pixel ratio)
+     * Return height of canvas in logical (CSS) pixels (before
+     * applying device pixel ratio). This is useful for e.g. computing
+     * the position of mouse events.
      */
-    readonly canvasCSSHeight: number;
+    readonly logicalHeight: number;
     /**
-     * Return the device pixel ratio for this device
+     * Return the device pixel ratio for this device.
      */
     readonly pixelRatio: number;
     /**
-     * Notify the device to check whether updates are needed. This resizes the
-     * canvas, if the device pixel ratio or css canvas width/height changed.
+     * Resize the canvas if the device pixel ratio or canvas
+     * dimensions changed.
      */
-    update(): void;
+    resizeToFit(): void;
     /**
      * Request a render target from the device to draw into. This gives you the
      * gl.BACK target.
