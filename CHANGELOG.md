@@ -4,7 +4,11 @@
 
 ### Enhancements
 
-(None yet)
+- Rename dimension returning methods on `Device` for more clarity:
+    - `device.buffer{Width,Height}` is renamed to `device.physical{Width,Height}`
+    - `device.canvas{Width,Height}` is renamed to `device.requestedPhysical{Width,Height}`
+    - `device.canvasCSS{Width,Height}` is renamed to `device.logical{Width,Height}`
+- Rename `device.update()` to `device.resizeToFit()`
 
 ### Fixes
 
