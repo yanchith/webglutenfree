@@ -301,7 +301,34 @@ test("Calling `device.reset()` is not valid in command resource blocks", (t) => 
     });
 });
 
-function mockContext(): WebGL2RenderingContext {
+test("Two devices can coexist on the same context without triggering asserts", (t) => {
+    const gl = createContext();
+    const dev1 = createDevice(gl);
+    const dev2 = createDevice(gl);
+
+    const attrs1 = createAttributes(dev1);
+    const attrs2 = createAttributes(dev2);
+
+    const cmd1 = createCommand(dev1);
+    const cmd2 = createCommand(dev2);
+
+    dev1.reset();
+    dev1.target((rt) => {
+        rt.draw(cmd1, attrs1);
+    });
+
+    dev2.reset();
+    dev2.target((rt) => {
+        rt.draw(cmd2, attrs2);
+    });
+
+    t.pass();
+});
+
+// TODO: add asserts and tests for different passing resources owned
+// by different devices/contexts.
+
+function createContext(): WebGL2RenderingContext {
     return new WebGL2RenderingContextMock({
         width: WIDTH,
         height: HEIGHT,
@@ -310,9 +337,8 @@ function mockContext(): WebGL2RenderingContext {
     });
 }
 
-function createDevice(): Device {
-    const gl = mockContext();
-    return Device.createWithContext(gl, { pixelRatio: 1 });
+function createDevice(gl?: WebGL2RenderingContext): Device {
+    return Device.createWithContext(gl || createContext(), { pixelRatio: 1 });
 }
 
 function createCommand(dev: Device): Command<void> {
