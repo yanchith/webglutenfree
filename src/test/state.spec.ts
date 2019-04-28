@@ -17,77 +17,79 @@ const WIDTH = 800;
 const HEIGHT = 600;
 
 
-test("Normal usage does not error", (t) => {
-    t.notThrows(() => {
-        const dev = createDevice();
-        const cmd = createCommand(dev);
-        const attrs = createAttributes(dev);
-        dev.target((rt) => {
-            rt.draw(cmd, attrs);
-        });
+test("Normal backbuffer usage does not error", (t) => {
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    const attrs = createAttributes(dev);
+
+    dev.target((rt) => {
+        rt.draw(cmd, attrs);
     });
+
+    t.pass();
 });
 
 test("Normal fbo usage does not error", (t) => {
-    t.notThrows(() => {
-        const dev = createDevice();
-        const cmd = createCommand(dev);
-        const attrs = createAttributes(dev);
-        const tex = createTexture2D(dev);
-        const fbo = createFramebuffer(dev, tex);
-        fbo.target((rt) => {
-            rt.clear(TargetBufferBitmask.COLOR);
-            rt.draw(cmd, attrs);
-        });
-        dev.target((rt) => {
-            rt.blit(fbo, TargetBufferBitmask.COLOR);
-        });
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    const attrs = createAttributes(dev);
+    const tex = createTexture2D(dev);
+    const fbo = createFramebuffer(dev, tex);
+
+    fbo.target((rt) => {
+        rt.clear(TargetBufferBitmask.COLOR);
+        rt.draw(cmd, attrs);
     });
+    dev.target((rt) => {
+        rt.blit(fbo, TargetBufferBitmask.COLOR);
+    });
+
+    t.pass();
 });
 
 test("Multiple devices can bind Targets (even nested)", (t) => {
-    t.notThrows(() => {
-        const dev1 = createDevice();
-        const dev2 = createDevice();
+    const dev1 = createDevice();
+    const dev2 = createDevice();
 
-        dev1.target(() => void 0);
+    dev1.target(() => void 0);
+    dev2.target(() => void 0);
+
+    // Not sure why anyone would EVER do this, but these devices are
+    // independent and our validations should not interfere
+    dev1.target(() => {
         dev2.target(() => void 0);
-
-        // Not sure why anyone would EVER do this, but these devices are
-        // independent and our validations should not interfere
-        dev1.target(() => {
-            dev2.target(() => void 0);
-        });
     });
+
+    t.pass();
 });
 
 test("Multiple devices can bind Commands (even nested)", (t) => {
-    t.notThrows(() => {
-        const dev1 = createDevice();
-        const dev2 = createDevice();
-        const cmd1 = createCommand(dev1);
-        const cmd2 = createCommand(dev2);
-        const attrs1 = createAttributes(dev1);
-        const attrs2 = createAttributes(dev2);
+    const dev1 = createDevice();
+    const dev2 = createDevice();
+    const cmd1 = createCommand(dev1);
+    const cmd2 = createCommand(dev2);
+    const attrs1 = createAttributes(dev1);
+    const attrs2 = createAttributes(dev2);
 
-        // Not sure why anyone would EVER do this, but these devices are
-        // independent and our validations should not interfere
-        dev1.target((rt1) => {
-            dev2.target((rt2) => {
-                rt1.batch(cmd1, (draw1) => {
-                    rt2.draw(cmd2, attrs2, void 0);
-                    rt2.batch(cmd2, (draw2) => {
-                        draw2(attrs2, void 0);
-                        draw1(attrs1, void 0);
-                    });
+    // Not sure why anyone would EVER do this, but these devices are
+    // independent and our validations should not interfere
+    dev1.target((rt1) => {
+        dev2.target((rt2) => {
+            rt1.batch(cmd1, (draw1) => {
+                rt2.draw(cmd2, attrs2, void 0);
+                rt2.batch(cmd2, (draw2) => {
+                    draw2(attrs2, void 0);
                     draw1(attrs1, void 0);
                 });
+                draw1(attrs1, void 0);
             });
         });
     });
+
+    t.pass();
 });
 
-test("Nested bound Command with Target#draw should error", (t) => {
+test("Nested bound Command with `target.draw()` should error", (t) => {
     const dev = createDevice();
     const cmd = createCommand(dev);
     const attrs = createAttributes(dev);
@@ -98,7 +100,7 @@ test("Nested bound Command with Target#draw should error", (t) => {
     });
 });
 
-test("Nested bound Command with Target#batch should error", (t) => {
+test("Nested bound Command with `target.batch()` should error", (t) => {
     const dev = createDevice();
     const cmd = createCommand(dev);
     dev.target((rt) => {
@@ -124,7 +126,7 @@ test("Nested bound Target (device + fbo) should error", (t) => {
     });
 });
 
-test("Unbound Target#draw should error", (t) => {
+test("Unbound `target.draw()` should error", (t) => {
     const dev = createDevice();
     const cmd = createCommand(dev);
     const attrs = createAttributes(dev);
@@ -137,7 +139,7 @@ test("Unbound Target#draw should error", (t) => {
     t.throws(() => sneakyRt!.draw(cmd, attrs));
 });
 
-test("Unbound Target#batch should error", (t) => {
+test("Unbound `target.batch()` should error", (t) => {
     const dev = createDevice();
     const cmd = createCommand(dev);
     let sneakyRt: Target | null = null;
@@ -149,7 +151,7 @@ test("Unbound Target#batch should error", (t) => {
     t.throws(() => sneakyRt!.batch(cmd, () => void 0));
 });
 
-test("Unbound Target#clear should error", (t) => {
+test("Unbound `target.clear()` should error", (t) => {
     const dev = createDevice();
     let sneakyRt: Target | null = null;
     dev.target((rt) => {
@@ -160,7 +162,7 @@ test("Unbound Target#clear should error", (t) => {
     t.throws(() => sneakyRt!.clear(TargetBufferBitmask.COLOR));
 });
 
-test("Unbound Target#blit should error", (t) => {
+test("Unbound `target.blit()` should error", (t) => {
     const dev = createDevice();
     const tex = createTexture2D(dev);
     const fbo = createFramebuffer(dev, tex);
@@ -242,6 +244,60 @@ test("Creating framebuffers while a target is bound is asserted against", (t) =>
     const tex = createTexture2D(dev);
     dev.target(() => {
         t.throws(() => createFramebuffer(dev, tex));
+    });
+});
+
+test("Calling `device.reset()` is valid outside of resource blocks", (t) => {
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    const attrs = createAttributes(dev);
+
+    dev.reset();
+
+    dev.target((rt) => {
+        rt.draw(cmd, attrs);
+    });
+
+    dev.reset();
+
+    t.pass();
+});
+
+test("Calling `device.reset()` is valid between resource initializers", (t) => {
+    const dev = createDevice();
+    dev.reset();
+    const cmd = createCommand(dev);
+    dev.reset();
+    const attrs = createAttributes(dev);
+
+    dev.target((rt) => {
+        rt.draw(cmd, attrs);
+    });
+
+    t.pass();
+});
+
+test("Calling `device.reset()` is not valid in target resource blocks", (t) => {
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    const attrs = createAttributes(dev);
+
+    dev.target((rt) => {
+        t.throws(() => dev.reset());
+        rt.draw(cmd, attrs);
+    });
+});
+
+test("Calling `device.reset()` is not valid in command resource blocks", (t) => {
+    const dev = createDevice();
+    const cmd = createCommand(dev);
+    const attrs = createAttributes(dev);
+
+    dev.target((rt) => {
+        rt.batch(cmd, (draw) => {
+            t.throws(() => dev.reset());
+            draw(attrs);
+        });
     });
 });
 

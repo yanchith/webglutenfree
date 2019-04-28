@@ -110,8 +110,8 @@ export interface DeviceCreateWithContextOptions {
 export class Device {
 
     /**
-     * Create a new canvas and device (containing a gl context). Mount it on
-     * `element` parameter (default is `document.body`).
+     * Create a new canvas and device (containing a WebGL
+     * context). Mount it on `element` (default is `document.body`).
      */
     static create(options: DeviceCreateOptions = {}): Device {
         const { element = document.body } = options;
@@ -151,9 +151,11 @@ export class Device {
     }
 
     /**
-     * Create a new device from existing gl context. Does not take ownership of
-     * context, but concurrent usage of it voids the warranty. Only use
-     * concurrently when absolutely necessary.
+     * Create a new device from existing WebGL context. Does not take
+     * ownership of context, but concurrent usage may be the source of
+     * bugs. Be sure to know what you are doing.
+     *
+     * Also see `device.reset()`.
      */
     static createWithContext(
         gl: WebGL2RenderingContext,
@@ -670,6 +672,35 @@ export class Device {
             color,
             depthStencil,
         );
+    }
+
+    /**
+     * Reset all tracked WebGL state.
+     *
+     * Instead of always issuing calls to WebGL, we sometimes remember
+     * various pieces of it's state ourselves. This works great for
+     * preventing state transitions when rendering while keeping the
+     * rendering code straightforward, but breaks apart once we have
+     * to share the WebGL context with someone else.
+     *
+     * `device.reset()` is an escape hatch that notifies the device
+     * that it should no longer trust the values it has
+     * remembered. Use it when using `webglutenfree` with another
+     * WebGL wrapper, such as `three.js`, or when needing to use the
+     * GL context yourself. Note that calling `device.reset()` with
+     * any resources bound is an error, i.e. don't do this:
+     *
+     * ```typescript
+     * dev.target((rt) => {
+     *     // Trying to reset the device while rendering is an error!
+     *     dev.reset();
+     * });
+     * ```
+     *
+     * Also see `Device.createWithContext()`.
+     */
+    reset(): void {
+        this.state.reset();
     }
 }
 

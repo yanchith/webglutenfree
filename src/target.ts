@@ -96,7 +96,7 @@ export class Target {
         // checked
         state.bindTarget(this, glFramebuffer, glDrawBuffers);
         cb(this);
-        state.unbindTarget();
+        state.forgetTarget();
     }
 
     /**
@@ -272,7 +272,7 @@ export class Target {
             gl.bindVertexArray(null);
         }
 
-        state.unbindCommand();
+        state.forgetCommand();
     }
 
     /**
@@ -367,7 +367,7 @@ export class Target {
             }
         });
 
-        state.unbindCommand();
+        state.forgetCommand();
     }
 
     private drawArrays(

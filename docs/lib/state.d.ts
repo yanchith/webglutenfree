@@ -1,4 +1,114 @@
 /// <reference types="webgl2" />
+/**
+ * A thin layer on top of WebGL remembering the current state, only
+ * setting the actual WebGL state when needed.
+ */
+export declare class State {
+    readonly gl: WebGL2RenderingContext;
+    private target;
+    private glDrawFramebuffer;
+    private glDrawBuffers;
+    private command;
+    private glProgram;
+    private depthTest;
+    private stencilTest;
+    private blend;
+    constructor(gl: WebGL2RenderingContext);
+    /**
+     * Set the depth test strategy if it differs from the current one.
+     */
+    setDepthTest(depthTest: DepthTestDescriptor | null): void;
+    /**
+     * Set the stencil test strategy if it differs from the current
+     * one.
+     */
+    setStencilTest(stencilTest: StencilTestDescriptor | null): void;
+    /**
+     * Set the blending strategy if it differs from the current one.
+     */
+    setBlend(blend: BlendDescriptor | null): void;
+    /**
+     * Bind a `Target` for this `State`. Compare the underlying
+     * framebuffer and draw buffers and only set them if needed.
+     *
+     * Each `Device` must have at most one `Target` bound at any
+     * time. Nested target binding is not supported even though it is
+     * not prohibited by the shape of the API:
+     *
+     * ```typescript
+     * // This produces a runtime error
+     * fbo.target((fbort) => {
+     *     dev.target((rt) => rt.draw(...));
+     *     fbort.draw(...);
+     * });
+     * ```
+     */
+    bindTarget(target: object, glDrawFramebuffer: WebGLFramebuffer | null, glDrawBuffers: number[]): void;
+    /**
+     * Forget the currently bound target. Does not unbind the
+     * framebuffer nor the draw buffers, expecting they will be
+     * conditionally bound in the next call to `State.bindTarget()`.
+     *
+     * Errors if the target is either `null` or `undefined` already,
+     * as those either indicate an invalid use of `reset()`, or a bug.
+     */
+    forgetTarget(): void;
+    /**
+     * Bind a `Command` for this `State`. Compare the underlying
+     * program and only set it if needed.
+     *
+     * Each `Device` must have at most one `Command` bound at any
+     * time. Nested command binding is not supported even though it is
+     * not prohibited by the shape of the API:
+     *
+     * ```typescript
+     * // This produces a runtime error
+     * dev.target((rt) => {
+     *     rt.batch(cmd, (draw) => {
+     *         rt.draw(cmd, attrs, props);
+     *     });
+     * });
+     * ```
+     */
+    bindCommand(command: object, glProgram: WebGLProgram | null): void;
+    /**
+     * Forget the currently bound command. Does not unbind the
+     * program, expecting it will be conditionally bound in the next
+     * call to `State.bindCommand()`.
+     *
+     * Errors if the command is either `null` or `undefined` already,
+     * as those either indicate an invalid use of `reset()`, or a bug.
+     */
+    forgetCommand(): void;
+    /**
+     * Assert that the currently bound target is the same one as the
+     * parameter.
+     */
+    assertTargetBound(target: object, op: "draw" | "batch-draw" | "blit" | "clear"): void;
+    /**
+     * Assert that the currently bound command is the same one as the
+     * parameter.
+     */
+    assertCommandBound(command: object, op: "batch-draw"): void;
+    /**
+     * Assert that it is safe to bind a target (no other target would
+     * be overwritten).
+     */
+    assertTargetSafeToBind(): void;
+    /**
+     * Assert that it is safe to bind a command (no other command
+     * would be overwritten).
+     */
+    assertCommandSafeToBind(): void;
+    /**
+     * Reset all knowledge and assumptions about current state. Can't
+     * be used while a resource is bound.
+     */
+    reset(): void;
+    private applyDepthTest;
+    private applyStencilTest;
+    private applyBlend;
+}
 export declare class DepthTestDescriptor {
     readonly func: number;
     readonly mask: boolean;
@@ -35,62 +145,5 @@ export declare class BlendDescriptor {
     readonly color?: [number, number, number, number] | undefined;
     static equals(left: BlendDescriptor | null, right: BlendDescriptor | null): boolean;
     constructor(srcRGB: number, srcAlpha: number, dstRGB: number, dstAlpha: number, eqnRGB: number, eqnAlpha: number, color?: [number, number, number, number] | undefined);
-}
-export declare class State {
-    readonly gl: WebGL2RenderingContext;
-    private target;
-    private command;
-    private glProgram;
-    private glDrawFramebuffer;
-    private glDrawBuffers;
-    private depthTest;
-    private stencilTest;
-    private blend;
-    constructor(gl: WebGL2RenderingContext);
-    setDepthTest(depthTest: DepthTestDescriptor | null): void;
-    setStencilTest(stencilTest: StencilTestDescriptor | null): void;
-    setBlend(blend: BlendDescriptor | null): void;
-    /**
-     * Bind a `Target` for this `State`. Each `Device` must have at
-     * most one `Target` bound at any time. Nested target binding is not
-     * supported even though it is not prohibited by the shape of the API:
-     *
-     * // This produces a runtime error
-     * fbo.target((fbort) => {
-     *     dev.target((rt) => rt.draw(...));
-     *     fbort.draw(...);
-     * });
-     */
-    bindTarget(target: object, glDrawFramebuffer: WebGLFramebuffer | null, glDrawBuffers: number[]): void;
-    /**
-     * Unbind currently bound target. Only forgets the target from `State`,
-     * does not unbind the WebGL framebuffer.
-     */
-    unbindTarget(): void;
-    /**
-     * Bind a `Command` for this `State`. Each `Device` must have at
-     * most one `Command` bound at any time. Nested command binding is not
-     * supported even though it is not prohibited by the shape of the API:
-     *
-     * // This produces a runtime error
-     * dev.target((rt) => {
-     *     rt.batch(cmd, (draw) => {
-     *         rt.draw(cmd, attrs, props);
-     *     });
-     * });
-     */
-    bindCommand(command: object, glProgram: WebGLProgram | null): void;
-    /**
-     * Unbind currently bound command. Only forgets the command from `State`,
-     * does not unbind the WebGL program.
-     */
-    unbindCommand(): void;
-    assertTargetBound(target: object, op: "draw" | "batch-draw" | "blit" | "clear"): void;
-    assertCommandBound(command: object, op: "batch-draw"): void;
-    assertTargetUnbound(): void;
-    assertCommandUnbound(): void;
-    private applyDepthTest;
-    private applyStencilTest;
-    private applyBlend;
 }
 //# sourceMappingURL=state.d.ts.map
