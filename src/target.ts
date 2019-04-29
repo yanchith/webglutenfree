@@ -94,9 +94,9 @@ export class Target {
 
         // We would overwrite the currently bound DRAW_FRAMEBUFFER unless we
         // checked
-        state.bindTarget(this, glFramebuffer, glDrawBuffers);
+        state.lockTarget(this, glFramebuffer, glDrawBuffers);
         cb(this);
-        state.forgetTarget();
+        state.unlockTarget();
     }
 
     /**
@@ -122,7 +122,10 @@ export class Target {
         }: TargetClearOptions = {},
     ): void {
         const { state, state: { gl } } = this;
-        state.assertTargetBound(this, "clear");
+        assert.isTrue(
+            state.isTargetLocked(this),
+            "Expected Target to be locked when performing clear",
+        );
 
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
 
@@ -161,7 +164,10 @@ export class Target {
         }: TargetBlitOptions = {},
     ): void {
         const { state, state: { gl } } = this;
-        state.assertTargetBound(this, "blit");
+        assert.isTrue(
+            state.isTargetLocked(this),
+            "Expected Target to be locked when performing blit",
+        );
 
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
@@ -231,8 +237,11 @@ export class Target {
             uniformDescrs,
         } = cmd;
 
-        state.assertTargetBound(this, "draw");
-        state.bindCommand(cmd, glProgram);
+        assert.isTrue(
+            state.isTargetLocked(this),
+            "Expected Target to be locked when performing draw",
+        );
+        state.lockCommand(cmd, glProgram);
 
         state.setDepthTest(depthTestDescr);
         state.setStencilTest(stencilTestDescr);
@@ -272,7 +281,7 @@ export class Target {
             gl.bindVertexArray(null);
         }
 
-        state.forgetCommand();
+        state.unlockCommand();
     }
 
     /**
@@ -314,8 +323,11 @@ export class Target {
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch
 
-        state.assertTargetBound(this, "batch-draw");
-        state.bindCommand(cmd, glProgram);
+        assert.isTrue(
+            state.isTargetLocked(this),
+            "Expected Target to be locked when performing batch draw (pre check)",
+        );
+        state.lockCommand(cmd, glProgram);
 
         state.setDepthTest(depthTestDescr);
         state.setStencilTest(stencilTestDescr);
@@ -325,10 +337,16 @@ export class Target {
 
         cb((attrs: Attributes, props: P) => {
             // Did the user do anything sneaky?
-            state.assertTargetBound(this, "batch-draw");
-            state.assertCommandBound(cmd, "batch-draw");
-            i++;
+            assert.isTrue(
+                state.isTargetLocked(this),
+                "Expected Target to be locked when performing batch draw (inner loop)",
+            );
+            assert.isTrue(
+                state.isCommandLocked(cmd),
+                "Expected Command to be locked when performing batch draw (inner loop)",
+            );
 
+            i++;
             this.uniforms(uniformDescrs, props, i);
             this.textures(textureDescrs, props, i);
 
@@ -367,7 +385,7 @@ export class Target {
             }
         });
 
-        state.forgetCommand();
+        state.unlockCommand();
     }
 
     private drawArrays(
@@ -501,13 +519,14 @@ export class Target {
         index: number,
     ): void {
         const gl = this.state.gl;
-        textureDescrs.forEach(({ identifier: ident, definition: def }, i) => {
-            const tex = typeof def.value === "function"
-                ? def.value(props, index)
-                : def.value;
+
+        textureDescrs.forEach(({ identifier, definition }, i) => {
+            const tex = typeof definition.value === "function"
+                ? definition.value(props, index)
+                : definition.value;
 
             gl.activeTexture(gl.TEXTURE0 + i);
-            switch (def.type) {
+            switch (definition.type) {
                 case UniformType.SAMPLER_2D:
                     gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
                     break;
@@ -516,11 +535,13 @@ export class Target {
                     break;
                 default:
                     assert.unreachable(
-                        def,
-                        () => `Unknown texture uniform: ${ident}`,
+                        definition,
+                        () => `Unknown texture uniform: ${identifier}`,
                     );
                     break;
             }
         });
+
+        gl.activeTexture(gl.TEXTURE0);
     }
 }

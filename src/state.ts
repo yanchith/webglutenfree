@@ -1,24 +1,30 @@
 /**
  * A thin layer on top of WebGL remembering the current state, only
  * setting the actual WebGL state when needed.
+ *
+ * `State` contains locks and state bits. Locks represent an ongoing
+ * usage session with a resource. While a resource is locked, all the
+ * state bits set when locking are expected to still be in place. Any
+ * attempt to set those state bits while the lock is held is
+ * considered an error.
  */
 export class State {
 
     readonly gl: WebGL2RenderingContext;
 
+    private lockedTarget: object | null = null;
+    private lockedCommand: object | null = null;
+
     // Each bit of state can also be `undefined`, meaning "we don't
     // know". This will cause the comparison to fail and we will issue
     // a state transition to ensure the value is what we need it to
-    // be. This happens for new `State`s, and after `device.reset()`
-    // is called. To preserve some sanity, we disallow calling
-    // `device.reset()` if we currently have any resource bound (we
+    // be. This happens for new `State`s, and after `state.reset()` is
+    // called. To preserve some sanity, we disallow calling
+    // `state.reset()` if we currently have any resource locked (we
     // are in the middle of a rendering session).
 
-    private target: object | null | undefined = undefined;
     private glDrawFramebuffer: object | null | undefined = undefined;
     private glDrawBuffers: number[] | undefined = undefined;
-
-    private command: object | null | undefined = undefined;
     private glProgram: WebGLProgram | null | undefined = undefined;
 
     private depthTest: DepthTestDescriptor | null | undefined = undefined;
@@ -33,11 +39,19 @@ export class State {
      * Set the depth test strategy if it differs from the current one.
      */
     setDepthTest(depthTest: DepthTestDescriptor | null): void {
-        if (typeof this.depthTest === "undefined" ||
-            !DepthTestDescriptor.equals(this.depthTest, depthTest)) {
+        if (!DepthTestDescriptor.equals(this.depthTest, depthTest)) {
+            const gl = this.gl;
+
+            if (depthTest) {
+                gl.enable(gl.DEPTH_TEST);
+                gl.depthFunc(depthTest.func);
+                gl.depthMask(depthTest.mask);
+                gl.depthRange(depthTest.rangeStart, depthTest.rangeEnd);
+            } else {
+                gl.disable(gl.DEPTH_TEST);
+            }
 
             this.depthTest = depthTest;
-            this.applyDepthTest();
         }
     }
 
@@ -46,11 +60,58 @@ export class State {
      * one.
      */
     setStencilTest(stencilTest: StencilTestDescriptor | null): void {
-        if (typeof this.stencilTest === "undefined"
-            || !StencilTestDescriptor.equals(this.stencilTest, stencilTest)) {
+        if (!StencilTestDescriptor.equals(this.stencilTest, stencilTest)) {
+            const gl = this.gl;
+
+            if (stencilTest) {
+                const {
+                    frontFunc,
+                    backFunc,
+                    frontFuncRef,
+                    backFuncRef,
+                    frontFuncMask,
+                    backFuncMask,
+                    frontMask,
+                    backMask,
+                    frontOpFail,
+                    backOpFail,
+                    frontOpZFail,
+                    backOpZFail,
+                    frontOpZPass,
+                    backOpZPass,
+                } = stencilTest;
+                gl.enable(gl.STENCIL_TEST);
+                gl.stencilFuncSeparate(
+                    gl.FRONT,
+                    frontFunc,
+                    frontFuncRef,
+                    frontFuncMask,
+                );
+                gl.stencilFuncSeparate(
+                    gl.BACK,
+                    backFunc,
+                    backFuncRef,
+                    backFuncMask,
+                );
+                gl.stencilMaskSeparate(gl.FRONT, frontMask);
+                gl.stencilMaskSeparate(gl.BACK, backMask);
+                gl.stencilOpSeparate(
+                    gl.FRONT,
+                    frontOpFail,
+                    frontOpZFail,
+                    frontOpZPass,
+                );
+                gl.stencilOpSeparate(
+                    gl.BACK,
+                    backOpFail,
+                    backOpZFail,
+                    backOpZPass,
+                );
+            } else {
+                gl.disable(gl.STENCIL_TEST);
+            }
 
             this.stencilTest = stencilTest;
-            this.applyStencilTest();
         }
     }
 
@@ -58,21 +119,40 @@ export class State {
      * Set the blending strategy if it differs from the current one.
      */
     setBlend(blend: BlendDescriptor | null): void {
-        if (typeof this.blend === "undefined"
-            || !BlendDescriptor.equals(this.blend, blend)) {
+        if (!BlendDescriptor.equals(this.blend, blend)) {
+            const gl = this.gl;
+
+            if (blend) {
+                gl.enable(gl.BLEND);
+                gl.blendFuncSeparate(
+                    blend.srcRGB,
+                    blend.dstRGB,
+                    blend.srcAlpha,
+                    blend.dstAlpha,
+                );
+                gl.blendEquationSeparate(
+                    blend.eqnRGB,
+                    blend.eqnAlpha,
+                );
+                if (blend.color) {
+                    const [r, g, b, a] = blend.color;
+                    gl.blendColor(r, g, b, a);
+                }
+            } else {
+                gl.disable(gl.BLEND);
+            }
 
             this.blend = blend;
-            this.applyBlend();
         }
     }
 
     /**
-     * Bind a `Target` for this `State`. Compare the underlying
+     * Lock a `Target` for this `State`. Compare the underlying
      * framebuffer and draw buffers and only set them if needed.
      *
-     * Each `Device` must have at most one `Target` bound at any
-     * time. Nested target binding is not supported even though it is
-     * not prohibited by the shape of the API:
+     * Each `Device` must have at most one `Target` locked at any
+     * time. Nested binding is not supported even though it is not
+     * prohibited by the shape of the API:
      *
      * ```typescript
      * // This produces a runtime error
@@ -82,13 +162,13 @@ export class State {
      * });
      * ```
      */
-    bindTarget(
+    lockTarget(
         target: object,
         glDrawFramebuffer: WebGLFramebuffer | null,
         glDrawBuffers: number[],
     ): void {
-        if (this.target) {
-            throw new Error("Cannot have two Targets bound at the same time");
+        if (this.lockedTarget) {
+            throw new Error("Cannot lock Target, already locked");
         }
 
         const gl = this.gl;
@@ -102,32 +182,33 @@ export class State {
             gl.drawBuffers(glDrawBuffers);
             this.glDrawBuffers = glDrawBuffers;
         }
-        this.target = target;
+
+        this.lockedTarget = target;
     }
 
     /**
-     * Forget the currently bound target. Does not unbind the
+     * Unlock the currently locked target. Does not unbind the
      * framebuffer nor the draw buffers, expecting they will be
-     * conditionally bound in the next call to `State.bindTarget()`.
+     * conditionally bound in the next call to `State.lockTarget()`.
      *
-     * Errors if the target is either `null` or `undefined` already,
-     * as those either indicate an invalid use of `reset()`, or a bug.
+     * Errors if the target is `null` already, as it indicates a usage
+     * bug.
      */
-    forgetTarget(): void {
-        if (!this.target) {
-            throw new Error("Cannot unbind target, none bound");
+    unlockTarget(): void {
+        if (!this.lockedTarget) {
+            throw new Error("Cannot unlock Target, not locked");
         }
 
-        this.target = null;
+        this.lockedTarget = null;
     }
 
     /**
-     * Bind a `Command` for this `State`. Compare the underlying
+     * Lock a `Command` for this `State`. Compare the underlying
      * program and only set it if needed.
      *
-     * Each `Device` must have at most one `Command` bound at any
-     * time. Nested command binding is not supported even though it is
-     * not prohibited by the shape of the API:
+     * Each `Device` must have at most one `Command` locked at any
+     * time. Nested binding is not supported even though it is not
+     * prohibited by the shape of the API:
      *
      * ```typescript
      * // This produces a runtime error
@@ -138,193 +219,95 @@ export class State {
      * });
      * ```
      */
-    bindCommand(command: object, glProgram: WebGLProgram | null): void {
-        if (this.command) {
-            throw new Error("Cannot have two Commands bound at the same time");
+    lockCommand(command: object, glProgram: WebGLProgram | null): void {
+        if (this.lockedCommand) {
+            throw new Error("Cannot lock Command, already locked");
         }
 
         if (this.glProgram !== glProgram) {
             this.gl.useProgram(glProgram);
             this.glProgram = glProgram;
         }
-        this.command = command;
+
+        this.lockedCommand = command;
     }
 
     /**
-     * Forget the currently bound command. Does not unbind the
+     * Unlock the currently locked command. Does not unbind the
      * program, expecting it will be conditionally bound in the next
-     * call to `State.bindCommand()`.
+     * call to `State.lockCommand()`.
      *
-     * Errors if the command is either `null` or `undefined` already,
-     * as those either indicate an invalid use of `reset()`, or a bug.
+     * Errors if `lockedCommand` is `null` already, as it indicates a
+     * usage bug.
      */
-    forgetCommand(): void {
-        if (!this.command) {
-            throw new Error("Cannot unbind command, none bound");
+    unlockCommand(): void {
+        if (!this.lockedCommand) {
+            throw new Error("Cannot unlock Command, not locked");
         }
 
-        this.command = null;
+        this.lockedCommand = null;
     }
 
-    // All the `assert*Bound` methods have no tolerance for
-    // `undefined` state. If the particular state bit happens to be
-    // `undefined`, either `reset()` was called while a resource was
-    // bound, or we have a bug. Either way this should not go
-    // silently.
-
     /**
-     * Assert that the currently bound target is the same one as the
+     * Return whether the currently locked Target is the same as the
      * parameter.
      */
-    assertTargetBound(
-        target: object,
-        op: "draw" | "batch-draw" | "blit" | "clear",
-    ): void {
-        if (this.target !== target) {
-            throw new Error(`Trying to perform ${op}, expected target ${target}, got: ${this.target}`);
-        }
+    isTargetLocked(target: object): boolean {
+        return this.lockedTarget === target;
     }
 
     /**
-     * Assert that the currently bound command is the same one as the
+     * Return whether the currently locked Command is the same as the
      * parameter.
      */
-    assertCommandBound(command: object, op: "batch-draw"): void {
-        if (this.command !== command) {
-            throw new Error(`Trying to perform ${op}, expected command ${command}, got: ${this.command}`);
-        }
-    }
-
-    // All the `assert*SafeToBind` methods have to account for
-    // `undefined` and not error when it is present. They try to
-    // prevent user errors on a best effort bases, but cannot see
-    // beyond `webglutenfree`, so they just assume any other user of
-    // WebGL knows their resources will become unbound.
-
-    /**
-     * Assert that it is safe to bind a target (no other target would
-     * be overwritten).
-     */
-    assertTargetSafeToBind(): void {
-        if (this.target) {
-            throw new Error("A Target is already bound, cannot bind twice");
-        }
+    isCommandLocked(command: object): boolean {
+        return this.lockedCommand === command;
     }
 
     /**
-     * Assert that it is safe to bind a command (no other command
-     * would be overwritten).
+     * Return whether there is no Target currently locked.
      */
-    assertCommandSafeToBind(): void {
-        if (this.command) {
-            throw new Error("A Command is already bound, cannot bind twice");
-        }
+    isTargetUnlocked(): boolean {
+        return this.lockedTarget === null;
+    }
+
+    /**
+     * Return whether there is no Command currently locked.
+     */
+    isCommandUnlocked(): boolean {
+        return this.lockedCommand === null;
     }
 
     /**
      * Reset all knowledge and assumptions about current state. Can't
-     * be used while a resource is bound.
+     * be used while a resource is locked.
      */
     reset(): void {
-        if (this.target) {
-            throw new Error("Cannot reset when a Target is bound");
+        if (this.lockedTarget) {
+            throw new Error("Cannot reset when Target is locked");
         }
 
-        if (this.command) {
-            throw new Error("Cannot reet when a Command is bound");
+        if (this.lockedCommand) {
+            throw new Error("Cannot reset when Command is locked");
         }
 
-        this.target  = undefined;
+        this.lockedTarget  = null;
+        this.lockedCommand  = null;
+
         this.glDrawFramebuffer = undefined;
         this.glDrawBuffers = undefined;
-
-        this.command  = undefined;
         this.glProgram = undefined;
 
         this.depthTest = undefined;
         this.stencilTest = undefined;
         this.blend = undefined;
     }
-
-    private applyDepthTest(): void {
-        const { gl, depthTest } = this;
-        if (depthTest) {
-            gl.enable(gl.DEPTH_TEST);
-            gl.depthFunc(depthTest.func);
-            gl.depthMask(depthTest.mask);
-            gl.depthRange(depthTest.rangeStart, depthTest.rangeEnd);
-        } else {
-            gl.disable(gl.DEPTH_TEST);
-        }
-    }
-
-    private applyStencilTest(): void {
-        const { gl, stencilTest } = this;
-        if (stencilTest) {
-            const {
-                fFn,
-                bFn,
-                fFnRef,
-                bFnRef,
-                fFnMask,
-                bFnMask,
-                fMask,
-                bMask,
-                fOpFail,
-                bOpFail,
-                fOpZFail,
-                bOpZFail,
-                fOpZPass,
-                bOpZPass,
-            } = stencilTest;
-            gl.enable(gl.STENCIL_TEST);
-            gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
-            gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
-            gl.stencilMaskSeparate(gl.FRONT, fMask);
-            gl.stencilMaskSeparate(gl.BACK, bMask);
-            gl.stencilOpSeparate(
-                gl.FRONT,
-                fOpFail,
-                fOpZFail,
-                fOpZPass,
-            );
-            gl.stencilOpSeparate(
-                gl.BACK,
-                bOpFail,
-                bOpZFail,
-                bOpZPass,
-            );
-        } else {
-            gl.disable(gl.STENCIL_TEST);
-        }
-    }
-
-    private applyBlend(): void {
-        const { gl, blend } = this;
-        if (blend) {
-            gl.enable(gl.BLEND);
-            gl.blendFuncSeparate(
-                blend.srcRGB,
-                blend.dstRGB,
-                blend.srcAlpha,
-                blend.dstAlpha,
-            );
-            gl.blendEquationSeparate(
-                blend.eqnRGB,
-                blend.eqnAlpha,
-            );
-            if (blend.color) {
-                const [r, g, b, a] = blend.color;
-                gl.blendColor(r, g, b, a);
-            }
-        } else { gl.disable(gl.BLEND); }
-    }
 }
 
 export class DepthTestDescriptor {
     static equals(
-        left: DepthTestDescriptor | null,
-        right: DepthTestDescriptor | null,
+        left: DepthTestDescriptor | null | undefined,
+        right: DepthTestDescriptor | null | undefined,
     ): boolean {
         if (left === right) { return true; }
         if (!left || !right) { return false; }
@@ -345,50 +328,50 @@ export class DepthTestDescriptor {
 
 export class StencilTestDescriptor {
     static equals(
-        left: StencilTestDescriptor | null,
-        right: StencilTestDescriptor | null,
+        left: StencilTestDescriptor | null | undefined,
+        right: StencilTestDescriptor | null | undefined,
     ): boolean {
         if (left === right) { return true; }
         if (!left || !right) { return false; }
-        if (left.fFn !== right.fFn) { return false; }
-        if (left.bFn !== right.bFn) { return false; }
-        if (left.fFnRef !== right.fFnRef) { return false; }
-        if (left.bFnRef !== right.bFnRef) { return false; }
-        if (left.fFnMask !== right.fFnMask) { return false; }
-        if (left.bFnMask !== right.bFnMask) { return false; }
-        if (left.fMask !== right.fMask) { return false; }
-        if (left.bMask !== right.bMask) { return false; }
-        if (left.fOpFail !== right.fOpFail) { return false; }
-        if (left.bOpFail !== right.bOpFail) { return false; }
-        if (left.fOpZFail !== right.fOpZFail) { return false; }
-        if (left.bOpZFail !== right.bOpZFail) { return false; }
-        if (left.fOpZPass !== right.fOpZPass) { return false; }
-        if (left.bOpZPass !== right.bOpZPass) { return false; }
+        if (left.frontFunc !== right.frontFunc) { return false; }
+        if (left.backFunc !== right.backFunc) { return false; }
+        if (left.frontFuncRef !== right.frontFuncRef) { return false; }
+        if (left.backFuncRef !== right.backFuncRef) { return false; }
+        if (left.frontFuncMask !== right.frontFuncMask) { return false; }
+        if (left.backFuncMask !== right.backFuncMask) { return false; }
+        if (left.frontMask !== right.frontMask) { return false; }
+        if (left.backMask !== right.backMask) { return false; }
+        if (left.frontOpFail !== right.frontOpFail) { return false; }
+        if (left.backOpFail !== right.backOpFail) { return false; }
+        if (left.frontOpZFail !== right.frontOpZFail) { return false; }
+        if (left.backOpZFail !== right.backOpZFail) { return false; }
+        if (left.frontOpZPass !== right.frontOpZPass) { return false; }
+        if (left.backOpZPass !== right.backOpZPass) { return false; }
         return true;
     }
 
     constructor(
-        readonly fFn: number,
-        readonly bFn: number,
-        readonly fFnRef: number,
-        readonly bFnRef: number,
-        readonly fFnMask: number,
-        readonly bFnMask: number,
-        readonly fMask: number,
-        readonly bMask: number,
-        readonly fOpFail: number,
-        readonly bOpFail: number,
-        readonly fOpZFail: number,
-        readonly bOpZFail: number,
-        readonly fOpZPass: number,
-        readonly bOpZPass: number,
+        readonly frontFunc: number,
+        readonly backFunc: number,
+        readonly frontFuncRef: number,
+        readonly backFuncRef: number,
+        readonly frontFuncMask: number,
+        readonly backFuncMask: number,
+        readonly frontMask: number,
+        readonly backMask: number,
+        readonly frontOpFail: number,
+        readonly backOpFail: number,
+        readonly frontOpZFail: number,
+        readonly backOpZFail: number,
+        readonly frontOpZPass: number,
+        readonly backOpZPass: number,
     ) { }
 }
 
 export class BlendDescriptor {
     static equals(
-        left: BlendDescriptor | null,
-        right: BlendDescriptor | null,
+        left: BlendDescriptor | null | undefined,
+        right: BlendDescriptor | null | undefined,
     ): boolean {
         if (left === right) { return true; }
         if (!left || !right) { return false; }

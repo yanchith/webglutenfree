@@ -164,7 +164,10 @@ export class Framebuffer {
         // `Target`'s FBO, so assert against it.
         // (`gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null)` is called
         // at the end of `init()`).
-        state.assertTargetSafeToBind();
+        assert.isTrue(
+            state.isTargetUnlocked(),
+            "Expected Target to be unlocked when performing Framebuffer init (would overwrite)",
+        );
 
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);

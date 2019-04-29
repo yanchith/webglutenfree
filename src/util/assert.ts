@@ -19,6 +19,22 @@ export function is<T extends Primitive>(
     return valuesEqual;
 }
 
+export function isTrue(
+    got: unknown,
+    fmt?: string | ((got: unknown) => string),
+): got is true {
+    const valueTrue = got === true;
+    if (IS_DEBUG_BUILD) {
+        if (!valueTrue) {
+            const msg = fmt
+                ? typeof fmt === "string" ? fmt : fmt(got)
+                : `Assertion failed: values ${got} is not true`;
+            throw new Error(msg);
+        }
+    }
+    return valueTrue;
+}
+
 export function isBoolean(
     got: unknown,
     fmt?: (got: unknown) => string,
