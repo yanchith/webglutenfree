@@ -325,8 +325,8 @@ test("Two devices can coexist on the same context without triggering asserts", (
     t.pass();
 });
 
-// TODO: add asserts and tests for different passing resources owned
-// by different devices/contexts.
+// TODO: add asserts and tests for passing resources owned by
+// different devices/contexts.
 
 function createContext(): WebGL2RenderingContext {
     return new WebGL2RenderingContextMock({
