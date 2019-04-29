@@ -442,8 +442,13 @@ export class Command<P> {
             uniforms,
         } = this;
 
-        // We would overwrite the currently bound program unless we checked
-        state.assertCommandUnbound();
+        // `init()` would overwrite and unbind the currently bound
+        // `Command`'s program, so assert against it.
+        // (`gl.useProgram(null)` is called at the end of `init()`).
+        assert.isTrue(
+            state.isCommandUnlocked(),
+            "Expected Command to be unlocked when performing Program init (would overwrite)",
+        );
 
         const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);

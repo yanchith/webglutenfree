@@ -160,8 +160,14 @@ export class Framebuffer {
             depthStencil,
         } = this;
 
-        // This would overwrite a the currently bound `Target`s FBO
-        state.assertTargetUnbound();
+        // `init()` would overwrite and unbind the currently bound
+        // `Target`'s FBO, so assert against it.
+        // (`gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null)` is called
+        // at the end of `init()`).
+        assert.isTrue(
+            state.isTargetUnlocked(),
+            "Expected Target to be unlocked when performing Framebuffer init (would overwrite)",
+        );
 
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);

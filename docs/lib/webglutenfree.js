@@ -38,6 +38,18 @@ function is(got, expected, fmt) {
     }
     return valuesEqual;
 }
+function isTrue(got, fmt) {
+    const valueTrue = got === true;
+    if (IS_DEBUG_BUILD) {
+        if (!valueTrue) {
+            const msg = fmt
+                ? typeof fmt === "string" ? fmt : fmt(got)
+                : `Assertion failed: values ${got} is not true`;
+            throw new Error(msg);
+        }
+    }
+    return valueTrue;
+}
 function isBoolean(got, fmt) {
     const valueBoolean = typeof got === "boolean";
     if (IS_DEBUG_BUILD) {
@@ -157,6 +169,7 @@ function unreachable(got, fmt) {
 
 var assert = /*#__PURE__*/Object.freeze({
     is: is,
+    isTrue: isTrue,
     isBoolean: isBoolean,
     isNumber: isNumber,
     isArray: isArray,
@@ -169,6 +182,231 @@ var assert = /*#__PURE__*/Object.freeze({
     unreachable: unreachable
 });
 
+/**
+ * A thin layer on top of WebGL remembering the current state, only
+ * setting the actual WebGL state when needed.
+ *
+ * `State` contains locks and state bits. Locks represent an ongoing
+ * usage session with a resource. While a resource is locked, all the
+ * state bits set when locking are expected to still be in place. Any
+ * attempt to set those state bits while the lock is held is
+ * considered an error.
+ */
+class State {
+    constructor(gl) {
+        this.lockedTarget = null;
+        this.lockedCommand = null;
+        // Each bit of state can also be `undefined`, meaning "we don't
+        // know". This will cause the comparison to fail and we will issue
+        // a state transition to ensure the value is what we need it to
+        // be. This happens for new `State`s, and after `state.reset()` is
+        // called. To preserve some sanity, we disallow calling
+        // `state.reset()` if we currently have any resource locked (we
+        // are in the middle of a rendering session).
+        this.glDrawFramebuffer = undefined;
+        this.glDrawBuffers = undefined;
+        this.glProgram = undefined;
+        this.depthTest = undefined;
+        this.stencilTest = undefined;
+        this.blend = undefined;
+        this.gl = gl;
+    }
+    /**
+     * Set the depth test strategy if it differs from the current one.
+     */
+    setDepthTest(depthTest) {
+        if (!DepthTestDescriptor.equals(this.depthTest, depthTest)) {
+            const gl = this.gl;
+            if (depthTest) {
+                gl.enable(gl.DEPTH_TEST);
+                gl.depthFunc(depthTest.func);
+                gl.depthMask(depthTest.mask);
+                gl.depthRange(depthTest.rangeStart, depthTest.rangeEnd);
+            }
+            else {
+                gl.disable(gl.DEPTH_TEST);
+            }
+            this.depthTest = depthTest;
+        }
+    }
+    /**
+     * Set the stencil test strategy if it differs from the current
+     * one.
+     */
+    setStencilTest(stencilTest) {
+        if (!StencilTestDescriptor.equals(this.stencilTest, stencilTest)) {
+            const gl = this.gl;
+            if (stencilTest) {
+                const { frontFunc, backFunc, frontFuncRef, backFuncRef, frontFuncMask, backFuncMask, frontMask, backMask, frontOpFail, backOpFail, frontOpZFail, backOpZFail, frontOpZPass, backOpZPass, } = stencilTest;
+                gl.enable(gl.STENCIL_TEST);
+                gl.stencilFuncSeparate(gl.FRONT, frontFunc, frontFuncRef, frontFuncMask);
+                gl.stencilFuncSeparate(gl.BACK, backFunc, backFuncRef, backFuncMask);
+                gl.stencilMaskSeparate(gl.FRONT, frontMask);
+                gl.stencilMaskSeparate(gl.BACK, backMask);
+                gl.stencilOpSeparate(gl.FRONT, frontOpFail, frontOpZFail, frontOpZPass);
+                gl.stencilOpSeparate(gl.BACK, backOpFail, backOpZFail, backOpZPass);
+            }
+            else {
+                gl.disable(gl.STENCIL_TEST);
+            }
+            this.stencilTest = stencilTest;
+        }
+    }
+    /**
+     * Set the blending strategy if it differs from the current one.
+     */
+    setBlend(blend) {
+        if (!BlendDescriptor.equals(this.blend, blend)) {
+            const gl = this.gl;
+            if (blend) {
+                gl.enable(gl.BLEND);
+                gl.blendFuncSeparate(blend.srcRGB, blend.dstRGB, blend.srcAlpha, blend.dstAlpha);
+                gl.blendEquationSeparate(blend.eqnRGB, blend.eqnAlpha);
+                if (blend.color) {
+                    const [r, g, b, a] = blend.color;
+                    gl.blendColor(r, g, b, a);
+                }
+            }
+            else {
+                gl.disable(gl.BLEND);
+            }
+            this.blend = blend;
+        }
+    }
+    /**
+     * Lock a `Target` for this `State`. Compare the underlying
+     * framebuffer and draw buffers and only set them if needed.
+     *
+     * Each `Device` must have at most one `Target` locked at any
+     * time. Nested binding is not supported even though it is not
+     * prohibited by the shape of the API:
+     *
+     * ```typescript
+     * // This produces a runtime error
+     * fbo.target((fbort) => {
+     *     dev.target((rt) => rt.draw(...));
+     *     fbort.draw(...);
+     * });
+     * ```
+     */
+    lockTarget(target, glDrawFramebuffer, glDrawBuffers) {
+        if (this.lockedTarget) {
+            throw new Error("Cannot lock Target, already locked");
+        }
+        const gl = this.gl;
+        if (this.glDrawFramebuffer !== glDrawFramebuffer) {
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glDrawFramebuffer);
+            this.glDrawFramebuffer = glDrawFramebuffer;
+        }
+        if (typeof this.glDrawBuffers === "undefined"
+            || !arrayEquals(this.glDrawBuffers, glDrawBuffers)) {
+            gl.drawBuffers(glDrawBuffers);
+            this.glDrawBuffers = glDrawBuffers;
+        }
+        this.lockedTarget = target;
+    }
+    /**
+     * Unlock the currently locked target. Does not unbind the
+     * framebuffer nor the draw buffers, expecting they will be
+     * conditionally bound in the next call to `State.lockTarget()`.
+     *
+     * Errors if the target is `null` already, as it indicates a usage
+     * bug.
+     */
+    unlockTarget() {
+        if (!this.lockedTarget) {
+            throw new Error("Cannot unlock Target, not locked");
+        }
+        this.lockedTarget = null;
+    }
+    /**
+     * Lock a `Command` for this `State`. Compare the underlying
+     * program and only set it if needed.
+     *
+     * Each `Device` must have at most one `Command` locked at any
+     * time. Nested binding is not supported even though it is not
+     * prohibited by the shape of the API:
+     *
+     * ```typescript
+     * // This produces a runtime error
+     * dev.target((rt) => {
+     *     rt.batch(cmd, (draw) => {
+     *         rt.draw(cmd, attrs, props);
+     *     });
+     * });
+     * ```
+     */
+    lockCommand(command, glProgram) {
+        if (this.lockedCommand) {
+            throw new Error("Cannot lock Command, already locked");
+        }
+        if (this.glProgram !== glProgram) {
+            this.gl.useProgram(glProgram);
+            this.glProgram = glProgram;
+        }
+        this.lockedCommand = command;
+    }
+    /**
+     * Unlock the currently locked command. Does not unbind the
+     * program, expecting it will be conditionally bound in the next
+     * call to `State.lockCommand()`.
+     *
+     * Errors if `lockedCommand` is `null` already, as it indicates a
+     * usage bug.
+     */
+    unlockCommand() {
+        if (!this.lockedCommand) {
+            throw new Error("Cannot unlock Command, not locked");
+        }
+        this.lockedCommand = null;
+    }
+    /**
+     * Return whether the currently locked Target is the same as the
+     * parameter.
+     */
+    isTargetLocked(target) {
+        return this.lockedTarget === target;
+    }
+    /**
+     * Return whether the currently locked Command is the same as the
+     * parameter.
+     */
+    isCommandLocked(command) {
+        return this.lockedCommand === command;
+    }
+    /**
+     * Return whether there is no Target currently locked.
+     */
+    isTargetUnlocked() {
+        return this.lockedTarget === null;
+    }
+    /**
+     * Return whether there is no Command currently locked.
+     */
+    isCommandUnlocked() {
+        return this.lockedCommand === null;
+    }
+    /**
+     * Reset all knowledge and assumptions about current state. Can't
+     * be used while a resource is locked.
+     */
+    reset() {
+        if (this.lockedTarget) {
+            throw new Error("Cannot reset when Target is locked");
+        }
+        if (this.lockedCommand) {
+            throw new Error("Cannot reset when Command is locked");
+        }
+        this.lockedTarget = null;
+        this.lockedCommand = null;
+        this.glDrawFramebuffer = undefined;
+        this.glDrawBuffers = undefined;
+        this.glProgram = undefined;
+        this.depthTest = undefined;
+        this.stencilTest = undefined;
+        this.blend = undefined;
+    }
+}
 class DepthTestDescriptor {
     constructor(func, mask, rangeStart, rangeEnd) {
         this.func = func;
@@ -199,21 +437,21 @@ class DepthTestDescriptor {
     }
 }
 class StencilTestDescriptor {
-    constructor(fFn, bFn, fFnRef, bFnRef, fFnMask, bFnMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass) {
-        this.fFn = fFn;
-        this.bFn = bFn;
-        this.fFnRef = fFnRef;
-        this.bFnRef = bFnRef;
-        this.fFnMask = fFnMask;
-        this.bFnMask = bFnMask;
-        this.fMask = fMask;
-        this.bMask = bMask;
-        this.fOpFail = fOpFail;
-        this.bOpFail = bOpFail;
-        this.fOpZFail = fOpZFail;
-        this.bOpZFail = bOpZFail;
-        this.fOpZPass = fOpZPass;
-        this.bOpZPass = bOpZPass;
+    constructor(frontFunc, backFunc, frontFuncRef, backFuncRef, frontFuncMask, backFuncMask, frontMask, backMask, frontOpFail, backOpFail, frontOpZFail, backOpZFail, frontOpZPass, backOpZPass) {
+        this.frontFunc = frontFunc;
+        this.backFunc = backFunc;
+        this.frontFuncRef = frontFuncRef;
+        this.backFuncRef = backFuncRef;
+        this.frontFuncMask = frontFuncMask;
+        this.backFuncMask = backFuncMask;
+        this.frontMask = frontMask;
+        this.backMask = backMask;
+        this.frontOpFail = frontOpFail;
+        this.backOpFail = backOpFail;
+        this.frontOpZFail = frontOpZFail;
+        this.backOpZFail = backOpZFail;
+        this.frontOpZPass = frontOpZPass;
+        this.backOpZPass = backOpZPass;
     }
     static equals(left, right) {
         if (left === right) {
@@ -222,46 +460,46 @@ class StencilTestDescriptor {
         if (!left || !right) {
             return false;
         }
-        if (left.fFn !== right.fFn) {
+        if (left.frontFunc !== right.frontFunc) {
             return false;
         }
-        if (left.bFn !== right.bFn) {
+        if (left.backFunc !== right.backFunc) {
             return false;
         }
-        if (left.fFnRef !== right.fFnRef) {
+        if (left.frontFuncRef !== right.frontFuncRef) {
             return false;
         }
-        if (left.bFnRef !== right.bFnRef) {
+        if (left.backFuncRef !== right.backFuncRef) {
             return false;
         }
-        if (left.fFnMask !== right.fFnMask) {
+        if (left.frontFuncMask !== right.frontFuncMask) {
             return false;
         }
-        if (left.bFnMask !== right.bFnMask) {
+        if (left.backFuncMask !== right.backFuncMask) {
             return false;
         }
-        if (left.fMask !== right.fMask) {
+        if (left.frontMask !== right.frontMask) {
             return false;
         }
-        if (left.bMask !== right.bMask) {
+        if (left.backMask !== right.backMask) {
             return false;
         }
-        if (left.fOpFail !== right.fOpFail) {
+        if (left.frontOpFail !== right.frontOpFail) {
             return false;
         }
-        if (left.bOpFail !== right.bOpFail) {
+        if (left.backOpFail !== right.backOpFail) {
             return false;
         }
-        if (left.fOpZFail !== right.fOpZFail) {
+        if (left.frontOpZFail !== right.frontOpZFail) {
             return false;
         }
-        if (left.bOpZFail !== right.bOpZFail) {
+        if (left.backOpZFail !== right.backOpZFail) {
             return false;
         }
-        if (left.fOpZPass !== right.fOpZPass) {
+        if (left.frontOpZPass !== right.frontOpZPass) {
             return false;
         }
-        if (left.bOpZPass !== right.bOpZPass) {
+        if (left.backOpZPass !== right.backOpZPass) {
             return false;
         }
         return true;
@@ -333,168 +571,6 @@ function arrayEquals(left, right) {
         }
     }
     return true;
-}
-class State {
-    constructor(gl) {
-        this.target = null;
-        this.command = null;
-        this.glProgram = null;
-        this.glDrawFramebuffer = null;
-        this.depthTest = null;
-        this.stencilTest = null;
-        this.blend = null;
-        this.gl = gl;
-        this.glDrawBuffers = [gl.BACK];
-    }
-    setDepthTest(depthTest) {
-        if (!DepthTestDescriptor.equals(this.depthTest, depthTest)) {
-            this.depthTest = depthTest;
-            this.applyDepthTest();
-        }
-    }
-    setStencilTest(stencilTest) {
-        if (!StencilTestDescriptor.equals(this.stencilTest, stencilTest)) {
-            this.stencilTest = stencilTest;
-            this.applyStencilTest();
-        }
-    }
-    setBlend(blend) {
-        if (!BlendDescriptor.equals(this.blend, blend)) {
-            this.blend = blend;
-            this.applyBlend();
-        }
-    }
-    /**
-     * Bind a `Target` for this `State`. Each `Device` must have at
-     * most one `Target` bound at any time. Nested target binding is not
-     * supported even though it is not prohibited by the shape of the API:
-     *
-     * // This produces a runtime error
-     * fbo.target((fbort) => {
-     *     dev.target((rt) => rt.draw(...));
-     *     fbort.draw(...);
-     * });
-     */
-    bindTarget(target, glDrawFramebuffer, glDrawBuffers) {
-        if (this.target) {
-            throw new Error("Cannot have two Targets bound at the same time");
-        }
-        const gl = this.gl;
-        if (this.glDrawFramebuffer !== glDrawFramebuffer) {
-            this.gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, glDrawFramebuffer);
-            this.glDrawFramebuffer = glDrawFramebuffer;
-        }
-        if (!arrayEquals(this.glDrawBuffers, glDrawBuffers)) {
-            this.gl.drawBuffers(glDrawBuffers);
-            this.glDrawBuffers = glDrawBuffers;
-        }
-        this.target = target;
-    }
-    /**
-     * Unbind currently bound target. Only forgets the target from `State`,
-     * does not unbind the WebGL framebuffer.
-     */
-    unbindTarget() {
-        if (!this.target) {
-            throw new Error("Cannot unbind target, none bound");
-        }
-        this.target = null;
-    }
-    /**
-     * Bind a `Command` for this `State`. Each `Device` must have at
-     * most one `Command` bound at any time. Nested command binding is not
-     * supported even though it is not prohibited by the shape of the API:
-     *
-     * // This produces a runtime error
-     * dev.target((rt) => {
-     *     rt.batch(cmd, (draw) => {
-     *         rt.draw(cmd, attrs, props);
-     *     });
-     * });
-     */
-    bindCommand(command, glProgram) {
-        if (this.command) {
-            throw new Error("Cannot have two Commands bound at the same time");
-        }
-        if (this.glProgram !== glProgram) {
-            this.gl.useProgram(glProgram);
-            this.glProgram = glProgram;
-        }
-        this.command = command;
-    }
-    /**
-     * Unbind currently bound command. Only forgets the command from `State`,
-     * does not unbind the WebGL program.
-     */
-    unbindCommand() {
-        if (!this.command) {
-            throw new Error("Cannot unbind command, none bound");
-        }
-        this.command = null;
-    }
-    assertTargetBound(target, op) {
-        if (this.target !== target) {
-            throw new Error(`Trying to perform ${op}, expected target ${target}, got: ${this.target}`);
-        }
-    }
-    assertCommandBound(command, op) {
-        if (this.command !== command) {
-            throw new Error(`Trying to perform ${op}, expected command ${command}, got: ${this.command}`);
-        }
-    }
-    assertTargetUnbound() {
-        if (this.target) {
-            throw new Error("A Target is already bound, cannot bind twice");
-        }
-    }
-    assertCommandUnbound() {
-        if (this.command) {
-            throw new Error("A Command is already bound, cannot bind twice");
-        }
-    }
-    applyDepthTest() {
-        const { gl, depthTest } = this;
-        if (depthTest) {
-            gl.enable(gl.DEPTH_TEST);
-            gl.depthFunc(depthTest.func);
-            gl.depthMask(depthTest.mask);
-            gl.depthRange(depthTest.rangeStart, depthTest.rangeEnd);
-        }
-        else {
-            gl.disable(gl.DEPTH_TEST);
-        }
-    }
-    applyStencilTest() {
-        const { gl, stencilTest } = this;
-        if (stencilTest) {
-            const { fFn, bFn, fFnRef, bFnRef, fFnMask, bFnMask, fMask, bMask, fOpFail, bOpFail, fOpZFail, bOpZFail, fOpZPass, bOpZPass, } = stencilTest;
-            gl.enable(gl.STENCIL_TEST);
-            gl.stencilFuncSeparate(gl.FRONT, fFn, fFnRef, fFnMask);
-            gl.stencilFuncSeparate(gl.BACK, bFn, bFnRef, bFnMask);
-            gl.stencilMaskSeparate(gl.FRONT, fMask);
-            gl.stencilMaskSeparate(gl.BACK, bMask);
-            gl.stencilOpSeparate(gl.FRONT, fOpFail, fOpZFail, fOpZPass);
-            gl.stencilOpSeparate(gl.BACK, bOpFail, bOpZFail, bOpZPass);
-        }
-        else {
-            gl.disable(gl.STENCIL_TEST);
-        }
-    }
-    applyBlend() {
-        const { gl, blend } = this;
-        if (blend) {
-            gl.enable(gl.BLEND);
-            gl.blendFuncSeparate(blend.srcRGB, blend.dstRGB, blend.srcAlpha, blend.dstAlpha);
-            gl.blendEquationSeparate(blend.eqnRGB, blend.eqnAlpha);
-            if (blend.color) {
-                const [r, g, b, a] = blend.color;
-                gl.blendColor(r, g, b, a);
-            }
-        }
-        else {
-            gl.disable(gl.BLEND);
-        }
-    }
 }
 
 const INT_PATTERN = /^0|[1-9]\d*$/;
@@ -630,8 +706,10 @@ class Command {
     }
     init() {
         const { state, state: { gl }, vsSource, fsSource, uniforms, } = this;
-        // We would overwrite the currently bound program unless we checked
-        state.assertCommandUnbound();
+        // `init()` would overwrite and unbind the currently bound
+        // `Command`'s program, so assert against it.
+        // (`gl.useProgram(null)` is called at the end of `init()`).
+        isTrue(state.isCommandUnlocked(), "Expected Command to be unlocked when performing Program init (would overwrite)");
         const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
         const prog = createProgram(gl, vs, fs);
@@ -1032,9 +1110,9 @@ class Target {
         const { state, glFramebuffer, glDrawBuffers, } = this;
         // We would overwrite the currently bound DRAW_FRAMEBUFFER unless we
         // checked
-        state.bindTarget(this, glFramebuffer, glDrawBuffers);
+        state.lockTarget(this, glFramebuffer, glDrawBuffers);
         cb(this);
-        state.unbindTarget();
+        state.unlockTarget();
     }
     /**
      * Clear selected buffers to provided values.
@@ -1045,7 +1123,7 @@ class Target {
         ? this.state.gl.drawingBufferHeight
         : this.surfaceHeight, } = {}) {
         const { state, state: { gl } } = this;
-        state.assertTargetBound(this, "clear");
+        isTrue(state.isTargetLocked(this), "Expected Target to be locked when performing clear");
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
         if (bits & TargetBufferBitmask.COLOR) {
             gl.clearColor(r, g, b, a);
@@ -1068,7 +1146,7 @@ class Target {
         ? this.state.gl.drawingBufferHeight
         : this.surfaceHeight, filter = TargetBlitFilter.NEAREST, scissorX = dstX, scissorY = dstY, scissorWidth = dstWidth, scissorHeight = dstHeight, } = {}) {
         const { state, state: { gl } } = this;
-        state.assertTargetBound(this, "blit");
+        isTrue(state.isTargetLocked(this), "Expected Target to be locked when performing blit");
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, source.glFramebuffer);
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
         gl.blitFramebuffer(srcX, srcY, srcWidth, srcHeight, dstX, dstY, dstWidth, dstHeight, bits, filter);
@@ -1088,18 +1166,15 @@ class Target {
         : this.surfaceHeight, scissorX = viewportX, scissorY = viewportY, scissorWidth = viewportWidth, scissorHeight = viewportHeight, } = {}) {
         const { state, state: { gl } } = this;
         const { glProgram, depthTestDescr, stencilTestDescr, blendDescr, textureDescrs, uniformDescrs, } = cmd;
-        state.assertTargetBound(this, "draw");
-        state.bindCommand(cmd, glProgram);
+        isTrue(state.isTargetLocked(this), "Expected Target to be locked when performing draw");
+        state.lockCommand(cmd, glProgram);
         state.setDepthTest(depthTestDescr);
         state.setStencilTest(stencilTestDescr);
         state.setBlend(blendDescr);
         this.textures(textureDescrs, props, 0);
         this.uniforms(uniformDescrs, props, 0);
-        // Only bind the VAO if it is not null - we always assume we cleaned
-        // up after ourselves so it SHOULD be unbound prior to this point
-        if (attrs.glVertexArray) {
-            gl.bindVertexArray(attrs.glVertexArray);
-        }
+        // TODO: figure out if we can optimize this away
+        gl.bindVertexArray(attrs.glVertexArray);
         gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
         if (attrs.indexed) {
@@ -1110,11 +1185,9 @@ class Target {
             this.drawArrays(attrs.primitive, attrs.count, 0, // offset
             attrs.instanceCount);
         }
-        // Clean up after ourselves if we bound something
-        if (attrs.glVertexArray) {
-            gl.bindVertexArray(null);
-        }
-        state.unbindCommand();
+        // TODO: figure out if we can optimize this away
+        gl.bindVertexArray(null);
+        state.unlockCommand();
     }
     /**
      * Perform multiple draws to this target with the same command, but multiple
@@ -1133,25 +1206,21 @@ class Target {
         const { glProgram, depthTestDescr, stencilTestDescr, blendDescr, uniformDescrs, textureDescrs, } = cmd;
         // The price for gl.useProgram, enabling depth/stencil tests and
         // blending is paid only once for all draw calls in batch
-        state.assertTargetBound(this, "batch-draw");
-        state.bindCommand(cmd, glProgram);
+        isTrue(state.isTargetLocked(this), "Expected Target to be locked when performing batch draw (pre check)");
+        state.lockCommand(cmd, glProgram);
         state.setDepthTest(depthTestDescr);
         state.setStencilTest(stencilTestDescr);
         state.setBlend(blendDescr);
         let i = 0;
         cb((attrs, props) => {
             // Did the user do anything sneaky?
-            state.assertTargetBound(this, "batch-draw");
-            state.assertCommandBound(cmd, "batch-draw");
+            isTrue(state.isTargetLocked(this), "Expected Target to be locked when performing batch draw (inner loop)");
+            isTrue(state.isCommandLocked(cmd), "Expected Command to be locked when performing batch draw (inner loop)");
             i++;
             this.uniforms(uniformDescrs, props, i);
             this.textures(textureDescrs, props, i);
-            // Only bind the VAO if it is not null - we always assume we
-            // cleaned up after ourselves so it SHOULD be unbound prior to
-            // this point
-            if (attrs.glVertexArray) {
-                gl.bindVertexArray(attrs.glVertexArray);
-            }
+            // TODO: figure out if we can optimize this away
+            gl.bindVertexArray(attrs.glVertexArray);
             gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
             gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
             if (attrs.indexed) {
@@ -1162,14 +1231,10 @@ class Target {
                 this.drawArrays(attrs.primitive, attrs.count, 0, // offset
                 attrs.instanceCount);
             }
-            // Clean up after ourselves if we bound something. We can't
-            // leave this bound as an optimisation, as we assume everywhere
-            // it is not bound in beginning of our methods.
-            if (attrs.glVertexArray) {
-                gl.bindVertexArray(null);
-            }
+            // TODO: figure out if we can optimize this away
+            gl.bindVertexArray(null);
         });
-        state.unbindCommand();
+        state.unlockCommand();
     }
     drawArrays(primitive, count, offset, instanceCount) {
         if (instanceCount) {
@@ -1265,12 +1330,12 @@ class Target {
     }
     textures(textureDescrs, props, index) {
         const gl = this.state.gl;
-        textureDescrs.forEach(({ identifier: ident, definition: def }, i) => {
-            const tex = typeof def.value === "function"
-                ? def.value(props, index)
-                : def.value;
+        textureDescrs.forEach(({ identifier, definition }, i) => {
+            const tex = typeof definition.value === "function"
+                ? definition.value(props, index)
+                : definition.value;
             gl.activeTexture(gl.TEXTURE0 + i);
-            switch (def.type) {
+            switch (definition.type) {
                 case UniformType.SAMPLER_2D:
                     gl.bindTexture(gl.TEXTURE_2D, tex.glTexture);
                     break;
@@ -1278,10 +1343,11 @@ class Target {
                     gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex.glTexture);
                     break;
                 default:
-                    unreachable(def, () => `Unknown texture uniform: ${ident}`);
+                    unreachable(definition, () => `Unknown texture uniform: ${identifier}`);
                     break;
             }
         });
+        gl.activeTexture(gl.TEXTURE0);
     }
 }
 
@@ -2327,8 +2393,11 @@ class Framebuffer {
     }
     init() {
         const { width, height, state, state: { gl }, glColorAttachments, colors, depthStencil, } = this;
-        // This would overwrite a the currently bound `Target`s FBO
-        state.assertTargetUnbound();
+        // `init()` would overwrite and unbind the currently bound
+        // `Target`'s FBO, so assert against it.
+        // (`gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null)` is called
+        // at the end of `init()`).
+        isTrue(state.isTargetUnlocked(), "Expected Target to be unlocked when performing Framebuffer init (would overwrite)");
         const fbo = gl.createFramebuffer();
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
         for (let i = 0; i < colors.length; ++i) {
@@ -2409,8 +2478,8 @@ var Extension;
 })(Extension || (Extension = {}));
 class Device {
     /**
-     * Create a new canvas and device (containing a gl context). Mount it on
-     * `element` parameter (default is `document.body`).
+     * Create a new canvas and device (containing a WebGL
+     * context). Mount it on `element` (default is `document.body`).
      */
     static create(options = {}) {
         const { element = document.body } = options;
@@ -2440,9 +2509,11 @@ class Device {
         return Device.createWithContext(gl, options);
     }
     /**
-     * Create a new device from existing gl context. Does not take ownership of
-     * context, but concurrent usage of it voids the warranty. Only use
-     * concurrently when absolutely necessary.
+     * Create a new device from existing WebGL context. Does not take
+     * ownership of context, but concurrent usage may be the source of
+     * bugs. Be sure to know what you are doing.
+     *
+     * Also see `device.reset()`.
      */
     static createWithContext(gl, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, } = {}) {
         if (extensions) {
@@ -2719,6 +2790,34 @@ class Device {
      */
     createFramebuffer(width, height, color, depthStencil) {
         return _createFramebuffer(this.state, width, height, color, depthStencil);
+    }
+    /**
+     * Reset all tracked WebGL state.
+     *
+     * Instead of always issuing calls to WebGL, we sometimes remember
+     * various pieces of it's state ourselves. This works great for
+     * preventing state transitions when rendering while keeping the
+     * rendering code straightforward, but breaks apart once we have
+     * to share the WebGL context with someone else.
+     *
+     * `device.reset()` is an escape hatch that notifies the device
+     * that it should no longer trust the values it has
+     * remembered. Use it when using `webglutenfree` with another
+     * WebGL wrapper, such as `three.js`, or when needing to use the
+     * GL context yourself. Note that calling `device.reset()` with
+     * any resources bound is an error, i.e. don't do this:
+     *
+     * ```typescript
+     * dev.target((rt) => {
+     *     // Trying to reset the device while rendering is an error!
+     *     dev.reset();
+     * });
+     * ```
+     *
+     * Also see `Device.createWithContext()`.
+     */
+    reset() {
+        this.state.reset();
     }
 }
 function createDebugFunc(gl, key) {
