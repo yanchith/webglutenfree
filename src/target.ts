@@ -250,11 +250,8 @@ export class Target {
         this.textures(textureDescrs, props, 0);
         this.uniforms(uniformDescrs, props, 0);
 
-        // Only bind the VAO if it is not null - we always assume we cleaned
-        // up after ourselves so it SHOULD be unbound prior to this point
-        if (attrs.glVertexArray) {
-            gl.bindVertexArray(attrs.glVertexArray);
-        }
+        // TODO: figure out if we can optimize this away
+        gl.bindVertexArray(attrs.glVertexArray);
 
         gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
         gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
@@ -276,10 +273,8 @@ export class Target {
             );
         }
 
-        // Clean up after ourselves if we bound something
-        if (attrs.glVertexArray) {
-            gl.bindVertexArray(null);
-        }
+        // TODO: figure out if we can optimize this away
+        gl.bindVertexArray(null);
 
         state.unlockCommand();
     }
@@ -350,12 +345,8 @@ export class Target {
             this.uniforms(uniformDescrs, props, i);
             this.textures(textureDescrs, props, i);
 
-            // Only bind the VAO if it is not null - we always assume we
-            // cleaned up after ourselves so it SHOULD be unbound prior to
-            // this point
-            if (attrs.glVertexArray) {
-                gl.bindVertexArray(attrs.glVertexArray);
-            }
+            // TODO: figure out if we can optimize this away
+            gl.bindVertexArray(attrs.glVertexArray);
 
             gl.viewport(viewportX, viewportY, viewportWidth, viewportHeight);
             gl.scissor(scissorX, scissorY, scissorWidth, scissorHeight);
@@ -377,12 +368,8 @@ export class Target {
                 );
             }
 
-            // Clean up after ourselves if we bound something. We can't
-            // leave this bound as an optimisation, as we assume everywhere
-            // it is not bound in beginning of our methods.
-            if (attrs.glVertexArray) {
-                gl.bindVertexArray(null);
-            }
+            // TODO: figure out if we can optimize this away
+            gl.bindVertexArray(null);
         });
 
         state.unlockCommand();
