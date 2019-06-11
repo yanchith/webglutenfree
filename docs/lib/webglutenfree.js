@@ -50,18 +50,6 @@ function isTrue(got, fmt) {
     }
     return valueTrue;
 }
-function isBoolean(got, fmt) {
-    const valueBoolean = typeof got === "boolean";
-    if (IS_DEBUG_BUILD) {
-        if (!valueBoolean) {
-            const msg = fmt
-                ? fmt(got)
-                : `Assertion failed: value ${got} not a boolean`;
-            throw new Error(msg);
-        }
-    }
-    return valueBoolean;
-}
 function isNumber(got, fmt) {
     const valueNumber = typeof got === "number";
     if (IS_DEBUG_BUILD) {
@@ -134,18 +122,6 @@ function isGreater(got, low, fmt) {
     }
     return valueGreater;
 }
-function isGreaterEqual(got, low, fmt) {
-    const valueGreaterEqual = got >= low;
-    if (IS_DEBUG_BUILD) {
-        if (!valueGreaterEqual) {
-            const msg = fmt
-                ? fmt(got, low)
-                : `Assertion failed: value ${got} not greater-equal than expected ${low}`;
-            throw new Error(msg);
-        }
-    }
-    return valueGreaterEqual;
-}
 function isInRangeInclusive(got, low, high, fmt) {
     const valueInRangeInclusive = got >= low && got <= high;
     if (IS_DEBUG_BUILD) {
@@ -166,21 +142,6 @@ function unreachable(got, fmt) {
         : `Assertion failed: this branch should be unreachable`;
     throw new Error(msg);
 }
-
-var assert = /*#__PURE__*/Object.freeze({
-    is: is,
-    isTrue: isTrue,
-    isBoolean: isBoolean,
-    isNumber: isNumber,
-    isArray: isArray,
-    isString: isString,
-    isNotNullOrUndefined: isNotNullOrUndefined,
-    isNotEmpty: isNotEmpty,
-    isGreater: isGreater,
-    isGreaterEqual: isGreaterEqual,
-    isInRangeInclusive: isInRangeInclusive,
-    unreachable: unreachable
-});
 
 /**
  * A thin layer on top of WebGL remembering the current state, only

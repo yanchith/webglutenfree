@@ -10,6 +10,7 @@
     - `device.canvasCSS{Width,Height}` is renamed to `device.logical{Width,Height}`
 - Rename `device.update()` to `device.resizeToFit()`
 - Add `device.reset()` for possible interoperability with other WebGL libraries
+- Update dependencies
 
 ### Fixes
 
