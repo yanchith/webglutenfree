@@ -202,8 +202,13 @@ export class Device {
         explicitViewportWidth?: number,
         explicitViewportHeight?: number,
     ) {
+        const canvas = gl.canvas;
+        if (!(canvas instanceof HTMLCanvasElement)) {
+            throw new Error("Offscreen canvas is not supported yet");
+        }
+
         this.gl = gl;
-        this.canvas = gl.canvas;
+        this.canvas = canvas;
         this.explicitPixelRatio = explicitPixelRatio;
         this.explicitViewportWidth = explicitViewportWidth;
         this.explicitViewportHeight = explicitViewportHeight;

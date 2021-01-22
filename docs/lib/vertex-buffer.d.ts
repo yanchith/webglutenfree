@@ -1,4 +1,3 @@
-/// <reference types="webgl2" />
 import { BufferUsage } from "./types";
 export declare enum VertexBufferIntegerDataType {
     BYTE = 5120,

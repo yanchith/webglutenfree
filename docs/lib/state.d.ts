@@ -1,4 +1,3 @@
-/// <reference types="webgl2" />
 /**
  * A thin layer on top of WebGL remembering the current state, only
  * setting the actual WebGL state when needed.

@@ -1,4 +1,3 @@
-/// <reference types="webgl2" />
 export declare enum TextureColorStorageFormat {
     R8 = 33321,
     R8_SNORM = 36756,

@@ -2438,6 +2438,24 @@ var Extension;
     Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
 })(Extension || (Extension = {}));
 class Device {
+    constructor(gl, explicitPixelRatio, explicitViewportWidth, explicitViewportHeight) {
+        const canvas = gl.canvas;
+        if (!(canvas instanceof HTMLCanvasElement)) {
+            throw new Error("Offscreen canvas is not supported yet");
+        }
+        this.gl = gl;
+        this.canvas = canvas;
+        this.explicitPixelRatio = explicitPixelRatio;
+        this.explicitViewportWidth = explicitViewportWidth;
+        this.explicitViewportHeight = explicitViewportHeight;
+        this.resizeToFit();
+        this.state = new State(gl);
+        this.backbufferTarget = new Target(this.state, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        // Enable scissor test globally. Practically everywhere you would want
+        // it disbled you can pass explicit scissor box instead. The impact on
+        // perf is negligent
+        gl.enable(gl.SCISSOR_TEST);
+    }
     /**
      * Create a new canvas and device (containing a WebGL
      * context). Mount it on `element` (default is `document.body`).
@@ -2486,23 +2504,9 @@ class Device {
             });
         }
         if (debug) {
-            gl = Object.entries(gl).reduce((accum, [k, v]) => (Object.assign({}, accum, { [k]: v === "function" ? createDebugFunc(gl, k) : v })), gl);
+            gl = Object.entries(gl).reduce((accum, [k, v]) => (Object.assign(Object.assign({}, accum), { [k]: v === "function" ? createDebugFunc(gl, k) : v })), gl);
         }
         return new Device(gl, pixelRatio, viewportWidth, viewportHeight);
-    }
-    constructor(gl, explicitPixelRatio, explicitViewportWidth, explicitViewportHeight) {
-        this.gl = gl;
-        this.canvas = gl.canvas;
-        this.explicitPixelRatio = explicitPixelRatio;
-        this.explicitViewportWidth = explicitViewportWidth;
-        this.explicitViewportHeight = explicitViewportHeight;
-        this.resizeToFit();
-        this.state = new State(gl);
-        this.backbufferTarget = new Target(this.state, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
-        // Enable scissor test globally. Practically everywhere you would want
-        // it disbled you can pass explicit scissor box instead. The impact on
-        // perf is negligent
-        gl.enable(gl.SCISSOR_TEST);
     }
     /**
      * Return width of the WebGL drawing buffer in physical (device)

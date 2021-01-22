@@ -173,7 +173,7 @@ export class Framebuffer {
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo);
 
         for (let i = 0; i < colors.length; ++i) {
-            const buffer = colors[i];
+            const buffer = colors[i]!;
             if (buffer instanceof Renderbuffer) {
                 gl.framebufferRenderbuffer(
                     gl.DRAW_FRAMEBUFFER,

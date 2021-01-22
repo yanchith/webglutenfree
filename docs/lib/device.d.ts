@@ -1,4 +1,3 @@
-/// <reference types="webgl2" />
 import { Target } from "./target";
 import { Command, CommandCreateOptions } from "./command";
 import { VertexBuffer, VertexBufferCreateOptions, VertexBufferDataType, VertexBufferDataTypeToTypedArray } from "./vertex-buffer";
@@ -80,7 +79,7 @@ export declare class Device {
      * decides to allocate a smaller drawing buffer than requested,
      * e.g. when the size is not supported by hardware.
      */
-    readonly physicalWidth: number;
+    get physicalWidth(): number;
     /**
      * Return height of the WebGL drawing buffer in physical
      * (device) pixels. This will usually be the same as
@@ -88,33 +87,33 @@ export declare class Device {
      * decides to allocate a smaller drawing buffer than requested,
      * e.g. when the size is not supported by hardware.
      */
-    readonly physicalHeight: number;
+    get physicalHeight(): number;
     /**
      * Return width of the canvas in physical (device) pixels. This
      * will usually be the same as `device.physicalWidth`.
      */
-    readonly requestedPhysicalWidth: number;
+    get requestedPhysicalWidth(): number;
     /**
      * Return height of the canvas in physical (device) pixels. This
      * will usually be the same as `device.physicalHeight`.
      */
-    readonly requestedPhysicalHeight: number;
+    get requestedPhysicalHeight(): number;
     /**
      * Return width of canvas in logical (CSS) pixels (before applying
      * device pixel ratio). This is useful for e.g. computing the
      * position of mouse events.
      */
-    readonly logicalWidth: number;
+    get logicalWidth(): number;
     /**
      * Return height of canvas in logical (CSS) pixels (before
      * applying device pixel ratio). This is useful for e.g. computing
      * the position of mouse events.
      */
-    readonly logicalHeight: number;
+    get logicalHeight(): number;
     /**
      * Return the device pixel ratio for this device.
      */
-    readonly pixelRatio: number;
+    get pixelRatio(): number;
     /**
      * Resize the canvas if the device pixel ratio or canvas
      * dimensions changed.

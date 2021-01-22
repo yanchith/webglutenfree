@@ -34,7 +34,7 @@ export function is2<T>(array: T[] | T[][]): array is T[][] {
  */
 export function shape2<T>(array: T[][]): [number, number] {
     const outer = array.length;
-    const inner = outer ? array[0].length : 0;
+    const inner = outer ? array[0]!.length : 0;
     return [outer, inner];
 }
 
