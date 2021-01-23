@@ -2,11 +2,19 @@
 
 ## Unreleased
 
+## v0.0.13
+
+### Fixes
+
+- Fall back from `globalThis` to `self` if not defined to support some
+  environments with WebGL2 but without `globalThis` (such as old releases of
+  Electron)
+
 ## v0.0.12
 
 (This is the same as v0.0.11, which was erronously published from the incorrect branch)
 
-## v0.0.11 (unreleased)
+## v0.0.11
 
 ### Enhancements
 

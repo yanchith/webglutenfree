@@ -2482,10 +2482,12 @@ class Device {
      */
     static createWithWebGLContext(gl, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, } = {}) {
         // We need to check whether the provided canvas isn't offscreen, but
-        // only if our current platform supports it. Note that OffscreenCanvas
-        // is accessed from globalThis to prevent name reference errors.
+        // only if our current platform supports it. Note that `OffscreenCanvas`
+        // is accessed from `globalThis` (falling back to `self` for older
+        // platforms) to prevent name reference errors.
         let canvas;
-        if (globalThis.OffscreenCanvas && gl.canvas instanceof globalThis.OffscreenCanvas) {
+        const g = typeof globalThis === "undefined" ? self : globalThis;
+        if (g.OffscreenCanvas && gl.canvas instanceof g.OffscreenCanvas) {
             throw new Error("Offscreen canvas is not supported yet");
         }
         else {
