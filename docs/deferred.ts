@@ -39,7 +39,10 @@ const PROJ_NEAR = 0.1;
 const PROJ_FAR = 500;
 const PROJ_FOV = Math.PI / 2;
 
-const dev = Device.create({
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
+const dev = Device.createWithCanvasElement(canvas, {
     antialias: false,
     extensions: [Extension.EXTColorBufferFloat],
 });

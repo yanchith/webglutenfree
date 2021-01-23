@@ -2438,11 +2438,7 @@ var Extension;
     Extension["OESTextureFloatLinear"] = "OES_texture_float_linear";
 })(Extension || (Extension = {}));
 class Device {
-    constructor(gl, explicitPixelRatio, explicitViewportWidth, explicitViewportHeight) {
-        const canvas = gl.canvas;
-        if (!(canvas instanceof HTMLCanvasElement)) {
-            throw new Error("Offscreen canvas is not supported yet");
-        }
+    constructor(gl, canvas, explicitPixelRatio, explicitViewportWidth, explicitViewportHeight) {
         this.gl = gl;
         this.canvas = canvas;
         this.explicitPixelRatio = explicitPixelRatio;
@@ -2452,28 +2448,15 @@ class Device {
         this.state = new State(gl);
         this.backbufferTarget = new Target(this.state, [gl.BACK], null, gl.drawingBufferWidth, gl.drawingBufferHeight);
         // Enable scissor test globally. Practically everywhere you would want
-        // it disbled you can pass explicit scissor box instead. The impact on
-        // perf is negligent
+        // it disabled you can pass explicit scissor box instead. The impact on
+        // perf is negligent.
         gl.enable(gl.SCISSOR_TEST);
     }
     /**
-     * Create a new canvas and device (containing a WebGL
-     * context). Mount it on `element` (default is `document.body`).
+     * Create a new device from existing `HTMLCanvasElement`. Does not take
+     * ownership of canvas.
      */
-    static create(options = {}) {
-        const { element = document.body } = options;
-        if (element instanceof HTMLCanvasElement) {
-            return Device.createWithCanvas(element, options);
-        }
-        const canvas = document.createElement("canvas");
-        element.appendChild(canvas);
-        return Device.createWithCanvas(canvas, options);
-    }
-    /**
-     * Create a new device from existing canvas. Does not take ownership of
-     * canvas.
-     */
-    static createWithCanvas(canvas, options = {}) {
+    static createWithCanvasElement(canvas, options = {}) {
         const { alpha = true, antialias = true, depth = true, stencil = true, preserveDrawingBuffer = false, } = options;
         const gl = canvas.getContext("webgl2", {
             alpha,
@@ -2483,18 +2466,31 @@ class Device {
             preserveDrawingBuffer,
         });
         if (!gl) {
-            throw new Error("Could not get webgl2 context");
+            throw new Error("Could not get WebGL2 context");
         }
-        return Device.createWithContext(gl, options);
+        return Device.createWithWebGLContext(gl, options);
     }
     /**
-     * Create a new device from existing WebGL context. Does not take
-     * ownership of context, but concurrent usage may be the source of
-     * bugs. Be sure to know what you are doing.
+     * Create a new device from existing WebGL context. Does not take ownership
+     * of context, but concurrent usage may be the source of bugs. Be sure to
+     * know what you are doing.
+     *
+     * Note that only contexts created from `HTMLCanvasElement` are supported
+     * and contexts create from `OffscreenCanvas` will fail.
      *
      * Also see `device.reset()`.
      */
-    static createWithContext(gl, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, } = {}) {
+    static createWithWebGLContext(gl, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, } = {}) {
+        // We need to check whether the provided canvas isn't offscreen, but
+        // only if our current platform supports it. Note that OffscreenCanvas
+        // is accessed from globalThis to prevent name reference errors.
+        let canvas;
+        if (globalThis.OffscreenCanvas && gl.canvas instanceof globalThis.OffscreenCanvas) {
+            throw new Error("Offscreen canvas is not supported yet");
+        }
+        else {
+            canvas = gl.canvas;
+        }
         if (extensions) {
             extensions.forEach((ext) => {
                 // We currently do not have extensions with callable API
@@ -2506,7 +2502,7 @@ class Device {
         if (debug) {
             gl = Object.entries(gl).reduce((accum, [k, v]) => (Object.assign(Object.assign({}, accum), { [k]: v === "function" ? createDebugFunc(gl, k) : v })), gl);
         }
-        return new Device(gl, pixelRatio, viewportWidth, viewportHeight);
+        return new Device(gl, canvas, pixelRatio, viewportWidth, viewportHeight);
     }
     /**
      * Return width of the WebGL drawing buffer in physical (device)
@@ -2779,7 +2775,7 @@ class Device {
      * });
      * ```
      *
-     * Also see `Device.createWithContext()`.
+     * Also see `Device.createWithWebGLContext()`.
      */
     reset() {
         this.state.reset();

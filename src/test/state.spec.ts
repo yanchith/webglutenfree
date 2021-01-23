@@ -338,7 +338,7 @@ function createContext(): WebGL2RenderingContext {
 }
 
 function createDevice(gl?: WebGL2RenderingContext): Device {
-    return Device.createWithContext(gl || createContext(), { pixelRatio: 1 });
+    return Device.createWithWebGLContext(gl || createContext(), { pixelRatio: 1 });
 }
 
 function createCommand(dev: Device): Command<void> {

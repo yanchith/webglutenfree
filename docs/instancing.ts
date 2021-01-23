@@ -20,7 +20,10 @@ import {
 } from "./lib/webglutenfree.js";
 import { mat4 } from "./libx/gl-matrix.js";
 
-const dev = Device.create();
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
+const dev = Device.createWithCanvasElement(canvas);
 const [width, height] = [dev.logicalWidth, dev.logicalHeight];
 
 const viewMatrix = mat4.identity(mat4.create());
