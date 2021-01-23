@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+## v0.0.12
+
+(This is the same as v0.0.11, which was erronously published from the incorrect branch)
+
 ## v0.0.11 (unreleased)
 
 ### Enhancements
@@ -11,6 +17,8 @@
 - Rename `device.update()` to `device.resizeToFit()`
 - Add `device.reset()` for possible interoperability with other WebGL libraries
 - Update dependencies
+- Removed `device.create()` and renamed the other creation methods to
+  `device.createWithCanvasElement()` and `device.createWithWebGLContext()`
 
 ### Fixes
 
