@@ -101,6 +101,22 @@ dev.target((rt) => {
 
 `npm install --save webglutenfree` or `yarn add webglutenfree`
 
+## Development
+
+**First time setup:**
+
+Install `node` and `yarn`, e.g. with [Volta](volta.sh) (volta pins are saved in
+`package.json`).
+
+**Developing**
+
+- Run `yarn` to install libraries,
+- Run `yarn serve` to run a local server with the project,
+- Run `yarn build` to build the project,
+- Run `yarn build-all` to build the project for all targets,
+- Run `yarn test` to run tests (must be built first: `yarn build` or `yarn compile`),
+- Run `yarn lint` to run a linter on the project source.
+
 ## Sources
 
 Webglutenfree is inspired by:
