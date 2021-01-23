@@ -1,4 +1,3 @@
-/// <reference types="webgl2" />
 import { State } from "./state";
 import { VertexBuffer, VertexBufferDataType, VertexBufferIntegerDataType } from "./vertex-buffer";
 import { ElementBuffer, ElementArray, ElementBufferDataType, ElementPrimitive } from "./element-buffer";
@@ -51,8 +50,8 @@ export declare class Attributes {
     private attributes;
     private elementBuffer?;
     constructor(state: State, primitive: ElementPrimitive, attributes: AttributeDescriptor[], count: number, instanceCount: number, elements?: ElementBuffer<ElementBufferDataType> | undefined);
-    readonly indexed: boolean;
-    readonly indexType: ElementBufferDataType | undefined;
+    get indexed(): boolean;
+    get indexType(): ElementBufferDataType | undefined;
     /**
      * Reinitialize invalid vertex array, eg. after context is lost. Also tries
      * to reinitialize vertex buffer and element buffer dependencies.

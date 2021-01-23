@@ -5,7 +5,10 @@
 
 import { Device, ElementPrimitive } from "./lib/webglutenfree.js";
 
-const dev = Device.create();
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
+const dev = Device.createWithCanvasElement(canvas);
 
 // This command uses gl_VertexID to determine which vertex are we drawing. We
 // can think of the vertex shader as a function that maps the vertex id to

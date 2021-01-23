@@ -23,7 +23,10 @@ import {
     TextureWrap,
 } from "./lib/webglutenfree.js";
 
-const dev = Device.create({ antialias: false });
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
+const dev = Device.createWithCanvasElement(canvas, { antialias: false });
 const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 const [lifeWidth, lifeHeight] = [
     Math.round(width / 4),

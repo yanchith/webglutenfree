@@ -1,4 +1,3 @@
-/// <reference types="webgl2" />
 import { Target } from "./target";
 import { Command, CommandCreateOptions } from "./command";
 import { VertexBuffer, VertexBufferCreateOptions, VertexBufferDataType, VertexBufferDataTypeToTypedArray } from "./vertex-buffer";
@@ -14,8 +13,7 @@ export declare enum Extension {
     EXTColorBufferFloat = "EXT_color_buffer_float",
     OESTextureFloatLinear = "OES_texture_float_linear"
 }
-export interface DeviceCreateOptions {
-    element?: HTMLElement;
+export interface DeviceCreateWithCanvasElementOptions {
     alpha?: boolean;
     antialias?: boolean;
     depth?: boolean;
@@ -27,19 +25,7 @@ export interface DeviceCreateOptions {
     viewportWidth?: number;
     viewportHeight?: number;
 }
-export interface DeviceCreateWithCanvasOptions {
-    alpha?: boolean;
-    antialias?: boolean;
-    depth?: boolean;
-    stencil?: boolean;
-    preserveDrawingBuffer?: boolean;
-    extensions?: Extension[];
-    debug?: boolean;
-    pixelRatio?: number;
-    viewportWidth?: number;
-    viewportHeight?: number;
-}
-export interface DeviceCreateWithContextOptions {
+export interface DeviceCreateWithWebGLContextOptions {
     extensions?: Extension[];
     debug?: boolean;
     pixelRatio?: number;
@@ -48,23 +34,21 @@ export interface DeviceCreateWithContextOptions {
 }
 export declare class Device {
     /**
-     * Create a new canvas and device (containing a WebGL
-     * context). Mount it on `element` (default is `document.body`).
+     * Create a new device from existing `HTMLCanvasElement`. Does not take
+     * ownership of canvas.
      */
-    static create(options?: DeviceCreateOptions): Device;
+    static createWithCanvasElement(canvas: HTMLCanvasElement, options?: DeviceCreateWithCanvasElementOptions): Device;
     /**
-     * Create a new device from existing canvas. Does not take ownership of
-     * canvas.
-     */
-    static createWithCanvas(canvas: HTMLCanvasElement, options?: DeviceCreateWithCanvasOptions): Device;
-    /**
-     * Create a new device from existing WebGL context. Does not take
-     * ownership of context, but concurrent usage may be the source of
-     * bugs. Be sure to know what you are doing.
+     * Create a new device from existing WebGL context. Does not take ownership
+     * of context, but concurrent usage may be the source of bugs. Be sure to
+     * know what you are doing.
+     *
+     * Note that only contexts created from `HTMLCanvasElement` are supported
+     * and contexts create from `OffscreenCanvas` will fail.
      *
      * Also see `device.reset()`.
      */
-    static createWithContext(gl: WebGL2RenderingContext, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, }?: DeviceCreateWithContextOptions): Device;
+    static createWithWebGLContext(gl: WebGL2RenderingContext, { pixelRatio, viewportWidth, viewportHeight, extensions, debug, }?: DeviceCreateWithWebGLContextOptions): Device;
     private gl;
     private canvas;
     private explicitPixelRatio?;
@@ -80,7 +64,7 @@ export declare class Device {
      * decides to allocate a smaller drawing buffer than requested,
      * e.g. when the size is not supported by hardware.
      */
-    readonly physicalWidth: number;
+    get physicalWidth(): number;
     /**
      * Return height of the WebGL drawing buffer in physical
      * (device) pixels. This will usually be the same as
@@ -88,33 +72,33 @@ export declare class Device {
      * decides to allocate a smaller drawing buffer than requested,
      * e.g. when the size is not supported by hardware.
      */
-    readonly physicalHeight: number;
+    get physicalHeight(): number;
     /**
      * Return width of the canvas in physical (device) pixels. This
      * will usually be the same as `device.physicalWidth`.
      */
-    readonly requestedPhysicalWidth: number;
+    get requestedPhysicalWidth(): number;
     /**
      * Return height of the canvas in physical (device) pixels. This
      * will usually be the same as `device.physicalHeight`.
      */
-    readonly requestedPhysicalHeight: number;
+    get requestedPhysicalHeight(): number;
     /**
      * Return width of canvas in logical (CSS) pixels (before applying
      * device pixel ratio). This is useful for e.g. computing the
      * position of mouse events.
      */
-    readonly logicalWidth: number;
+    get logicalWidth(): number;
     /**
      * Return height of canvas in logical (CSS) pixels (before
      * applying device pixel ratio). This is useful for e.g. computing
      * the position of mouse events.
      */
-    readonly logicalHeight: number;
+    get logicalHeight(): number;
     /**
      * Return the device pixel ratio for this device.
      */
-    readonly pixelRatio: number;
+    get pixelRatio(): number;
     /**
      * Resize the canvas if the device pixel ratio or canvas
      * dimensions changed.
@@ -268,7 +252,7 @@ export declare class Device {
      * });
      * ```
      *
-     * Also see `Device.createWithContext()`.
+     * Also see `Device.createWithWebGLContext()`.
      */
     reset(): void;
 }

@@ -42,7 +42,10 @@ const kernels = {
 
 const KERNEL = kernels.edgeDetect;
 
-const dev = Device.create();
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
+const dev = Device.createWithCanvasElement(canvas);
 const [width, height] = [dev.logicalWidth, dev.logicalHeight];
 
 async function run(): Promise<void> {

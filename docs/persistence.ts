@@ -21,7 +21,10 @@ import * as bunny from "./libx/bunny.js";
 
 const PERSISTENCE_FACTOR = 0.8;
 
-const dev = Device.create({ antialias: false });
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
+const dev = Device.createWithCanvasElement(canvas, { antialias: false });
 const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 
 const colorTex = dev.createTexture2D(width, height, TextureColorStorageFormat.RGBA8);

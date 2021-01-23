@@ -17,8 +17,13 @@ const ESCAPE_THRESHOLD = 2.0;
 const DOMAIN_REAL = [-1.20, -1];
 const DOMAIN_IMAG = [0.20, 0.35];
 
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
 // Use extensions so we can render to 32 bit float textures for values
-const dev = Device.create({ extensions: [Extension.EXTColorBufferFloat] });
+const dev = Device.createWithCanvasElement(canvas, {
+    extensions: [Extension.EXTColorBufferFloat],
+});
 const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 
 // Note: Even with extensions, RGB32F is not renderable (might be a bug),

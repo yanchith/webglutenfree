@@ -2,9 +2,8 @@ export { BufferUsage } from "./types";
 
 export {
     Device,
-    DeviceCreateOptions,
-    DeviceCreateWithCanvasOptions,
-    DeviceCreateWithContextOptions,
+    DeviceCreateWithCanvasElementOptions,
+    DeviceCreateWithWebGLContextOptions,
     Extension,
 } from "./device";
 

@@ -1,4 +1,3 @@
-/// <reference types="webgl2" />
 import { BufferUsage } from "./types";
 export declare type ElementArray = number[] | [number, number][] | [number, number, number][] | number[][];
 export declare enum ElementPrimitive {

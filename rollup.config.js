@@ -1,4 +1,4 @@
-import pluginReplace from "rollup-plugin-replace";
+import pluginReplace from "@rollup/plugin-replace";
 import { terser as pluginTerser } from "rollup-plugin-terser";
 
 const nyes = /([Yy][Ee]?[Ss]?)|([Tt][Rr]?[Uu]?[Ee]?)/;

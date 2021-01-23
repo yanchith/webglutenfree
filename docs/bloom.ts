@@ -32,9 +32,12 @@ const N_BLOOM_PASSES = 2;
 const BLUR_TEXTURE_SIZE_FACTOR = 0.5;
 const KERNEL = kernels.blur3;
 
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
 // Use extensions so we can render to 32 bit float textures and use linear
 // filtering with them
-const dev = Device.create({
+const dev = Device.createWithCanvasElement(canvas, {
     extensions: [
         Extension.EXTColorBufferFloat,
         Extension.OESTextureFloatLinear,

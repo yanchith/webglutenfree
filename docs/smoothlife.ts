@@ -35,7 +35,10 @@ const DEATH_HI = 0.445;
 const ALPHA_N = 0.028;
 const ALPHA_M = 0.147;
 
-const dev = Device.create({ antialias: false });
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
+const dev = Device.createWithCanvasElement(canvas, { antialias: false });
 
 // By using REPEAT in both directions, we create a cyclic universe
 const pingTex = dev.createTexture2D(

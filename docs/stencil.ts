@@ -18,7 +18,10 @@ import * as cube from "./libx/cube.js";
 import * as bunny from "./libx/bunny.js";
 import * as teapot from "./libx/teapot.js";
 
-const dev = Device.create();
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
+const dev = Device.createWithCanvasElement(canvas);
 const [width, height] = [dev.physicalWidth, dev.physicalHeight];
 
 const projMatrix = mat4.perspective(

@@ -6,13 +6,15 @@
 
 import { Device, ElementPrimitive } from "./lib/webglutenfree.js";
 
-// The device is the entry point to the API, analogous to a WebGL context.
-// It has multiple constructors, Device.create() being the most convenient, as
-// it creates the canvas and acquires the WebGL context for you. For more
-// control, see Device.createWithCanvas() and Device.createWithContext().
-// All constructors take an options object, allowing you to customize various
-// properties related context acquisition, or other WebGL related properties.
-const dev = Device.create();
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+
+// The device is the entry point to the API, analogous to a WebGL context. It
+// has multiple constructors, see Device.createWithCanvasElement() and
+// Device.createWithWebGLContext(). All constructors take an options object,
+// allowing you to customize various properties related to context acquisition,
+// or other WebGL related properties.
+const dev = Device.createWithCanvasElement(canvas);
 
 // Commands are used to draw or compute and consist of a vertex and fragment
 // shaders, and optionally can be passed an options object, allowing us to
