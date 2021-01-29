@@ -73,6 +73,7 @@ export interface CommandCreateOptions<P> {
         equation?: SingleOrSeparateRgbAlpha<BlendEquation>;
         color?: [number, number, number, number];
     };
+    // TODO(yan): Support face culling.
 }
 
 export type Uniform<P> = UniformValue<P> | UniformTextureValue<P>;

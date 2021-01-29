@@ -369,6 +369,7 @@ export class Device {
         return _createElementBuffer(this.gl, type, primitive, size, options);
     }
 
+    // TODO(yan): Remove. This may be convenient, but it is also ineffiecient.
     /**
      * Create a new element buffer from potentially nested array. Infers
      * Primitive from the array's shape:
@@ -403,6 +404,8 @@ export class Device {
         );
     }
 
+    // TODO(yan): Remove the option to pass ElementArray below. While
+    // convenient, it is ineffiecient.
     /**
      * Create new attributes with element and attribute definitions, and an
      * optional count limit.

@@ -41,6 +41,7 @@ export type AttributeConfig =
     | AttributeObjectConfig
     ;
 
+// TODO(yan): Remove. This is convenient for simple uses, but ineffiecient.
 export type AttributeArrayConfig =
     | number[] // infers size 1
     | [number, number][] // infers size 2
@@ -71,6 +72,7 @@ export interface AttributePointerConfig {
 export interface AttributeIPointerConfig {
     type: AttributeType.IPOINTER;
     buffer: VertexBuffer<VertexBufferIntegerDataType>;
+    // TODO(yan): Validate that count is always in range 1..=4.
     count: number;
     size: number;
     divisor?: number;
@@ -98,7 +100,7 @@ export function _createAttributes(
     const attrs = Object.entries(attributes)
         .map(([locationStr, definition]) => {
             if (!INT_PATTERN.test(locationStr)) {
-                throw new Error("Location not a number. Use Command#locate");
+                throw new Error("Location not a number. Use Command.locate()");
             }
             const location = parseInt(locationStr, 10);
             if (Array.isArray(definition)) {
