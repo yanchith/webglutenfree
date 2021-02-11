@@ -101,6 +101,8 @@ export type UniformTextureValue<P> =
     | UniformTextureCubeMap<P>
     ;
 
+// TODO(yan): Rename fields from "type" to "ty" everywhere.
+
 export interface UniformFloat<P> {
     type: UniformType.FLOAT;
     value: Accessor<P, number | number[] | Float32Array>;
