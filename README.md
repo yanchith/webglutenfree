@@ -1,5 +1,11 @@
 # webglutenfree
 
+**2026 update**: I am leaving this project up as a time capsule, but I do not recommend people actually use it.
+
+It was a good learning project for me, and it was useful for in-house projects around 2018, but I'd much rather point people towards rolling their own renderer instead. Also, if you can target WebGPU, you pretty much get an API similar to this one, only much more flexible. 
+
+---
+
 [![Build Status](https://travis-ci.com/yanchith/webglutenfree.svg?branch=master)](https://travis-ci.com/yanchith/webglutenfree)
 
 We serve your draw calls type-safe and gluten-free.
