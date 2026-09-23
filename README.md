@@ -1,16 +1,14 @@
 # webglutenfree
 
-**2026 update**: I am leaving this project up as a time capsule, but I do not recommend people actually use it.
+**2026 update**: I am leaving this project up as a time capsule, but I do not recommend people actually use it. Part of learning is that sometimes you look at past projects and realize that you don't find them good or interesting anymore.  
 
 It was a good learning project for me, and it was useful for in-house projects around 2018, but I'd much rather point people towards rolling their own renderer instead. Also, if you can target WebGPU, you pretty much get an API similar to this one, only much more flexible. 
 
 ---
 
-[![Build Status](https://travis-ci.com/yanchith/webglutenfree.svg?branch=master)](https://travis-ci.com/yanchith/webglutenfree)
-
 We serve your draw calls type-safe and gluten-free.
 
-Webglutenfree is a lightweight, comfort focused abstraction on top of WebGL2.
+Webglutenfree is a small, command-buffer style abstraction on top of WebGL2.
 It abstracts away state manipulation, uses parameters instead of
 state-setting calls, and encapsulates all GPU resident resources within helpful
 handles.
